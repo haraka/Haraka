@@ -109,7 +109,7 @@ exports.quarantine = function (next, connection) {
     // remove the temporary file to guarantee a complete file in the
     // final destination.
     mkdirp(msg_dir)
-        .catch(err => { 
+        .catch(err => {
             connection.logerror(plugin, `Error creating directory: ${msg_dir}`);
             next();
         })
@@ -140,6 +140,6 @@ exports.quarantine = function (next, connection) {
                     return next(action);
                 });
             });
-            txn.message_stream.pipe(ws, { line_endings: '\n' });   
-        }); 
+            txn.message_stream.pipe(ws, { line_endings: '\n' });
+        });
 }
