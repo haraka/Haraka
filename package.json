@@ -40,7 +40,8 @@
     "haraka-tld"            : "*",
     "haraka-utils"          : "*",
     "mkdirp"                : "~1.0.0",
-    "openssl-wrapper"       : "^0.3.4"
+    "openssl-wrapper"       : "^0.3.4",
+    "sockaddr"              : "^1.0.1"
   },
   "optionalDependencies": {
     "haraka-plugin-access"  : "*",
@@ -68,6 +69,7 @@
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.27",
+    "mock-require"          : "^3.0.3",
     "eslint"                : ">=6",
     "eslint-plugin-haraka"  : "*",
     "nodemailer"            : "6.2.1"
