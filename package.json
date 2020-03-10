@@ -76,11 +76,6 @@
     "mail": "haraka.mail@gmail.com",
     "url": "https://github.com/haraka/Haraka/issues"
   },
-  "greenkeeper": {
-    "ignore": [
-      "generic-pool"
-    ]
-  },
   "bin": {
     "haraka": "./bin/haraka",
     "spf": "./bin/spf",
