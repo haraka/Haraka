@@ -17,19 +17,19 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v8.15.1"
+    "node": ">= v10.17.0"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
     "address-rfc2822"       : "^2.0.0",
-    "async"                 : "~3.1.0",
+    "async"                 : "~3.2.0",
     "daemon"                : "~1.1.0",
     "generic-pool"          : "~2.5.0",
     "iconv"                 : "~2.3.0",
     "ipaddr.js"             : "~1.9.0",
     "nopt"                  : "~4.0.1",
     "npid"                  : "~0.4.0",
-    "semver"                : "~6.3.0",
+    "semver"                : "~7.1.0",
     "sprintf-js"            : "~1.1.0",
     "haraka-config"         : ">=1.0.15",
     "haraka-constants"      : ">=1.0.5",
@@ -39,8 +39,9 @@
     "haraka-results"        : "^2.0.0",
     "haraka-tld"            : "*",
     "haraka-utils"          : "*",
-    "mkdirp"                : "~0.5.1",
-    "openssl-wrapper"       : "^0.3.4"
+    "mkdirp"                : "~1.0.0",
+    "openssl-wrapper"       : "^0.3.4",
+    "sockaddr"              : "^1.0.1"
   },
   "optionalDependencies": {
     "haraka-plugin-access"  : "*",
@@ -62,24 +63,20 @@
     "haraka-plugin-syslog"  : "*",
     "haraka-plugin-watch"   : "*",
     "ocsp"                  : "~1.2.0",
-    "redis"                 : "~2.8.0",
+    "redis"                 : "~3.0.0",
     "tmp"                   : "~0.1.0"
   },
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.27",
-    "eslint"                : ">=4",
+    "mock-require"          : "^3.0.3",
+    "eslint"                : ">=6",
     "eslint-plugin-haraka"  : "*",
     "nodemailer"            : "6.2.1"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
     "url": "https://github.com/haraka/Haraka/issues"
-  },
-  "greenkeeper": {
-    "ignore": [
-      "generic-pool"
-    ]
   },
   "bin": {
     "haraka": "./bin/haraka",

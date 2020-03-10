@@ -293,7 +293,7 @@ exports.applySocketOpts = name => {
     // https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
     const createSecureContextOptions = [
         'key', 'cert', 'dhparam',
-        'pfx', 'passphrase', 'ca', 'crl', 'ciphers', 'honorCipherOrder',
+        'pfx', 'passphrase', 'ca', 'crl', 'ciphers', 'minVersion', 'honorCipherOrder',
         'ecdhCurve', 'secureProtocol', 'secureOptions', 'sessionIdContext'
     ];
 
@@ -461,6 +461,7 @@ exports.get_certs_dir = (tlsDir, done) => {
 
             log.loginfo(`found ${certs.length} TLS certs in config/tls`);
             certs.forEach(cert => {
+                if (undefined === cert) return;
                 if (cert.err) {
                     log.logerror(`${cert.file} had error: ${cert.err.message}`);
                     return;

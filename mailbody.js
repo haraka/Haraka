@@ -21,7 +21,13 @@ class Body extends events.EventEmitter {
         this.options = options || {};
         this.filters = [];
         this.bodytext = '';
-        this.body_text_encoded = '';
+
+        // Caution: slice before using!  We build up data in this buffer, and
+        // it always has extra space at the end.  Use
+        // this.body_text_encoded.slice(0, this.body_text_encoded_pos).
+        this.body_text_encoded = Buffer.alloc(buf_siz);
+        this.body_text_encoded_pos = 0;
+
         this.body_encoding = null;
         this.boundary = null;
         this.ct = null;
@@ -31,7 +37,7 @@ class Body extends events.EventEmitter {
         this.buf = Buffer.alloc(buf_siz);
         this.buf_fill = 0;
         this.decode_accumulator = '';
-        this.decode_qp = utils.decode_qp;
+        this.decode_qp = line => utils.decode_qp(line.toString());
         this.decode_7bit = this.decode_8bit;
     }
 
@@ -44,21 +50,27 @@ class Body extends events.EventEmitter {
     }
 
     parse_more (line) {
+        // Ensure we're working in buffers, for the tests (transaction should
+        // always pass buffers).
+        if (!Buffer.isBuffer(line)) line = Buffer.from(line);
+
         return this[`parse_${this.state}`](line);
     }
 
     parse_child (line) {
+        const line_string = line.toString();
+
         // check for MIME boundary
-        if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
+        if (line_string.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
 
             line = this.children[this.children.length -1].parse_end(line);
 
-            if (line.substr(this.boundary.length + 2, 2) === '--') {
+            if (line_string.substr(this.boundary.length + 2, 2) === '--') {
                 // end
                 this.state = 'end';
             }
             else {
-                this.emit('mime_boundary', line);
+                this.emit('mime_boundary', line_string);
                 const bod = new Body(new Header(), this.options);
                 this.listeners('attachment_start').forEach(cb => { bod.on('attachment_start', cb) });
                 this.listeners('attachment_data' ).forEach(cb => { bod.on('attachment_data', cb) });
@@ -75,14 +87,16 @@ class Body extends events.EventEmitter {
     }
 
     parse_headers (line) {
-        if (/^\s*$/.test(line)) {
+        const line_string = line.toString();
+
+        if (/^\s*$/.test(line_string)) {
             // end of headers
             this.header.parse(this.header_lines);
             delete this.header_lines;
             this.state = 'start';
         }
         else {
-            this.header_lines.push(line);
+            this.header_lines.push(line_string);
         }
         return line;
     }
@@ -140,7 +154,7 @@ class Body extends events.EventEmitter {
             new_buf = filter(ct, enc, new_buf) || new_buf;
         });
 
-        return new_buf.toString("binary");
+        return new_buf;
     }
 
     force_end () {
@@ -150,6 +164,7 @@ class Body extends events.EventEmitter {
                 const to_emit = Buffer.alloc(this.buf_fill);
                 this.buf.copy(to_emit, 0, 0, this.buf_fill);
                 this.attachment_stream.emit_data(to_emit);
+                this.buf_fill = 0;
             }
             this.attachment_stream.emit_end(true);
         }
@@ -157,7 +172,7 @@ class Body extends events.EventEmitter {
 
     parse_end (line) {
         if (!line) {
-            line = '';
+            line = Buffer.from('');
         }
 
         if (this.state === 'attachment') {
@@ -166,6 +181,7 @@ class Body extends events.EventEmitter {
                 const to_emit = Buffer.alloc(this.buf_fill);
                 this.buf.copy(to_emit, 0, 0, this.buf_fill);
                 this.attachment_stream.emit_data(to_emit);
+                this.buf_fill = 0;
             }
             this.attachment_stream.emit_end();
         }
@@ -182,11 +198,12 @@ class Body extends events.EventEmitter {
         }
         this.body_encoding = enc;
 
-        // ignore these lines - but we could store somewhere I guess.
-        if (!this.body_text_encoded.length) return this._empty_filter(ct, enc) + line; // nothing to decode
+        if (!this.body_text_encoded_pos) { // nothing to decode
+            return Buffer.concat([this._empty_filter(ct, enc) || Buffer.from(''), line]);
+        }
         if (this.bodytext.length !== 0) return line;     // already decoded?
 
-        const buf = this.decode_function(this.body_text_encoded);
+        let buf = this.decode_function(this.body_text_encoded.slice(0, this.body_text_encoded_pos));
 
         if (this.filters.length) {
             // up until this point we've returned '' for line, so now we run
@@ -200,15 +217,16 @@ class Body extends events.EventEmitter {
 
             // convert back to base_64 or QP if required:
             if (this.decode_function === this.decode_qp) {
-                line = `${utils.encode_qp(new_buf)}\n${line}`;
+                line = Buffer.from(`${utils.encode_qp(new_buf)}\n${line}`);
             }
             else if (this.decode_function === this.decode_base64) {
-                line = new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line;
+                line = Buffer.from(new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line);
             }
             else {
-                // "binary" is deprecated, lets hope this works...
-                line = new_buf.toString("binary") + line;
+                line = Buffer.concat([new_buf, line]);
             }
+
+            buf = new_buf;
         }
 
         // convert the buffer to UTF-8, stored in this.bodytext
@@ -254,21 +272,37 @@ class Body extends events.EventEmitter {
     }
 
     parse_body (line) {
-        this.body_text_encoded += line;
+        if (!Buffer.isBuffer(line)) line = Buffer.from(line);
+
+        // Grow the body_text_encoded buffer if we need more space.  Doing this
+        // instead of constant Buffer.concat()s means we allocate/copy way less
+        // often.
+        if (this.body_text_encoded_pos + line.length > this.body_text_encoded.length) {
+            let new_size = this.body_text_encoded.length * 2;
+            while (this.body_text_encoded_pos + line.length > new_size) new_size *= 2;
+
+            this.body_text_encoded = Buffer.alloc(
+                new_size, this.body_text_encoded.slice(0, this.body_text_encoded_pos));
+        }
+
+        line.copy(this.body_text_encoded, this.body_text_encoded_pos);
+        this.body_text_encoded_pos += line.length;
+
         if (this.filters.length) return '';
         return line;
     }
 
     parse_multipart_preamble (line) {
         if (!this.boundary) return line;
+        const line_string = line.toString();
 
-        if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
-            if (line.substr(this.boundary.length + 2, 2) === '--') {
+        if (line_string.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
+            if (line_string.substr(this.boundary.length + 2, 2) === '--') {
                 // end
             }
             else {
                 // next section
-                this.emit('mime_boundary', line);
+                this.emit('mime_boundary', line_string);
                 const bod = new Body(new Header(), this.options);
                 this.listeners('attachment_start').forEach(cb => { bod.on('attachment_start', cb) });
                 this.listeners('mime_boundary').forEach(cb => bod.on('mime_boundary', cb));
@@ -284,9 +318,11 @@ class Body extends events.EventEmitter {
     }
 
     parse_attachment (line) {
+        const line_string = line.toString();
+
         if (this.boundary) {
-            if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
-                if (line.substr(this.boundary.length + 2, 2) === '--') {
+            if (line_string.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
+                if (line_string.substr(this.boundary.length + 2, 2) === '--') {
                     // end
                 }
                 else {
@@ -327,7 +363,7 @@ class Body extends events.EventEmitter {
     decode_base64 (line) {
         // Remove all whitespace (such as newlines and errant spaces) from base64
         // before combining it with any previously unprocessed data.
-        let to_process = this.decode_accumulator + line.trim().replace(/[\s]+/g,'');
+        let to_process = this.decode_accumulator + line.toString().trim().replace(/[\s]+/g,'');
 
         // Sometimes base64 data lines will not be aligned with
         // byte boundaries. This is because each char in base64
@@ -364,9 +400,6 @@ class Body extends events.EventEmitter {
     }
 
     decode_8bit (line) {
-        if (/UTF-?8/i.test(this.body_encoding)) {
-            return Buffer.from(line, 'utf-8');
-        }
         return Buffer.from(line, 'binary');
     }
 }

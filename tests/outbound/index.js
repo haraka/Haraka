@@ -163,6 +163,7 @@ exports.get_tls_options = {
             cert: fs.readFileSync(path.resolve('tests','config','outbound_tls_cert.pem')),
             dhparam: fs.readFileSync(path.resolve('tests','config','dhparams.pem')),
             ciphers: 'ECDHE-RSA-AES256-GCM-SHA384',
+            minVersion: 'TLSv1',
             rejectUnauthorized: false,
             requestCert: false,
             honorCipherOrder: false,

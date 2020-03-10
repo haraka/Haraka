@@ -68,7 +68,4 @@ data.headers
 # Queue mail via smtp - see config/smtp_forward.ini for where your mail goes
 queue/smtp_forward
 
-# Disconnect client if they spew bad SMTP commands at us
-max_unrecognized_commands
-
 #watch

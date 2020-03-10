@@ -5,8 +5,14 @@
 
 * lint: add 'prefer-template'
 * restore TLS version info, set correctly #2723
+* fix broken bannering on nested mime parts #2736
 
 ### New features
+
+* connection_close_message: added ability to override close connection message replacing `closing connection. Have a jolly good day.`
+* tls: add configurable minVersion to tls socket options
+* add JSON format for logging
+* support binding web interface to unix socket
 
 ### Fixes
 

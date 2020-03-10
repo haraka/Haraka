@@ -57,6 +57,7 @@ for (const le in logger.levels) {
 logger.formats = {
     DEFAULT: "DEFAULT",
     LOGFMT: "LOGFMT",
+    JSON: "JSON",
 }
 
 logger.loglevel      = logger.levels.WARN;
@@ -282,6 +283,10 @@ logger.log_if_level = (level, key, plugin) => function () {
             logger.format === logger.formats.LOGFMT && data.constructor === Object) {
             logobj = Object.assign(logobj, data);
         }
+        else if (
+            logger.format === logger.formats.JSON && data.constructor === Object) {
+            logobj = Object.assign(logobj, data);
+        }
         else if (typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, "uuid")) {
             logobj.uuid = data.uuid;
         }
@@ -298,6 +303,12 @@ logger.log_if_level = (level, key, plugin) => function () {
             logger.log(
                 level,
                 stringify(logobj)
+            );
+            return true;
+        case logger.formats.JSON:
+            logger.log(
+                level,
+                JSON.stringify(logobj)
             );
             return true;
         case logger.formats.DEFAULT:

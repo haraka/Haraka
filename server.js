@@ -14,6 +14,7 @@ const outbound    = require('./outbound');
 const async       = require('async');
 const cluster     = require('cluster');
 const constants   = require('haraka-constants');
+const endpoint    = require('./endpoint');
 
 const Server      = exports;
 Server.logger     = require('./logger');
@@ -268,8 +269,9 @@ Server.get_listen_addrs = (cfg, port) => {
         listeners = cfg.listen.split(/\s*,\s*/);
         if (listeners[0] === '') listeners = [];
         for (let i=0; i < listeners.length; i++) {
-            if (/:[0-9]{1,5}$/.test(listeners[i])) continue;
-            listeners[i] = `${listeners[i]}:${port}`;
+            const ep = endpoint(listeners[i], port);
+            if (ep instanceof Error) continue
+            listeners[i] = ep.toString();
         }
     }
     if (cfg.port) {
@@ -337,7 +339,7 @@ Server.load_default_tls_config = done => {
     });
 }
 
-Server.get_smtp_server = (host, port, inactivity_timeout, done) => {
+Server.get_smtp_server = (ep, inactivity_timeout, done) => {
     let server;
 
     function onConnect (client) {
@@ -357,12 +359,12 @@ Server.get_smtp_server = (host, port, inactivity_timeout, done) => {
         });
     }
 
-    if (port === Server.cfg.main.smtps_port) {
+    if (ep.port === parseInt(Server.cfg.main.smtps_port, 10)) {
         logger.loginfo('getting SocketOpts for SMTPS server');
         tls_socket.getSocketOpts('*', opts => {
-            logger.loginfo(`Creating TLS server on ${host}:${port}`);
+            logger.loginfo(`Creating TLS server on ${ep}`);
 
-            opts.rejectUnauthorized = tls_socket.get_rejectUnauthorized(opts.rejectUnauthorized, port, tls_socket.cfg.main.requireAuthorized)
+            opts.rejectUnauthorized = tls_socket.get_rejectUnauthorized(opts.rejectUnauthorized, ep.port, tls_socket.cfg.main.requireAuthorized)
 
             server = tls.createServer(opts, onConnect);
             tls_socket.addOCSP(server);
@@ -388,16 +390,13 @@ Server.setup_smtp_listeners = (plugins2, type, inactivity_timeout) => {
     async.each(
         Server.get_listen_addrs(Server.cfg.main),  // array of listeners
 
-        function setupListener (host_port, listenerDone) {
+        function setupListener (listen_address, listenerDone) {
 
-            const hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
-            if (!hp) return listenerDone(
-                new Error('Invalid "listen" format in smtp.ini'));
+            const ep = endpoint(listen_address, 25);
+            if (ep instanceof Error) return listenerDone(
+                new Error(`Invalid "listen" format in smtp.ini: ${listen_address}`));
 
-            const host = hp[1];
-            const port = parseInt(hp[2], 10);
-
-            Server.get_smtp_server(host, port, inactivity_timeout, (server) => {
+            Server.get_smtp_server(ep, inactivity_timeout, (server) => {
                 if (!server) return listenerDone();
 
                 server.notes = Server.notes;
@@ -406,24 +405,24 @@ Server.setup_smtp_listeners = (plugins2, type, inactivity_timeout) => {
                 server
                     .on('listening', function () {
                         const addr = this.address();
-                        logger.lognotice(`Listening on ${addr.address}:${addr.port}`);
+                        logger.lognotice(`Listening on ${endpoint(addr)}`);
                         listenerDone();
                     })
                     .on('close', () => {
-                        logger.loginfo(`Listener ${host}:${port} stopped`);
+                        logger.loginfo(`Listener ${ep} stopped`);
                     })
                     .on('error', e => {
                         if (e.code !== 'EAFNOSUPPORT') return listenerDone(e);
                         // Fallback from IPv6 to IPv4 if not supported
                         // But only if we supplied the default of [::0]:25
-                        if (/^::0/.test(host) && Server.default_host) {
-                            server.listen(port, '0.0.0.0', 0);
+                        if (/^::0/.test(ep.host) && Server.default_host) {
+                            server.listen(ep.port, '0.0.0.0', 0);
                             return;
                         }
                         // Pass error to callback
                         listenerDone(e);
-                    })
-                    .listen(port, host, 0);
+                    });
+                ep.bind(server, {backlog: 0});
             });
         },
         function runInitHooks (err) {
@@ -458,13 +457,13 @@ Server.setup_http_listeners = () => {
     Server.http.app = app;
     logger.loginfo('express app is at Server.http.app');
 
-    function setupListener (host_port, cb) {
-        const hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
-        if (!hp) {
-            return cb(new Error('Invalid format for listen in http.ini'));
+    function setupListener (listen_address, cb) {
+        const ep = endpoint(listen_address, 80);
+        if (ep instanceof Error) {
+            return cb(new Error(`Invalid format for listen in http.ini: ${listen_address}`));
         }
 
-        if (443 == hp[2]) {
+        if (443 == ep.port) {
             // clone the default TLS opts
             const tlsOpts = Object.assign({}, tls_socket.certsByHost['*']);
             tlsOpts.requestCert = false; // not appropriate for HTTPS
@@ -479,7 +478,7 @@ Server.setup_http_listeners = () => {
 
         Server.http.server.on('listening', function () {
             const addr = this.address();
-            logger.lognotice(`Listening on ${addr.address}:${addr.port}`);
+            logger.lognotice(`Listening on ${endpoint(addr)}`);
             cb();
         });
 
@@ -488,7 +487,7 @@ Server.setup_http_listeners = () => {
             cb(e);
         });
 
-        Server.http.server.listen(hp[2], hp[1], 0);
+        ep.bind(Server.http.server, {backlog: 0});
     }
 
     function registerRoutes (err) {
@@ -545,7 +544,7 @@ Server.init_master_respond = (retval, msg) => {
             );
         });
         cluster.on('listening', (worker, address) => {
-            logger.lognotice(`worker ${worker.id} listening on ${address.address}:${address.port}`);
+            logger.lognotice(`worker ${worker.id} listening on ${endpoint(address)}`);
         });
         cluster.on('exit', cluster_exit_listener);
     });

@@ -1,4 +1,5 @@
 const path = require('path');
+const endpoint = require('../endpoint');
 
 function _set_up (done) {
 
@@ -100,7 +101,7 @@ exports.get_smtp_server = {
         this.server.load_default_tls_config(() => done());
     },
     'gets a net server object' (test) {
-        this.server.get_smtp_server('0.0.0.0', 2501, 10, (server) => {
+        this.server.get_smtp_server(endpoint('0.0.0.0:2501'), 10, (server) => {
             if (!server) {
                 console.error('unable to bind to 0.0.0.0:2501');
                 // test.expect(0);
@@ -120,7 +121,7 @@ exports.get_smtp_server = {
     },
     'gets a TLS net server object' (test) {
         this.server.cfg.main.smtps_port = 2502;
-        this.server.get_smtp_server('0.0.0.0', 2502, 10, (server) => {
+        this.server.get_smtp_server(endpoint('0.0.0.0:2502'), 10, (server) => {
             if (!server) {
                 console.error('unable to bind to 0.0.0.0:2502');
                 // test.expect(0);
