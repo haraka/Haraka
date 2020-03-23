@@ -355,6 +355,8 @@ exports.get_sender_domain = function (connection) {
         }
     }
 
+    // In case of forwarding, only use the Envelope
+    if (txn.notes.forward) return domain;
     if (!txn.header) return domain;
 
     // the DKIM signing key should be aligned with the domain in the From

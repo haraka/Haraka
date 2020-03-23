@@ -112,6 +112,7 @@ function _alias (plugin, connection, key, config, host) {
             connection.transaction.rcpt_to.pop();
             connection.transaction.rcpt_to.push(toAddress);
         }
+        connection.transaction.notes.forward = true;
     }
     else {
         connection.loginfo(plugin, `alias failed for ${key}, no "to" field in alias config`);
