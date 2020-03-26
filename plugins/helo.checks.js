@@ -170,7 +170,7 @@ exports.valid_hostname = function (next, connection, helo) {
     if (!/\./.test(helo)) {
         connection.results.add(plugin, {fail: 'valid_hostname(no_dot)'});
         if (plugin.cfg.reject.valid_hostname) {
-            return next(DENY, 'Host names have more than one DNS label');
+            return next(DENY, 'HELO host must be a FQDN or address literal (RFC 5321 2.3.5)');
         }
         return next();
     }
