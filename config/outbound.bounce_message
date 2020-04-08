@@ -1,7 +1,8 @@
 Received: (Haraka {pid} invoked for bounce); {date}
 Date: {date}
 From: MAILER-DAEMON@{me}
-To: {from}
+To: {to}
+Auto-Submitted: auto-replied
 Subject: failure notice
 Message-Id: {msgid}
 
