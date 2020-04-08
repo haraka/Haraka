@@ -9,7 +9,7 @@ function _fill_body (body, quote) {
     quote = quote || "";
 
     body.state = 'headers';
-    body.parse_more("Content-Type: multipart/alternative; boundary=" + quote + "abcdef" + quote + "\n");
+    body.parse_more(`Content-Type: multipart/alternative; boundary=${quote}abcdef${quote}\n`);
     body.parse_more("From: =?US-ASCII*EN?Q?Keith_Moore?= <moore@cs.utk.edu>\n");
     body.parse_more("\n");
     body.parse_more("--abcdef\n");
@@ -36,8 +36,8 @@ function _fill_body (body, quote) {
     let html = body.parse_more("--abcdef--\n");
     body.parse_end();
 
-    text = text.replace(/--abcdef\n$/, '').trim();
-    html = html.replace(/--abcdef--\n$/, '').trim();
+    text = text.toString().replace(/--abcdef\n$/, '').trim();
+    html = html.toString().replace(/--abcdef--\n$/, '').trim();
 
     return [text, html];
 }
@@ -60,14 +60,14 @@ function _fill_empty_body (body) {
     let html = body.parse_more("--abcdef--\n");
     body.parse_end();
 
-    text = text.replace(/--abcdef\n$/, '').trim();
-    html = html.replace(/--abcdef--\n$/, '').trim();
+    text = text.toString().replace(/--abcdef\n$/, '').trim();
+    html = html.toString().replace(/--abcdef--\n$/, '').trim();
 
     return [text, html];
 }
 
 exports.basic = {
-    'children': function (test) {
+    'children': test => {
         test.expect(1);
 
         const body = new Body();
@@ -76,10 +76,48 @@ exports.basic = {
         test.equal(body.children.length, 2);
         test.done();
     },
+
+    'correct mime parsing (#2548)': test => {
+        const tests = [
+            ['utf-8', '8-bit', Buffer.from("Grüße, Buß\n"), Buffer.from("Grüße, Buß\n")],
+            ['utf-8', 'quoted-printable', Buffer.from("Gr=C3=BC=C3=9Fe, Bu=C3=9F\n"), Buffer.from("Grüße, Buß\n")],
+            ['utf-8', 'base64', Buffer.from("R3LDvMOfZSwgQnXDnw==\n"), Buffer.from("Grüße, Buß")],
+            ['iso-8859-2', '8-bit', Buffer.from([0x50,0xF8,0x69,0x68,0x6C,0x61,0xB9,0x6F,0x76,0x61,0x63,0xED,0x20,0xFA,0x64,0x61,0x6A,0x65,0x0A]), Buffer.from("Přihlašovací údaje\n")],
+            ['iso-8859-2', 'quoted-printable', Buffer.from("P=F8ihla=B9ovac=ED =FAdaje\n"), Buffer.from("Přihlašovací údaje\n")],
+            ['iso-8859-2', 'base64', Buffer.from("UPhpaGxhuW92YWPtIPpkYWplCgo=\n"), Buffer.from("Přihlašovací údaje\n\n")],
+            ['utf-8', '8-bit', Buffer.from("どうぞ宜しくお願い申し上げます"), Buffer.from("どうぞ宜しくお願い申し上げます")]
+        ];
+
+        test.expect(tests.length);
+
+        tests.forEach(data => {
+            const body = new Body();
+            body.add_filter(() => {});
+
+            body.state = 'headers'; // HACK
+            [
+                "Content-type: multipart/alternative;\n",
+                " boundary=------------D0A00162984CC178E2583417\n",
+                "\n",
+                "This is a multi-part message in MIME format.\n",
+                "--------------D0A00162984CC178E2583417\n",
+                `Content-Type: text/plain; charset=${data[0]}; format=flowed\n`,
+                `Content-Transfer-Encoding: ${data[1]}\n`,
+                "\n",
+                data[2],
+                "--------------D0A00162984CC178E2583417--"
+            ].forEach((line) => body.parse_more(line));
+            body.parse_end();
+
+            test.equal(data[3], body.children[0].bodytext, `charset: ${data[0]}, encoding: ${data[1]}`);
+        });
+
+        test.done();
+    },
 }
 
 exports.banners = {
-    'banner': function (test) {
+    'banner': test => {
         test.expect(2);
 
         const body = new Body();
@@ -91,7 +129,7 @@ exports.banners = {
         test.done();
     },
 
-    'insert_banner': function (test){
+    'insert_banner': test => {
         test.expect(2);
 
         let content_type;
@@ -107,14 +145,14 @@ exports.banners = {
         const insert_banners_fn = body.filters[0];
 
         content_type = 'text/html';
-        buf = new Buffer("winter </html>");
+        buf = Buffer.from("winter </html>");
         new_buf = insert_banners_fn (content_type, enc, buf);
         test.equal(new_buf.toString(), "winter <P>htmlbanner</P></html>",
             "html banner looks ok");
 
 
         content_type = 'text/plain';
-        buf = new Buffer("winter");
+        buf = Buffer.from("winter");
         new_buf = insert_banners_fn (content_type, enc, buf);
         test.equal(new_buf.toString(), "winter\ntextbanner\n",
             "text banner looks ok");
@@ -125,7 +163,7 @@ exports.banners = {
 
     // found and fixed bug, if the buffer is empty this was throwing a:
     // RangeError: out of range index
-    'insert_banner_empty_buffer': function (test){
+    'insert_banner_empty_buffer': test => {
         test.expect(2);
 
         let content_type;
@@ -141,7 +179,7 @@ exports.banners = {
 
 
         content_type = 'text/html';
-        const empty_buf = new Buffer('');
+        const empty_buf = Buffer.from('');
         new_buf = insert_banners_fn (content_type, enc, empty_buf);
         test.equal(new_buf.toString(), "<P>htmlbanner</P>",
             "empty html part gets a banner" );
@@ -154,7 +192,7 @@ exports.banners = {
         test.done();
     },
 
-    'insert_banner_empty_body': function (test) {
+    'insert_banner_empty_body': test => {
         test.expect(2);
 
         const body = new Body();
@@ -164,18 +202,18 @@ exports.banners = {
         const results = _fill_empty_body(body);
 
         test.equal(results[0], banners[0]);
-        test.equal(results[1], '<P>' + banners[1] + '</P>');
+        test.equal(results[1], `<P>${banners[1]}</P>`);
 
         test.done();
     },
 }
 
 exports.filters = {
-    'empty': function (test) {
+    'empty': test => {
         test.expect(2);
 
         const body = new Body();
-        body.add_filter(function (ct, enc, buf) { });
+        body.add_filter((ct, enc, buf) => { });
         const parts = _fill_body(body);
 
         test.ok(/Some text/.test(parts[0]));
@@ -183,16 +221,16 @@ exports.filters = {
         test.done();
     },
 
-    'search/replace': function (test) {
+    'search/replace': test => {
         test.expect(2);
 
         const body = new Body();
-        body.add_filter(function (ct, enc, buf) {
+        body.add_filter((ct, enc, buf) => {
             if (/^text\/plain/.test(ct)) {
-                return new Buffer("TEXT FILTERED");
+                return Buffer.from("TEXT FILTERED");
             }
             else if (/text\/html/.test(ct)) {
-                return new Buffer("<p>HTML FILTERED</p>");
+                return Buffer.from("<p>HTML FILTERED</p>");
             }
         });
         const parts = _fill_body(body);
@@ -203,11 +241,11 @@ exports.filters = {
     },
 
     'regression: duplicate multi-part preamble when filters added':
-    function (test) {
+    test => {
         test.expect(1);
 
         const body = new Body();
-        body.add_filter(function () {});
+        body.add_filter(() => {});
 
         let lines = [];
 
@@ -221,20 +259,18 @@ exports.filters = {
             "\n",
             "Testing, 1, 2, 3.\n",
             "--abcd--\n",
-        ].forEach(function (line) {
+        ].forEach(line => {
             lines.push(body.parse_more(line));
         });
         lines.push(body.parse_end());
 
         // Ignore blank lines.
-        lines = lines.filter(function (l) {
-            return l.trim();
-        });
+        lines = lines.filter(l => l.toString().trim());
 
         let dupe = false;
         let line;
         while ((line = lines.pop())) {
-            lines.forEach(function (l) {
+            lines.forEach(l => {
                 dupe = dupe || line === l;
             });
         }
@@ -245,7 +281,7 @@ exports.filters = {
 }
 
 exports.rfc2231 = {
-    'multi-value': function (test) {
+    'multi-value': test => {
         test.expect(2);
 
         const body = new Body();
@@ -256,7 +292,7 @@ exports.rfc2231 = {
         test.done();
     },
 
-    'enc-and-lang': function (test) {
+    'enc-and-lang': test => {
         test.expect(1);
 
         const body = new Body();
@@ -266,7 +302,7 @@ exports.rfc2231 = {
         test.done();
     },
 
-    'multi-value-enc-and-lang': function (test) {
+    'multi-value-enc-and-lang': test => {
         test.expect(1);
 
         const body = new Body();
@@ -278,7 +314,7 @@ exports.rfc2231 = {
 }
 
 exports.boundaries = {
-    'with-quotes': function (test) {
+    'with-quotes': test => {
         test.expect(1);
 
         const body = new Body();
@@ -288,7 +324,7 @@ exports.boundaries = {
         test.done();
     },
 
-    'without-quotes': function (test) {
+    'without-quotes': test => {
         test.expect(1);
 
         const body = new Body();
@@ -298,7 +334,7 @@ exports.boundaries = {
         test.done();
     },
 
-    'with-bad-quotes': function (test) {
+    'with-bad-quotes': test => {
         test.expect(1);
 
         const body = new Body();

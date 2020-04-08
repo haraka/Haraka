@@ -11,16 +11,16 @@ exports.register = function () {
 
 exports.load_tls_ini = function () {
     const plugin = this;
-    plugin.tls_cfg = plugin.config.get('tls.ini', function () {
+    plugin.tls_cfg = plugin.config.get('tls.ini', () => {
         plugin.load_tls_ini();
     });
 }
 
 
-exports.hook_capabilities = function (next, connection) {
+exports.hook_capabilities = (next, connection) => {
     if (connection.tls.enabled) {
         const methods = [ 'PLAIN', 'LOGIN' ];
-        connection.capabilities.push('AUTH ' + methods.join(' '));
+        connection.capabilities.push(`AUTH ${methods.join(' ')}`);
         connection.notes.allowed_auth_methods = methods;
     }
     next();
@@ -33,14 +33,14 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     }
     else {
         // AUTH user not in user@domain.com format
-        connection.logerror(this, 'AUTH user="' + user + '" error="not in required format"');
+        connection.logerror(this, `AUTH user="${user}" error="not in required format"`);
         return cb(false);
     }
 
     // Check if domain exists in configuration file
     const config = this.config.get('auth_proxy.ini');
     if (!config.domains[domain]) {
-        connection.logerror(this, 'AUTH user="' + user + '" error="domain \'' + domain + '\' is not defined"');
+        connection.logerror(this, `AUTH user="${user}" error="domain '${domain}' is not defined"`);
         return cb(false);
     }
 
@@ -64,45 +64,44 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
 
     const hostport = host.split(/:/);
     const socket = sock.connect(((hostport[1]) ? hostport[1] : 25), hostport[0]);
-    connection.logdebug(self, 'attempting connection to host=' + hostport[0] + ' port=' + ((hostport[1]) ? hostport[1] : 25));
+    connection.logdebug(self, `attempting connection to host=${hostport[0]} port=${(hostport[1]) ? hostport[1] : 25}`);
     socket.setTimeout(30 * 1000);
-    socket.on('connect', function () {
-    });
-    socket.on('close', function () {
+    socket.on('connect', () => { });
+    socket.on('close', () => {
         if (!auth_complete) {
             // Try next host
             return self.try_auth_proxy(connection, hosts, user, passwd, cb);
         }
-        connection.loginfo(self, 'AUTH user="' + user + '" host="' + host + '" success=' + auth_success);
+        connection.loginfo(self, `AUTH user="${user}" host="${host}" success=${auth_success}`);
         return cb(auth_success);
     });
-    socket.on('timeout', function () {
+    socket.on('timeout', () => {
         connection.logerror(self, "connection timed out");
         socket.end();
         // Try next host
         return self.try_auth_proxy(connection, hosts, user, passwd, cb);
     });
-    socket.on('error', function (err) {
-        connection.logerror(self, "connection failed to host " + host + ": " + err);
+    socket.on('error', err => {
+        connection.logerror(self, `connection failed to host ${host}: ${err}`);
         socket.end();
         return;
     });
     socket.send_command = function (cmd, data) {
-        let line = cmd + (data ? (' ' + data) : '');
+        let line = cmd + (data ? (` ${data}`) : '');
         if (cmd === 'dot') {
             line = '.';
         }
-        connection.logprotocol(self, "C: " + line);
+        connection.logprotocol(self, `C: ${line}`);
         command = cmd.toLowerCase();
-        this.write(line + "\r\n");
+        this.write(`${line}\r\n`);
         // Clear response buffer from previous command
         response = [];
     };
     socket.on('line', function (line) {
-        connection.logprotocol(self, "S: " + line);
+        connection.logprotocol(self, `S: ${line}`);
         const matches = smtp_regexp.exec(line);
         if (!matches) {
-            connection.logerror(self, "unrecognised response: " + line);
+            connection.logerror(self, `unrecognised response: ${line}`);
             socket.end();
             return;
         }
@@ -116,7 +115,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         let key;
         let cert;
 
-        connection.logdebug(self, 'command state: ' + command);
+        connection.logdebug(self, `command state: ${command}`);
         if (command === 'ehlo') {
             if (code[0] === '5') {
                 // EHLO command rejected; abort
@@ -131,7 +130,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     key = self.config.get(self.tls_cfg.main.key || 'tls_key.pem', 'binary');
                     cert = self.config.get(self.tls_cfg.main.cert || 'tls_cert.pem', 'binary');
                     if (key && cert) {
-                        this.on('secure', function () {
+                        this.on('secure', () => {
                             secure = true;
                             socket.send_command('EHLO', connection.local.host);
                         });
@@ -143,13 +142,13 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     // Parse supported AUTH methods
                     const parse = /^AUTH (.+)$/.exec(response[i]);
                     methods = parse[1].split(/\s+/);
-                    connection.logdebug(self, 'found supported AUTH methods: ' + methods);
+                    connection.logdebug(self, `found supported AUTH methods: ${methods}`);
                     // Prefer PLAIN as it's easiest
-                    if (methods.indexOf('PLAIN') !== -1) {
-                        socket.send_command('AUTH','PLAIN ' + utils.base64("\0" + user + "\0" + passwd));
+                    if (methods.includes('PLAIN')) {
+                        socket.send_command('AUTH',`PLAIN ${utils.base64(`\0${user}\0${passwd}`)}`);
                         return;
                     }
-                    else if (methods.indexOf('LOGIN') !== -1) {
+                    else if (methods.includes('LOGIN')) {
                         socket.send_command('AUTH','LOGIN');
                         return;
                     }
@@ -166,12 +165,12 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
             // Handle LOGIN
             if (code[0] === '3' && response[0] === 'VXNlcm5hbWU6') {
                 // Write to the socket directly to keep the state at 'auth'
-                this.write(utils.base64(user) + "\r\n");
+                this.write(`${utils.base64(user)}\r\n`);
                 response = [];
                 return;
             }
             else if (code[0] === '3' && response[0] === 'UGFzc3dvcmQ6') {
-                this.write(utils.base64(passwd) + "\r\n");
+                this.write(`${utils.base64(passwd)}\r\n`);
                 response = [];
                 return;
             }
@@ -180,10 +179,10 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 let u;
                 if ((u = /^([^@]+)@.+$/.exec(user))) {
                     user = u[1];
-                    if (methods.indexOf('PLAIN') !== -1) {
-                        socket.send_command('AUTH', 'PLAIN ' + utils.base64("\0" + user + "\0" + passwd));
+                    if (methods.includes('PLAIN')) {
+                        socket.send_command('AUTH', `PLAIN ${utils.base64(`\0${user}\0${passwd}`)}`);
                     }
-                    else if (methods.indexOf('LOGIN') !== -1) {
+                    else if (methods.includes('LOGIN')) {
                         socket.send_command('AUTH', 'LOGIN');
                     }
                     return;
@@ -196,13 +195,13 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         }
         if (/^[345]/.test(code)) {
             // Got an unhandled error
-            connection.logdebug(self, 'error: ' + line);
+            connection.logdebug(self, `error: ${line}`);
             socket.send_command('QUIT');
             return;
         }
         switch (command) {
             case 'starttls':
-                this.upgrade({ key: key, cert: cert });
+                this.upgrade({ key, cert });
                 break;
             case 'connect':
                 socket.send_command('EHLO', connection.local.host);
@@ -219,7 +218,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 socket.end();
                 break;
             default:
-                throw new Error("[auth/auth_proxy] unknown command: " + command);
+                throw new Error(`[auth/auth_proxy] unknown command: ${command}`);
         }
     });
 }

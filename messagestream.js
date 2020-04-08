@@ -10,7 +10,7 @@ const STATE_HEADERS = 1;
 const STATE_BODY = 2;
 
 class MessageStream extends Stream {
-    constructor (config, id, headers) {
+    constructor (cfg, id, headers) {
         super();
         if (!id) throw new Error('id required');
         this.uuid = id;
@@ -24,13 +24,13 @@ class MessageStream extends Stream {
         this.buffered = 0;
         this._queue = [];
         this.max_data_inflight = 0;
-        this.buffer_max = (!isNaN(config.main.spool_after) ?
-            Number(config.main.spool_after) : -1);
+        this.buffer_max = (!isNaN(cfg.main.spool_after) ?
+            Number(cfg.main.spool_after) : -1);
         this.spooling = false;
         this.fd = null;
         this.open_pending = false;
-        this.spool_dir = config.main.spool_dir || '/tmp';
-        this.filename = this.spool_dir + '/' + id + '.eml';
+        this.spool_dir = cfg.main.spool_dir || '/tmp';
+        this.filename = `${this.spool_dir}/${id}.eml`;
         this.write_pending = false;
 
         this.readable = true;
@@ -53,13 +53,13 @@ class MessageStream extends Stream {
         const self = this;
 
         if (typeof line === 'string') {
-            line = new Buffer(line);
+            line = Buffer.from(line);
         }
 
         // create a ChunkEmitter
         if (!this.write_ce) {
             this.write_ce = new ChunkEmitter();
-            this.write_ce.on('data', function (chunk) {
+            this.write_ce.on('data', chunk => {
                 self._write(chunk);
             });
         }
@@ -138,7 +138,7 @@ class MessageStream extends Stream {
             // Do we have any waiting readers?
             if (this.listeners('data').length && !this.write_complete) {
                 this.write_complete = true;
-                setImmediate(function () {
+                setImmediate(() => {
                     if (self.readable && !self.paused)
                         self._read();
                 });
@@ -162,14 +162,14 @@ class MessageStream extends Stream {
         if (!this.fd && !this.open_pending) {
             this.open_pending = true;
             this.ws = fs.createWriteStream(this.filename, { flags: 'wx+', end: false })
-            this.ws.on('open', function (fd) {
+            this.ws.on('open', fd => {
                 self.fd = fd;
                 self.open_pending = false;
-                setImmediate(function () {
+                setImmediate(() => {
                     self._write();
                 });
             });
-            this.ws.on('error', function (error) {
+            this.ws.on('error', error => {
                 self.emit('error', error);
             });
         }
@@ -180,9 +180,9 @@ class MessageStream extends Stream {
         // TODO: try and implement backpressure
         if (!this.ws.write(to_send)) {
             this.write_pending = true;
-            this.ws.once('drain', function () {
+            this.ws.once('drain', () => {
                 self.write_pending = false;
-                setImmediate(function () {
+                setImmediate(() => {
                     self._write();
                 });
             });
@@ -227,7 +227,7 @@ class MessageStream extends Stream {
             // Add end of headers marker
             this.read_ce.fill(this.line_endings);
             // Loop
-            setImmediate(function () {
+            setImmediate(() => {
                 if (self.readable && !self.paused)
                     self._read();
             });
@@ -246,14 +246,14 @@ class MessageStream extends Stream {
             else {
                 this.rs = fs.createReadStream(null, { fd: this.fd, start: 0 });
                 // Prevent the file descriptor from being closed
-                this.rs.destroy = function () {};
-                this.rs.on('error', function (error) {
+                this.rs.destroy = () => {};
+                this.rs.on('error', error => {
                     self.emit('error', error);
                 });
-                this.rs.on('data', function (chunk) {
+                this.rs.on('data', chunk => {
                     self.process_buf(chunk);
                 });
-                this.rs.on('end', function () {
+                this.rs.on('end', () => {
                     self._read_finish();
                 });
             }
@@ -268,25 +268,26 @@ class MessageStream extends Stream {
             // Don't output headers if they where sent already
             if (this.headers_done && !this.headers_found_eoh) {
                 // Allow \r\n or \n here...
-                if ((line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
-                    (line.length === 1 && line[0] === 0x0a))
-                {
+                if (
+                    (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
+                    (line.length === 1 && line[0] === 0x0a)
+                ) {
                     this.headers_found_eoh = true;
                 }
                 continue;
             }
             // Remove dot-stuffing if required
             if (!this.dot_stuffing && line.length >= 4 &&
-                line[0] === 0x2e && line[1] === 0x2e)
-            {
+                line[0] === 0x2e && line[1] === 0x2e
+            ) {
                 line = line.slice(1);
             }
             // We store lines in native CRLF format; so strip CR if requested
             if (this.line_endings === '\n' && line.length >= 2 &&
-                line[line.length-1] === 0x0a && line[line.length-2] === 0x0d)
-            {
+                line[line.length-1] === 0x0a && line[line.length-2] === 0x0d
+            ) {
                 // We copy the line to a new buffer before modifying the copy
-                line = new Buffer(line);
+                line = Buffer.from(line);
                 line[line.length-2] = 0x0a;
                 line = line.slice(0, line.length-1);
             }
@@ -302,14 +303,14 @@ class MessageStream extends Stream {
         const self = this;
         // End dot required?
         if (this.ending_dot) {
-            this.read_ce.fill('.' + this.line_endings);
+            this.read_ce.fill(`.${this.line_endings}`);
         }
         // Tell the chunk emitter to send whatever is left
         // We don't close the fd here so we can re-use it later.
-        this.read_ce.end(function () {
+        this.read_ce.end(() => {
             if (self.clamd_style) {
                 // Add 0 length to notify end
-                const buf = new Buffer(4);
+                const buf = Buffer.alloc(4);
                 buf.writeUInt32BE(0, 0);
                 self.emit('data', buf);
             }
@@ -328,7 +329,7 @@ class MessageStream extends Stream {
         this.line_endings = ((options && options.line_endings) ? options.line_endings : "\r\n");
         this.dot_stuffing = ((options && options.dot_stuffing) ? options.dot_stuffing : false);
         this.ending_dot   = ((options && options.ending_dot) ? options.ending_dot : false);
-        this.clamd_style  = ((options && options.clamd_style) ? true : false);
+        this.clamd_style  = (!!((options && options.clamd_style)));
         this.buffer_size  = ((options && options.buffer_size) ? options.buffer_size : 1024 * 64);
         this.start        = ((options && parseInt(options.start)) ? parseInt(options.start) : 0);
         // Reset
@@ -339,10 +340,10 @@ class MessageStream extends Stream {
         this.headers_found_eoh = false;
         this.rs = null;
         this.read_ce = new ChunkEmitter(this.buffer_size);
-        this.read_ce.on('data', function (chunk) {
+        this.read_ce.on('data', chunk => {
             if (self.clamd_style) {
                 // Prefix data length to the beginning of line
-                const buf = new Buffer(chunk.length+4);
+                const buf = Buffer.alloc(chunk.length+4);
                 buf.writeUInt32BE(chunk.length, 0);
                 chunk.copy(buf, 4);
                 self.emit('data', buf);
@@ -358,7 +359,7 @@ class MessageStream extends Stream {
         // Create this.fd only if it doesn't already exist
         // This is so we can re-use the already open descriptor
         if (!this.fd && !(this._queue.length > 0)) {
-            fs.open(this.filename, 'r', null, function (err, fd) {
+            fs.open(this.filename, 'r', null, (err, fd) => {
                 if (err) throw err;
                 self.fd = fd;
                 self._read();
@@ -389,12 +390,12 @@ class MessageStream extends Stream {
         const self = this;
         try {
             if (this.fd) {
-                fs.close(this.fd, function (err) {
-                    fs.unlink(self.filename, function () {});
+                fs.close(this.fd, err => {
+                    fs.unlink(self.filename, () => {});
                 });
             }
             else {
-                fs.unlink(this.filename, function () {});
+                fs.unlink(this.filename, () => {});
             }
         }
         catch (err) {

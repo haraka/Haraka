@@ -8,16 +8,19 @@ For this plugin to work you must have SSL certificates installed correctly.
 
 Defaults are shown and can be overridden in `config/tls.ini`.
 
-    key=tls_key.pem
-    cert=tls_cert.pem
-    dhparam=dhparams.pem
-
+```ini
+key=tls_key.pem
+cert=tls_cert.pem
+dhparam=dhparams.pem
+```
 
 ## Certificate Directory
 
 If the directory `config/tls` exists, each file within the directory is expected to be a PEM encoded TLS bundle. Generate the PEM bundles in The Usual Way[TM] by concatenating the key, certificate, and CA/chain certs in that order. Example:
 
-    cat example.com.key example.com.crt ca.crt > config/tls/example.com.pem
+```sh
+cat example.com.key example.com.crt ca.crt > config/tls/example.com.pem
+```
 
 An example [acme.sh](https://acme.sh) deployment [script](https://github.com/msimerson/Mail-Toaster-6/blob/master/provision-letsencrypt.sh) demonstrates how to install [Let's Encrypt](https://letsencrypt.org) certificates to the Haraka `config/tls`directory.
 
@@ -57,16 +60,20 @@ Specifies an alternative location for the key file. For multiple keys, use `key[
 To configure a single key and a cert chain, located in the `config/`
 directory, use the following in `tls.ini`:
 
-    key=example.com.key.pem
-    cert=example.com.crt-chain.pem
+```ini
+key=example.com.key.pem
+cert=example.com.crt-chain.pem
+```
 
 To use multiple pairs of key and cert chain files outside of the haraka
 `config/` directory, configure instead:
 
-    key[]=/etc/ssl/private/example.com.rsa.key.pem
-    cert[]=/etc/ssl/private/example.com.rsa.crt-chain.pem
-    key[]=/etc/ssl/private/example.com.ecdsa.key.pem
-    cert[]=/etc/ssl/private/example.com.ecdsa.crt-chain.pem
+```ini
+key[]=/etc/ssl/private/example.com.rsa.key.pem
+cert[]=/etc/ssl/private/example.com.rsa.crt-chain.pem
+key[]=/etc/ssl/private/example.com.ecdsa.key.pem
+cert[]=/etc/ssl/private/example.com.ecdsa.crt-chain.pem
+```
 
 ### cert
 
@@ -76,10 +83,11 @@ Specifies the location(s) for the certificate chain file. For multiple certifica
 
 If needed, add this section to the `config/tls.ini` file and list any IP ranges that have broken TLS hosts. Ex:
 
-    [no_tls_hosts]
-    192.168.1.3
-    172.16.0.0/16
-
+```ini
+[no_tls_hosts]
+192.168.1.3
+172.16.0.0/16
+```
 
 The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information about the following options.
 
@@ -89,7 +97,17 @@ A list of allowable ciphers to use. Example:
 
     ciphers=EECDH+AESGCM:EDH+aRSA+AESGCM:EECDH+AES256:EDH+aRSA+AES256:EECDH+AES128:EDH+aRSA+AES128:RSA+AES:RSA+3DES
 
-See also: [Strong SSL Ciphers](http://cipherli.st) and the [SSLlabs Test Page](https://www.ssllabs.com/ssltest/index.html)
+See also: [Mozilla SSL configuration generator](https://ssl-config.mozilla.org/) and the [SSLlabs Test Page](https://www.ssllabs.com/ssltest/index.html)
+
+### minVersion
+
+Specifies minimum allowable TLS protocol version to use. Example:
+
+     minVersion=TLSv1.1 
+
+If unset, the default is node's tls.DEFAULT_MIN_VERSION constant.
+
+(**Node.js 11.4+ required**, for older instances you can use *secureProtocol* settings)
 
 ### honorCipherOrder
 
@@ -116,6 +134,16 @@ Whether Haraka should request a certificate from a connecting client.
 Reject connections from clients without a CA validated TLS certificate.
 
     rejectUnauthorized=[true|false]  (default: false)
+
+
+### requireAuthorized
+
+When `rejectUnauthorized=false`, require validated TLS certificates on just the specified ports.
+
+```ini
+requireAuthorized[]=465
+;requireAuthorized[]=587
+```
 
 
 ### secureProtocol

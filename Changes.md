@@ -1,9 +1,171 @@
-## 2.8.21 - Mmm DD, 2018
 
-* New Features
-    * outbound: skip STARTTLS after remote host fails TLS upgrade
-* Fixes
-* Changes
+## NEXT - 20YY-MM-DD
+
+### Changes
+
+* lint: add 'prefer-template'
+* restore TLS version info, set correctly #2723
+* fix broken bannering on nested mime parts #2736
+* better error message when invalid HELO hostname is rejected
+
+### New features
+
+* connection_close_message: added ability to override close connection message replacing `closing connection. Have a jolly good day.`
+* tls: add configurable minVersion to tls socket options
+* add JSON format for logging
+* support binding web interface to unix socket
+
+### Fixes
+
+* TLS: don't abort loading certs in config/tls dir when an error is encountered.
+  Process every cert file and then emit errors. #2729
+
+
+## 2.8.25 - 2019-10-11
+
+### Changes
+
+* conn: remove TLS version from header #2648
+* Actually enforce using key for INTERNALCMD #2643
+* trans: assign conditions to named vars #2638
+* drop node.js v6 support #2632
+* conn: use is_local instead of localhost addr tests #2627
+* spamassassin: spamassassin: strip useless WS from tests #2624
+* es6: many updates #2615, #2674, #2680
+* systemctl: update service definition #2612
+* lint: bracket style to match newer eslint:recommended #2680
+* lint: use object shorthands (eslint:recommended) #2680
+* logger: use safer Object.prototype.hasOwnProperty #2680
+* outbound: permit # char in SMTP status code response #2689
+* dkim_sign: improve docs, add tests, es6 updates #2649
+* dkim_sign: restore default key signing feature #2649
+* tmp module: update to latest #2614
+* semver: update to latest #2616, #2651
+* async: update to latest #2653, #2664
+* repo cleanup: replaced deprecated plugins with list #2681
+* spf: es6 patterns, results.pass, test improvements, es6 patterns #2700
+
+### New features
+
+* spf: add config option to fail on NONE #2644
+
+### Fixes
+
+* mailheader: fully quality header name in _remove_more #2647
+* haraka: Connection.createConnection is not a constructor #2618
+* problems with japanese characters in body and part header #2675
+* toobusy: fix hook name (connect_pre -> connect) #2672
+* outbound: watch for socket timeouts #2687
+* outbound: permit # char prefix in SMTP status code response #2691
+* mailheader: strip whitespace between encoded-words #2702
+
+
+## 2.8.24 - Mar 12, 2019
+
+### Changes
+
+* early_talker: skip if sender has good karma #2551
+* dockerfile: update to node 10 #2552
+* Update deprecated usages of Buffer #2553
+* early_talker: extend reasons to skip checking #2564
+* tls: add 'ca' option (for CA root file) #2571
+* outbound: little cleanups #2572
+* smtp_client: pass pool_timeout to new SMTPClient #2574
+* server: default to nodes=1 (was undefined) #2573
+* test/server: use IPv4 127.0.0.1 instead of localhost #2584
+* queue/smtp_*: add v3 upgrade notice and config setting #2585
+* spf: use the skip config for helo/ehlo checks #2587
+* spf: avoid 2nd EHLO evaluation if EHLO host is identical #2592
+* queue.js refactoring #2593
+* Log dkim_sign parse errors with connection ID #2596
+* Update ipaddr.js to the latest version #2599
+* make inactivity timeout match docs #2607
+
+### New Features
+
+* Implement SIGTERM graceful shutdown if pid is 1 #2547
+* tls: require validated certs on some ports with requireAuthorized #2554
+* spamassassin: disable checks when requested #2564
+* clamd: permit skipping for relay clients #2564
+* outbound: exported outbound.temp_fail_queue, outbound.delivery_queue and add TimerQueue.discard()
+* status: new plugin #2577
+
+### Fixes
+
+* mf.resolvable: reduce timeout by one second (so < plugin.timeout) #2544
+* LMTP blocks under stress #2556
+* invalid DKIM when empty body #2410
+* prevent running callback multiple times on TLS unix socket #2509
+* add missing callback when listing queue and empty directory
+* correct MIME parsing when charset: utf8 and encoding: 8bit #2582
+* spamassassin: default check flags to true #2583
+* smtp_client: destroy when connection gets conn timeout error #2604
+* on error and timeout, remove listeners and destroy conn. #2606
+
+
+## 2.8.23 - Nov 18, 2018
+
+### Changes
+
+* tighten Haraka pattern in .gitignore #2542
+
+
+## 2.8.22 - Nov 17, 2018
+
+### New Features
+
+* enable tls/ssl for rabbitmq amqplib plugin #2518
+
+### Fixes
+
+* hmail: don't send RSET to LMTP #2530
+
+### Changes
+
+* clamd: add check.authenticated, check.private_ip, check.local_ip option
+* use get_decoded on headers that may be encoded #2537
+* connection: move max_mime_part config load to connection init #2528
+* outbound: init TLS when we send email, not when old queue file is loaded #2503
+
+### Changes
+
+* relay: update port 465 doc #2522
+* hmail: log the correct err message #2531
+* ob/tls: consistently use obtls (vs plugin) for "this" name #2524
+* outbound: add domain to loginfo message #2523
+* Add connection.remote.is_local #2532
+* update license #2525
+* perf: move max_mime_parts config load to connection init #2529
+* update semver to version 5.6.0 #2517
+* added hint to encrypted file authentication #2514
+* dkim_sign: improved log messages #2499
+* ehlo_hello_message: config/ehlo_hello_message can be used to overwrite the EHLO/HELO msg replacing `, Haraka is at your service` #2498
+* connection: add connection.remote.is_local flag for detecting loopback and link local IPs
+* add .name to outbound TLS for logs  #2492
+
+## 2.8.21 - Jul 20, 2018
+
+### New Features
+
+* outbound: skip STARTTLS after remote host fails TLS upgrade #2429
+* dns_list_base: introduce global plugin.lookback_is_rejected flag #2422
+
+### Fixes
+
+* replace all _ chars in hostnames with code points #2485
+* Don't die on invalid commands #2481
+* outbound: check list exists before attempting to use it #2478
+    * refactor outbound/hmail.process_ehlo_data #2488
+* tls: skip when redis is undefined #2472
+* Don't run delivered hook on LMTP fail #2470
+* Add tls_socket.load_tls_ini() to tls.register() #2465
+
+### Changes
+
+* outbound/tls: make into a class #2474
+* plugins: clear timeout on cancel #2477
+* txn.parse_body consistently a boolean #2476
+* update ipaddr.js to version 1.8.0 #2468
 
 
 ## 2.8.20 - Jun 29, 2018
@@ -123,7 +285,6 @@
     * npm packaged plugins:
         * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
         * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
-        * plugins/graph -> haraka-plugin-graph #2185
         * plugins/graph -> haraka-plugin-graph #2185
     * config: replace ./config.js with haraka-config #2119
     * Replace concatenated strings with template literals (#2129) in:

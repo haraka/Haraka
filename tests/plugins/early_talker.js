@@ -16,7 +16,7 @@ function _tear_down (done) { done(); }
 exports.early_talker = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'no config': function (test) {
+    'no config' (test) {
         test.expect(2);
         const next = function (rc, msg) {
             test.equal(undefined, rc);
@@ -25,7 +25,7 @@ exports.early_talker = {
         }.bind(this);
         this.plugin.early_talker(next, this.connection);
     },
-    'relaying': function (test) {
+    'relaying' (test) {
         test.expect(2);
         const next = function (rc, msg) {
             test.equal(undefined, rc);
@@ -36,7 +36,7 @@ exports.early_talker = {
         this.connection.relaying = true;
         this.plugin.early_talker(next, this.connection);
     },
-    'is an early talker': function (test) {
+    'is an early talker' (test) {
         test.expect(3);
         const before = Date.now();
         const next = function (rc, msg) {
@@ -49,7 +49,7 @@ exports.early_talker = {
         this.connection.early_talker = true;
         this.plugin.early_talker(next, this.connection);
     },
-    'is an early talker, reject=false': function (test) {
+    'is an early talker, reject=false' (test) {
         test.expect(4);
         const before = Date.now();
         const next = function (rc, msg) {
@@ -64,7 +64,7 @@ exports.early_talker = {
         this.connection.early_talker = true;
         this.plugin.early_talker(next, this.connection);
     },
-    'relay whitelisted ip': function (test) {
+    'relay whitelisted ip' (test) {
         test.expect(3);
         const next = function (rc, msg) {
             test.equal(undefined, rc);
@@ -78,7 +78,7 @@ exports.early_talker = {
         this.connection.early_talker = true;
         this.plugin.early_talker(next, this.connection);
     },
-    'relay whitelisted subnet': function (test) {
+    'relay whitelisted subnet' (test) {
         test.expect(3);
         const next = function (rc, msg) {
             test.equal(undefined, rc);
@@ -92,7 +92,20 @@ exports.early_talker = {
         this.connection.early_talker = true;
         this.plugin.early_talker(next, this.connection);
     },
-    'test loading ip list': function (test) {
+    'relay good senders' (test) {
+        test.expect(3);
+        const next = function (rc, msg) {
+            test.equal(undefined, rc);
+            test.equal(undefined, msg);
+            test.ok(this.connection.results.has('early_talker', 'skip', '+karma'));
+            test.done();
+        }.bind(this);
+        this.plugin.pause = 1000;
+        this.connection.results.add('karma', {good: 10});
+        this.connection.early_talker = true;
+        this.plugin.early_talker(next, this.connection);
+    },
+    'test loading ip list' (test) {
         const whitelist = this.plugin.load_ip_list(['123.123.123.123', '127.0.0.0/16']);
         test.expect(2);
         test.equal(whitelist[0][1], 32);

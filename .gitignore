@@ -1,10 +1,12 @@
 node_modules
 !tests/node_modules
 .coveralls.yml
-Haraka
+Haraka-*.gz
 *~
 bower_components
 coverage
+nyc_output
 .idea
 tests/queue/plain
 tests/queue/multibyte
+package-lock.json

@@ -5,14 +5,14 @@ function escapeRegExp (str) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&");
 }
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     if (connection.notes.auth_user && connection.notes.auth_passwd) {
         connection.transaction.parse_body = true;
     }
     next();
 }
 
-exports.hook_data_post = function (next, connection) {
+exports.hook_data_post = (next, connection) => {
     if (!(connection.notes.auth_user && connection.notes.auth_passwd)) {
         return next();
     }
@@ -31,7 +31,7 @@ exports.hook_data_post = function (next, connection) {
     const passwd_regexp = new RegExp(bound_regexp + escapeRegExp(passwd) + bound_regexp, 'm');
     const user_regexp   = new RegExp(bound_regexp +
                                    escapeRegExp(user) +
-                                   (domain ? '(?:' + escapeRegExp(domain) + ')?' : '') +
+                                   (domain ? `(?:${escapeRegExp(domain)})?` : '') +
                                    bound_regexp, 'im');
 
     if (look_for_credentials(user_regexp, passwd_regexp, connection.transaction.body)) {

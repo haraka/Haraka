@@ -1,14 +1,17 @@
 'use strict';
 // An SMTP Transaction
 
-const util = require('util');
+// node.js built-in modules
+const util   = require('util');
 
+// haraka npm modules
 const config = require('haraka-config');
-const Notes = require('haraka-notes');
-const utils = require('haraka-utils');
+const Notes  = require('haraka-notes');
+const utils  = require('haraka-utils');
 
+// Haraka modules
 const Header = require('./mailheader').Header;
-const body = require('./mailbody');
+const body   = require('./mailbody');
 const MessageStream = require('./messagestream');
 
 const MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
@@ -58,51 +61,109 @@ class Transaction {
             this.body.set_banner(this.banner);
         }
 
-        this.body_filters.forEach(o => {
+        for (const o of this.body_filters) {
             this.body.add_filter((ct, enc, buf) => {
-                if ((util.isRegExp(o.ct_match) &&
-                        o.ct_match.test(ct.toLowerCase())) ||
-                    ct.toLowerCase()
-                        .indexOf(String(o.ct_match)
-                            .toLowerCase()) === 0) {
-                    return o.filter(ct, enc, buf);
-                }
-            });
-        });
+                const re_match = (util.isRegExp(o.ct_match) && o.ct_match.test(ct.toLowerCase()));
+                const ct_begins = ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0;
+                if (re_match || ct_begins) return o.filter(ct, enc, buf);
+            })
+        }
+    }
+
+    // Removes the CR of a CRLF newline at the end of the buffer.
+    remove_final_cr (data) {
+        if (data.length < 2) return data;
+        if (!Buffer.isBuffer(data)) data = Buffer.from(data);
+
+        if (data[data.length - 2] === 0x0D && data[data.length - 1] === 0x0A) {
+            data[data.length - 2] = 0x0A;
+            return data.slice(0, data.length - 1);
+        }
+        return data;
+    }
+
+    // Duplicates any '.' chars at the beginning of a line (dot-stuffing) and
+    // ensures all newlines are CRLF.
+    add_dot_stuffing_and_ensure_crlf_newlines (data) {
+        if (!data.length) return data;
+        if (!Buffer.isBuffer(data)) data = Buffer.from(data);
+
+        // Make a new buffer big enough to hold two bytes for every one input
+        // byte.  At most, we add one extra character per input byte, so this
+        // is always big enough.  We allocate it "unsafe" (i.e. no memset) for
+        // speed because we're about to fill it with data, and the remainder of
+        // the space we don't fill will be sliced away before we return this.
+        const output = Buffer.allocUnsafe(data.length * 2);
+        let output_pos = 0;
+
+        let input_pos = 0;
+        let next_dot = data.indexOf(0x2E);
+        let next_lf = data.indexOf(0x0A);
+        while (next_dot !== -1 || next_lf !== -1) {
+            const run_end = (next_dot !== -1 && (next_lf === -1 || next_dot < next_lf))
+                ? next_dot : next_lf;
+
+            // Copy up till whichever comes first, '.' or '\n' (but don't
+            // copy the '.' or '\n' itself).
+            data.copy(output, output_pos, input_pos, run_end);
+            output_pos += run_end - input_pos;
+
+            if (data[run_end] === 0x2E && (run_end === 0 || data[run_end - 1] === 0x0A)) {
+                // Replace /^\./ with '..'
+                output[output_pos++] = 0x2E;
+            }
+            else if (data[run_end] === 0x0A && (run_end === 0 || data[run_end - 1] !== 0x0D)) {
+                // Replace /\r?\n/ with '\r\n'
+                output[output_pos++] = 0x0D;
+            }
+            output[output_pos++] = data[run_end];
+
+            input_pos = run_end + 1;
+
+            if (run_end === next_dot) {
+                next_dot = data.indexOf(0x2E, input_pos);
+            }
+            else {
+                next_lf = data.indexOf(0x0A, input_pos);
+            }
+        }
+
+        if (input_pos < data.length) {
+            data.copy(output, output_pos, input_pos);
+            output_pos += data.length - input_pos;
+        }
+
+        return output.slice(0, output_pos);
     }
 
     add_data (line) {
-        if (typeof line === 'string') { // This shouldn't ever really happen...
-            line = new Buffer(line, this.encoding);
+        if (typeof line === 'string') { // This shouldn't ever happen.
+            line = Buffer.from(line, this.encoding);
         }
-        // check if this is the end of headers line
+        // is this the end of headers line?
         if (this.header_pos === 0 &&
             (line[0] === 0x0A || (line[0] === 0x0D && line[1] === 0x0A))) {
             this.header.parse(this.header_lines);
             this.header_pos = this.header_lines.length;
             this.found_hb_sep = true;
-            if (this.parse_body) {
-                this.ensure_body();
-            }
+            if (this.parse_body) this.ensure_body();
         }
         else if (this.header_pos === 0) {
             // Build up headers
             if (this.header_lines.length < MAX_HEADER_LINES) {
-                if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
-                this.header_lines.push(
-                    line.toString(this.encoding).replace(/\r\n$/, '\n'));
+                if (line[0] === 0x2E) line = line.slice(1); // Strip leading '.'
+                this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'));
             }
         }
         else if (this.header_pos && this.parse_body) {
             let new_line = line;
             if (new_line[0] === 0x2E) new_line = new_line.slice(1); // Strip leading "."
 
-            new_line = this.body.parse_more(
-                new_line.toString(this.encoding).replace(/\r\n$/, '\n'));
+            line = this.add_dot_stuffing_and_ensure_crlf_newlines(
+                this.body.parse_more(this.remove_final_cr(new_line))
+            );
 
-            if (!new_line.length) {
-                return; // buffering for banners
-            }
+            if (!line.length) return; // buffering for banners
         }
 
         if (!this.discard_data) this.message_stream.add_line(line);
@@ -132,24 +193,19 @@ class Transaction {
             }
         }
         if (this.header_pos && this.parse_body) {
-            let data = this.body.parse_end();
-            if (data.length) {
-                data = data.toString(this.encoding)
-                    .replace(/^\./gm, '..')
-                    .replace(/\r?\n/gm, '\r\n');
-                const line = new Buffer(data, this.encoding);
-
+            const line = this.add_dot_stuffing_and_ensure_crlf_newlines(this.body.parse_end());
+            if (line.length) {
                 this.body.force_end();
 
                 if (!this.discard_data) this.message_stream.add_line(line);
             }
         }
 
-        if (!this.discard_data) {
-            this.message_stream.add_line_end(cb);
+        if (this.discard_data) {
+            cb();
         }
         else {
-            cb();
+            this.message_stream.add_line_end(cb);
         }
     }
 
@@ -174,7 +230,7 @@ class Transaction {
     }
 
     attachment_hooks (start, data, end) {
-        this.parse_body = 1;
+        this.parse_body = true;
         this.attachment_start_hooks.push(start);
     }
 
@@ -189,7 +245,7 @@ class Transaction {
 
     add_body_filter (ct_match, filter) {
         this.parse_body = true;
-        this.body_filters.push({ 'ct_match': ct_match, 'filter': filter });
+        this.body_filters.push({ ct_match, filter });
     }
 
     incr_mime_count (line) {

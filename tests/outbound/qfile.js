@@ -43,25 +43,25 @@ exports.parts = {
 }
 
 exports.hostname = {
-    'hostname, defaults to os.hostname()': function (test) {
+    'hostname, defaults to os.hostname()': test => {
         test.expect(1)
         const r = qfile.hostname();
         // console.log(r)
         test.deepEqual(r, require('os').hostname())
         test.done()
     },
-    'hostname, replaces \\ char': function (test) {
+    'hostname, replaces \\ char': test => {
         test.expect(1)
-        const r = qfile.hostname('mta1.exam\\ple.com')
+        const r = qfile.hostname('mt\\a1.exam\\ple.com')
         // console.log(r)
-        test.deepEqual(r, 'mta1.exam\\057ple.com')
+        test.deepEqual(r, 'mt\\057a1.exam\\057ple.com')
         test.done()
     },
-    'hostname, replaces _ char': function (test) {
+    'hostname, replaces _ char': test => {
         test.expect(1)
-        const r = qfile.hostname('mta1.exam_ple.com')
+        const r = qfile.hostname('mt_a1.exam_ple.com')
         // console.log(r)
-        test.deepEqual(r, 'mta1.exam\\137ple.com')
+        test.deepEqual(r, 'mt\\137a1.exam\\137ple.com')
         test.done()
     }
 }

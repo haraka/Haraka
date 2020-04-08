@@ -44,10 +44,10 @@ exports.register = function () {
     plugin.register_hook('ehlo', 'emit_log');
 
     if (plugin.cfg.check.match_re) {
-        const load_re_file = function () {
+        const load_re_file = () => {
             const regex_list = utils.valid_regexes(plugin.config.get('helo.checks.regexps', 'list', load_re_file));
             // pre-compile the regexes
-            plugin.cfg.list_re = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
+            plugin.cfg.list_re = new RegExp(`^(${regex_list.join('|')})$`, 'i');
         };
         load_re_file();
     }
@@ -65,25 +65,25 @@ exports.load_helo_checks_ini = function () {
         '-reject.proto_mismatch',
     ];
 
-    checks.forEach(function (c) {
-        booleans.push('+check.' + c);
-        booleans.push('-reject.' + c);
+    checks.forEach(c => {
+        booleans.push(`+check.${c}`);
+        booleans.push(`-reject.${c}`);
     });
 
-    plugin.cfg = plugin.config.get('helo.checks.ini', { booleans: booleans },
-        function () {
+    plugin.cfg = plugin.config.get('helo.checks.ini', { booleans },
+        () => {
             plugin.load_helo_checks_ini();
         });
 
     // backwards compatible with old config file
     if (plugin.cfg.check_no_dot !== undefined) {
-        plugin.cfg.check.valid_hostname = plugin.cfg.check_no_dot ? true : false;
+        plugin.cfg.check.valid_hostname = !!plugin.cfg.check_no_dot;
     }
     if (plugin.cfg.check_dynamic !== undefined) {
-        plugin.cfg.check.dynamic = plugin.cfg.check_dynamic ? true : false;
+        plugin.cfg.check.dynamic = !!plugin.cfg.check_dynamic;
     }
     if (plugin.cfg.check_raw_ip !== undefined) {
-        plugin.cfg.check.bare_ip = plugin.cfg.check_raw_ip ? true : false;
+        plugin.cfg.check.bare_ip = !!plugin.cfg.check_raw_ip;
     }
 
     // non-default setting, so apply their localized setting
@@ -121,12 +121,12 @@ exports.should_skip = function (connection, test_name) {
     }
 
     if (plugin.cfg.skip.relaying && connection.relaying) {
-        connection.results.add(plugin, {skip: test_name + '(relay)'});
+        connection.results.add(plugin, {skip: `${test_name}(relay)`});
         return true;
     }
 
     if (plugin.cfg.skip.private_ip && connection.remote.is_private) {
-        connection.results.add(plugin, {skip: test_name + '(private)'});
+        connection.results.add(plugin, {skip: `${test_name}(private)`});
         return true;
     }
 
@@ -150,11 +150,11 @@ exports.host_mismatch = function (next, connection, helo) {
         return next();
     }
 
-    const msg = 'host_mismatch(' + prev_helo + ' / ' + helo + ')';
+    const msg = `host_mismatch(${prev_helo} / ${helo})`;
     connection.results.add(plugin, {fail: msg});
     if (!plugin.cfg.reject.host_mismatch) return next();
 
-    return next(DENY, 'HELO host ' + msg);
+    return next(DENY, `HELO host ${msg}`);
 }
 
 exports.valid_hostname = function (next, connection, helo) {
@@ -170,7 +170,7 @@ exports.valid_hostname = function (next, connection, helo) {
     if (!/\./.test(helo)) {
         connection.results.add(plugin, {fail: 'valid_hostname(no_dot)'});
         if (plugin.cfg.reject.valid_hostname) {
-            return next(DENY, 'Host names have more than one DNS label');
+            return next(DENY, 'HELO host must be a FQDN or address literal (RFC 5321 2.3.5)');
         }
         return next();
     }
@@ -181,7 +181,7 @@ exports.valid_hostname = function (next, connection, helo) {
         const excludes = this.config.get('helo.checks.allow', 'list');
         const tld = (helo.split(/\./).reverse())[0].toLowerCase();
         // Exclude .local, .lan and .corp
-        if (tld === 'local' || tld === 'lan' || tld === 'corp' || excludes.indexOf('.' + tld) !== -1) {
+        if (tld === 'local' || tld === 'lan' || tld === 'corp' || excludes.includes(`.${tld}`)) {
             return next();
         }
         connection.results.add(plugin, {fail: 'valid_hostname'});
@@ -323,7 +323,7 @@ exports.big_company = function (next, connection, helo) {
 
     const allowed_rdns = plugin.cfg.bigco[helo].split(/,/);
     for (let i=0; i < allowed_rdns.length; i++) {
-        const re = new RegExp(allowed_rdns[i].replace(/\./g, '\\.') + '$');
+        const re = new RegExp(`${allowed_rdns[i].replace(/\./g, '\\.')}$`);
         if (re.test(rdns)) {
             connection.results.add(plugin, {pass: 'big_co'});
             return next();
@@ -402,17 +402,17 @@ exports.forward_dns = function (next, connection, helo) {
         return next();
     }
 
-    const cb = function (err, ips) {
+    const cb = (err, ips) => {
         if (err) {
             if (err.code === dns.NOTFOUND || err.code === dns.NODATA || err.code === dns.SERVFAIL) {
-                connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
+                connection.results.add(plugin, {fail: `forward_dns(${err.code})`});
                 return next();
             }
             if (err.code === dns.TIMEOUT && plugin.cfg.reject.forward_dns) {
-                connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
+                connection.results.add(plugin, {fail: `forward_dns(${err.code})`});
                 return next(DENYSOFT, "DNS timeout resolving your HELO hostname");
             }
-            connection.results.add(plugin, {err: 'forward_dns('+err+')', emit_log_level: 'warn'});
+            connection.results.add(plugin, {err: `forward_dns(${err})`, emit_log_level: 'warn'});
             return next();
         }
 
@@ -420,9 +420,9 @@ exports.forward_dns = function (next, connection, helo) {
             connection.results.add(plugin, {err: 'forward_dns, no ips!'});
             return next();
         }
-        connection.results.add(plugin, {ips: ips});
+        connection.results.add(plugin, {ips});
 
-        if (ips.indexOf(connection.remote.ip) !== -1) {
+        if (ips.includes(connection.remote.ip)) {
             connection.results.add(plugin, {pass: 'forward_dns'});
             return next();
         }
@@ -438,7 +438,7 @@ exports.forward_dns = function (next, connection, helo) {
                 connection.results.add(plugin, {pass: 'forward_dns(domain)'});
                 return next();
             }
-            connection.results.add(plugin, {msg: "od miss: " + helo_od + ', ' + rdns_od});
+            connection.results.add(plugin, {msg: `od miss: ${helo_od}, ${rdns_od}`});
         }
 
         connection.results.add(plugin, {fail: 'forward_dns(no IP match)'});
@@ -460,11 +460,10 @@ exports.proto_mismatch = function (next, connection, helo, proto) {
     if (!r || (r && !r.helo_host)) { return next(); }
 
     if ((connection.esmtp && proto === 'smtp') ||
-        (!connection.esmtp && proto === 'esmtp'))
-    {
-        connection.results.add(plugin, {fail: 'proto_mismatch(' + proto + ')'});
+        (!connection.esmtp && proto === 'esmtp')) {
+        connection.results.add(plugin, {fail: `proto_mismatch(${proto})`});
         if (plugin.cfg.reject.proto_mismatch) {
-            return next(DENY, (proto === 'smtp' ? 'HELO' : 'EHLO') + ' protocol mismatch');
+            return next(DENY, `${proto === 'smtp' ? 'HELO' : 'EHLO'} protocol mismatch`);
         }
     }
 
@@ -513,19 +512,19 @@ exports.get_a_records = function (host, cb) {
 
     // Set-up timer
     let timed_out = false;
-    const timer = setTimeout(function () {
+    const timer = setTimeout(() => {
         timed_out = true;
-        const err = new Error('timeout resolving: ' + host);
+        const err = new Error(`timeout resolving: ${host}`);
         err.code = dns.TIMEOUT;
         plugin.logerror(err);
         return cb(err);
     }, (plugin.cfg.main.dns_timeout || 30) * 1000);
 
     // fully qualify, to ignore any search options in /etc/resolv.conf
-    if (!/\.$/.test(host)) { host = host + '.'; }
+    if (!/\.$/.test(host)) { host = `${host}.`; }
 
     // do the queries
-    net_utils.get_ips_by_host(host, function (errs, ips) {
+    net_utils.get_ips_by_host(host, (errs, ips) => {
         // results is now equals to: {queryA: 1, queryAAAA: 2}
         if (timed_out) { return; }
         if (timer) { clearTimeout(timer); }

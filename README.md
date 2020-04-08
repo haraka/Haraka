@@ -5,7 +5,7 @@ Haraka - a Node.js Mail Server
 [![Build Status][ci-img]][ci-url]
 [![Coverage Status][cov-img]][cov-url]
 [![Windows Status][ci-win-img]][ci-win-url]
-[![Greenkeeper badge](https://badges.greenkeeper.io/haraka/Haraka.svg)](https://greenkeeper.io/)
+
 
 
 Haraka is a highly scalable [node.js][1] email server with a modular
@@ -29,7 +29,7 @@ queued for outbound delivery.
 
 * [Join the mailing list][8] (implemented as a Haraka plugin)
 * Join us on IRC at `#haraka` on [freenode][14]
-* [GitHub Issues](https://github.com/haraka/Haraka/issues)
+* [GitHub Issues][15]
 
 
 ### Screencast
@@ -57,6 +57,8 @@ Plugins are provided for running mail through [SpamAssassin][9], validating
 Haraka requires [node.js][1] to run. Install Haraka with [npm][2]:
 
 ```sh
+# If the second command gives "nobody" errors, uncomment & run the next command
+# npm -g config set user root
 npm install -g Haraka
 ```
 
@@ -127,16 +129,16 @@ Finally run Haraka:
 
 ### License and Author
 
-Haraka is MIT licensed - see the LICENSE file for details.
+Haraka is MIT licensed - see the [LICENSE][16] file for details.
 
-Haraka is a project started by Matt Sergeant, a 10 year veteran of the email
+Haraka is a project started by [Matt Sergeant][17], a 10 year veteran of the email
 and anti-spam world. Previous projects have been the project leader for
 SpamAssassin and a hacker on [Qpsmtpd][13].
 
 [1]: http://nodejs.org/
 [2]: http://youtu.be/6twKXMAsPsw
 [3]: http://en.wikipedia.org/wiki/Message_transfer_agent
-[4]: https://github.com/haraka/Haraka/blob/v3/Plugins.md
+[4]: https://github.com/haraka/Haraka/blob/master/Plugins.md
 [5]: http://en.wikipedia.org/wiki/Mail_submission_agent
 [6]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
 [7]: https://en.wikipedia.org/wiki/Mail_delivery_agent
@@ -146,7 +148,10 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [11]: https://haraka.github.io/manual/plugins/dnsbl.html
 [12]: https://github.com/haraka/Haraka/tree/master/plugins
 [13]: https://github.com/smtpd/qpsmtpd/
-[14]: https://freenode.net/irc_servers.shtml
+[14]: https://webchat.freenode.net/
+[15]: https://github.com/haraka/Haraka/issues
+[16]: https://github.com/haraka/Haraka/blob/master/LICENSE
+[17]: https://github.com/baudehlo
 
 [ci-img]: https://travis-ci.org/haraka/Haraka.svg?branch=master
 [ci-url]: https://travis-ci.org/haraka/Haraka

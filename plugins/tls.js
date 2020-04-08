@@ -16,7 +16,7 @@ exports.register = function () {
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
 }
 
-exports.shutdown = function () {
+exports.shutdown = () => {
     if (tls_socket.shutdown) tls_socket.shutdown();
 }
 
@@ -36,45 +36,42 @@ exports.advertise_starttls = function (next, connection) {
         return next();
     }
 
-    const enable_tls = function () {
+    function enable_tls () {
         connection.capabilities.push('STARTTLS');
         connection.tls.advertised = true;
         next();
-    };
+    }
 
     if (!tls_socket.cfg.redis || !server.notes.redis) {
         return enable_tls();
     }
 
     const redis = server.notes.redis;
-    const dbkey = 'no_tls|' + connection.remote.ip;
+    const dbkey = `no_tls|${connection.remote.ip}`;
 
     redis.get(dbkey, (err, dbr) => {
         if (err) {
-            connection.results.add(plugin, {err: err});
+            connection.results.add(plugin, {err});
             return enable_tls();
         }
 
-        if (!dbr) {
-            connection.results.add(plugin, { msg: 'no_tls unset'});
-            return enable_tls();
-        }
+        if (!dbr) return enable_tls();
 
         // last TLS attempt failed
         redis.del(dbkey); // retry TLS next connection.
 
-        connection.results.add(plugin, { msg: 'tls disabled'});
+        connection.results.add(plugin, { msg: 'no_tls'});
         return next();
     });
 }
 
-exports.set_notls = function (ip) {
+exports.set_notls = ip => {
 
     if (!tls_socket.cfg.redis) return;
     if (!tls_socket.cfg.redis.disable_for_failed_hosts) return;
     if (!server.notes.redis) return;
 
-    server.notes.redis.set('no_tls|' + ip, true);
+    server.notes.redis.set(`no_tls|${ip}`, true);
 }
 
 exports.upgrade_connection = function (next, connection, params) {
@@ -114,8 +111,8 @@ exports.upgrade_connection = function (next, connection, params) {
         connection.reset_transaction(() => {
 
             connection.setTLS({
-                cipher: cipher,
-                verified: verified,
+                cipher,
+                verified,
                 authorizationError: verifyErr,
                 peerCertificate: cert,
             });
@@ -127,7 +124,7 @@ exports.upgrade_connection = function (next, connection, params) {
     })
 }
 
-exports.hook_disconnect = function (next, connection) {
+exports.hook_disconnect = (next, connection) => {
     if (connection.notes.cleanUpDisconnect) {
         connection.notes.cleanUpDisconnect(true);
     }

@@ -45,7 +45,7 @@ exports.load_headers_ini = function () {
             '-reject.invalid_date',
             '+reject.delivered_to',
         ],
-    }, function () {
+    }, () => {
         plugin.load_headers_ini();
     });
 }
@@ -278,7 +278,7 @@ exports.from_match = function (next, connection) {
         return next();
     }
 
-    const hdr_from = connection.transaction.header.get('From');
+    const hdr_from = connection.transaction.header.get_decoded('From');
     if (!hdr_from) {
         connection.transaction.results.add(plugin, {fail: 'from_match(missing)'});
         return next();
@@ -310,7 +310,7 @@ exports.from_match = function (next, connection) {
     const msg_dom = tlds.get_organizational_domain(hdr_addr.host());
     if (env_dom && msg_dom && env_dom.toLowerCase() === msg_dom.toLowerCase()) {
         const fcrdns  = connection.results.get('fcrdns');
-        if (fcrdns && fcrdns.fcrdns && new RegExp(msg_dom + '\\b', 'i').test(fcrdns.fcrdns)) {
+        if (fcrdns && fcrdns.fcrdns && new RegExp(`${msg_dom  }\\b`, 'i').test(fcrdns.fcrdns)) {
             extra.push('fcrdns');
         }
         const helo = connection.results.get('helo.checks');
@@ -371,7 +371,7 @@ exports.mailing_list = function (next, connection) {
     let found_mlm = 0;
     const txr = connection.transaction.results;
 
-    Object.keys(mlms).forEach(function (name) {
+    Object.keys(mlms).forEach(name => {
         const header = connection.transaction.header.get(name);
         if (!header) { return; }  // header not present
         for (let i=0; i < mlms[name].length; i++) {

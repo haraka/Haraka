@@ -1,3 +1,3 @@
-exports.register = function () {
+exports.register = () => {
 
 }

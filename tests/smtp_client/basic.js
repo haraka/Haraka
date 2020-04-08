@@ -10,7 +10,7 @@ test.equals(pool_name, Object.keys(server.notes.pool)[0]);
 test.equals(0, server.notes.pool[pool_name].getPoolSize());
 test.equals(0, server.notes.pool[pool_name].availableObjectsCount());
 
-exports.get_client(server, function (err, smtp_client) {
+exports.get_client(server, (err, smtp_client) => {
     test.equals(null, err);
     test.equals(1, server.notes.pool[pool_name].getPoolSize());
     test.equals(0, server.notes.pool[pool_name].availableObjectsCount());
@@ -23,7 +23,7 @@ exports.get_client(server, function (err, smtp_client) {
     let reading_body = false;
     data.push('220 hi');
 
-    smtp_client.on('greeting', function (command) {
+    smtp_client.on('greeting', command => {
         test.equals(smtp_client.response[0], 'hi');
         test.equals('EHLO', command);
         smtp_client.send_command(command, 'example.com');
@@ -32,7 +32,7 @@ exports.get_client(server, function (err, smtp_client) {
     data.push('EHLO example.com');
     data.push('250 hello');
 
-    smtp_client.on('helo', function () {
+    smtp_client.on('helo', () => {
         test.equals(smtp_client.response[0], 'hello');
         smtp_client.send_command('MAIL', 'FROM: me@example.com');
     });
@@ -40,7 +40,7 @@ exports.get_client(server, function (err, smtp_client) {
     data.push('MAIL FROM: me@example.com');
     data.push('250 sender ok');
 
-    smtp_client.on('mail', function () {
+    smtp_client.on('mail', () => {
         test.equals(smtp_client.response[0], 'sender ok');
         smtp_client.send_command('RCPT', 'TO: you@example.com');
     });
@@ -48,7 +48,7 @@ exports.get_client(server, function (err, smtp_client) {
     data.push('RCPT TO: you@example.com');
     data.push('250 recipient ok');
 
-    smtp_client.on('rcpt', function () {
+    smtp_client.on('rcpt', () => {
         test.equals(smtp_client.response[0], 'recipient ok');
         smtp_client.send_command('DATA');
     });
@@ -56,10 +56,10 @@ exports.get_client(server, function (err, smtp_client) {
     data.push('DATA');
     data.push('354 go ahead');
 
-    smtp_client.on('data', function () {
+    smtp_client.on('data', () => {
         test.equals(smtp_client.response[0], 'go ahead');
         smtp_client.start_data(message_stream);
-        message_stream.on('end', function () {
+        message_stream.on('end', () => {
             smtp_client.socket.write('.\r\n');
         });
         message_stream.add_line('Header: test\r\n');
@@ -71,7 +71,7 @@ exports.get_client(server, function (err, smtp_client) {
     data.push('.');
     data.push('250 message queued');
 
-    smtp_client.on('dot', function () {
+    smtp_client.on('dot', () => {
         test.equals(smtp_client.response[0], 'message queued');
         smtp_client.send_command('QUIT');
     });
@@ -79,7 +79,7 @@ exports.get_client(server, function (err, smtp_client) {
     data.push('QUIT');
     data.push('221 goodbye');
 
-    smtp_client.on('quit', function () {
+    smtp_client.on('quit', () => {
         test.equals(smtp_client.response[0], 'goodbye');
         test.done();
     });
@@ -89,7 +89,7 @@ exports.get_client(server, function (err, smtp_client) {
             test.ok(false);
             return;
         }
-        test.equals(data.shift() + '\r\n', line);
+        test.equals(`${data.shift()  }\r\n`, line);
         if (reading_body && line == '.\r\n') {
             reading_body = false;
         }
@@ -100,7 +100,7 @@ exports.get_client(server, function (err, smtp_client) {
         }
         while (true) {
             const line2 = data.shift();
-            this.emit('line', line2 + '\r\n');
+            this.emit('line', `${line2  }\r\n`);
             if (line2[3] == ' ') break;
         }
 

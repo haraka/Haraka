@@ -42,8 +42,7 @@ Additional settings allow you to control the small things (defaults are shown):
     ; hosts that are SMTP AUTH'ed
     auth = false
 
-There's a special setting that would allow the plugin to emit a funny explanation text on SPF DENY, essentially meant to be visible to end-users that will receive the bounce. 
-The text is `http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connection.remote.ip}` and is enabled by:
+There's a special setting that would allow the plugin to emit a funny explanation text on SPF DENY, essentially meant to be visible to end-users that will receive the bounce. The text is `http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connection.remote.ip}` and is enabled by:
 
     [deny]
     openspf_text = true
@@ -81,10 +80,12 @@ The text is `http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connecti
     mfrom_temperror
 
     [deny]
+    helo_none
     helo_softfail
     helo_fail
     helo_permerror
 
+    mfrom_none
     mfrom_softfail
     mfrom_fail
     mfrom_permerror
@@ -97,10 +98,12 @@ The text is `http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connecti
     mfrom_temperror
 
     [deny_relay]
+    helo_none
     helo_softfail
     helo_fail
     helo_permerror
 
+    mfrom_none
     mfrom_softfail
     mfrom_fail
     mfrom_permerror

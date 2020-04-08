@@ -1,0 +1,32 @@
+on: [ pull_request ]
+
+name: Test Coverage
+
+jobs:
+
+  coverage:
+    name: Codecov
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@master
+      name: Checkout Haraka
+      with:
+        fetch-depth: 1
+
+    - name: Use Node.js 10
+      uses: actions/setup-node@master
+      with:
+        node-version: 10.x
+
+    - name: install, run
+      run: |
+        npm install
+        npm install --no-save nyc codecov
+        npm run cover
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}

@@ -20,7 +20,7 @@ exports.hook_connect = function (next, connection) {
     if (connection.remote.is_private) return next();
 
     // Retrieve GBUdb information for the connecting IP
-    SNFClient("<snf><xci><gbudb><test ip='" + connection.remote.ip + "'/></gbudb></xci></snf>", function (err, result) {
+    SNFClient(`<snf><xci><gbudb><test ip='${connection.remote.ip}'/></gbudb></xci></snf>`, (err, result) => {
         if (err) {
             connection.logerror(self, err.message);
             return next();
@@ -53,7 +53,7 @@ exports.hook_connect = function (next, connection) {
                 case 'black':
                 case 'truncate':
                     if (cfg.gbudb && cfg.gbudb[gbudb.range]) {
-                        connection.loginfo(self, 'range=' + gbudb.range + ' action=' + cfg.gbudb[gbudb.range]);
+                        connection.loginfo(self, `range=${gbudb.range} action=${cfg.gbudb[gbudb.range]}`);
                         switch (cfg.gbudb[gbudb.range]) {
                             case 'accept':
                                 // Whitelist
@@ -66,13 +66,13 @@ exports.hook_connect = function (next, connection) {
                                 return next();
                             case 'retry':
                             case 'tempfail':
-                                return next(DENYSOFT, 'Poor GBUdb reputation for [' + connection.remote.ip + ']');
+                                return next(DENYSOFT, `Poor GBUdb reputation for [${connection.remote.ip}]`);
                             case 'reject':
-                                return next(DENY, 'Poor GBUdb reputation for [' + connection.remote.ip + ']');
+                                return next(DENY, `Poor GBUdb reputation for [${connection.remote.ip}]`);
                             case 'quarantine':
                                 connection.notes.gbudb.action = 'quarantine';
                                 connection.notes.quarantine = true;
-                                connection.notes.quarantine_action = [ OK, 'Message quarantined (' + connection.transaction.uuid + ')' ];
+                                connection.notes.quarantine_action = [ OK, `Message quarantined (${connection.transaction.uuid})` ];
                                 break;
                             case 'tag':
                                 connection.notes.gbudb.action = 'tag';
@@ -84,12 +84,12 @@ exports.hook_connect = function (next, connection) {
                     }
                     else if (gbudb.range === 'truncate') {
                         // Default for truncate
-                        return next(DENY, 'Poor GBUdb reputation for [' + connection.remote.ip + ']');
+                        return next(DENY, `Poor GBUdb reputation for [${connection.remote.ip}]`);
                     }
                     return next();
                 default:
                     // Unknown
-                    connection.logerror(self, 'Unknown GBUdb range: ' + gbudb.range);
+                    connection.logerror(self, `Unknown GBUdb range: ${gbudb.range}`);
                     return next();
             }
         }
@@ -105,19 +105,19 @@ exports.hook_data_post = function (next, connection) {
     const txn = connection.transaction;
     if (!txn) return next();
 
-    const tag_subject = function () {
+    function tag_subject (){
         const tag = cfg.main.tag_string || '[SPAM]';
-        const subj = txn.header.get('Subject');
+        const subj = txn.header.get_decoded('Subject');
         // Try and prevent any double subject modifications
-        const subject_re = new RegExp('^' + tag);
+        const subject_re = new RegExp(`^${tag}`);
         if (!subject_re.test(subj)) {
             txn.remove_header('Subject');
-            txn.add_header('Subject', tag + " " + subj);
+            txn.add_header('Subject', `${tag} ${subj}`);
         }
         // Add spam flag
         txn.remove_header('X-Spam-Flag');
         txn.add_header('X-Spam-Flag', 'YES');
-    };
+    }
 
     // Check GBUdb results
     if (connection.notes.gbudb && connection.notes.gbudb.action) {
@@ -133,21 +133,21 @@ exports.hook_data_post = function (next, connection) {
     }
 
     const tmpdir = cfg.main.tmpdir || '/tmp';
-    const tmpfile = tmpdir + '/' + txn.uuid + '.tmp';
+    const tmpfile = `${tmpdir}/${txn.uuid}.tmp`;
     const ws = fs.createWriteStream(tmpfile);
 
-    ws.once('error', function (err) {
-        connection.logerror(self, 'Error writing temporary file: ' + err.message);
+    ws.once('error', err => {
+        connection.logerror(self, `Error writing temporary file: ${err.message}`);
         return next();
     });
 
-    ws.once('close', function () {
+    ws.once('close', () => {
         const start_time = Date.now();
-        SNFClient("<snf><xci><scanner><scan file='" + tmpfile + "' xhdr='yes'/></scanner></xci></snf>", function (err, result) {
+        SNFClient(`<snf><xci><scanner><scan file='${tmpfile}' xhdr='yes'/></scanner></xci></snf>`, (err, result) => {
             const end_time = Date.now();
             const elapsed = end_time - start_time;
             // Delete the tempfile
-            fs.unlink(tmpfile, function (){});
+            fs.unlink(tmpfile, () => {});
             let match;
             // Make sure we actually got a result
             if ((match = /<result code='(\d+)'/.exec(result))) {
@@ -168,14 +168,14 @@ exports.hook_data_post = function (next, connection) {
                         if (/^\s/.test(line)) {
                             // Continuation; add to previous header value
                             if (headers[headers.length-1]) {
-                                headers[headers.length-1].value += line + '\r\n';
+                                headers[headers.length-1].value += `${line}\r\n`;
                             }
                         }
                         else {
                             // Must be a header
                             match = /^([^: ]+):(?:\s*(.+))?$/.exec(line);
                             if (match) {
-                                headers.push({ header: match[1], value: (match[2] ? match[2] + '\r\n' : '\r\n') });
+                                headers.push({ header: match[1], value: (match[2] ? `${match[2]}\r\n` : '\r\n') });
                             }
                         }
                     }
@@ -191,11 +191,11 @@ exports.hook_data_post = function (next, connection) {
                             // Retrieve IP address determined by GBUdb
                             const gbudb_split = header.value.split(/,\s*/);
                             gbudb_ip = gbudb_split[1];
-                            connection.logdebug(self, 'GBUdb: ' + header.value.replace(/\r?\n/gm, ''));
+                            connection.logdebug(self, `GBUdb: ${header.value.replace(/\r?\n/gm, '')}`);
                         }
                         if (header.header === 'X-MessageSniffer-Rules') {
                             rules = header.value.replace(/\r?\n/gm, '').replace(/\s+/g,' ').trim();
-                            connection.logdebug(self, 'rules: ' + rules);
+                            connection.logdebug(self, `rules: ${rules}`);
                         }
                         // Remove any existing headers
                         txn.remove_header(header.header);
@@ -203,11 +203,11 @@ exports.hook_data_post = function (next, connection) {
                     }
                 }
                 // Summary log
-                connection.loginfo(self, 'result: time=' + elapsed + 'ms code=' + code +
-                                         (gbudb_ip ? ' ip="' + gbudb_ip + '"' : '') +
-                                         (group ? ' group="' + group + '"' : '') +
-                                         (rules ? ' rule_count=' + rules.split(/\s+/).length : '') +
-                                         (rules ? ' rules="' + rules + '"' : ''));
+                connection.loginfo(self, `result: time=${elapsed}ms code=${code
+                }${gbudb_ip ? ` ip="${gbudb_ip}"` : ''
+                }${group ? ` group="${group}"` : ''
+                }${rules ? ` rule_count=${rules.split(/\s+/).length}` : ''
+                }${rules ? ` rules="${rules}"` : ''}`);
                 // Result code MUST in the 0-63 range otherwise we got an error
                 // http://www.armresearch.com/support/articles/software/snfServer/errors.jsp
                 if (code === 0 || (code && code <= 63)) {
@@ -230,7 +230,7 @@ exports.hook_data_post = function (next, connection) {
                                 action = cfg.message.truncate;
                             }
                             else {
-                                return next(DENY, 'Poor GBUdb reputation for IP [' + connection.remote.ip + ']');
+                                return next(DENY, `Poor GBUdb reputation for IP [${connection.remote.ip}]`);
                             }
                         }
                         else if (code === 40 && cfg.message.caution) {
@@ -240,8 +240,8 @@ exports.hook_data_post = function (next, connection) {
                             action = cfg.message.black;
                         }
                         else {
-                            if (cfg.message['code_' + code]) {
-                                action = cfg.message['code_' + code];
+                            if (cfg.message[`code_${code}`]) {
+                                action = cfg.message[`code_${code}`];
                             }
                             else {
                                 if (code > 1 && code !== 40) {
@@ -249,8 +249,7 @@ exports.hook_data_post = function (next, connection) {
                                         action = cfg.message.nonzero;
                                     }
                                     else {
-                                        return next(DENY, 'Spam detected by MessageSniffer' +
-                                                          ' (code=' + code + ' group=' + group + ')');
+                                        return next(DENY, `${'Spam detected by MessageSniffer (code='}${code} group=${group})`);
                                     }
                                 }
                             }
@@ -259,8 +258,7 @@ exports.hook_data_post = function (next, connection) {
                     else {
                         // Default with no configuration
                         if (code > 1 && code !== 40) {
-                            return next(DENY, 'Spam detected by MessageSniffer' +
-                                              ' (code=' + code + ' group=' + group + ')');
+                            return next(DENY, `${'Spam detected by MessageSniffer (code='}${code} group=${group})`);
                         }
                         else {
                             return next();
@@ -276,13 +274,13 @@ exports.hook_data_post = function (next, connection) {
                             return next();
                         case 'retry':
                         case 'tempfail':
-                            return next(DENYSOFT, 'Spam detected by MessageSniffer (code=' + code + ' group=' + group + ')');
+                            return next(DENYSOFT, `Spam detected by MessageSniffer (code=${code} group=${group})`);
                         case 'reject':
-                            return next(DENY, 'Spam detected by MessageSniffer (code=' + code + ' group=' + group + ')');
+                            return next(DENY, `Spam detected by MessageSniffer (code=${code} group=${group})`);
                         case 'quarantine':
                             // Set flag for queue/quarantine plugin
                             txn.notes.quarantine = true;
-                            txn.notes.quarantine_action = [ OK, 'Message quarantined (' + txn.uuid + ')' ];
+                            txn.notes.quarantine_action = [ OK, `Message quarantined (${txn.uuid})` ];
                             break;
                         case 'tag':
                             tag_subject();
@@ -320,7 +318,7 @@ exports.hook_data_post = function (next, connection) {
             }
             else {
                 // Something must have gone wrong
-                connection.logwarn(self, 'unexpected response: ' + result);
+                connection.logwarn(self, `unexpected response: ${result}`);
             }
             return next();
         });
@@ -336,15 +334,14 @@ exports.hook_disconnect = function (next, connection) {
 
     // Train GBUdb on rejected messages and recipients
     if (cfg.main.gbudb_report_deny && !connection.notes.snf_run &&
-        (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0))
-    {
-        const snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote.ip + "'/></gbudb></xci></snf>";
-        SNFClient(snfreq, function (err, result) {
+        (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0)) {
+        const snfreq = `<snf><xci><gbudb><bad ip='${connection.remote.ip}'/></gbudb></xci></snf>`;
+        SNFClient(snfreq, (err, result) => {
             if (err) {
                 connection.logerror(self, err.message);
             }
             else {
-                connection.logdebug(self, 'GBUdb bad encounter added for ' + connection.remote.ip);
+                connection.logdebug(self, `GBUdb bad encounter added for ${connection.remote.ip}`);
             }
             return next();
         });
@@ -362,20 +359,18 @@ function SNFClient (req, cb) {
         this.destroy();
         return cb(new Error('connection timed out'));
     });
-    sock.once('error', function (err) {
-        return cb(err);
-    });
+    sock.once('error', err => cb(err));
     sock.once('connect', function () {
         // Connected, send request
-        plugin.logprotocol('> ' + req);
-        this.write(req + "\n");
+        plugin.logprotocol(`> ${req}`);
+        this.write(`${req}\n`);
     });
-    sock.on('data', function (data) {
-        plugin.logprotocol('< ' + data);
+    sock.on('data', data => {
+        plugin.logprotocol(`< ${data}`);
         // Buffer all the received lines
         (result ? result += data : result = data);
     });
-    sock.once('end', function () {
+    sock.once('end', () => {
         // Check for result
         let match;
         if (/<result /.exec(result)) {
@@ -385,7 +380,7 @@ function SNFClient (req, cb) {
             return cb(new Error(match[1]));
         }
         else {
-            return cb(new Error('unexpected result: ' + result));
+            return cb(new Error(`unexpected result: ${result}`));
         }
     });
     // Start the sequence

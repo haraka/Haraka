@@ -40,7 +40,7 @@ function _set_up (done) {
 
 exports.load_configs = {
     setUp : _set_up,
-    'load_bounce_ini': function (test) {
+    'load_bounce_ini' (test) {
         test.expect(3);
         this.plugin.load_bounce_ini();
         test.ok(this.plugin.cfg.main);
@@ -48,7 +48,7 @@ exports.load_configs = {
         test.ok(this.plugin.cfg.reject);
         test.done();
     },
-    'load_bounce_bad_rcpt': function (test) {
+    'load_bounce_bad_rcpt' (test) {
         test.expect(3);
         this.plugin.load_bounce_bad_rcpt();
         test.ok(this.plugin.cfg.main);
@@ -60,7 +60,7 @@ exports.load_configs = {
 
 exports.reject_all = {
     setUp : _set_up,
-    'disabled': function (test) {
+    'disabled' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<matt@example.com>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@any.com') ];
@@ -71,7 +71,7 @@ exports.reject_all = {
         this.plugin.reject_all(cb, this.connection, new Address.Address('<matt@example.com>'));
         test.done();
     },
-    'not bounce ok': function (test) {
+    'not bounce ok' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<matt@example.com>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@any.com') ];
@@ -82,7 +82,7 @@ exports.reject_all = {
         this.plugin.reject_all(cb, this.connection, new Address.Address('<matt@example.com>'));
         test.done();
     },
-    'bounce rejected': function (test) {
+    'bounce rejected' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@any.com') ];
@@ -97,7 +97,7 @@ exports.reject_all = {
 
 exports.empty_return_path = {
     setUp : _set_up,
-    'none': function (test) {
+    'none' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
@@ -107,7 +107,7 @@ exports.empty_return_path = {
         this.plugin.empty_return_path(cb, this.connection);
         test.done();
     },
-    'has': function (test) {
+    'has' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
@@ -122,7 +122,7 @@ exports.empty_return_path = {
 
 exports.non_local_msgid = {
     setUp: _set_up,
-    'no_msgid_in_headers': function (test) {
+    'no_msgid_in_headers' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
@@ -134,7 +134,7 @@ exports.non_local_msgid = {
         this.plugin.non_local_msgid(cb, this.connection);
         test.done();
     },
-    'no_domains_in_msgid': function (test) {
+    'no_domains_in_msgid' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
@@ -146,7 +146,7 @@ exports.non_local_msgid = {
         this.plugin.non_local_msgid(cb, this.connection);
         test.done();
     },
-    'invalid_domain': function (test) {
+    'invalid_domain' (test) {
         test.expect(2);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
@@ -178,7 +178,7 @@ exports.non_local_msgid = {
 
 exports.single_recipient = {
     setUp : _set_up,
-    'valid': function (test) {
+    'valid' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
@@ -188,7 +188,7 @@ exports.single_recipient = {
         this.plugin.single_recipient(cb, this.connection);
         test.done();
     },
-    'invalid': function (test) {
+    'invalid' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [
@@ -202,7 +202,7 @@ exports.single_recipient = {
         this.plugin.single_recipient(cb, this.connection);
         test.done();
     },
-    'test@example.com': function (test) {
+    'test@example.com' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@example.com') ];
@@ -212,7 +212,7 @@ exports.single_recipient = {
         this.plugin.single_recipient(cb, this.connection);
         test.done();
     },
-    'test@example.com,test2@example.com': function (test) {
+    'test@example.com,test2@example.com' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [
@@ -229,51 +229,51 @@ exports.single_recipient = {
 
 exports.bad_rcpt = {
     setUp : _set_up,
-    'test@good.com': function (test) {
+    'test@good.com' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        const cb = function (rc) {
+        function cb (rc) {
             test.equal(undefined, rc);
-        };
+        }
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
     },
-    'test@bad1.com': function (test) {
+    'test@bad1.com' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@bad1.com') ];
-        const cb = function (rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
-        };
+        }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
     },
-    'test@bad1.com, test@bad2.com': function (test) {
+    'test@bad1.com, test@bad2.com' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [
             new Address.Address('test@bad1.com'),
             new Address.Address('test@bad2.com')
         ];
-        const cb = function (rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
-        };
+        }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
     },
-    'test@good.com, test@bad2.com': function (test) {
+    'test@good.com, test@bad2.com' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [
             new Address.Address('test@good.com'),
             new Address.Address('test@bad2.com')
         ];
-        const cb = function (rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
-        };
+        }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
@@ -282,25 +282,25 @@ exports.bad_rcpt = {
 
 exports.has_null_sender = {
     setUp : _set_up,
-    '<>': function (test) {
+    '<>' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         test.equal(true, this.plugin.has_null_sender(this.connection));
         test.done();
     },
-    ' ': function (test) {
+    ' ' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('');
         test.equal(true, this.plugin.has_null_sender(this.connection));
         test.done();
     },
-    'user@example': function (test) {
+    'user@example' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('user@example');
         test.equal(false, this.plugin.has_null_sender(this.connection));
         test.done();
     },
-    'user@example.com': function (test) {
+    'user@example.com' (test) {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('user@example.com');
         test.equal(false, this.plugin.has_null_sender(this.connection));

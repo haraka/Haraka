@@ -36,7 +36,16 @@ class AttachmentStream extends Stream {
             // console.log("YYY: end emit");
             if (this.buffer.length > 0) {
                 while (this.buffer.length > 0) {
-                    this.emit_data(this.buffer.shift());
+                    // Don't use this.emit_data() here because we don't want to
+                    // re-buffer the data we're trying to emit, when we're
+                    // paused and forcing the end.
+                    const data = this.buffer.shift();
+                    if (this.encoding) {
+                        this.emit('data', data.toString(this.encoding));
+                    }
+                    else {
+                        this.emit('data', data);
+                    }
                 }
             }
             this.emit('end');
@@ -49,15 +58,15 @@ class AttachmentStream extends Stream {
 
         const pipe = Stream.prototype.pipe.call(this, dest, options);
 
-        dest.on('drain', function () {
+        dest.on('drain', () => {
             // console.log("YYY: DRAIN!!!");
             if (self.paused) self.resume();
         });
-        dest.on('end', function () {
+        dest.on('end', () => {
             // console.log("YYY: END!!");
             if (self.paused) self.resume();
         });
-        dest.on('close', function () {
+        dest.on('close', () => {
             // console.log("YYY: CLOSE!!");
             if (self.paused) self.resume();
         });
@@ -106,6 +115,4 @@ class AttachmentStream extends Stream {
     }
 }
 
-exports.createStream = function (header) {
-    return new AttachmentStream (header);
-}
+exports.createStream = header => new AttachmentStream (header)

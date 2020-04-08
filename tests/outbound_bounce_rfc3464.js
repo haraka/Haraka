@@ -24,20 +24,20 @@ const mock_sock   = require('./fixtures/line_socket');
 ob_cfg.pool_concurrency_max = 0;
 
 const outbound_context = {
-    TODOItem: TODOItem,
+    TODOItem,
     exports: outbound
 }
 
 const queue_dir = path.resolve(__dirname, 'test-queue');
 
 exports.bounce_3464 = {
-    setUp : function (done) {
-        fs.exists(queue_dir, function (exists) {
+    setUp : done => {
+        fs.exists(queue_dir, exists => {
             if (exists) {
                 done();
             }
             else {
-                fs.mkdir(queue_dir, function (err) {
+                fs.mkdir(queue_dir, err => {
                     if (err) {
                         return done(err);
                     }
@@ -46,17 +46,17 @@ exports.bounce_3464 = {
             }
         });
     },
-    tearDown: function (done) {
-        fs.exists(queue_dir, function (exists) {
+    tearDown: done => {
+        fs.exists(queue_dir, exists => {
             if (exists) {
                 const files = fs.readdirSync(queue_dir);
-                files.forEach(function (file,index){
+                files.forEach((file,index) => {
                     const curPath = path.resolve(queue_dir, file);
                     if (fs.lstatSync(curPath).isDirectory()) { // recurse
-                        return done(new Error('did not expect an sub folder here ("' + curPath + '")! cancel'));
+                        return done(new Error(`did not expect an sub folder here ("${curPath}")! cancel`));
                     }
                 });
-                files.forEach(function (file,index){
+                files.forEach((file,index) => {
                     const curPath = path.resolve(queue_dir, file);
                     fs.unlinkSync(curPath);
                 });
@@ -67,15 +67,15 @@ exports.bounce_3464 = {
             }
         });
     },
-    'test MAIL FROM responded with 500 5.0.0 triggers send_email() containing bounce msg with codes and message': function (test) {
+    'test MAIL FROM responded with 500 5.0.0 triggers send_email() containing bounce msg with codes and message': test => {
         test.expect(9);
 
-        util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
+        util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
             const orig_send_email = outbound_context.exports.send_email;
-            outbound_context.exports.send_email = function (from, to, contents, cb, opts) {
+            outbound_context.exports.send_email = (from, to, contents, cb, opts) => {
                 test.ok(true, 'outbound.send_email called');
                 test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'its a bounce report');
                 test.ok(contents.match(/^Final-Recipient: rfc822;recipient@domain/m), 'bounce report contains final recipient');
@@ -95,7 +95,7 @@ exports.bounce_3464 = {
                 // Haraka connects, we say first
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
-                { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
+                { 'from': 'haraka', 'test': line => line.match(/^EHLO /), 'description': 'Haraka should say EHLO' },
                 { 'from': 'remote', 'line': '220-testing-smtp' },
                 { 'from': 'remote', 'line': '220 8BITMIME' },
 
@@ -105,15 +105,15 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
+            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, () => {
 
             });
         });
     },
-    'test that early response of 3XX triggers temp_fail': function (test) {
+    'test that early response of 3XX triggers temp_fail': test => {
         test.expect(7);
 
-        util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
+        util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
@@ -129,7 +129,7 @@ exports.bounce_3464 = {
             const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
-                { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
+                { 'from': 'haraka', 'test': line => line.match(/^EHLO /), 'description': 'Haraka should say EHLO' },
                 { 'from': 'remote', 'line': '220-testing-smtp' },
                 { 'from': 'remote', 'line': '220 8BITMIME' },
 
@@ -139,15 +139,15 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
+            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, () => {
 
             });
         });
     },
-    'test that response of 4XX for RCPT-TO triggers temp_fail': function (test) {
+    'test that response of 4XX for RCPT-TO triggers temp_fail': test => {
         test.expect(8);
 
-        util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
+        util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
@@ -163,7 +163,7 @@ exports.bounce_3464 = {
             const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
-                { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
+                { 'from': 'haraka', 'test': line => line.match(/^EHLO /), 'description': 'Haraka should say EHLO' },
                 { 'from': 'remote', 'line': '220-testing-smtp' },
                 { 'from': 'remote', 'line': '220 8BITMIME' },
 
@@ -176,15 +176,15 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
+            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, () => {
 
             });
         });
     },
-    'test that response of 4XX for DATA triggers temp_fail': function (test) {
+    'test that response of 4XX for DATA triggers temp_fail': test => {
         test.expect(9);
 
-        util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
+        util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
@@ -200,7 +200,7 @@ exports.bounce_3464 = {
             const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
-                { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
+                { 'from': 'haraka', 'test': line => line.match(/^EHLO /), 'description': 'Haraka should say EHLO' },
                 { 'from': 'remote', 'line': '220-testing-smtp' },
                 { 'from': 'remote', 'line': '220 8BITMIME' },
 
@@ -217,20 +217,20 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
+            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, () => {
 
             });
         });
     },
-    'test that response of 5XX for RCPT-TO triggers send_email() containing bounce msg with codes and message': function (test) {
+    'test that response of 5XX for RCPT-TO triggers send_email() containing bounce msg with codes and message': test => {
         test.expect(10);
 
-        util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
+        util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
             const orig_send_email = outbound_context.exports.send_email;
-            outbound_context.exports.send_email = function (from, to, contents, cb, opts) {
+            outbound_context.exports.send_email = (from, to, contents, cb, opts) => {
                 test.ok(true, 'RCPT-TO-5XX: outbound.send_email called');
                 test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'RCPT-TO-5XX: its a bounce report');
                 test.ok(contents.match(/^Final-Recipient: rfc822;recipient@domain/m), 'RCPT-TO-5XX:  bounce report contains final recipient');
@@ -243,7 +243,7 @@ exports.bounce_3464 = {
             const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
-                { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
+                { 'from': 'haraka', 'test': line => line.match(/^EHLO /), 'description': 'Haraka should say EHLO' },
                 { 'from': 'remote', 'line': '220-testing-smtp' },
                 { 'from': 'remote', 'line': '220 8BITMIME' },
 
@@ -256,20 +256,20 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
+            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, () => {
 
             });
         });
     },
-    'test that response of 5XX for DATA triggers send_email() containing bounce msg with codes and message': function (test) {
+    'test that response of 5XX for DATA triggers send_email() containing bounce msg with codes and message': test => {
         test.expect(11);
 
-        util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
+        util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
             const orig_send_email = outbound_context.exports.send_email;
-            outbound_context.exports.send_email = function (from, to, contents, cb, opts) {
+            outbound_context.exports.send_email = (from, to, contents, cb, opts) => {
                 test.ok(true, 'DATA-5XX: outbound.send_email called');
                 test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'DATA-5XX: its a bounce report');
                 test.ok(contents.match(/^Final-Recipient: rfc822;recipient@domain/m), 'DATA-5XX:  bounce report contains final recipient');
@@ -282,7 +282,7 @@ exports.bounce_3464 = {
             const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
-                { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
+                { 'from': 'haraka', 'test': line => line.match(/^EHLO /), 'description': 'Haraka should say EHLO' },
                 { 'from': 'remote', 'line': '220-testing-smtp' },
                 { 'from': 'remote', 'line': '220 8BITMIME' },
 
@@ -299,7 +299,7 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
+            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, () => {
 
             });
         });

@@ -40,8 +40,7 @@ to an application or over a network, your code will become significantly
 simpler (and a lot faster).
 
 In v1.x Haraka populated the `transaction.data_lines` array for each line of 
-data received.  If you were writing the data to a socket then you had to handle 
-backpressure manually by checking the return of `write()` and adding 
+data received.  If you were writing the data to a socket then you had to handle backpressure manually by checking the return of `write()` and adding 
 `on('drain')` handlers like so:
 
     var data_marker = 0;
@@ -53,7 +52,7 @@ backpressure manually by checking the return of `write()` and adding
         while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
             var line = connection.transaction.data_lines[data_marker];
             data_marker++;
-            wrote_all = socket.write(new Buffer(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n')), 'binary');
+            wrote_all = socket.write(Buffer.from(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n')), 'binary');
             if (!wrote_all) return;
         }
         // we get here if wrote_all still true, and we got to end of data_lines
@@ -72,14 +71,14 @@ backpressure manually by checking the return of `write()` and adding
 In v2.x this now becomes:
 
     connection.transaction.message_stream.pipe(socket, {dot_stuffing: true, ending_dot: true});
-    
+
 This automatically chunks the data, handles backpressure and will apply any 
 necessary format changes.  See `docs/Transaction.md` for the full details.
 
 If you need to handle the input data by line, then you will need to create 
 your own writable stream and then pipe the message to the stream and then 
 extract the lines from the stream of data.  See `plugins/dkim_sign.js` for 
-an example. 
+an example.
 
 Fixing attachment\_hooks plugins
 -------------------------------
@@ -106,7 +105,7 @@ for example if you are sending attachments to a remote service. In order
 for this backpressure to apply to the connection itself (so that we don't
 have to buffer up data in memory), we need to provide the connection object
 to the stream:
-    
+
     var transaction = connection.transaction;
     transaction.attachment_hooks(
         function (ctype, filename, body, stream) {

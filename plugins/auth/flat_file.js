@@ -8,7 +8,7 @@ exports.register = function () {
 
 exports.load_flat_ini = function () {
     const plugin = this;
-    plugin.cfg = plugin.config.get('auth_flat_file.ini', function () {
+    plugin.cfg = plugin.config.get('auth_flat_file.ini', () => {
         plugin.load_flat_ini();
     });
 }
@@ -27,7 +27,7 @@ exports.hook_capabilities = function (next, connection) {
         methods = plugin.cfg.core.methods.split(',');
     }
     if (methods && methods.length > 0) {
-        connection.capabilities.push('AUTH ' + methods.join(' '));
+        connection.capabilities.push(`AUTH ${methods.join(' ')}`);
         connection.notes.allowed_auth_methods = methods;
     }
     next();

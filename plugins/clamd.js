@@ -7,7 +7,7 @@ exports.load_excludes = function () {
     const plugin = this;
 
     plugin.loginfo('Loading excludes file');
-    const list = plugin.config.get('clamd.excludes','list', function () {
+    const list = plugin.config.get('clamd.excludes','list', () => {
         plugin.load_excludes();
     });
 
@@ -90,8 +90,12 @@ exports.load_clamd_ini = function () {
             // clamd.conf options enabled by default, but prone to false
             // positives.
             '-reject.Phishing',
+
+            '+check.authenticated',
+            '+check.private_ip',
+            '+check.local_ip'
         ],
-    }, function () {
+    }, () => {
         plugin.load_clamd_ini();
     });
 
@@ -121,7 +125,7 @@ exports.load_clamd_ini = function () {
 
     const all_reject_opts = [];
     const enabled_reject_opts = [];
-    Object.keys(rejectPatterns).forEach(function (opt) {
+    Object.keys(rejectPatterns).forEach(opt => {
         all_reject_opts.push(rejectPatterns[opt]);
         if (!plugin.cfg.reject[opt]) return;
         enabled_reject_opts.push(rejectPatterns[opt]);
@@ -135,7 +139,7 @@ exports.load_clamd_ini = function () {
     // resolve mismatch between docs (...attachment) and code (...attachments)
     if (plugin.cfg.main.only_with_attachment !== undefined) {
         plugin.cfg.main.only_with_attachments =
-            plugin.cfg.main.only_with_attachment ? true : false;
+            !!plugin.cfg.main.only_with_attachment;
     }
 }
 
@@ -147,11 +151,14 @@ exports.register = function () {
 
 exports.hook_data = function (next, connection) {
     const plugin = this;
+
     if (!plugin.cfg.main.only_with_attachments) return next();
+
+    if (!plugin.should_check(connection)) return next();
 
     const txn = connection.transaction;
     txn.parse_body = true;
-    txn.attachment_hooks(function (ctype, filename, body) {
+    txn.attachment_hooks((ctype, filename, body) => {
         connection.logdebug(plugin,
             `found ctype=${ctype}, filename=${filename}`);
         txn.notes.clamd_found_attachment = true;
@@ -164,6 +171,8 @@ exports.hook_data_post = function (next, connection) {
     const plugin = this;
     const txn = connection.transaction;
     const cfg = plugin.cfg;
+
+    if (!plugin.should_check(connection)) return next();
 
     // Do we need to run?
     if (cfg.main.only_with_attachments && !txn.notes.clamd_found_attachment) {
@@ -181,7 +190,7 @@ exports.hook_data_post = function (next, connection) {
     const hosts = cfg.main.clamd_socket.split(/[,; ]+/);
 
     if (cfg.main.randomize_host_order) {
-        hosts.sort(function () { return 0.5 - Math.random(); });
+        hosts.sort(() => 0.5 - Math.random());
     }
 
     function try_next_host () {
@@ -195,7 +204,7 @@ exports.hook_data_post = function (next, connection) {
         connection.logdebug(plugin, `trying host: ${host}`);
         const socket = new sock.Socket();
 
-        socket.on('timeout', function () {
+        socket.on('timeout', () => {
             socket.destroy();
             if (!connected) {
                 connection.logerror(plugin, `Timeout connecting to ${host}`);
@@ -206,7 +215,7 @@ exports.hook_data_post = function (next, connection) {
             return next(DENYSOFT, 'Virus scanner timed out');
         });
 
-        socket.on('error', function (err) {
+        socket.on('error', err => {
             socket.destroy();
             if (!connected) {
                 connection.logerror(plugin,
@@ -225,7 +234,7 @@ exports.hook_data_post = function (next, connection) {
             return next(DENYSOFT, 'Virus scanner error');
         });
 
-        socket.on('connect', function () {
+        socket.on('connect', () => {
             connected = true;
             socket.setTimeout((cfg.main.timeout || 30) * 1000);
             const hp = socket.address();
@@ -237,16 +246,16 @@ exports.hook_data_post = function (next, connection) {
         });
 
         let result = '';
-        socket.on('line', function (line) {
-            connection.logprotocol(plugin, 'C:' + line.split('').filter((x) => {
+        socket.on('line', line => {
+            connection.logprotocol(plugin, `C:${line.split('').filter((x) => {
                 return 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)
-            }).join('') );
+            }).join('')}` );
             result = line.replace(/\r?\n/, '');
         });
 
         socket.setTimeout((cfg.main.connect_timeout || 10) * 1000);
 
-        socket.on('end', function () {
+        socket.on('end', () => {
             if (!txn) return next();
             if (/^stream: OK/.test(result)) {                // OK
                 txn.results.add(plugin, {pass: 'clean', emit: true});
@@ -273,7 +282,7 @@ exports.hook_data_post = function (next, connection) {
                 for (let i=0; i < plugin.skip_list_exclude.length; i++) {
                     if (!plugin.skip_list_exclude[i].test(virus)) continue;
                     return next(DENY,
-                        'Message is infected with ' + (virus || 'UNKNOWN'));
+                        `Message is infected with ${virus || 'UNKNOWN'}`);
                 }
 
                 // Check skip list
@@ -283,8 +292,8 @@ exports.hook_data_post = function (next, connection) {
                     txn.add_header('X-Haraka-Virus', virus);
                     return next();
                 }
-                return next(DENY, 'Message is infected with ' +
-                        (virus || 'UNKNOWN'));
+                return next(DENY, `Message is infected with ${
+                    virus || 'UNKNOWN'}`);
             }
 
             if (/size limit exceeded/.test(result)) {
@@ -315,7 +324,40 @@ exports.hook_data_post = function (next, connection) {
     try_next_host();
 }
 
-exports.send_clamd_predata = function (socket, cb) {
+exports.should_check = function (connection) {
+    const plugin = this;
+
+    let result = true;  // default
+
+    if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
+        connection.transaction.results.add(plugin, { skip: 'authed'});
+        result = false;
+    }
+
+    if (plugin.cfg.check.relay == false && connection.relaying) {
+        connection.transaction.results.add(plugin, { skip: 'relay'});
+        result = false;
+    }
+
+    if (plugin.cfg.check.local_ip == false && connection.remote.is_local) {
+        connection.transaction.results.add(plugin, { skip: 'local_ip'});
+        result = false;
+    }
+
+    if (plugin.cfg.check.private_ip == false && connection.remote.is_private) {
+        if (plugin.cfg.check.local_ip == true && connection.remote.is_local) {
+            // local IPs are included in private IPs
+        }
+        else {
+            connection.transaction.results.add(plugin, { skip: 'private_ip'});
+            result = false;
+        }
+    }
+
+    return result;
+}
+
+exports.send_clamd_predata = (socket, cb) => {
     socket.write("zINSTREAM\0", () => {
         const received = 'Received: from Haraka clamd plugin\r\n';
         const buf = Buffer.alloc(received.length + 4);

@@ -12,7 +12,7 @@ function _tear_down (callback) {
 exports.init = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'logger' : function (test) {
+    'logger' (test) {
         test.expect(1);
         test.ok(this.logger);
         test.done();
@@ -22,7 +22,7 @@ exports.init = {
 exports.log = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'log' : function (test) {
+    'log' (test) {
         this.logger.deferred_logs = [];
         test.expect(3);
         test.equal(0, this.logger.deferred_logs.length);
@@ -30,14 +30,14 @@ exports.log = {
         test.equal(1, this.logger.deferred_logs.length);
         test.done();
     },
-    'log, w/deferred' : function (test) {
+    'log, w/deferred' (test) {
         test.expect(1);
         this.logger.plugins = { plugin_list: true };
         this.logger.deferred_logs.push( { level: 'INFO', data: 'log test info'} );
         test.ok(this.logger.log('INFO', 'another test info'));
         test.done();
     },
-    'log in logfmt' : function (test) {
+    'log in logfmt' (test) {
         this.logger.deferred_logs = [];
         test.expect(3);
         this.logger.format = this.logger.formats.LOGFMT;
@@ -46,7 +46,23 @@ exports.log = {
         test.equal(1, this.logger.deferred_logs.length);
         test.done();
     },
-    'log in logfmt w/deffered' : function (test) {
+    'log in logfmt w/deferred' (test) {
+        test.expect(1);
+        this.logger.plugins = { plugin_list: true };
+        this.logger.deferred_logs.push( { level: 'INFO', data: 'log test info'} );
+        test.ok(this.logger.log('INFO', 'another test info'));
+        test.done();
+    },
+    'log in json' (test) {
+        this.logger.deferred_logs = [];
+        test.expect(3);
+        this.logger.format = this.logger.formats.JSON;
+        test.equal(0, this.logger.deferred_logs.length);
+        test.ok(this.logger.log('WARN','test warning'));
+        test.equal(1, this.logger.deferred_logs.length);
+        test.done();
+    },
+    'log in json w/deferred' (test) {
         test.expect(1);
         this.logger.plugins = { plugin_list: true };
         this.logger.deferred_logs.push( { level: 'INFO', data: 'log test info'} );
@@ -58,7 +74,7 @@ exports.log = {
 exports.level = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'both INFO and LOGINFO are log levels' : function (test) {
+    'both INFO and LOGINFO are log levels' (test) {
         test.expect(2);
         test.equal(this.logger.levels.INFO, 6);
         test.equal(this.logger.levels.LOGINFO, 6);
@@ -69,35 +85,42 @@ exports.level = {
 exports.set_format = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'set format to DEFAULT' : function (test) {
+    'set format to DEFAULT' (test) {
         test.expect(1);
         this.logger.format = '';
         this.logger.set_format('DEFAULT');
         test.equal(this.logger.format, this.logger.formats.DEFAULT);
         test.done();
     },
-    'set format to LOGFMT' : function (test) {
+    'set format to LOGFMT' (test) {
         test.expect(1);
         this.logger.format = '';
         this.logger.set_format('LOGFMT');
         test.equal(this.logger.format, this.logger.formats.LOGFMT);
         test.done();
     },
-    'set format to DEFAULT if empty' : function (test) {
+    'set format to JSON' (test) {
+        test.expect(1);
+        this.logger.format = '';
+        this.logger.set_format('JSON');
+        test.equal(this.logger.format, this.logger.formats.JSON);
+        test.done();
+    },
+    'set format to DEFAULT if empty' (test) {
         test.expect(1);
         this.logger.format = '';
         this.logger.set_format('');
         test.equal(this.logger.format, this.logger.formats.DEFAULT);
         test.done();
     },
-    'set format to DEFAULT if lowercase' : function (test) {
+    'set format to DEFAULT if lowercase' (test) {
         test.expect(1);
         this.logger.format = '';
         this.logger.set_format('default');
         test.equal(this.logger.format, this.logger.formats.DEFAULT);
         test.done();
     },
-    'set format to DEFAULT if invalid' : function (test) {
+    'set format to DEFAULT if invalid' (test) {
         test.expect(1);
         this.logger.format = '';
         this.logger.set_format('invalid');
@@ -109,31 +132,31 @@ exports.set_format = {
 exports.set_loglevel = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'set loglevel to LOGINFO' : function (test) {
+    'set loglevel to LOGINFO' (test) {
         test.expect(1);
         this.logger.set_loglevel('LOGINFO');
         test.equal(this.logger.loglevel, this.logger.levels.LOGINFO);
         test.done();
     },
-    'set loglevel to INFO' : function (test) {
+    'set loglevel to INFO' (test) {
         test.expect(1);
         this.logger.set_loglevel('INFO');
         test.equal(this.logger.loglevel, this.logger.levels.INFO);
         test.done();
     },
-    'set loglevel to EMERG' : function (test) {
+    'set loglevel to EMERG' (test) {
         test.expect(1);
         this.logger.set_loglevel('emerg');
         test.equal(this.logger.loglevel, this.logger.levels.EMERG);
         test.done();
     },
-    'set loglevel to 6' : function (test) {
+    'set loglevel to 6' (test) {
         test.expect(1);
         this.logger.set_loglevel(6);
         test.equal(this.logger.loglevel, 6);
         test.done();
     },
-    'set loglevel to WARN if invalid' : function (test) {
+    'set loglevel to WARN if invalid' (test) {
         test.expect(1);
         this.logger.set_loglevel('invalid');
         test.equal(this.logger.loglevel, this.logger.levels.WARN);
@@ -144,14 +167,14 @@ exports.set_loglevel = {
 exports.set_timestamps = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'set timestamps to false' : function (test) {
+    'set timestamps to false' (test) {
         test.expect(1);
         this.logger.timestamps = undefined;
         this.logger.set_timestamps(false);
         test.equal(this.logger.timestamps, false);
         test.done();
     },
-    'set timestamps to true' : function (test) {
+    'set timestamps to true' (test) {
         test.expect(1);
         this.logger.timestamps = undefined;
         this.logger.set_timestamps(true);
@@ -163,7 +186,7 @@ exports.set_timestamps = {
 exports.would_log = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'should' : function (test) {
+    'should' (test) {
         test.expect(3);
         this.logger.loglevel = 4;
         test.equal(false, this.logger.would_log(7));
@@ -171,7 +194,7 @@ exports.would_log = {
         test.equal(false, this.logger.would_log(5));
         test.done();
     },
-    'should not' : function (test) {
+    'should not' (test) {
         test.expect(4);
         this.logger.loglevel = 4;
         test.equal(true, this.logger.would_log(4));
@@ -185,12 +208,12 @@ exports.would_log = {
 exports.log_respond = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'invalid retval' : function (test) {
+    'invalid retval' (test) {
         test.expect(1);
         test.equal(false, this.logger.log_respond(901));
         test.done();
     },
-    'valid retval' : function (test) {
+    'valid retval' (test) {
         test.expect(1);
         const data = { level: 'INFO', data: "test data" };
         test.equal(true, this.logger.log_respond(900, 'test msg', data));
@@ -201,12 +224,12 @@ exports.log_respond = {
 exports.dump_logs = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'empty' : function (test) {
+    'empty' (test) {
         test.expect(1);
         test.ok(this.logger.dump_logs(0));
         test.done();
     },
-    'with deferred' : function (test) {
+    'with deferred' (test) {
         test.expect(2);
         this.logger.deferred_logs.push( { level: 'info', data: 'test info'} );
         this.logger.deferred_logs.push( { level: 'INFO', data: 'test info, color'} );
@@ -220,12 +243,12 @@ exports.dump_logs = {
 exports.colors = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'colors' : function (test) {
+    'colors' (test) {
         test.expect(1);
         test.ok(this.logger.colors);
         test.done();
     },
-    'colorize' : function (test) {
+    'colorize' (test) {
         test.expect(4);
         test.ok(this.logger.colorize);
         test.equal('function', typeof this.logger.colorize);
@@ -239,12 +262,12 @@ exports.colors = {
 exports.log_if_level = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'log_if_level is a function' : function (test) {
+    'log_if_level is a function' (test) {
         test.expect(1);
         test.ok('function' === typeof this.logger.log_if_level);
         test.done();
     },
-    'log_if_level test log entry' : function (test) {
+    'log_if_level test log entry' (test) {
         test.expect(5);
         this.logger.loglevel = 9;
         const f = this.logger.log_if_level('INFO', 'LOGINFO');
@@ -256,7 +279,7 @@ exports.log_if_level = {
         test.equal('INFO', this.logger.deferred_logs[0].level);
         test.done();
     },
-    'log_if_level null case' : function (test) {
+    'log_if_level null case' (test) {
         test.expect(2);
         this.logger.loglevel = 9;
         const f = this.logger.log_if_level('INFO', 'LOGINFO');
@@ -264,7 +287,7 @@ exports.log_if_level = {
         test.equal(2, this.logger.deferred_logs.length);
         test.done();
     },
-    'log_if_level false' : function (test) {
+    'log_if_level false' (test) {
         test.expect(2);
         this.logger.loglevel = 9;
         const f = this.logger.log_if_level('INFO', 'LOGINFO');
@@ -272,7 +295,7 @@ exports.log_if_level = {
         test.equal(3, this.logger.deferred_logs.length);
         test.done();
     },
-    'log_if_level 0' : function (test) {
+    'log_if_level 0' (test) {
         test.expect(2);
         this.logger.loglevel = 9;
         const f = this.logger.log_if_level('INFO', 'LOGINFO');
@@ -285,19 +308,19 @@ exports.log_if_level = {
 exports.add_log_methods = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'ignores non-objects' : function (test) {
+    'ignores non-objects' (test) {
         test.expect(2);
         test.equal(undefined, this.logger.add_log_methods(''));
         test.equal(undefined, this.logger.add_log_methods(function foo (){}));
         test.done();
     },
-    'adds functions to an object' : function (test) {
+    'adds functions to an object' (test) {
         const testObj = {};
         this.logger.add_log_methods(testObj);
         const levels = ['DATA','PROTOCOL','DEBUG','INFO','NOTICE','WARN','ERROR','CRIT','ALERT','EMERG'];
         test.expect(levels.length);
         for (let i=0; i<levels.length; i++) {
-            test.ok('function' === typeof(testObj['log'+levels[i].toLowerCase()]));
+            test.ok('function' === typeof(testObj[`log${levels[i].toLowerCase()}`]));
         }
         test.done();
     },

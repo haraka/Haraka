@@ -12,7 +12,7 @@ exports.register = function () {
 
 exports.load_xclient_hosts = function () {
     const self = this;
-    const cfg = this.config.get('xclient.hosts', 'list', function () {
+    const cfg = this.config.get('xclient.hosts', 'list', () => {
         self.load_xclient_hosts();
     });
     const ah = {};
@@ -29,7 +29,7 @@ function xclient_allowed (ip) {
     return false;
 }
 
-exports.hook_capabilities = function (next, connection) {
+exports.hook_capabilities = (next, connection) => {
     if (xclient_allowed(connection.remote.ip)) {
         connection.capabilities.push('XCLIENT NAME ADDR PROTO HELO LOGIN');
     }
@@ -123,7 +123,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     if (xclient.proto) {
         connection.set('hello', 'verb', ((xclient.proto === 'esmtp') ? 'EHLO' : 'HELO'));
     }
-    connection.esmtp = (xclient.proto === 'esmtp') ? true : false;
+    connection.esmtp = (xclient.proto === 'esmtp');
     connection.xclient = true;
     if (!xclient.name) {
         return next(NEXT_HOOK, 'lookup_rdns');

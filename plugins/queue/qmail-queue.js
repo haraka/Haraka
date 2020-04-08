@@ -8,7 +8,7 @@ exports.register = function () {
 
     plugin.queue_exec = plugin.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
     if (!fs.existsSync(plugin.queue_exec)) {
-        throw new Error("Cannot find qmail-queue binary (" + plugin.queue_exec + ")");
+        throw new Error(`Cannot find qmail-queue binary (${plugin.queue_exec})`);
     }
 
     plugin.load_qmail_queue_ini();
@@ -26,7 +26,7 @@ exports.load_qmail_queue_ini = function () {
             '+main.enable_outbound',
         ],
     },
-    function () {
+    () => {
         plugin.load_qmail_queue_ini();
     });
 }
@@ -47,7 +47,7 @@ exports.hook_queue = function (next, connection) {
 
     qmail_queue.on('exit', function finished (code) {
         if (code !== 0) {
-            connection.logerror(plugin, "Unable to queue message to qmail-queue: " + code);
+            connection.logerror(plugin, `Unable to queue message to qmail-queue: ${code}`);
             next();
         }
         else {
@@ -57,13 +57,14 @@ exports.hook_queue = function (next, connection) {
 
     connection.transaction.message_stream.pipe(qmail_queue.stdin, { line_endings: '\n' });
 
-    qmail_queue.stdin.on('close', function () {
+    qmail_queue.stdin.on('close', () => {
         if (!connection.transaction) {
             plugin.logerror("Transaction went away while delivering mail to qmail-queue");
 
             try {
                 qmail_queue.stdout.end();
-            } catch (err) {
+            }
+            catch (err) {
                 if (err.code !== 'ENOTCONN') {
                     // Ignore ENOTCONN and re throw anything else
                     throw err
@@ -76,7 +77,7 @@ exports.hook_queue = function (next, connection) {
         plugin.loginfo("Message Stream sent to qmail. Now sending envelope");
         // now send envelope
         // Hope this will be big enough...
-        const buf = new Buffer(4096);
+        const buf = Buffer.alloc(4096);
         let p = 0;
         buf[p++] = 70;
         const mail_from = connection.transaction.mail_from.address();
@@ -84,7 +85,7 @@ exports.hook_queue = function (next, connection) {
             buf[p++] = mail_from.charCodeAt(i);
         }
         buf[p++] = 0;
-        connection.transaction.rcpt_to.forEach(function (rcpt) {
+        connection.transaction.rcpt_to.forEach(rcpt => {
             buf[p++] = 84;
             const rcpt_to = rcpt.address();
             for (let j = 0; j < rcpt_to.length; j++) {
@@ -93,7 +94,7 @@ exports.hook_queue = function (next, connection) {
             buf[p++] = 0;
         });
         buf[p++] = 0;
-        qmail_queue.stdout.on('error', function (err) {}); // stdout throws an error on close
+        qmail_queue.stdout.on('error', err => {}); // stdout throws an error on close
         qmail_queue.stdout.end(buf);
     });
 }

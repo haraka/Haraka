@@ -32,7 +32,7 @@ class HostPool {
         const hosts = (hostports_str || '')
             .trim()
             .split(/[\s,]+/)
-            .map(function (hostport){
+            .map(hostport => {
                 const splithost = hostport.split(/:/);
                 if (! splithost[1]){
                     splithost[1] = 25;
@@ -65,7 +65,7 @@ class HostPool {
             logger.logwarn(`${host} ${key} is still dead, will retry in ${self.retry_secs} secs`);
             self.dead_hosts[key] = true;
             // console.log(1);
-            setTimeout(function () {
+            setTimeout(() => {
                 self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive);
             }, retry_msecs);
         }
@@ -76,7 +76,7 @@ class HostPool {
             delete self.dead_hosts[key];
         }
 
-        setTimeout(function () {
+        setTimeout(() => {
             self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive);
         }, retry_msecs);
     }
@@ -99,18 +99,18 @@ class HostPool {
         let s;
         try {
             s = self.get_socket();
-            s.setTimeout(connect_timeout_ms, function () {
+            s.setTimeout(connect_timeout_ms, () => {
                 // nobody home, it's still dead
                 s.destroy();
                 cb_if_still_dead();
             });
-            s.on('error', function (e) {
+            s.on('error', e => {
                 // silently catch all errors - assume the port is closed
                 s.destroy();
                 cb_if_still_dead();
             });
 
-            s.connect(port, host, function () {
+            s.connect(port, host, () => {
                 cb_if_alive();
                 s.destroy(); // will this conflict with setTimeout's s.destroy?
             });

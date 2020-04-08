@@ -1,11 +1,11 @@
 // discard
 
 exports.register = function () {
-    this.register_hook('queue', 'discard');
+    this.register_hook('queue',          'discard');
     this.register_hook('queue_outbound', 'discard');
 }
 
-exports.discard = function (next, connection) {
+exports.discard = (next, connection) => {
 
     const txn = connection.transaction;
 
@@ -13,7 +13,7 @@ exports.discard = function (next, connection) {
     if (q_wants && q_wants !== 'discard') return next();
 
     function discard () {
-        connection.loginfo(this, 'discarding message');
+        connection.loginfo('discarding message');
         // Pretend we delivered the message
         return next(OK);
     }
@@ -24,5 +24,5 @@ exports.discard = function (next, connection) {
     if (process.env.YES_REALLY_DO_DISCARD) return discard();
 
     // Allow other queue plugins to deliver
-    return next();
+    next();
 }

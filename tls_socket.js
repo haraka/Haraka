@@ -55,37 +55,37 @@ class pluggableStream extends stream.Stream {
     attach (socket) {
         const self = this;
         self.targetsocket = socket;
-        self.targetsocket.on('data', function (data) {
+        self.targetsocket.on('data', data => {
             self.emit('data', data);
         });
         self.targetsocket.on('connect', (a, b) => {
             self.emit('connect', a, b);
         });
-        self.targetsocket.on('secureConnection', function (a, b) {
+        self.targetsocket.on('secureConnection', (a, b) => {
             self.emit('secureConnection', a, b);
             self.emit('secure', a, b);
         });
-        self.targetsocket.on('secure', function (a, b) {
+        self.targetsocket.on('secure', (a, b) => {
             self.emit('secureConnection', a, b);
             self.emit('secure', a, b);
         });
-        self.targetsocket.on('end', function () {
+        self.targetsocket.on('end', () => {
             self.writable = self.targetsocket.writable;
             self.emit('end');
         });
-        self.targetsocket.on('close', function (had_error) {
+        self.targetsocket.on('close', had_error => {
             self.writable = self.targetsocket.writable;
             self.emit('close', had_error);
         });
-        self.targetsocket.on('drain', function () {
+        self.targetsocket.on('drain', () => {
             self.emit('drain');
         });
-        self.targetsocket.once('error', function (exception) {
+        self.targetsocket.once('error', exception => {
             self.writable = self.targetsocket.writable;
             exception.source = 'tls';
             self.emit('error', exception);
         });
-        self.targetsocket.on('timeout', function () {
+        self.targetsocket.on('timeout', () => {
             self.emit('timeout');
         });
         if (self.targetsocket.remotePort) {
@@ -107,7 +107,7 @@ class pluggableStream extends stream.Stream {
             this.targetsocket.removeAllListeners('drain');
         }
         this.targetsocket = {};
-        this.targetsocket.write = function () {};
+        this.targetsocket.write = () => {};
     }
 
     write (data, encoding, callback) {
@@ -175,7 +175,7 @@ exports.parse_x509_names = string => {
         const re = /DNS:([^,]+)[,\n]/g;
         while ((dns_name = re.exec(match[0])) !== null) {
             // log.loginfo(dns_name);
-            if (names_found.indexOf(dns_name[1]) !== -1) continue; // ignore dupes
+            if (names_found.includes(dns_name[1])) continue; // ignore dupes
             names_found.push(dns_name[1]);
         }
     }
@@ -214,7 +214,7 @@ exports.parse_x509 = string => {
 exports.load_tls_ini = (opts) => {
     const tlss = this;
 
-    log.loginfo('loading tls.ini');
+    log.loginfo(`loading tls.ini`); // from ${this.config.root_path}`);
 
     const cfg = exports.config.get('tls.ini', {
         booleans: [
@@ -255,6 +255,13 @@ exports.load_tls_ini = (opts) => {
         }
     }
 
+    if (cfg.main.requireAuthorized === undefined) {
+        cfg.main.requireAuthorized = [];
+    }
+    else if (!Array.isArray(cfg.main.requireAuthorized)) {
+        cfg.main.requireAuthorized = [cfg.main.requireAuthorized];
+    }
+
     tlss.cfg = cfg;
 
     if (!opts || opts.role === 'server') {
@@ -286,7 +293,7 @@ exports.applySocketOpts = name => {
     // https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
     const createSecureContextOptions = [
         'key', 'cert', 'dhparam',
-        'pfx', 'passphrase', 'ca', 'crl', 'ciphers', 'honorCipherOrder',
+        'pfx', 'passphrase', 'ca', 'crl', 'ciphers', 'minVersion', 'honorCipherOrder',
         'ecdhCurve', 'secureProtocol', 'secureOptions', 'sessionIdContext'
     ];
 
@@ -341,13 +348,17 @@ exports.load_default_opts = () => {
         tlss.saveOpt('*', 'dhparam', tlss.config.get(cfg.dhparam, 'binary'));
     }
 
+    if (cfg.ca && typeof cfg.ca === 'string') {
+        log.loginfo(`loading CA certs from ${cfg.ca}`);
+        tlss.saveOpt('*', 'ca', tlss.config.get(cfg.ca, 'binary'));
+    }
+
     // make non-array key/cert option into Arrays with one entry
     if (!(Array.isArray(cfg.key ))) cfg.key  = [cfg.key];
     if (!(Array.isArray(cfg.cert))) cfg.cert = [cfg.cert];
 
     if (cfg.key.length != cfg.cert.length) {
-        log.logerror("number of keys (" + cfg.key.length +
-            ") not equal to certs (" + cfg.cert.length + ").");
+        log.logerror(`number of keys (${cfg.key.length}) not equal to certs (${cfg.cert.length}).`);
     }
 
     // if key file has already been loaded, it'll be a Buffer.
@@ -387,7 +398,7 @@ exports.load_default_opts = () => {
 }
 
 function SNICallback (servername, sniDone) {
-    log.logdebug('SNI servername: ' + servername);
+    log.logdebug(`SNI servername: ${servername}`);
 
     if (ctxByHost[servername] === undefined) servername = '*';
 
@@ -404,16 +415,21 @@ exports.get_certs_dir = (tlsDir, done) => {
 
             const parsed = exports.parse_x509(file.data.toString());
             if (!parsed.key) {
-                return iter_done('no PRIVATE key in ' + file.path);
+                return iter_done(null, {
+                    err: new Error(`no PRIVATE key in ${file.path}`),
+                    file
+                });
             }
             if (!parsed.cert) {
-                log.logerror('no CERT in ' + file.path);
-                return iter_done('no CERT in ' + file.path);
+                return iter_done(null, {
+                    err: new Error(`no CERT in ${file.path}`),
+                    file
+                });
             }
 
             const x509args = { noout: true, text: true };
 
-            openssl('x509', parsed.cert, x509args, function (e, as_str) {
+            openssl('x509', parsed.cert, x509args, (e, as_str) => {
                 if (e) {
                     log.logerror(`BAD TLS in ${file.path}`);
                     log.logerror(e);
@@ -421,7 +437,7 @@ exports.get_certs_dir = (tlsDir, done) => {
 
                 const expire = tlss.parse_x509_expire(file, as_str);
                 if (expire && expire < new Date()) {
-                    log.logerror(file.path + ' expired on ' + expire);
+                    log.logerror(`${file.path} expired on ${expire}`);
                 }
 
                 iter_done(null, {
@@ -445,8 +461,10 @@ exports.get_certs_dir = (tlsDir, done) => {
 
             log.loginfo(`found ${certs.length} TLS certs in config/tls`);
             certs.forEach(cert => {
+                if (undefined === cert) return;
                 if (cert.err) {
                     log.logerror(`${cert.file} had error: ${cert.err.message}`);
+                    return;
                 }
 
                 log.logdebug(cert);
@@ -529,7 +547,7 @@ exports.ensureDhparams = done => {
 
     o.on('close', code => {
         if (code !== 0) {
-            return done('Error code: ' + code);
+            return done(`Error code: ${code}`);
         }
 
         log.loginfo(`Saved to ${fpResolved}`);
@@ -553,9 +571,9 @@ exports.addOCSP = server => {
 
     log.logdebug('adding OCSPRequest listener');
     server.on('OCSPRequest', (cert, issuer, ocr_cb) => {
-        log.logdebug('OCSPRequest: ' + cert);
+        log.logdebug(`OCSPRequest: ${cert}`);
         ocsp.getOCSPURI(cert, (err, uri) => {
-            log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
+            log.logdebug(`OCSP Request, URI: ${uri  }, err=${ err}`);
             if (err) return ocr_cb(err);
             if (uri === null) return ocr_cb();  // not working OCSP server
 
@@ -566,7 +584,7 @@ exports.addOCSP = server => {
                 if (err2) return ocr_cb(err2);
 
                 if (cached) {
-                    log.logdebug('OCSP cache: ' + util.inspect(cached));
+                    log.logdebug(`OCSP cache: ${util.inspect(cached)}`);
                     return ocr_cb(err2, cached.response);
                 }
 
@@ -575,7 +593,7 @@ exports.addOCSP = server => {
                     ocsp: req.data
                 };
 
-                log.logdebug('OCSP req:' + util.inspect(req));
+                log.logdebug(`OCSP req:${util.inspect(req)}`);
                 ocspCache.request(req.id, options, ocr_cb);
             })
         })
@@ -587,7 +605,7 @@ exports.shutdown = () => {
 }
 
 function cleanOcspCache () {
-    log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
+    log.logdebug(`Cleaning ocspCache. How many keys? ${Object.keys(ocspCache.cache).length}`);
     Object.keys(ocspCache.cache).forEach((key) => {
         clearTimeout(ocspCache.cache[key].timer);
     });
@@ -595,6 +613,20 @@ function cleanOcspCache () {
 
 exports.certsByHost = certsByHost;
 exports.ocsp = ocsp;
+
+exports.get_rejectUnauthorized = (rejectUnauthorized, port, port_list) => {
+    // console.log(`rejectUnauthorized: ${rejectUnauthorized}, port ${port}, list: ${port_list}`)
+    if (rejectUnauthorized) {
+        // console.log('true for all ports');
+        return true;
+    }
+    if (port_list.includes(port)) {
+        // console.log('port matched true');
+        return true;
+    }
+    // console.log('returning default false');
+    return false;
+}
 
 function createServer (cb) {
     const server = net.createServer(cryptoSocket => {
@@ -613,6 +645,8 @@ function createServer (cb) {
             const options = Object.assign({}, certsByHost['*']);
             options.server = server;  // TLSSocket needs server for SNI to work
 
+            options.rejectUnauthorized = exports.get_rejectUnauthorized(options.rejectUnauthorized, cryptoSocket.localPort, exports.cfg.main.requireAuthorized);
+
             const cleartext = new tls.TLSSocket(cryptoSocket, options);
 
             pipe(cleartext, cryptoSocket);
@@ -625,11 +659,13 @@ function createServer (cb) {
                 .on('secure', () => {
                     log.logdebug('TLS secured.');
                     socket.emit('secure');
+                    const cipher = cleartext.getCipher();
+                    cipher.version = cleartext.getProtocol();
                     if (cb2) cb2(
                         cleartext.authorized,
                         cleartext.authorizationError,
                         cleartext.getPeerCertificate(),
-                        cleartext.getCipher()
+                        cipher
                     );
                 })
 
@@ -680,17 +716,19 @@ function connect (port, host, cb) {
 
         cleartext.on('error', err => {
             if (err.reason) {
-                log.logerror("client TLS error: " + err);
+                log.logerror(`client TLS error: ${err}`);
             }
         })
 
-        cleartext.on('secureConnect', function () {
+        cleartext.once('secureConnect', () => {
             log.logdebug('client TLS secured.');
+            const cipher = cleartext.getCipher();
+            cipher.version = cleartext.getProtocol();
             if (cb2) cb2(
                 cleartext.authorized,
                 cleartext.authorizationError,
                 cleartext.getPeerCertificate(),
-                cleartext.getCipher()
+                cipher
             );
         });
 

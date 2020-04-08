@@ -29,30 +29,32 @@ exports.hook_deny = function (next, connection, params) {
     let included;
     if (cfg.main.included_plugins) {
         included = cfg.main.included_plugins.split(/[;, ]+/);
-    } else if (cfg.main.excluded_plugins) {
+    }
+    else if (cfg.main.excluded_plugins) {
         skip = cfg.main.excluded_plugins.split(/[;, ]+/);
     }
 
     // 'included' mode: only delay deny plugins in the included list
     if (included && included.length) {
-        if (included.indexOf(pi_name) === -1 &&
-            included.indexOf(`${pi_name}:${pi_hook}`) === -1 &&
-            included.indexOf(`${pi_name}:${pi_hook}:${pi_function}`) === -1) {
+        if (!included.includes(pi_name) &&
+            !included.includes(`${pi_name}:${pi_hook}`) &&
+            !included.includes(`${pi_name}:${pi_hook}:${pi_function}`)) {
             return next();
         }
-    } else if (skip && skip.length) { // 'excluded' mode: delay deny everything except in skip list
+    }
+    else if (skip && skip.length) { // 'excluded' mode: delay deny everything except in skip list
         // Skip by <plugin name>
-        if (skip.indexOf(pi_name) !== -1) {
+        if (skip.includes(pi_name)) {
             connection.logdebug(plugin, `not delaying excluded plugin: ${pi_name}`);
             return next();
         }
         // Skip by <plugin name>:<hook>
-        if (skip.indexOf(`${pi_name}:${pi_hook}`) !== -1) {
+        if (skip.includes(`${pi_name}:${pi_hook}`)) {
             connection.logdebug(plugin, `not delaying excluded hook: ${pi_hook} in plugin: ${pi_name}`);
             return next();
         }
         // Skip by <plugin name>:<hook>:<function name>
-        if (skip.indexOf(`${pi_name}:${pi_hook}:${pi_function}`) !== -1) {
+        if (skip.includes(`${pi_name}:${pi_hook}:${pi_function}`)) {
             connection.logdebug(plugin, `not delaying excluded function: ${pi_function} on hook: ${pi_hook} in plugin: ${pi_name}`);
             return next();
         }
@@ -131,7 +133,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     return next();
 }
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     const transaction = connection.transaction;
 
     // Add a header showing all pre-DATA rejections

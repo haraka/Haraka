@@ -10,7 +10,7 @@ exports.register = function () {
 
 exports.load_vpop_ini = function () {
     const plugin = this;
-    plugin.cfg = plugin.config.get('auth_vpopmaild.ini', function () {
+    plugin.cfg = plugin.config.get('auth_vpopmaild.ini', () => {
         plugin.load_vpop_ini();
     });
 }
@@ -22,7 +22,7 @@ exports.hook_capabilities = function (next, connection) {
     const methods = [ 'PLAIN', 'LOGIN' ];
     if (plugin.cfg.main.sysadmin) { methods.push('CRAM-MD5'); }
 
-    connection.capabilities.push('AUTH ' + methods.join(' '));
+    connection.capabilities.push(`AUTH ${methods.join(' ')}`);
     connection.notes.allowed_auth_methods = methods;
 
     return next();
@@ -37,11 +37,11 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     const socket = plugin.get_vpopmaild_socket(user);
     socket.setEncoding('utf8');
 
-    socket.on('data', function (chunk) {
+    socket.on('data', chunk => {
         chunk_count++;
         if (chunk_count === 1) {
             if (/^\+OK/.test(chunk)) {
-                socket.write("slogin " + user + ' ' + passwd + "\n\r");
+                socket.write(`slogin ${user} ${passwd}\n\r`);
                 return;
             }
             socket.end();
@@ -54,8 +54,8 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
             socket.end();             // disconnect
         }
     });
-    socket.on('end', function () {
-        connection.loginfo(plugin, 'AUTH user="' + user + '" success=' + auth_success);
+    socket.on('end', () => {
+        connection.loginfo(plugin, `AUTH user="${user}" success=${auth_success}`);
         return cb(auth_success);
     });
 }
@@ -79,7 +79,7 @@ exports.get_sock_opts = function (user) {
     if (sect.host)     { plugin.sock_opts.host     = sect.host;     }
     if (sect.sysadmin) { plugin.sock_opts.sysadmin = sect.sysadmin; }
 
-    plugin.logdebug('sock: ' + plugin.sock_opts.host + ':' + plugin.sock_opts.port);
+    plugin.logdebug(`sock: ${plugin.sock_opts.host}:${plugin.sock_opts.port}`);
     return plugin.sock_opts;
 }
 
@@ -92,15 +92,15 @@ exports.get_vpopmaild_socket = function (user) {
     socket.setTimeout(300 * 1000);
     socket.setEncoding('utf8');
 
-    socket.on('timeout', function () {
+    socket.on('timeout', () => {
         plugin.logerror("vpopmaild connection timed out");
         socket.end();
     });
-    socket.on('error', function (err) {
-        plugin.logerror("vpopmaild connection failed: " + err);
+    socket.on('error', err => {
+        plugin.logerror(`vpopmaild connection failed: ${err}`);
         socket.end();
     });
-    socket.on('connect', function () {
+    socket.on('connect', () => {
         plugin.logdebug('vpopmail connected');
     });
     return socket;
@@ -119,12 +119,12 @@ exports.get_plain_passwd = function (user, connection, cb) {
     let plain_pass = null;
     let chunk_count = 0;
 
-    socket.on('data', function (chunk) {
+    socket.on('data', chunk => {
         chunk_count++;
-        plugin.logdebug(chunk_count + '\t' + chunk);
+        plugin.logdebug(`${chunk_count}\t${chunk}`);
         if (chunk_count === 1) {
             if (/^\+OK/.test(chunk)) {
-                socket.write("slogin " + sys[0] + ' ' + sys[1] + "\n\r");
+                socket.write(`slogin ${sys[0]} ${sys[1]}\n\r`);
                 return;
             }
             plugin.logerror("no ok to start");
@@ -134,7 +134,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
         if (chunk_count === 2) {
             if (/^\+OK/.test(chunk)) {
                 plugin.logdebug('login success, getting user info');
-                socket.write("user_info " + user + "\n\r");
+                socket.write(`user_info ${user}\n\r`);
                 return;
             }
             plugin.logerror("syadmin login failed");
@@ -142,7 +142,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
         }
         if (chunk_count > 2) {
             if (/^-ERR/.test(chunk)) {
-                plugin.lognotice("get_plain failed: " + chunk);
+                plugin.lognotice(`get_plain failed: ${chunk}`);
                 socket.end();         // disconnect
                 return;
             }
@@ -154,7 +154,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
             socket.write("quit\n\r");
         }
     });
-    socket.on('end', function () {
+    socket.on('end', () => {
         cb(plain_pass ? plain_pass.toString() : plain_pass);
     });
 }

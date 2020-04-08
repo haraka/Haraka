@@ -69,6 +69,7 @@ class Connection {
             info: null,          // c.remote_info
             closed: false,       // c.remote_closed
             is_private: false,
+            is_local: false,
         };
         this.hello = {
             host: null,          // c.hello_host
@@ -86,7 +87,7 @@ class Connection {
             type: null,
             timer: null,         // c.proxy_timer
         };
-        this.set('tls', 'enabled', (server.has_tls ? true : false));
+        this.set('tls', 'enabled', (!!server.has_tls));
 
         this.current_data = null;
         this.current_line = null;
@@ -100,7 +101,9 @@ class Connection {
         this.transaction = null;
         this.tran_count = 0;
         this.capabilities = null;
-        this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
+        this.ehlo_hello_message = config.get('ehlo_hello_message') || 'Haraka is at your service.';
+        this.connection_close_message = config.get('connection_close_message') || 'closing connection. Have a jolly good day.';
+        this.banner_includes_uuid = !!config.get('banner_includes_uuid');
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
         this.pipelining = false;
@@ -111,6 +114,7 @@ class Connection {
         this.start_time = Date.now();
         this.last_reject = '';
         this.max_bytes = parseInt(config.get('databytes')) || 0;
+        this.max_mime_parts = parseInt(config.get('max_mime_parts')) || 1000;
         this.totalbytes = 0;
         this.rcpt_count = {
             accept:   0,
@@ -122,13 +126,13 @@ class Connection {
             tempfail: 0,
             reject:   0,
         };
-        this.max_line_length = config.get('max_line_length') || 512;
-        this.max_data_line_length = config.get('max_data_line_length') || 992;
+        this.max_line_length = parseInt(config.get('max_line_length')) || 512;
+        this.max_data_line_length = parseInt(config.get('max_data_line_length')) || 992;
         this.results = new ResultStore(this);
         this.errors = 0;
         this.last_rcpt_msg = null;
         this.hook = null;
-        this.header_hide_version = config.get('header_hide_version') ? true : false;
+        this.header_hide_version = !!config.get('header_hide_version');
         if (!this.header_hide_version) {
             this.local.info += `/${JSON.parse(hpj).version}`;
         }
@@ -165,9 +169,8 @@ class Connection {
         const has_host = self.remote.host ? `${self.remote.host} ` : '';
         const rhost = `client ${has_host}[${self.remote.ip}]`
 
-        if (!self.client.on) {
-            return;
-        }
+        if (!self.client.on) return;
+
         self.client.on('end', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
@@ -190,7 +193,7 @@ class Connection {
 
         self.client.on('timeout', () => {
             if (self.state >= states.DISCONNECTING) return;
-            self.respond(421, 'timeout', function () {
+            self.respond(421, 'timeout', () => {
                 self.fail(`${rhost} connection timed out`);
             });
         });
@@ -199,9 +202,7 @@ class Connection {
             self.process_data(data);
         });
 
-        const ha_list = net.isIPv6(self.remote.ip) ?
-            haproxy_hosts_ipv6
-            : haproxy_hosts_ipv4;
+        const ha_list = net.isIPv6(self.remote.ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4;
 
         if (ha_list.some((element, index, array) => {
             return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
@@ -259,9 +260,15 @@ class Connection {
             loc[part] = val;
         }
 
-        // Set is_private automatically when remote.ip is set
+        // Set is_private, is_local automatically when remote.ip is set
         if (prop_str === 'remote.ip') {
-            this.set('remote.is_private', net_utils.is_private_ip(this.remote.ip));
+            this.set('remote.is_local', net_utils.is_local_ip(this.remote.ip));
+            if (this.remote.is_local) {
+                this.set('remote.is_private', true);
+            }
+            else {
+                this.set('remote.is_private', net_utils.is_private_ipv4(this.remote.ip));
+            }
         }
 
         // sunset 3.0.0
@@ -325,10 +332,10 @@ class Connection {
         /* eslint no-control-regex: 0 */
         if (/[^\x00-\x7F]/.test(this.current_line)) {
             // See if this is a TLS handshake
-            const buf = new Buffer(this.current_line.substr(0,3), 'binary');
+            const buf = Buffer.from(this.current_line.substr(0,3), 'binary');
             if (buf[0] === 0x16 && buf[1] === 0x03 &&
-               (buf[2] === 0x00 || buf[2] === 0x01)) // SSLv3/TLS1.x format
-            {
+               (buf[2] === 0x00 || buf[2] === 0x01) // SSLv3/TLS1.x format
+            ) {
                 // Nuke the current input buffer to prevent processing further input
                 this.current_data = null;
                 this.respond(501, 'SSL attempted over a non-SSL socket');
@@ -429,9 +436,8 @@ class Connection {
             }
             let this_line = this.current_data.slice(0, offset+1);
             // Hack: bypass this code to allow HAProxy's PROXY extension
-            if (this.state === states.PAUSE &&
-                this.proxy.allowed && /^PROXY /.test(this_line))
-            {
+            const proxyStart = this.proxy.allowed && /^PROXY /.test(this_line);
+            if (this.state === states.PAUSE && proxyStart) {
                 if (this.proxy.timer) clearTimeout(this.proxy.timer);
                 this.state = states.CMD;
                 this.current_data = this.current_data.slice(this_line.length);
@@ -498,13 +504,11 @@ class Connection {
 
         if (this.current_data && (this.current_data.length > maxlength) &&
                 (utils.indexOfLF(this.current_data, maxlength) === -1)) {
-            if (this.state !== states.DATA       &&
-                this.state !== states.PAUSE_DATA)
-            {
+            if (this.state !== states.DATA && this.state !== states.PAUSE_DATA) {
                 // In command mode, reject:
                 this.client.pause();
                 this.current_data = null;
-                return this.respond(521, "Command line too long", function () {
+                return this.respond(521, "Command line too long", () => {
                     self.disconnect();
                 });
             }
@@ -513,7 +517,7 @@ class Connection {
                 this.transaction.notes.data_line_length_exceeded = true;
                 const b = Buffer.concat([
                     this.current_data.slice(0, maxlength - 2),
-                    new Buffer("\r\n ", 'utf8'),
+                    Buffer.from("\r\n ", 'utf8'),
                     this.current_data.slice(maxlength - 2)
                 ], this.current_data.length + 3);
                 this.current_data = b;
@@ -537,7 +541,8 @@ class Connection {
         }
         if (!Array.isArray(msg)) {
             messages = msg.toString().split(/\n/);
-        } else {
+        }
+        else {
             messages = msg.slice();
         }
         messages = messages.filter((msg2) => {
@@ -867,7 +872,7 @@ class Connection {
             default:
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}, Haraka is at your service.`);
+                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message}`);
         }
     }
     ehlo_respond (retval, msg) {
@@ -901,7 +906,7 @@ class Connection {
                 // Hostname/domain should appear after 250
 
                 const response = [
-                    `${this.local.host} Hello ${this.get_remote('host')}, Haraka is at your service.`,
+                    `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message}`,
                     "PIPELINING",
                     "8BITMIME",
                     "SMTPUTF8",
@@ -921,7 +926,7 @@ class Connection {
     }
     quit_respond (retval, msg) {
         const self = this;
-        this.respond(221, msg || `${this.local.host} closing connection. Have a jolly good day.`, () => {
+        this.respond(221, msg || `${this.local.host} ${this.connection_close_message}`, () => {
             self.disconnect();
         });
     }
@@ -993,17 +998,17 @@ class Connection {
             }
         );
 
-        const store_results = (action) => {
+        function store_results (action) {
             let addr = sender.format();
             if (addr.length > 2) {  // all but null sender
                 addr = addr.substr(1, addr.length -2); // trim off < >
             }
             self.transaction.results.add({name: 'mail_from'}, {
-                action: action,
+                action,
                 code: constants.translate(retval),
                 address: addr,
             });
-        };
+        }
 
         switch (retval) {
             case constants.deny:
@@ -1042,21 +1047,22 @@ class Connection {
         const addr = rcpt.format();
         const recipient = {
             address: addr.substr(1, addr.length -2),
-            action:  action
+            action
         };
 
         if (msg && action !== 'accept') {
             if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
                 recipient.msg   = msg.reply;
                 recipient.code  = msg.code;
-            } else {
+            }
+            else {
                 recipient.msg  = msg;
                 recipient.code  = constants.translate(retval);
             }
         }
 
         this.transaction.results.push({name: 'rcpt_to'}, {
-            recipient: recipient,
+            recipient,
         });
     }
     rcpt_ok_respond (retval, msg) {
@@ -1165,7 +1171,7 @@ class Connection {
                     this.logalert("No plugin determined if relaying was allowed");
                 }
                 const rej_msg = `I cannot deliver mail for ${rcpt.format()}`;
-                this.respond(550, rej_msg, function () {
+                this.respond(550, rej_msg, () => {
                     self.rcpt_incr(rcpt, 'reject', rej_msg, retval);
                     self.transaction.rcpt_to.pop();
                 });
@@ -1215,18 +1221,23 @@ class Connection {
         this.loginfo(
             'HAProxy',
             {
-                proto: proto,
+                proto,
                 src_ip: `${src_ip}:${src_port}`,
                 dst_ip: `${dst_ip}:${dst_port}`,
             }
         );
 
         this.notes.proxy = {
-            type: 'haproxy', proto: proto,
-            src_ip: src_ip, src_port: src_port, dst_ip: dst_ip, dst_port: dst_port, proxy_ip: this.remote.ip
+            type: 'haproxy',
+            proto,
+            src_ip,
+            src_port,
+            dst_ip,
+            dst_port,
+            proxy_ip: this.remote.ip
         };
 
-        this.reset_transaction(function () {
+        this.reset_transaction(() => {
             self.set('proxy.ip', self.remote.ip);
             self.set('proxy.type', 'haproxy');
             self.relaying = false;
@@ -1244,7 +1255,7 @@ class Connection {
 
     cmd_internalcmd (line) {
         const self = this;
-        if (self.remote.ip != '127.0.0.1' && self.remote.ip != '::1') {
+        if (!self.remote.is_local) {
             return this.respond(501, "INTERNALCMD not allowed remotely");
         }
         const results = (String(line)).split(/ +/);
@@ -1254,6 +1265,9 @@ class Connection {
                 return this.respond(501, "Invalid internalcmd_key - check config");
             }
             results.shift();
+        }
+        else if (config.get('internalcmd_key')) {
+            return this.respond(501, "Missing internalcmd_key - check config");
         }
 
         // Now send the internal command to the master process
@@ -1327,7 +1341,7 @@ class Connection {
             return this.respond(503, 'Use EHLO/HELO before MAIL');
         }
         // Require authentication on connections to port 587 & 465
-        if (!this.relaying && [587,465].indexOf(this.local.port) !== -1) {
+        if (!this.relaying && [587,465].includes(this.local.port)) {
             this.errors++;
             return this.respond(550, 'Authentication required');
         }
@@ -1355,7 +1369,7 @@ class Connection {
         }
         // Get rest of key=value pairs
         const params = {};
-        results.forEach(function (param) {
+        results.forEach(param => {
             const kv = param.match(/^([^=]+)(?:=(.+))?$/);
             if (kv)
                 params[kv[1].toUpperCase()] = kv[2] || null;
@@ -1374,7 +1388,7 @@ class Connection {
         }
 
         const self = this;
-        this.init_transaction(function () {
+        this.init_transaction(() => {
             self.transaction.mail_from = from;
             if (self.hello.verb == 'HELO') {
                 self.transaction.encoding = 'binary';
@@ -1436,16 +1450,16 @@ class Connection {
         let sslheader;
 
         if (this.get('tls.cipher.version')) {
-            sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name} verify=`;
+            sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name}`;
             if (this.tls.verified) {
-                sslheader += 'OK)';
+                sslheader += ' verify=OK)';
             }
             else {
                 if (this.tls.verifyError && this.tls.verifyError.code === 'UNABLE_TO_GET_ISSUER_CERT') {
-                    sslheader += 'NO)';
+                    sslheader += ' verify=NO)';
                 }
                 else {
-                    sslheader += 'FAIL)';
+                    sslheader += ')';
                 }
             }
         }
@@ -1463,7 +1477,7 @@ class Connection {
     }
     auth_results (message) {
         // http://tools.ietf.org/search/rfc7001
-        const has_tran = (this.transaction && this.transaction.notes) ? true : false;
+        const has_tran = !!((this.transaction && this.transaction.notes));
 
         // initialize connection note
         if (!this.notes.authentication_results) {
@@ -1573,8 +1587,7 @@ class Connection {
         if (line.length === 3 &&
             line[0] === 0x2e &&
             line[1] === 0x0d &&
-            line[2] === 0x0a)
-        {
+            line[2] === 0x0a) {
             self.data_done();
             return;
         }
@@ -1582,10 +1595,9 @@ class Connection {
         // Look for .\n
         if (line.length === 2 &&
             line[0] === 0x2e &&
-            line[1] === 0x0a)
-        {
+            line[1] === 0x0a) {
             this.lognotice('Client sent bare line-feed - .\\n rather than .\\r\\n');
-            this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf.html", function () {
+            this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf.html", () => {
                 self.reset_transaction();
             });
             return;
@@ -1596,10 +1608,9 @@ class Connection {
             return;
         }
 
-        const max_mime_parts = config.get('max_mime_parts') || 1000;
-        if (this.transaction.mime_part_count >= max_mime_parts) {
+        if (this.transaction.mime_part_count >= this.max_mime_parts) {
             this.logcrit("Possible DoS attempt - too many MIME parts");
-            this.respond(554, "Transaction failed due to too many MIME parts", function () {
+            this.respond(554, "Transaction failed due to too many MIME parts", () => {
                 self.disconnect();
             });
             return;
@@ -1619,10 +1630,10 @@ class Connection {
         }
 
         // Check max received headers count
-        const max_received = config.get('max_received_count') || 100;
+        const max_received = parseInt(config.get('max_received_count')) || 100;
         if (this.transaction.header.get_all('received').length > max_received) {
             this.logerror("Incoming message had too many Received headers");
-            this.respond(550, "Too many received headers - possible mail loop", function () {
+            this.respond(550, "Too many received headers - possible mail loop", () => {
                 self.reset_transaction();
             });
             return;
@@ -1639,7 +1650,7 @@ class Connection {
             this.transaction.add_header('Authentication-Results', ar_field);
         }
 
-        this.transaction.end_data(function () {
+        this.transaction.end_data(() => {
             // As this will be called asynchronously,
             // make sure we still have a transaction.
             if (!self.transaction) return;
@@ -1747,7 +1758,7 @@ class Connection {
             case constants.cont:
                 break;
             default:
-                this.transaction.results.add(res_as, { msg: msg });
+                this.transaction.results.add(res_as, { msg });
                 break;
         }
     }
@@ -1761,7 +1772,7 @@ class Connection {
                 'queue',
                 {
                     code: constants.translate(retval),
-                    msg: msg
+                    msg
                 }
             );
         }
@@ -1839,7 +1850,7 @@ class Connection {
                 'queue',
                 {
                     code: constants.translate(retval),
-                    msg: msg
+                    msg
                 }
             );
         }

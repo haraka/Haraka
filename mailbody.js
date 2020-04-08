@@ -21,17 +21,23 @@ class Body extends events.EventEmitter {
         this.options = options || {};
         this.filters = [];
         this.bodytext = '';
-        this.body_text_encoded = '';
+
+        // Caution: slice before using!  We build up data in this buffer, and
+        // it always has extra space at the end.  Use
+        // this.body_text_encoded.slice(0, this.body_text_encoded_pos).
+        this.body_text_encoded = Buffer.alloc(buf_siz);
+        this.body_text_encoded_pos = 0;
+
         this.body_encoding = null;
         this.boundary = null;
         this.ct = null;
         this.decode_function = null;
         this.children = []; // if multipart
         this.state = 'start';
-        this.buf = new Buffer(buf_siz);
+        this.buf = Buffer.alloc(buf_siz);
         this.buf_fill = 0;
         this.decode_accumulator = '';
-        this.decode_qp = utils.decode_qp;
+        this.decode_qp = line => utils.decode_qp(line.toString());
         this.decode_7bit = this.decode_8bit;
     }
 
@@ -40,33 +46,37 @@ class Body extends events.EventEmitter {
     }
 
     set_banner (banners) {
-        this.add_filter(function (ct, enc, buf) {
-            return insert_banner(ct, enc, buf, banners);
-        });
+        this.add_filter((ct, enc, buf) => insert_banner(ct, enc, buf, banners));
     }
 
     parse_more (line) {
+        // Ensure we're working in buffers, for the tests (transaction should
+        // always pass buffers).
+        if (!Buffer.isBuffer(line)) line = Buffer.from(line);
+
         return this[`parse_${this.state}`](line);
     }
 
     parse_child (line) {
+        const line_string = line.toString();
+
         // check for MIME boundary
-        if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
+        if (line_string.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
 
             line = this.children[this.children.length -1].parse_end(line);
 
-            if (line.substr(this.boundary.length + 2, 2) === '--') {
+            if (line_string.substr(this.boundary.length + 2, 2) === '--') {
                 // end
                 this.state = 'end';
             }
             else {
-                this.emit('mime_boundary', line);
+                this.emit('mime_boundary', line_string);
                 const bod = new Body(new Header(), this.options);
-                this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
-                this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
-                this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
+                this.listeners('attachment_start').forEach(cb => { bod.on('attachment_start', cb) });
+                this.listeners('attachment_data' ).forEach(cb => { bod.on('attachment_data', cb) });
+                this.listeners('attachment_end'  ).forEach(cb => { bod.on('attachment_end', cb) });
                 this.listeners('mime_boundary').forEach(cb => bod.on('mime_boundary', cb));
-                this.filters.forEach(function (f) { bod.add_filter(f); });
+                this.filters.forEach(f => { bod.add_filter(f); });
                 this.children.push(bod);
                 bod.state = 'headers';
             }
@@ -77,14 +87,16 @@ class Body extends events.EventEmitter {
     }
 
     parse_headers (line) {
-        if (/^\s*$/.test(line)) {
+        const line_string = line.toString();
+
+        if (/^\s*$/.test(line_string)) {
             // end of headers
             this.header.parse(this.header_lines);
             delete this.header_lines;
             this.state = 'start';
         }
         else {
-            this.header_lines.push(line);
+            this.header_lines.push(line_string);
         }
         return line;
     }
@@ -137,21 +149,22 @@ class Body extends events.EventEmitter {
     }
 
     _empty_filter (ct, enc) {
-        let new_buf = new Buffer('');
-        this.filters.forEach(function (filter) {
+        let new_buf = Buffer.from('');
+        this.filters.forEach(filter => {
             new_buf = filter(ct, enc, new_buf) || new_buf;
         });
 
-        return new_buf.toString("binary");
+        return new_buf;
     }
 
     force_end () {
         if (this.state === 'attachment') {
             if (this.buf_fill > 0) {
                 // see below for why we create a new buffer here.
-                const to_emit = new Buffer(this.buf_fill);
+                const to_emit = Buffer.alloc(this.buf_fill);
                 this.buf.copy(to_emit, 0, 0, this.buf_fill);
                 this.attachment_stream.emit_data(to_emit);
+                this.buf_fill = 0;
             }
             this.attachment_stream.emit_end(true);
         }
@@ -159,15 +172,16 @@ class Body extends events.EventEmitter {
 
     parse_end (line) {
         if (!line) {
-            line = '';
+            line = Buffer.from('');
         }
 
         if (this.state === 'attachment') {
             if (this.buf_fill > 0) {
                 // see below for why we create a new buffer here.
-                const to_emit = new Buffer(this.buf_fill);
+                const to_emit = Buffer.alloc(this.buf_fill);
                 this.buf.copy(to_emit, 0, 0, this.buf_fill);
                 this.attachment_stream.emit_data(to_emit);
+                this.buf_fill = 0;
             }
             this.attachment_stream.emit_end();
         }
@@ -184,11 +198,12 @@ class Body extends events.EventEmitter {
         }
         this.body_encoding = enc;
 
-        // ignore these lines - but we could store somewhere I guess.
-        if (!this.body_text_encoded.length) return this._empty_filter(ct, enc) + line; // nothing to decode
+        if (!this.body_text_encoded_pos) { // nothing to decode
+            return Buffer.concat([this._empty_filter(ct, enc) || Buffer.from(''), line]);
+        }
         if (this.bodytext.length !== 0) return line;     // already decoded?
 
-        const buf = this.decode_function(this.body_text_encoded);
+        let buf = this.decode_function(this.body_text_encoded.slice(0, this.body_text_encoded_pos));
 
         if (this.filters.length) {
             // up until this point we've returned '' for line, so now we run
@@ -196,21 +211,22 @@ class Body extends events.EventEmitter {
             // whatever encoding scheme we used to decode it.
 
             let new_buf = buf;
-            this.filters.forEach(function (filter) {
+            this.filters.forEach(filter => {
                 new_buf = filter(ct, enc, new_buf) || new_buf;
             });
 
             // convert back to base_64 or QP if required:
             if (this.decode_function === this.decode_qp) {
-                line = `${utils.encode_qp(new_buf)}\n${line}`;
+                line = Buffer.from(`${utils.encode_qp(new_buf)}\n${line}`);
             }
             else if (this.decode_function === this.decode_base64) {
-                line = new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line;
+                line = Buffer.from(new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line);
             }
             else {
-                // "binary" is deprecated, lets hope this works...
-                line = new_buf.toString("binary") + line;
+                line = Buffer.concat([new_buf, line]);
             }
+
+            buf = new_buf;
         }
 
         // convert the buffer to UTF-8, stored in this.bodytext
@@ -256,25 +272,41 @@ class Body extends events.EventEmitter {
     }
 
     parse_body (line) {
-        this.body_text_encoded += line;
+        if (!Buffer.isBuffer(line)) line = Buffer.from(line);
+
+        // Grow the body_text_encoded buffer if we need more space.  Doing this
+        // instead of constant Buffer.concat()s means we allocate/copy way less
+        // often.
+        if (this.body_text_encoded_pos + line.length > this.body_text_encoded.length) {
+            let new_size = this.body_text_encoded.length * 2;
+            while (this.body_text_encoded_pos + line.length > new_size) new_size *= 2;
+
+            this.body_text_encoded = Buffer.alloc(
+                new_size, this.body_text_encoded.slice(0, this.body_text_encoded_pos));
+        }
+
+        line.copy(this.body_text_encoded, this.body_text_encoded_pos);
+        this.body_text_encoded_pos += line.length;
+
         if (this.filters.length) return '';
         return line;
     }
 
     parse_multipart_preamble (line) {
         if (!this.boundary) return line;
+        const line_string = line.toString();
 
-        if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
-            if (line.substr(this.boundary.length + 2, 2) === '--') {
+        if (line_string.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
+            if (line_string.substr(this.boundary.length + 2, 2) === '--') {
                 // end
             }
             else {
                 // next section
-                this.emit('mime_boundary', line);
+                this.emit('mime_boundary', line_string);
                 const bod = new Body(new Header(), this.options);
-                this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
+                this.listeners('attachment_start').forEach(cb => { bod.on('attachment_start', cb) });
                 this.listeners('mime_boundary').forEach(cb => bod.on('mime_boundary', cb));
-                this.filters.forEach(function (f) { bod.add_filter(f); });
+                this.filters.forEach(f => { bod.add_filter(f); });
                 this.children.push(bod);
                 bod.state = 'headers';
                 this.state = 'child';
@@ -286,9 +318,11 @@ class Body extends events.EventEmitter {
     }
 
     parse_attachment (line) {
+        const line_string = line.toString();
+
         if (this.boundary) {
-            if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
-                if (line.substr(this.boundary.length + 2, 2) === '--') {
+            if (line_string.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
+                if (line_string.substr(this.boundary.length + 2, 2) === '--') {
                     // end
                 }
                 else {
@@ -305,7 +339,7 @@ class Body extends events.EventEmitter {
             // using async code, it will get overwritten under us. Creating a new
             // buffer eliminates that problem (at the expense of a malloc and a
             // memcpy())
-            const to_emit = new Buffer(this.buf_fill);
+            const to_emit = Buffer.alloc(this.buf_fill);
             this.buf.copy(to_emit, 0, 0, this.buf_fill);
             this.attachment_stream.emit_data(to_emit);
             if (buf.length > buf_siz) {
@@ -329,7 +363,7 @@ class Body extends events.EventEmitter {
     decode_base64 (line) {
         // Remove all whitespace (such as newlines and errant spaces) from base64
         // before combining it with any previously unprocessed data.
-        let to_process = this.decode_accumulator + line.trim().replace(/[\s]+/g,'');
+        let to_process = this.decode_accumulator + line.toString().trim().replace(/[\s]+/g,'');
 
         // Sometimes base64 data lines will not be aligned with
         // byte boundaries. This is because each char in base64
@@ -347,8 +381,9 @@ class Body extends events.EventEmitter {
         if (emit_length > 0) {
             const emit_now = to_process.substring(0, emit_length);
             this.decode_accumulator = to_process.substring(emit_length);
-            return new Buffer(emit_now, 'base64');
-        } else {
+            return Buffer.from(emit_now, 'base64');
+        }
+        else {
             this.decode_accumulator = '';
             // This is the end of the base64 data, we don't really have enough bits
             // to fill up the bytes, but that's because we're on the last line, and ==
@@ -360,12 +395,12 @@ class Body extends events.EventEmitter {
             while (to_process.length > 0 && to_process.length < 4) {
                 to_process += '=';
             }
-            return new Buffer(to_process, 'base64');
+            return Buffer.from(to_process, 'base64');
         }
     }
 
     decode_8bit (line) {
-        return new Buffer(line, 'binary');
+        return Buffer.from(line, 'binary');
     }
 }
 
@@ -376,9 +411,7 @@ function _get_html_insert_position (buf) {
 
     // otherwise, if we return -1 then the buf.copy will die with
     // RangeError: out of range index
-    if (buf.length === 0){
-        return 0;
-    }
+    if (buf.length === 0) return 0;
 
     // TODO: consider re-writing this to go backwards from the end
     for (let i=0,l=buf.length; i<l; i++) {
@@ -387,8 +420,8 @@ function _get_html_insert_position (buf) {
                  (buf[i+3] === 111 || buf[i+3] === 79) && // "o" or "O"
                  (buf[i+4] === 100 || buf[i+4] === 68) && // "d" or "D"
                  (buf[i+5] === 121 || buf[i+5] === 89) && // "y" or "Y"
-                 buf[i+6] === 62)
-            {
+                 buf[i+6] === 62
+            ) {
                 // matched </body>
                 return i;
             }
@@ -396,8 +429,8 @@ function _get_html_insert_position (buf) {
                  (buf[i+3] === 116 || buf[i+3] === 84) && // "t" or "T"
                  (buf[i+4] === 109 || buf[i+4] === 77) && // "m" or "M"
                  (buf[i+5] === 108 || buf[i+5] === 76) && // "l" or "L"
-                 buf[i+6] === 62)
-            {
+                 buf[i+6] === 62
+            ) {
                 // matched </html>
                 return i;
             }
@@ -426,11 +459,11 @@ function insert_banner (ct, enc, buf, banners) {
     }
 
     if (!banner_buf) {
-        banner_buf = new Buffer(banner_str);
+        banner_buf = Buffer.from(banner_str);
     }
 
     // Allocate a new buffer: (7 or 2 is <P>...</P> vs \n...\n - correct that if you change those!)
-    const new_buf = new Buffer(buf.length + banner_buf.length + (is_html ? 7 : 2));
+    const new_buf = Buffer.alloc(buf.length + banner_buf.length + (is_html ? 7 : 2));
 
     // Now we find where to insert it and combine it with the original buf:
     if (is_html) {

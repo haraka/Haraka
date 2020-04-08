@@ -15,6 +15,7 @@ A unique UUID for this connection.
     * ip   - remote IP address
     * host - reverse DNS of the remote hosts IP
     * is_private - true if the remote IP is from a private (loopback, RFC 1918, link local, etc.) IP address.
+    * is_local - true if the remote IP is localhost (loopback, link local)
 
 * connection.local - info about the host that is running Haraka
 

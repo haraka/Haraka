@@ -5,14 +5,16 @@ node_js:
 #   - 0.10      # no longer maintained by node.js (2016-10-31)
 #   - 0.12      # maint. ended 2016-12-31
 #   - 4         # maint. ended 2018-04
-    - "6"       # maint. ends  2019-04
-    - "8"       # LTS
-    - "10"      # current
+#   - "6"       # maint. ended 2019-04
+#   - "8"       # maint. ends  2019-12
+    - "10"      # active to 2020-04, maint ends 2021-04
+    - "12"      # current to 2019-10, LTS to 2022-04
+    - "13"      # current to 2020-04
 
 matrix:
   fast_finish: true
   allow_failures:
-#   - node_js: "8"
+    - node_js: "13"
 
 services:
     - redis-server
@@ -24,13 +26,12 @@ script:
     - npm test
 
 after_success:
-    - npm install istanbul codecov
-    - npm run cover
-    - ./node_modules/.bin/codecov
+#   - npm install istanbul codecov
+#   - npm run cover
+#   - ./node_modules/.bin/codecov
 
 sudo: false
 
 cache:
     directories:
         - node_modules
-

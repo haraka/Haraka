@@ -26,10 +26,10 @@ exports.load_quarantine_ini = function () {
     })
 }
 
-const zeroPad = exports.zeroPad = function (n, digits) {
+const zeroPad = exports.zeroPad = (n, digits) => {
     n = n.toString();
     while (n.length < digits) {
-        n = '0' + n;
+        n = `0${n}`;
     }
     return n;
 }
@@ -43,7 +43,7 @@ exports.clean_tmp_directory = function (next) {
 
     if (fs.existsSync(tmp_dir)) {
         const dirent = fs.readdirSync(tmp_dir);
-        plugin.loginfo('Removing temporary files from: ' + tmp_dir);
+        plugin.loginfo(`Removing temporary files from: ${tmp_dir}`);
         for (let i=0; i<dirent.length; i++) {
             fs.unlinkSync(path.join(tmp_dir, dirent[i]));
         }
@@ -72,13 +72,10 @@ exports.get_base_dir = function () {
 exports.init_quarantine_dir = function (done) {
     const plugin = this;
     const tmp_dir = path.join(plugin.get_base_dir(), 'tmp');
-    mkdirp(tmp_dir, function (err) {
-        if (err) {
-            plugin.logerror(`Unable to create ${tmp_dir}`);
-        }
-        plugin.loginfo(`created ${tmp_dir}`);
-        done();
-    });
+    mkdirp(tmp_dir)
+        .then(made => plugin.loginfo(`created ${tmp_dir}`))
+        .catch(err => plugin.logerror(`Unable to create ${tmp_dir}`))
+        .finally(done);
 }
 
 exports.quarantine = function (next, connection) {
@@ -111,38 +108,38 @@ exports.quarantine = function (next, connection) {
     // successful we hardlink the file to the final destination and then
     // remove the temporary file to guarantee a complete file in the
     // final destination.
-    mkdirp(msg_dir, function (error) {
-        if (error) {
-            connection.logerror(plugin, 'Error creating directory: ' + msg_dir);
-            return next();
-        }
+    mkdirp(msg_dir)
+        .catch(err => {
+            connection.logerror(plugin, `Error creating directory: ${msg_dir}`);
+            next();
+        })
+        .then(ok => {
+            const ws = fs.createWriteStream(tmp_path);
 
-        const ws = fs.createWriteStream(tmp_path);
-
-        ws.on('error', function (err) {
-            connection.logerror(plugin, 'Error writing quarantine file: ' + err.message);
-            return next();
-        });
-        ws.on('close', function () {
-            fs.link(tmp_path, msg_path, function (err) {
-                if (err) {
-                    connection.logerror(plugin, 'Error writing quarantine file: ' + err);
-                }
-                else {
-                    // Add a note to where we stored the message
-                    txn.notes.quarantined = msg_path;
-                    txn.results.add(plugin, { pass: msg_path, emit: true });
-                    // Now delete the temporary file
-                    fs.unlink(tmp_path, function () {});
-                }
-                // Using notes.quarantine_action to decide what to do after the message is quarantined.
-                // Format can be either action = [ code, msg ] or action = code
-                const action = (connection.notes.quarantine_action || txn.notes.quarantine_action);
-                if (!action) return next();
-                if (Array.isArray(action)) return next(action[0], action[1]);
-                return next(action);
+            ws.on('error', err => {
+                connection.logerror(plugin, `Error writing quarantine file: ${err.message}`);
+                return next();
             });
+            ws.on('close', () => {
+                fs.link(tmp_path, msg_path, err => {
+                    if (err) {
+                        connection.logerror(plugin, `Error writing quarantine file: ${err}`);
+                    }
+                    else {
+                        // Add a note to where we stored the message
+                        txn.notes.quarantined = msg_path;
+                        txn.results.add(plugin, { pass: msg_path, emit: true });
+                        // Now delete the temporary file
+                        fs.unlink(tmp_path, () => {});
+                    }
+                    // Using notes.quarantine_action to decide what to do after the message is quarantined.
+                    // Format can be either action = [ code, msg ] or action = code
+                    const action = (connection.notes.quarantine_action || txn.notes.quarantine_action);
+                    if (!action) return next();
+                    if (Array.isArray(action)) return next(action[0], action[1]);
+                    return next(action);
+                });
+            });
+            txn.message_stream.pipe(ws, { line_endings: '\n' });
         });
-        txn.message_stream.pipe(ws, { line_endings: '\n' });
-    });
 }

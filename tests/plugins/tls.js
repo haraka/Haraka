@@ -20,23 +20,23 @@ function _set_up (done) {
 
 exports.plugin = {
     setUp : _set_up,
-    'has function register' : function (test) {
+    'has function register' (test) {
         test.expect(2);
         test.ok(this.plugin);
         test.equal('function', typeof this.plugin.register);
         test.done();
     },
-    'has function upgrade_connection' : function (test) {
+    'has function upgrade_connection' (test) {
         test.expect(1);
         test.equal('function', typeof this.plugin.upgrade_connection);
         test.done();
     },
-    'has function advertise_starttls' : function (test) {
+    'has function advertise_starttls' (test) {
         test.expect(1);
         test.equal('function', typeof this.plugin.advertise_starttls);
         test.done();
     },
-    'has function emit_upgrade_msg' : function (test) {
+    'has function emit_upgrade_msg' (test) {
         test.expect(1);
         test.equal('function', typeof this.plugin.emit_upgrade_msg);
         test.done();
@@ -44,11 +44,11 @@ exports.plugin = {
 }
 
 exports.register = {
-    setUp : function (done) {
+    setUp (done) {
         this.plugin = new Plugin('tls');
         done();
     },
-    'with certs, should call register_hook()' : function (test) {
+    'with certs, should call register_hook()' (test) {
         test.expect(1);
         this.plugin.register();
         test.ok(this.plugin.register_hook.called);
@@ -59,7 +59,7 @@ exports.register = {
 
 exports.emit_upgrade_msg = {
     setUp : _set_up,
-    'should emit a log message': function (test) {
+    'should emit a log message' (test) {
         test.expect(1);
         test.equal(this.plugin.emit_upgrade_msg(this.connection, true, '', {
             subject: {
@@ -70,7 +70,7 @@ exports.emit_upgrade_msg = {
         'secured: verified=true cn="TLS.subject" organization="TLS.org"');
         test.done();
     },
-    'should emit a log message with error': function (test) {
+    'should emit a log message with error' (test) {
         test.expect(1);
         test.equal(this.plugin.emit_upgrade_msg(this.connection, true, 'oops', {
             subject: {

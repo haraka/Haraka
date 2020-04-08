@@ -12,7 +12,8 @@ if (!process.env.HARAKA) {
 process.env.HARAKA = process.env.HARAKA || path.resolve('.');
 try {
     require.paths.push(makePathJoin());
-} catch (e) {
+}
+catch (e) {
     process.env.NODE_PATH = process.env.NODE_PATH ?
         (`${process.env.NODE_PATH}:${makePathJoin()}`) :
         (makePathJoin());
@@ -38,7 +39,13 @@ process.on('uncaughtException', err => {
 });
 
 let shutting_down = false;
-['SIGINT'].forEach((sig) => {
+const signals = ['SIGINT'];
+
+if (process.pid === 1) {
+    signals.push('SIGTERM')
+}
+
+signals.forEach((sig) => {
     process.on(sig, () => {
         if (shutting_down) return process.exit(1);
         shutting_down = true;

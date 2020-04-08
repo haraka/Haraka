@@ -55,7 +55,7 @@ exports.load_uri_config = function (next) {
         return next();
     }
     // Load excludes
-    this.config.get('data.uribl.excludes', 'list').forEach(function (domain) {
+    this.config.get('data.uribl.excludes', 'list').forEach(domain => {
         excludes[domain.toLowerCase()] = 1;
     });
     // Set defaults
@@ -195,7 +195,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         next(code, msg);
     }
 
-    timer = setTimeout(function () {
+    timer = setTimeout(() => {
         connection.logdebug(plugin, 'timeout');
         results.add(plugin, {err: `${type} timeout` });
         call_next();
@@ -207,14 +207,14 @@ exports.do_lookups = function (connection, next, hosts, type) {
         call_next();
     }
 
-    queries_to_run.forEach(function (query) {
+    queries_to_run.forEach(query => {
         let lookup = query.join('.');
         // Add root dot if necessary
         if (lookup[lookup.length-1] !== '.') {
-            lookup = lookup + '.';
+            lookup = `${lookup}.`;
         }
         pending_queries++;
-        dns.resolve4(lookup, function (err, addrs) {
+        dns.resolve4(lookup, (err, addrs) => {
             pending_queries--;
             connection.logdebug(plugin, `${lookup} => (${(err) ? err : addrs.join(', ')})`);
 
@@ -275,13 +275,13 @@ exports.do_lookups = function (connection, next, hosts, type) {
 exports.hook_lookup_rdns = function (next, connection) {
     this.load_uri_config(next);
     const plugin = this;
-    dns.reverse(connection.remote.ip, function (err, rdns) {
+    dns.reverse(connection.remote.ip, (err, rdns) => {
         if (err) {
             if (err.code) {
                 if (err.code === dns.NXDOMAIN) return next();
                 if (err.code === dns.NOTFOUND) return next();
             }
-            connection.results.add(plugin, {err: err });
+            connection.results.add(plugin, {err });
             return next();
         }
         plugin.do_lookups(connection, next, rdns, 'rdns');
@@ -306,9 +306,9 @@ exports.hook_mail = function (next, connection, params) {
     this.do_lookups(connection, next, params[0].host, 'envfrom');
 }
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     // enable mail body parsing
-    connection.transaction.parse_body = 1;
+    connection.transaction.parse_body = true;
     return next();
 }
 
@@ -319,41 +319,41 @@ exports.hook_data_post = function (next, connection) {
     const trans = connection.transaction;
 
     // From header
-    const do_from_header = function (cb) {
-        const from = trans.header.get('from');
+    function do_from_header (cb) {
+        const from = trans.header.get_decoded('from');
         const fmatch = email_re.exec(from);
         if (fmatch) {
             return plugin.do_lookups(connection, cb, fmatch[1], 'from');
         }
         cb();
-    };
+    }
 
     // Reply-To header
-    const do_replyto_header = function (cb) {
+    function do_replyto_header (cb) {
         const replyto = trans.header.get('reply-to');
         const rmatch = email_re.exec(replyto);
         if (rmatch) {
             return plugin.do_lookups(connection, cb, rmatch[1], 'replyto');
         }
         cb();
-    };
+    }
 
     // Message-Id header
-    const do_msgid_header = function (cb) {
+    function do_msgid_header (cb) {
         const msgid = trans.header.get('message-id');
         const mmatch = /@([^>]+)>/.exec(msgid);
         if (mmatch) {
             return plugin.do_lookups(connection, cb, mmatch[1], 'msgid');
         }
         cb();
-    };
+    }
 
     // Body
-    const do_body = function (cb) {
+    function do_body (cb) {
         const urls = {};
         extract_urls(urls, trans.body, connection, plugin);
         return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
-    };
+    }
 
     const chain = [ do_from_header, do_replyto_header, do_msgid_header, do_body ];
     function chain_caller (code, msg) {
@@ -390,7 +390,7 @@ function extract_urls (urls, body, connection, self) {
     // match plain hostname.tld
     while ((match = schemeless.exec(body.bodytext))) {
         try {
-            uri = url.parse('http://' + match[1]);
+            uri = url.parse(`http://${match[1]}`);
             urls[uri.hostname] = uri;
         }
         catch (error) {

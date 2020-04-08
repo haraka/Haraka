@@ -18,12 +18,12 @@ function _set_up (done) {
 
 exports.load_clamd_ini = {
     setUp : _set_up,
-    'none': function (test) {
+    'none' (test) {
         test.expect(1);
         test.deepEqual([], this.plugin.skip_list);
         test.done();
     },
-    'defaults': function (test) {
+    'defaults' (test) {
         test.expect(6);
         const cfg = this.plugin.cfg.main;
         test.equal('localhost:3310', cfg.clamd_socket);
@@ -34,7 +34,7 @@ exports.load_clamd_ini = {
         test.equal(false, cfg.randomize_host_order);
         test.done();
     },
-    'reject opts': function (test) {
+    'reject opts' (test) {
         test.expect(14);
         test.equal(true, this.plugin.rejectRE.test('Encrypted.'));
         test.equal(true, this.plugin.rejectRE.test('Heuristics.Structured.'));
@@ -62,7 +62,7 @@ exports.load_clamd_ini = {
 
 exports.hook_data = {
     setUp : _set_up,
-    'only_with_attachments, false': function (test) {
+    'only_with_attachments, false' (test) {
         test.expect(2);
         test.equal(false, this.plugin.cfg.main.only_with_attachments);
         const next = function () {
@@ -71,10 +71,10 @@ exports.hook_data = {
         }.bind(this);
         this.plugin.hook_data(next, this.connection);
     },
-    'only_with_attachments, true': function (test) {
+    'only_with_attachments, true' (test) {
         this.plugin.cfg.main.only_with_attachments=true;
         test.expect(2);
-        this.connection.transaction.attachment_hooks = function () {};
+        this.connection.transaction.attachment_hooks = () => {};
         const next = function () {
             test.equal(true, this.plugin.cfg.main.only_with_attachments);
             test.equal(true, this.connection.transaction.parse_body);
@@ -86,22 +86,112 @@ exports.hook_data = {
 
 exports.hook_data_post = {
     setUp : _set_up,
-    'skip attachment': function (test) {
+    'skip attachment' (test) {
         this.connection.transaction.notes = { clamd_found_attachment: false };
         this.plugin.cfg.main.only_with_attachments=true;
         test.expect(1);
         const next = function () {
-            test.ok(this.connection.transaction.results.get('clamd').skip);
+            test.ok(this.connection.transaction.results.get('clamd').skip.length > 0);
             test.done();
         }.bind(this);
         this.plugin.hook_data_post(next, this.connection);
     },
-    'message too big': function (test) {
+    'skip authenticated' (test) {
+        this.connection.notes.auth_user = 'user';
+        this.plugin.cfg.check.authenticated = false;
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip.length > 0);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'checks local IP' (test) {
+        this.connection.remote.is_local = true;
+        this.plugin.cfg.check.local_ip = true;
+
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip.length === 0);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'skips local IP' (test) {
+        this.connection.remote.is_local = true;
+        this.plugin.cfg.check.local_ip = false;
+
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip.length > 0);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'checks private IP' (test) {
+        this.connection.remote.is_private = true;
+        this.plugin.cfg.check.private_ip = true;
+
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip.length === 0);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'skips private IP' (test) {
+        this.connection.remote.is_private = true;
+        this.plugin.cfg.check.private_ip = false;
+
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip.length > 0);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'checks public ip' (test) {
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip.length === 0);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'skip localhost if check.local_ip = false and check.private_ip = true' (test) {
+        this.connection.remote.is_local = true;
+        this.connection.remote.is_private = true;
+
+        this.plugin.cfg.check.local_ip = false;
+        this.plugin.cfg.check.private_ip = true;
+
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip.length > 0);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'checks localhost if check.local_ip = true and check.private_ip = false' (test) {
+        this.connection.remote.is_local = true;
+        this.connection.remote.is_private = true;
+
+        this.plugin.cfg.check.local_ip = true;
+        this.plugin.cfg.check.private_ip = false;
+
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip.length === 0);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'message too big' (test) {
         this.connection.transaction.data_bytes=513;
         this.plugin.cfg.main.max_size=512;
         test.expect(1);
         const next = function () {
-            test.ok(this.connection.transaction.results.get('clamd').skip);
+            test.ok(this.connection.transaction.results.get('clamd').skip.length > 0);
             test.done();
         }.bind(this);
         this.plugin.hook_data_post(next, this.connection);
@@ -110,7 +200,7 @@ exports.hook_data_post = {
 
 exports.send_clamd_predata = {
     setUp : _set_up,
-    'writes the proper commands to clamd socket': function (test) {
+    'writes the proper commands to clamd socket' (test) {
         test.expect(1);
         const server = new net.createServer((socket) => {
             socket.on('data', (data) => {

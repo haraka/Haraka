@@ -12,8 +12,8 @@ exports.register = function () {
 
 exports.rabbitmq_queue = function (next, connection) {
     const plugin = this;
-    connection.transaction.message_stream.get_data(function (str) {
-        if (channel && channel.sendToQueue(queue, str, {deliveryMode: deliveryMode})) {
+    connection.transaction.message_stream.get_data(str => {
+        if (channel && channel.sendToQueue(queue, str, {deliveryMode})) {
             return next(OK);
         }
         else {
@@ -27,6 +27,7 @@ exports.init_amqp_connection = function () {
     const plugin = this;
     const cfg = this.config.get("rabbitmq.ini").rabbitmq;
 
+    const protocol = cfg.protocol || "amqp";
     const host = cfg.host || "127.0.0.1";
     const port = cfg.port || "5672";
     const vhost = cfg.vhost || "";
@@ -40,27 +41,27 @@ exports.init_amqp_connection = function () {
     const autoDelete = cfg.autoDelete === "true" || false;
     deliveryMode = cfg.deliveryMode || 2;
 
-    amqp.connect("amqp://"+encodeURIComponent(user)+":"+encodeURIComponent(password)+"@"+host+":"+port+vhost, function (err, conn){
+    amqp.connect(`${protocol}://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}${vhost}`, (err, conn) => {
         if (err) {
-            plugin.logerror("Connection to rabbitmq failed: " + err);
+            plugin.logerror(`Connection to rabbitmq failed: ${err}`);
             return;
         }
         // TODO: if !confirm conn.createChannel...
-        conn.createConfirmChannel(function (err2, ch) {
+        conn.createConfirmChannel((err2, ch) => {
             if (err2) {
-                plugin.logerror("Error creating rabbitmq channel: " + err2);
+                plugin.logerror(`Error creating rabbitmq channel: ${err2}`);
                 return conn.close();
             }
-            ch.assertExchange(exchangeName, exchangeType, {durable: durable}, function (err3, ok){
+            ch.assertExchange(exchangeName, exchangeType, {durable}, (err3, ok) => {
                 if (err3) {
-                    plugin.logerror("Error asserting rabbitmq exchange: " + err3);
+                    plugin.logerror(`Error asserting rabbitmq exchange: ${err3}`);
                     return conn.close();
                 }
                 ch.assertQueue(queueName,
-                    {durable: durable, autoDelete: autoDelete},
-                    function (err4, ok2) {
+                    {durable, autoDelete},
+                    (err4, ok2) => {
                         if (err4) {
-                            plugin.logerror("Error asserting rabbitmq queue: " + err4);
+                            plugin.logerror(`Error asserting rabbitmq queue: ${err4}`);
                             return conn.close();
                         }
                         queue = ok2.queue;

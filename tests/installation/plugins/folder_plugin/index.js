@@ -1,4 +1,4 @@
 "use strict";
 
-exports.register = function () {
+exports.register = () => {
 }
