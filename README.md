@@ -2,9 +2,9 @@
 Haraka - a Node.js Mail Server
 ------------------------------
 
-[![Build Status][ci-img]][ci-url]
+![Tests](https://github.com/haraka/Haraka/workflows/Haraka%20Tests/badge.svg)
+![Tests - Windows](https://github.com/haraka/Haraka/workflows/Haraka%20Tests%20-%20Windows/badge.svg)
 [![Coverage Status][cov-img]][cov-url]
-[![Windows Status][ci-win-img]][ci-win-url]
 
 
 
@@ -153,9 +153,5 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [16]: https://github.com/haraka/Haraka/blob/master/LICENSE
 [17]: https://github.com/baudehlo
 
-[ci-img]: https://travis-ci.org/haraka/Haraka.svg?branch=master
-[ci-url]: https://travis-ci.org/haraka/Haraka
 [cov-img]: https://codecov.io/github/haraka/Haraka/coverage.svg
 [cov-url]: https://codecov.io/github/haraka/Haraka?branch=master
-[ci-win-img]: https://ci.appveyor.com/api/projects/status/g29l24w7qwoam47f?svg=true
-[ci-win-url]: https://ci.appveyor.com/project/msimerson/haraka-pa8a5

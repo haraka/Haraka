@@ -11,6 +11,13 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
+        # node 0.6, no longer supported by async
+        # node 0.8, no longer supported by iconv
+        # node 0.10, maintenance ended 2016-10-31
+        # node 4, maint. ended 2016-12
+        # node 6, maint. ended 2018-04
+        # node 8, maint. ended 2019-12
+        # node 10, maint. ends 2021-04
         node-version: [10.x, 12.x, 13.x]
       fail-fast: false
 
