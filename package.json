@@ -29,7 +29,7 @@
     "ipaddr.js"             : "~1.9.0",
     "nopt"                  : "~4.0.1",
     "npid"                  : "~0.4.0",
-    "semver"                : "~7.2.1",
+    "semver"                : "~7.3.0",
     "sprintf-js"            : "~1.1.0",
     "haraka-config"         : ">=1.0.15",
     "haraka-constants"      : ">=1.0.5",
