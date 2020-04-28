@@ -8,12 +8,12 @@ const tls_socket = require('./tls_socket');
 exports.net_utils = require('haraka-net-utils');
 
 exports.register = function () {
-    const plugin = this;
+    tls_socket.load_tls_ini()
 
-    tls_socket.load_tls_ini();
+    if (tls_socket.cfg.redis.disable_for_failed_hosts) this.logdebug('Will disable STARTTLS for failing TLS hosts')
 
-    plugin.register_hook('capabilities',         'advertise_starttls');
-    plugin.register_hook('unrecognized_command', 'upgrade_connection');
+    this.register_hook('capabilities',         'advertise_starttls')
+    this.register_hook('unrecognized_command', 'upgrade_connection')
 }
 
 exports.shutdown = () => {
@@ -57,21 +57,21 @@ exports.advertise_starttls = function (next, connection) {
 
         if (!dbr) return enable_tls();
 
-        // last TLS attempt failed
-        redis.del(dbkey); // retry TLS next connection.
-
         connection.results.add(plugin, { msg: 'no_tls'});
-        return next();
+        return next(CONT, 'STARTTLS disabled because previous attempt failed')
     });
 }
 
-exports.set_notls = ip => {
+exports.set_notls = function (connection) {
 
-    if (!tls_socket.cfg.redis) return;
     if (!tls_socket.cfg.redis.disable_for_failed_hosts) return;
     if (!server.notes.redis) return;
 
-    server.notes.redis.set(`no_tls|${ip}`, true);
+    const expiry = tls_socket.cfg.redis.disable_inbound_expiry || 3600;
+
+    this.lognotice(connection, `STARTTLS failed. Marking ${connection.remote.ip} as non-TLS host for ${expiry} seconds`);
+
+    server.notes.redis.setex(`no_tls|${connection.remote.ip}`, expiry, (new Date()).toISOString());
 }
 
 exports.upgrade_connection = function (next, connection, params) {
@@ -92,8 +92,8 @@ exports.upgrade_connection = function (next, connection, params) {
         if (called_next) return;
         called_next = true;
         clearTimeout(connection.notes.tls_timer);
-        if (!disconnected) connection.lognotice(plugin, 'timeout');
-        plugin.set_notls(connection.remote.ip);
+        if (!disconnected) connection.lognotice(plugin, 'timeout setting up TLS');
+        plugin.set_notls(connection);
         return next(DENYSOFTDISCONNECT);
     }
 
