@@ -7,6 +7,7 @@
 * restore TLS version info, set correctly #2723
 * fix broken bannering on nested mime parts #2736
 * better error message when invalid HELO hostname is rejected
+* bring STARTTLS "TLS NO-GO" feature in line with Outbound's
 
 ### New features
 

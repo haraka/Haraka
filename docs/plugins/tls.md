@@ -178,3 +178,13 @@ mail, put them under an `[inbound]` parameter group. Outbound options
 can go under an `[outbound]` parameter group, and plugins that use
 SMTP tls for queueing such as `smtp_proxy` and `smtp_forward` can
 use that plugin name for plugin specific options.
+
+## `[redis]` section
+
+This section is mainly used to enable so called _TLS NO-GO_ feature that essentially stops advertising/using TLS if there was a problem setting it up previously. We use `no_tls|ip.add.re.ss` key to store the flag in redis. There are a couple of settings that control the behavior:
+
+`disable_for_failed_hosts = true` to enable the feature
+
+`disable_expiry = 604800` to set for how long we disable TLS for failing host, in seconds
+
+`disable_inbound_expiry = 3600` same as above, but applies to inbound (aka STARTTLS capability) only
