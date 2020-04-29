@@ -19,6 +19,7 @@
 
 * TLS: don't abort loading certs in config/tls dir when an error is encountered.
   Process every cert file and then emit errors. #2729
+* fix connection pool not being unique when hosts and ports were equal between domains #2788
 
 
 ## 2.8.25 - 2019-10-11
