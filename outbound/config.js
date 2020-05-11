@@ -2,10 +2,8 @@
 
 const config = require('haraka-config');
 
-let cfg = module.exports;
-
 function load_config () {
-    cfg = config.get('outbound.ini', {
+    let cfg = exports.cfg = config.get('outbound.ini', {
         booleans: [
             '-disabled',
             '-always_split',
@@ -44,8 +42,6 @@ function load_config () {
     if (!cfg.received_header) {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';
     }
-
-    module.exports = cfg;
 }
 
 load_config();

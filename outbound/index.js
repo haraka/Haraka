@@ -16,7 +16,7 @@ const trans       = require('../transaction');
 const plugins     = require('../plugins');
 const FsyncWriteStream = require('./fsync_writestream');
 
-const cfg         = require('./config');
+const cfgmod         = require('./config');
 const queuelib    = require('./queue');
 const HMailItem   = require('./hmail');
 const TODOItem    = require('./todo');
@@ -205,7 +205,7 @@ function stream_line_reader (stream, transaction, cb) {
 function get_deliveries (transaction) {
     const deliveries = [];
 
-    if (cfg.always_split) {
+    if (cfgmod.cfg.always_split) {
         logger.logdebug({name: "outbound"}, "always split");
         transaction.rcpt_to.forEach(rcpt => {
             deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});

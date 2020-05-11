@@ -36,7 +36,7 @@ setImmediate(() => {
     delivery_queue = queuelib.delivery_queue;
 });
 
-const cfg = require('./config');
+const cfgmod = require('./config');
 
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
@@ -151,7 +151,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     send () {
-        if (cfg.disabled) {
+        if (cfgmod.cfg.disabled) {
             // try again in 1 second if delivery is disabled
             this.logdebug("delivery disabled temporarily. Retrying in 1s.");
             const hmail = this;
@@ -274,7 +274,7 @@ class HMailItem extends events.EventEmitter {
                 if (mxlist[mx].path) {
                     this.mxlist.push(mxlist[mx]);
                 }
-                else if (cfg.ipv6_enabled) {
+                else if (cfgmod.cfg.ipv6_enabled) {
                     this.mxlist.push(
                         { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'AAAA' },
                         { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'A' }
@@ -559,7 +559,7 @@ class HMailItem extends events.EventEmitter {
             set_ehlo_props();
 
             if (secured) return auth_and_mail_phase();              // TLS already negotiated
-            if (!cfg.enable_tls) return auth_and_mail_phase();      // TLS not enabled
+            if (!cfgmod.cfg.enable_tls) return auth_and_mail_phase();      // TLS not enabled
             if (!smtp_properties.tls) return auth_and_mail_phase(); // TLS not advertised by remote
 
             if (obtls.cfg === undefined) {
@@ -625,10 +625,10 @@ class HMailItem extends events.EventEmitter {
                 self.discard();
             }
 
-            if (cfg.pool_concurrency_max && success) {
+            if (cfgmod.cfg.pool_concurrency_max && success) {
                 client_pool.release_client(socket, port, host, mx.bind, fin_sent);
             }
-            else if (cfg.pool_concurrency_max && !mx.using_lmtp) {
+            else if (cfgmod.cfg.pool_concurrency_max && !mx.using_lmtp) {
                 send_command('RSET');
             }
             else {
@@ -700,7 +700,7 @@ class HMailItem extends events.EventEmitter {
                     rcpt.dsn_smtp_response = response.join(' ');
                     rcpt.dsn_remote_mta = mx.exchange;
                 });
-                send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
+                send_command(cfgmod.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                 processing_mail = false;
                 return self.temp_fail(`Upstream error: ${code}${(extc) ? `${extc} ` : ''}${reason}`);
             }
@@ -738,7 +738,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
+                    send_command(cfgmod.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
                 }
@@ -885,7 +885,7 @@ class HMailItem extends events.EventEmitter {
                     }
                     break;
                 case 'quit':
-                    if (cfg.pool_concurrency_max) {
+                    if (cfgmod.cfg.pool_concurrency_max) {
                         self.logerror("We should NOT have sent QUIT from here...");
                     }
                     else {
@@ -1316,7 +1316,7 @@ class HMailItem extends events.EventEmitter {
         this.num_failures++;
 
         // Test for max failures which is configurable.
-        if (this.num_failures >= (cfg.maxTempFailures)) {
+        if (this.num_failures >= (cfgmod.cfg.maxTempFailures)) {
             return this.convert_temp_failed_to_bounce(`Too many failures (${err})`, extra);
         }
 
