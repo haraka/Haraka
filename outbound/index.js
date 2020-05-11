@@ -239,8 +239,8 @@ exports.send_trans_email = function (transaction, next) {
         transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
-    if (cfg.received_header !== 'disabled') {
-        transaction.add_leading_header('Received', `(${cfg.received_header}); ${utils.date_to_str(new Date())}`);
+    if (cfgmod.cfg.received_header !== 'disabled') {
+        transaction.add_leading_header('Received', `(${cfgmod.cfg.received_header}); ${utils.date_to_str(new Date())}`);
     }
 
     const connection = {

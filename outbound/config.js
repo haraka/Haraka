@@ -3,7 +3,7 @@
 const config = require('haraka-config');
 
 function load_config () {
-    let cfg = exports.cfg = config.get('outbound.ini', {
+    const cfg = exports.cfg = config.get('outbound.ini', {
         booleans: [
             '-disabled',
             '-always_split',
