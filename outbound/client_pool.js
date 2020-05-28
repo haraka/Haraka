@@ -7,21 +7,21 @@ const sock         = require('../line_socket');
 const server       = require('../server');
 const logger       = require('../logger');
 
-const cfgmod       = require('./config');
+const obc          = require('./config');
 
 function _create_socket (pool_name, port, host, local_addr, is_unix_socket, callback) {
     const socket = is_unix_socket ? sock.connect({path: host}) :
         sock.connect({port, host, localAddress: local_addr});
     socket.__pool_name = pool_name;
     socket.__uuid = utils.uuid();
-    socket.setTimeout(cfgmod.cfg.connect_timeout * 1000);
+    socket.setTimeout(obc.cfg.connect_timeout * 1000);
     logger.logdebug(
         '[outbound] created',
         {
             uuid: socket.__uuid,
             host,
             port,
-            pool_timeout: cfgmod.cfg.pool_timeout
+            pool_timeout: obc.cfg.pool_timeout
         }
     );
     socket.once('connect', () => {
@@ -47,7 +47,7 @@ function _create_socket (pool_name, port, host, local_addr, is_unix_socket, call
 function get_pool (port, host, local_addr, is_unix_socket, max) {
     port = port || 25;
     host = host || 'localhost';
-    const name = `outbound::${port}:${host}:${local_addr}:${cfgmod.cfg.pool_timeout}`;
+    const name = `outbound::${port}:${host}:${local_addr}:${obc.cfg.pool_timeout}`;
     if (!server.notes.pool) server.notes.pool = {};
     if (server.notes.pool[name]) return server.notes.pool[name];
 
@@ -79,7 +79,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
             socket.end(); // half close
         },
         max: max || 10,
-        idleTimeoutMillis: cfgmod.cfg.pool_timeout * 1000,
+        idleTimeoutMillis: obc.cfg.pool_timeout * 1000,
         log: (str, level) => {
             if (/this._availableObjects.length=/.test(str)) return;
             level = (level === 'verbose') ? 'debug' : level;
@@ -93,12 +93,12 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
 
 // Get a socket for the given attributes.
 exports.get_client = (port, host, local_addr, is_unix_socket, callback) => {
-    if (cfgmod.cfg.pool_concurrency_max == 0) {
+    if (obc.cfg.pool_concurrency_max == 0) {
         return _create_socket(null, port, host, local_addr, is_unix_socket, callback);
     }
 
-    const pool = get_pool(port, host, local_addr, is_unix_socket, cfgmod.cfg.pool_concurrency_max);
-    if (pool.waitingClientsCount() >= cfgmod.cfg.pool_concurrency_max) {
+    const pool = get_pool(port, host, local_addr, is_unix_socket, obc.cfg.pool_concurrency_max);
+    if (pool.waitingClientsCount() >= obc.cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
     }
     pool.acquire((err, socket) => {
@@ -114,7 +114,7 @@ exports.release_client = (socket, port, host, local_addr, error) => {
 
     const name = socket.__pool_name;
 
-    if (!name && cfgmod.cfg.pool_concurrency_max == 0) {
+    if (!name && obc.cfg.pool_concurrency_max == 0) {
         return sockend();
     }
 
@@ -138,7 +138,7 @@ exports.release_client = (socket, port, host, local_addr, error) => {
         return sockend();
     }
 
-    if (cfgmod.cfg.pool_timeout == 0) {
+    if (obc.cfg.pool_timeout == 0) {
         logger.loginfo("[outbound] Pool_timeout is zero - shutting it down");
         return sockend();
     }

@@ -17,11 +17,11 @@ const path        = require('path');
 const util_hmailitem = require('./fixtures/util_hmailitem');
 const TODOItem    = require('../outbound/todo');
 const HMailItem   = require('../outbound/hmail');
-const ob_cfgmod      = require('../outbound/config');
+const obc         = require('../outbound/config');
 const outbound    = require('../outbound');
 const mock_sock   = require('./fixtures/line_socket');
 
-ob_cfgmod.cfg.pool_concurrency_max = 0;
+obc.cfg.pool_concurrency_max = 0;
 
 const outbound_context = {
     TODOItem,
