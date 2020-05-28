@@ -1,6 +1,8 @@
 
 ## NEXT - 20YY-MM-DD
 
+* fix outbound config reloading after outbound has been split off into pieces
+
 ### Changes
 
 * lint: add 'prefer-template'
