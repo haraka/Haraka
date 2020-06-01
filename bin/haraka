@@ -10,7 +10,6 @@ const nopt = require('nopt');
 const path = require('path');
 const os   = require('os');
 
-const mkdirp  = require('mkdirp');
 const utils   = require('haraka-utils');
 const sprintf = require('sprintf-js').sprintf;
 const base = path.join(__dirname, '..');
@@ -136,8 +135,8 @@ function mkDir (dstPath) {
     catch (ignore) {}
 
     try {
-        mkdirp.sync(dstPath);
-        create(dstPath)
+        fs.mkdirSync(dstPath, { recursive: true });
+        create(dstPath);
     }
     catch (e) {
         // File exists

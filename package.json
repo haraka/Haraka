@@ -39,7 +39,6 @@
     "haraka-results"        : "^2.0.0",
     "haraka-tld"            : "*",
     "haraka-utils"          : "*",
-    "mkdirp"                : "~1.0.0",
     "openssl-wrapper"       : "^0.3.4",
     "sockaddr"              : "^1.0.1"
   },
