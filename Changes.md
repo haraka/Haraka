@@ -1,6 +1,8 @@
 
 ## NEXT - 20YY-MM-DD
 
+* fix outbound config reloading after outbound has been split off into pieces
+
 ### Changes
 
 * lint: add 'prefer-template'
@@ -21,7 +23,7 @@
 * TLS: don't abort loading certs in config/tls dir when an error is encountered.
   Process every cert file and then emit errors. #2729
 * fix connection pool not being unique when hosts and ports were equal between domains #2788
-
+* smtp_forward: this plugin does not use the queue_outbound hook anymore #2795
 
 ## 2.8.25 - 2019-10-11
 
