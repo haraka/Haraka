@@ -350,7 +350,7 @@ class HMailItem extends events.EventEmitter {
                 mx.bind_helo = self.todo.notes.outbound_helo;
             }
             else {
-                mx.bind_helo = config.get('me');
+                mx.bind_helo = net_utils.get_primary_host_name();
             }
         }
 
@@ -1000,7 +1000,7 @@ class HMailItem extends events.EventEmitter {
 
         const values = {
             date: utils.date_to_str(new Date()),
-            me:   config.get('me'),
+            me:   net_utils.get_primary_host_name(),
             from,
             to,
             subject: header.get_decoded('Subject').trim(),
@@ -1012,7 +1012,7 @@ class HMailItem extends events.EventEmitter {
                 }
             }).join('\n'),
             pid: process.pid,
-            msgid: `<${utils.uuid()}@${config.get('me')}>`,
+            msgid: `<${utils.uuid()}@${net_utils.get_primary_host_name()}>`,
         };
 
         bounce_msg_.forEach(line => {
@@ -1122,7 +1122,7 @@ class HMailItem extends events.EventEmitter {
         if (originalMessageId != '') {
             bounce_body.push(`Original-Envelope-Id: ${originalMessageId.replace(/(\r?\n)*$/, '')}${CRLF}`);
         }
-        bounce_body.push(`Reporting-MTA: dns;${config.get('me')}${CRLF}`);
+        bounce_body.push(`Reporting-MTA: dns;${net_utils.get_primary_host_name()}${CRLF}`);
         if (self.todo.queue_time) {
             bounce_body.push(`Arrival-Date: ${utils.date_to_str(new Date(self.todo.queue_time))}${CRLF}`);
         }
