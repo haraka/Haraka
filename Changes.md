@@ -5,6 +5,7 @@
 
 ### Changes
 
+* outbound: add os.hostname() as default for outbound HELO #2813
 * lint: add 'prefer-template'
 * restore TLS version info, set correctly #2723
 * fix broken bannering on nested mime parts #2736
