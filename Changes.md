@@ -1,29 +1,43 @@
 
 ## NEXT - 20YY-MM-DD
 
-* fix outbound config reloading after outbound has been split off into pieces
 
 ### Changes
 
+* outbound: add os.hostname() as default for outbound HELO #2813
+* use node v10's mkdir instead of mkdirp #2797
+* CI: drop appveyor and Travis #2784
 * lint: add 'prefer-template'
-* restore TLS version info, set correctly #2723
+* update async to version 3.2.0 #2764
+* update redis to version 3.0.0 #2759
+* remove deprecated max_unrecognized_commands from config #2755
+* CI: add ES2017 support, drop node 8 #2740
 * fix broken bannering on nested mime parts #2736
+* restore TLS version info, set correctly #2723
 * better error message when invalid HELO hostname is rejected
-* bring STARTTLS "TLS NO-GO" feature in line with Outbound's
+* bring STARTTLS "TLS NO-GO" feature in line with Outbound's #2792
 
 ### New features
 
-* connection_close_message: added ability to override close connection message replacing `closing connection. Have a jolly good day.`
-* tls: add configurable minVersion to tls socket options
-* add JSON format for logging
+* Allow web interface to be bound to unix socket #2768
+* tls: add configurable minVersion to tls socket options #2738
+* connection_close_message: added ability to override close connection message replacing `closing connection. Have a jolly good day.` #2730
+* add JSON format for logging #2739
 * support binding web interface to unix socket
 
 ### Fixes
 
-* TLS: don't abort loading certs in config/tls dir when an error is encountered.
-  Process every cert file and then emit errors. #2729
-* fix connection pool not being unique when hosts and ports were equal between domains #2788
+* fix outbound config reloading after outbound split #2802
+* smtp_forward: remove redundant outbound hook #2796
 * smtp_forward: this plugin does not use the queue_outbound hook anymore #2795
+* Fix connection pool not being unique when hosts and ports were equal between domains #2789
+* fix connection pool not being unique when hosts and ports were equal between domains #2788
+* Fix outbound.bounce_message To: header (and add Auto-Submitted) #2782
+* Fix support for DKIM signing when forwarding and aliasing is enabled #2776
+* Better error message when EHLO hostname does not have a dot #2775
+* fix bannering on nested mime parts #2737
+* TLS: don't abort loading certs in config/tls dir when an error is encountered. Process every cert file and then emit errors. #2729
+* restore TLS version, correctly #2723
 
 ## 2.8.25 - 2019-10-11
 
