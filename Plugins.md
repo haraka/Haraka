@@ -41,7 +41,6 @@ Create a PR adding yours to this list.
 | [bounce][url-bounce]        | Many options for bounce processing |
 | [clamd][url-clamd]          | Anti-Virus scanning with ClamAV |
 | [connect.p0f][url-p0f]      | TCP Fingerprinting |
-| [data.headers][url-headers] | Inspect and verify various email headers |
 | [data.signatures][url-sigs] | Block emails whose bodies match signatures |
 | [data.uribl][url-uribl]     | Block based on URI blacklists |
 | [dcc][url-dcc]              | Distributed Checksum Clearinghouse |
@@ -57,6 +56,7 @@ Create a PR adding yours to this list.
 | [fcrdns][url-fcrdns]        | Forward Confirmed reverse DNS |
 | [geoip][url-geoip]          | get geographic information about mail senders |
 | [greylist][url-greylist]    | Greylisting |
+| [headers][url-headers]      | Inspect and verify various email headers |
 | [helo.checks][url-helo]     | Validaty checks of the HELO string |
 | [karma][url-karma]          | Dynamic scoring of incoming connections |
 | [known-senders][url-known-senders] | Reward emails from those you send mail to |
@@ -128,7 +128,7 @@ Create a PR adding yours to this list.
 [url-dovecot]: https://github.com/haraka/haraka-plugin-dovecot
 [url-fcrdns]: https://github.com/haraka/haraka-plugin-fcrdns
 [url-p0f]: https://github.com/haraka/haraka-plugin-p0f
-[url-headers]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.headers.md
+[url-headers]: https://github.com/haraka/haraka-plugin-headers
 [url-sigs]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.signatures.md
 [url-uribl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.uribl.md
 [url-dcc]: https://github.com/haraka/haraka-plugin-dcc

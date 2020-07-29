@@ -17,7 +17,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v10.17.0"
+    "node": ">= v10.21.0"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
@@ -51,6 +51,7 @@
     "haraka-plugin-fcrdns"  : "*",
     "haraka-plugin-graph"   : "*",
     "haraka-plugin-geoip"   : "*",
+    "haraka-plugin-headers" : "*",
     "haraka-plugin-karma"   : "*",
     "haraka-plugin-limit"   : "*",
     "haraka-plugin-p0f"     : "*",
