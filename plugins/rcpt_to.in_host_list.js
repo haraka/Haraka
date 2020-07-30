@@ -20,9 +20,10 @@ exports.register = function () {
 exports.hook_rcpt = function (next, connection, params) {
     const plugin = this;
     const txn = connection.transaction;
-    if (!txn) { return; }
+    if (!txn) return;
 
     const rcpt = params[0];
+
     // Check for RCPT TO without an @ first - ignore those here
     if (!rcpt.host) {
         txn.results.add(plugin, {fail: 'rcpt!domain'});
