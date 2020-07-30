@@ -149,12 +149,12 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
             return do_cb(new Error('bsdtar timed out'));
         }, plugin.cfg.timeout);
 
-        let lines = "";
+        let lines = '';
         bsdtar.stdout.on('data', (data) => {
             lines += data;
         });
 
-        let stderr = "";
+        let stderr = '';
         bsdtar.stderr.on('data', (data) => {
             stderr += data;
         });
