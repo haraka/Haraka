@@ -1052,18 +1052,16 @@ class Connection {
 
         if (msg && action !== 'accept') {
             if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
-                recipient.msg   = msg.reply;
-                recipient.code  = msg.code;
+                recipient.msg  = msg.reply;
+                recipient.code = msg.code;
             }
             else {
                 recipient.msg  = msg;
-                recipient.code  = constants.translate(retval);
+                recipient.code = constants.translate(retval);
             }
         }
 
-        this.transaction.results.push({name: 'rcpt_to'}, {
-            recipient,
-        });
+        this.transaction.results.push({name: 'rcpt_to'}, { recipient });
     }
     rcpt_ok_respond (retval, msg) {
         const self = this;

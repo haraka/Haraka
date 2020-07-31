@@ -20,23 +20,23 @@
     "node": ">= v10.17.0"
   },
   "dependencies": {
-    "address-rfc2821"       : "^1.1.1",
-    "address-rfc2822"       : "^2.0.0",
+    "address-rfc2821"       : "^1.1.3",
+    "address-rfc2822"       : "^2.0.5",
     "async"                 : "~3.2.0",
     "daemon"                : "~1.1.0",
-    "generic-pool"          : "~2.5.0",
-    "iconv"                 : "~2.3.0",
-    "ipaddr.js"             : "~1.9.0",
-    "nopt"                  : "~4.0.1",
+    "generic-pool"          : "~2.5.4",
+    "iconv"                 : "~2.3.5",
+    "ipaddr.js"             : "~1.9.1",
+    "nopt"                  : "~4.0.3",
     "npid"                  : "~0.4.0",
-    "semver"                : "~7.3.0",
-    "sprintf-js"            : "~1.1.0",
+    "semver"                : "~7.3.2",
+    "sprintf-js"            : "~1.1.2",
     "haraka-config"         : ">=1.0.15",
     "haraka-constants"      : ">=1.0.5",
     "haraka-dsn"            : "*",
     "haraka-net-utils"      : ">=1.1.2",
     "haraka-notes"          : "*",
-    "haraka-results"        : "^2.0.0",
+    "haraka-results"        : "^2.0.3",
     "haraka-tld"            : "*",
     "haraka-utils"          : "*",
     "openssl-wrapper"       : "^0.3.4",
@@ -87,6 +87,7 @@
     "test": "node run_tests",
     "lint": "npx eslint *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
     "lintfix": "npx eslint --fix *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "cover": "NODE_ENV=cov npx nyc --reporter=lcovonly -x tests npm run test"
+    "cover": "NODE_ENV=cov npx nyc --reporter=lcovonly npm run test",
+    "versions": "npx dependency-version-checker check"
   }
 }
