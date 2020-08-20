@@ -16,6 +16,7 @@
 * restore TLS version info, set correctly #2723
 * better error message when invalid HELO hostname is rejected
 * bring STARTTLS "TLS NO-GO" feature in line with Outbound's #2792
+* removed plugins/data.headers to haraka-plugin-headers #2826
 
 ### New features
 
