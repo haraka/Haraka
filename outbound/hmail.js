@@ -93,6 +93,11 @@ class HMailItem extends events.EventEmitter {
                 this.temp_fail(errMsg);
                 return
             }
+            
+            if (bytes.length === 0) {
+                this.logerror(`Error reading queue file ${this.filename}: no bytes read`);
+                return
+            }
 
             const todo_len = bytes.readUInt32BE(0);
             this.logdebug(`todo header length: ${todo_len}`);
