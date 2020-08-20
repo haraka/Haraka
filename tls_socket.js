@@ -61,7 +61,12 @@ class pluggableStream extends stream.Stream {
         self.targetsocket.on('connect', (a, b) => {
             self.emit('connect', a, b);
         });
+        self.targetsocket.on('secureConnect', (a, b) => {
+            self.emit('secureConnect', a, b);
+            self.emit('secure', a, b);
+        });
         self.targetsocket.on('secureConnection', (a, b) => {
+            // investigate this for removal, see #2743
             self.emit('secureConnection', a, b);
             self.emit('secure', a, b);
         });
@@ -95,16 +100,13 @@ class pluggableStream extends stream.Stream {
             self.remoteAddress = self.targetsocket.remoteAddress;
         }
     }
-
     clean (data) {
         if (this.targetsocket && this.targetsocket.removeAllListeners) {
-            this.targetsocket.removeAllListeners('data');
-            this.targetsocket.removeAllListeners('secureConnection');
-            this.targetsocket.removeAllListeners('secure');
-            this.targetsocket.removeAllListeners('end');
-            this.targetsocket.removeAllListeners('close');
-            this.targetsocket.removeAllListeners('error');
-            this.targetsocket.removeAllListeners('drain');
+            [   'data', 'secure', 'secureConnect', 'secureConnection',
+                'end', 'close', 'error', 'drain'
+            ].forEach((name) => {
+                this.targetsocket.removeAllListeners(name);
+            })
         }
         this.targetsocket = {};
         this.targetsocket.write = () => {};
