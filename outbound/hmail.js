@@ -71,17 +71,20 @@ class HMailItem extends events.EventEmitter {
     }
 
     size_file () {
-        const self = this;
-        fs.stat(self.path, (err, stats) => {
+        fs.stat(this.path, (err, stats) => {
             if (err) {
                 // we are fucked... guess I need somewhere for this to go
-                self.logerror(`Error obtaining file size: ${err}`);
-                self.temp_fail("Error obtaining file size");
+                this.logerror(`Error obtaining file size: ${err}`);
+                this.temp_fail("Error obtaining file size");
             }
-            else {
-                self.file_size = stats.size;
-                self.read_todo();
+
+            if (stats.size === 0) {
+                this.logerror(`Error reading queue file ${self.filename}: zero bytes`);
+                return;
             }
+
+            this.file_size = stats.size;
+            this.read_todo();
         });
     }
 
