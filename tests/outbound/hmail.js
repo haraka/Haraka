@@ -77,7 +77,6 @@ exports.HMailItem = {
             test.done();
         })
     },
-    
     'lifecycle, reads and writes a haraka queue file' (test) {
         test.expect(1);
 
