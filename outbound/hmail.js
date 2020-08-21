@@ -78,7 +78,6 @@ class HMailItem extends events.EventEmitter {
                 this.temp_fail("Error obtaining file size");
                 return
             }
-
             if (stats.size === 0) {
                 this.logerror(`Error reading queue file ${this.filename}: zero bytes`);
                 this.emit('error', `Error reading queue file ${this.filename}: zero bytes`);
