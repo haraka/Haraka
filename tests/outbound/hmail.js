@@ -64,6 +64,20 @@ exports.HMailItem = {
             test.done();
         })
     },
+    'zero-length file load skip w/o crash' (test) {
+        test.expect(1);
+        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_zero', 'tests/queue/zero-length', {});
+        this.hmail.on('ready', () => {
+            test.ok(this.hmail)
+            test.done();
+        })
+        this.hmail.on('error', (err) => {
+            console.log(err);
+            test.ok(err);
+            test.done();
+        })
+    },
+    
     'lifecycle, reads and writes a haraka queue file' (test) {
         test.expect(1);
 

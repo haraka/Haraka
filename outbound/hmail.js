@@ -76,11 +76,13 @@ class HMailItem extends events.EventEmitter {
                 // we are fucked... guess I need somewhere for this to go
                 this.logerror(`Error obtaining file size: ${err}`);
                 this.temp_fail("Error obtaining file size");
+                return
             }
 
             if (stats.size === 0) {
-                this.logerror(`Error reading queue file ${self.filename}: zero bytes`);
-                return;
+                this.logerror(`Error reading queue file ${this.filename}: zero bytes`);
+                this.emit('error', `Error reading queue file ${this.filename}: zero bytes`);
+                return
             }
 
             this.file_size = stats.size;
