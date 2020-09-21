@@ -7,6 +7,7 @@
 * restore TLS version info, set correctly #2723
 * fix broken bannering on nested mime parts #2736
 * better error message when invalid HELO hostname is rejected
+* send temp instead of hard error when asked to by `unrecognized_command`
 
 ### New features
 
