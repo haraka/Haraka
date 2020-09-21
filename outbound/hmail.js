@@ -582,7 +582,7 @@ class HMailItem extends events.EventEmitter {
                 () => { // Clear to GO
                     self.logdebug(`Trying TLS for domain: ${self.todo.domain}, host: ${host}`);
 
-                    socket.on('secure', () => {
+                    socket.once('secure', () => {
                         // Set this flag so we don't try STARTTLS again if it
                         // is incorrectly offered at EHLO once we are secured.
                         secured = true;
