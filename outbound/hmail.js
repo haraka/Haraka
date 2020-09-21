@@ -706,7 +706,7 @@ class HMailItem extends events.EventEmitter {
                 });
                 send_command(obc.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                 processing_mail = false;
-                return self.temp_fail(`Upstream error: ${code}${(extc) ? `${extc} ` : ''}${reason}`);
+                return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
             }
             else if (code.match(/^4/)) {
                 authenticating = false;
