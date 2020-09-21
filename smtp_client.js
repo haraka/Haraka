@@ -295,7 +295,8 @@ exports.get_pool = (server, port, host, cfg) => {
     if (cfg === undefined) cfg = {};
     const connect_timeout = cfg.connect_timeout || 30;
     const pool_timeout = cfg.pool_timeout || cfg.timeout || 300;
-    const name = `${port}:${host}:${pool_timeout}`;
+    const auth_user = cfg.auth_user || 'no_user';
+    const name = `${port}:${host}:${pool_timeout}:${auth_user}`;
     if (!server.notes.pool) server.notes.pool = {};
     if (server.notes.pool[name]) return server.notes.pool[name];
 

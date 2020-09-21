@@ -95,7 +95,7 @@ class OutboundTLS {
 
         logger.lognotice(obtls, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
 
-        obtls.db.setex(dbkey, expiry, new Date(), (err, dbr) => {
+        obtls.db.setex(dbkey, expiry, (new Date()).toISOString(), (err, dbr) => {
             if (err) logger.logerror(obtls, `Redis returned error: ${err}`);
             cb();
         });

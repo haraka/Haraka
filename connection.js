@@ -59,7 +59,7 @@ class Connection {
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
-            host: config.get('me') || os.hostname(),
+            host: net_utils.get_primary_host_name(),
             info: 'Haraka',
         };
         this.remote = {
@@ -1052,18 +1052,16 @@ class Connection {
 
         if (msg && action !== 'accept') {
             if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
-                recipient.msg   = msg.reply;
-                recipient.code  = msg.code;
+                recipient.msg  = msg.reply;
+                recipient.code = msg.code;
             }
             else {
                 recipient.msg  = msg;
-                recipient.code  = constants.translate(retval);
+                recipient.code = constants.translate(retval);
             }
         }
 
-        this.transaction.results.push({name: 'rcpt_to'}, {
-            recipient,
-        });
+        this.transaction.results.push({name: 'rcpt_to'}, { recipient });
     }
     rcpt_ok_respond (retval, msg) {
         const self = this;

@@ -55,7 +55,7 @@ rcpt_to.in_host_list
 # DATA
 #bounce
 # Check mail headers are valid
-data.headers
+headers
 #data.uribl
 #attachment
 #clamd

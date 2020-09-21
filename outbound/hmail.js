@@ -36,7 +36,7 @@ setImmediate(() => {
     delivery_queue = queuelib.delivery_queue;
 });
 
-const cfg = require('./config');
+const obc = require('./config');
 
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
@@ -71,17 +71,21 @@ class HMailItem extends events.EventEmitter {
     }
 
     size_file () {
-        const self = this;
-        fs.stat(self.path, (err, stats) => {
+        fs.stat(this.path, (err, stats) => {
             if (err) {
                 // we are fucked... guess I need somewhere for this to go
-                self.logerror(`Error obtaining file size: ${err}`);
-                self.temp_fail("Error obtaining file size");
+                this.logerror(`Error obtaining file size: ${err}`);
+                this.temp_fail("Error obtaining file size");
+                return
             }
-            else {
-                self.file_size = stats.size;
-                self.read_todo();
+            if (stats.size === 0) {
+                this.logerror(`Error reading queue file ${this.filename}: zero bytes`);
+                this.emit('error', `Error reading queue file ${this.filename}: zero bytes`);
+                return
             }
+
+            this.file_size = stats.size;
+            this.read_todo();
         });
     }
 
@@ -151,7 +155,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     send () {
-        if (cfg.disabled) {
+        if (obc.cfg.disabled) {
             // try again in 1 second if delivery is disabled
             this.logdebug("delivery disabled temporarily. Retrying in 1s.");
             const hmail = this;
@@ -274,7 +278,7 @@ class HMailItem extends events.EventEmitter {
                 if (mxlist[mx].path) {
                     this.mxlist.push(mxlist[mx]);
                 }
-                else if (cfg.ipv6_enabled) {
+                else if (obc.cfg.ipv6_enabled) {
                     this.mxlist.push(
                         { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'AAAA' },
                         { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'A' }
@@ -350,7 +354,7 @@ class HMailItem extends events.EventEmitter {
                 mx.bind_helo = self.todo.notes.outbound_helo;
             }
             else {
-                mx.bind_helo = config.get('me');
+                mx.bind_helo = net_utils.get_primary_host_name();
             }
         }
 
@@ -559,7 +563,7 @@ class HMailItem extends events.EventEmitter {
             set_ehlo_props();
 
             if (secured) return auth_and_mail_phase();              // TLS already negotiated
-            if (!cfg.enable_tls) return auth_and_mail_phase();      // TLS not enabled
+            if (!obc.cfg.enable_tls) return auth_and_mail_phase();      // TLS not enabled
             if (!smtp_properties.tls) return auth_and_mail_phase(); // TLS not advertised by remote
 
             if (obtls.cfg === undefined) {
@@ -578,7 +582,7 @@ class HMailItem extends events.EventEmitter {
                 () => { // Clear to GO
                     self.logdebug(`Trying TLS for domain: ${self.todo.domain}, host: ${host}`);
 
-                    socket.on('secure', () => {
+                    socket.once('secure', () => {
                         // Set this flag so we don't try STARTTLS again if it
                         // is incorrectly offered at EHLO once we are secured.
                         secured = true;
@@ -625,10 +629,10 @@ class HMailItem extends events.EventEmitter {
                 self.discard();
             }
 
-            if (cfg.pool_concurrency_max && success) {
+            if (obc.cfg.pool_concurrency_max && success) {
                 client_pool.release_client(socket, port, host, mx.bind, fin_sent);
             }
-            else if (cfg.pool_concurrency_max && !mx.using_lmtp) {
+            else if (obc.cfg.pool_concurrency_max && !mx.using_lmtp) {
                 send_command('RSET');
             }
             else {
@@ -700,9 +704,9 @@ class HMailItem extends events.EventEmitter {
                     rcpt.dsn_smtp_response = response.join(' ');
                     rcpt.dsn_remote_mta = mx.exchange;
                 });
-                send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
+                send_command(obc.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                 processing_mail = false;
-                return self.temp_fail(`Upstream error: ${code}${(extc) ? `${extc} ` : ''}${reason}`);
+                return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
             }
             else if (code.match(/^4/)) {
                 authenticating = false;
@@ -738,7 +742,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
+                    send_command(obc.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
                 }
@@ -789,7 +793,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
+                    send_command(obc.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     return self.bounce(reason, { mx });
                 }
@@ -885,7 +889,7 @@ class HMailItem extends events.EventEmitter {
                     }
                     break;
                 case 'quit':
-                    if (cfg.pool_concurrency_max) {
+                    if (obc.cfg.pool_concurrency_max) {
                         self.logerror("We should NOT have sent QUIT from here...");
                     }
                     else {
@@ -1000,7 +1004,7 @@ class HMailItem extends events.EventEmitter {
 
         const values = {
             date: utils.date_to_str(new Date()),
-            me:   config.get('me'),
+            me:   net_utils.get_primary_host_name(),
             from,
             to,
             subject: header.get_decoded('Subject').trim(),
@@ -1012,7 +1016,7 @@ class HMailItem extends events.EventEmitter {
                 }
             }).join('\n'),
             pid: process.pid,
-            msgid: `<${utils.uuid()}@${config.get('me')}>`,
+            msgid: `<${utils.uuid()}@${net_utils.get_primary_host_name()}>`,
         };
 
         bounce_msg_.forEach(line => {
@@ -1122,7 +1126,7 @@ class HMailItem extends events.EventEmitter {
         if (originalMessageId != '') {
             bounce_body.push(`Original-Envelope-Id: ${originalMessageId.replace(/(\r?\n)*$/, '')}${CRLF}`);
         }
-        bounce_body.push(`Reporting-MTA: dns;${config.get('me')}${CRLF}`);
+        bounce_body.push(`Reporting-MTA: dns;${net_utils.get_primary_host_name()}${CRLF}`);
         if (self.todo.queue_time) {
             bounce_body.push(`Arrival-Date: ${utils.date_to_str(new Date(self.todo.queue_time))}${CRLF}`);
         }
@@ -1316,7 +1320,7 @@ class HMailItem extends events.EventEmitter {
         this.num_failures++;
 
         // Test for max failures which is configurable.
-        if (this.num_failures >= (cfg.maxTempFailures)) {
+        if (this.num_failures >= (obc.cfg.maxTempFailures)) {
             return this.convert_temp_failed_to_bounce(`Too many failures (${err})`, extra);
         }
 

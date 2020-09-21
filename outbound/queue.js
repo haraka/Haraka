@@ -10,7 +10,7 @@ const config      = require('haraka-config');
 const logger      = require('../logger');
 const TimerQueue  = require('./timer_queue');
 const HMailItem   = require('./hmail');
-const cfg         = require('./config');
+const obc         = require('./config');
 const _qfile      = require('./qfile');
 const obtls       = require('./tls');
 
@@ -31,7 +31,7 @@ const load_queue = async.queue((file, cb) => {
     const hmail = new HMailItem(file, path.join(queue_dir, file));
     exports._add_hmail(hmail);
     hmail.once('ready', cb);
-}, cfg.concurrency_max);
+}, obc.cfg.concurrency_max);
 
 let in_progress = 0;
 const delivery_queue = exports.delivery_queue = async.queue((hmail, cb) => {
@@ -44,7 +44,7 @@ const delivery_queue = exports.delivery_queue = async.queue((hmail, cb) => {
     obtls.init(() => {
         hmail.send();
     });
-}, cfg.concurrency_max);
+}, obc.cfg.concurrency_max);
 
 const temp_fail_queue = exports.temp_fail_queue = new TimerQueue();
 

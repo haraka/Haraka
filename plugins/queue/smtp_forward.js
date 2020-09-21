@@ -26,9 +26,7 @@ exports.register = function () {
 
     plugin.register_hook('queue', 'queue_forward');
 
-    plugin.register_hook('queue_outbound', 'queue_forward');
-
-    plugin.register_hook('get_mx', 'get_mx');
+    plugin.register_hook('get_mx', 'get_mx'); // for relaying outbound messages
 }
 
 exports.load_smtp_forward_ini = function () {
