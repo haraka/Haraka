@@ -779,7 +779,7 @@ class Connection {
                 break;
             case constants.denydisconnect:
             case constants.denysoftdisconnect:
-                this.respond(521, msg || "Unrecognized command", () => {
+                this.respond(retval === constants.denydisconnect ? 521 : 421, msg || "Unrecognized command", () => {
                     self.disconnect();
                 });
                 break;
