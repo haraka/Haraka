@@ -22,7 +22,7 @@ class MessageStream extends Stream {
         this.end_called = false;
         this.end_callback = null;
         this.buffered = 0;
-	this.total_buffered = 0;
+        this.total_buffered = 0;
         this._queue = [];
         this.max_data_inflight = 0;
         this.buffer_max = (!isNaN(cfg.main.spool_after) ?
@@ -121,7 +121,7 @@ class MessageStream extends Stream {
         const self = this;
         if (data) {
             this.buffered += data.length;
-	    this.total_buffered += data.length;
+            this.total_buffered += data.length;
             this._queue.push(data);
         }
         // Stats
