@@ -22,7 +22,7 @@ class MessageStream extends Stream {
         this.end_called = false;
         this.end_callback = null;
         this.buffered = 0;
-	this.total_buffered = 0;
+	    this.total_buffered = 0;
         this._queue = [];
         this.max_data_inflight = 0;
         this.buffer_max = (!isNaN(cfg.main.spool_after) ?
@@ -121,7 +121,7 @@ class MessageStream extends Stream {
         const self = this;
         if (data) {
             this.buffered += data.length;
-	    this.total_buffered += data.length;
+	        this.total_buffered += data.length;
             this._queue.push(data);
         }
         // Stats
@@ -130,8 +130,7 @@ class MessageStream extends Stream {
         }
         // Abort if we have pending disk operations
         if (this.open_pending || this.write_pending) return false;
-        // Do we need to spool to disk?
-		
+        // Do we need to spool to disk?		
         if (this.buffer_max !== -1 && this.total_buffered > this.buffer_max) {		
             this.spooling = true;
         }
