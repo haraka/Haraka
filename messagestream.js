@@ -25,8 +25,7 @@ class MessageStream extends Stream {
         this.total_buffered = 0;
         this._queue = [];
         this.max_data_inflight = 0;
-        this.buffer_max = (!isNaN(cfg.main.spool_after) ?
-            Number(cfg.main.spool_after) : -1);
+        this.buffer_max = (!isNaN(cfg.main.spool_after) ? Number(cfg.main.spool_after) : -1);
         this.spooling = false;
         this.fd = null;
         this.open_pending = false;
@@ -208,9 +207,7 @@ class MessageStream extends Stream {
             throw new Error('end not called!');
         }
 
-        if (!this.readable || this.paused || !this.write_complete) {
-            return;
-        }
+        if (!this.readable || this.paused || !this.write_complete) return;
 
         // Buffer and send headers first.
         //
@@ -230,8 +227,7 @@ class MessageStream extends Stream {
             this.read_ce.fill(this.line_endings);
             // Loop
             setImmediate(() => {
-                if (self.readable && !self.paused)
-                    self._read();
+                if (self.readable && !self.paused) self._read();
             });
         }
         else {
@@ -288,7 +284,7 @@ class MessageStream extends Stream {
             if (this.line_endings === '\n' && line.length >= 2 &&
                 line[line.length-1] === 0x0a && line[line.length-2] === 0x0d
             ) {
-                // We copy the line to a new buffer before modifying the copy
+                // copy the line to a new buffer before modifying the copy
                 line = Buffer.from(line);
                 line[line.length-2] = 0x0a;
                 line = line.slice(0, line.length-1);
