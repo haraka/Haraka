@@ -4,6 +4,8 @@
 
 ### Changes
 
+* smtp_forward/spamssassin: grab refs of conn/txn to avoid crashing later due
+  to lack of existence. #2847
 * outbound: add os.hostname() as default for outbound HELO #2813
 * use node v10's mkdir instead of mkdirp #2797
 * CI: drop appveyor and Travis #2784
