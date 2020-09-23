@@ -4,6 +4,7 @@
 
 ### Changes
 
+* plugins.js: also strip haraka-plugin prefix from plugin.name #2846
 * outbound: add os.hostname() as default for outbound HELO #2813
 * use node v10's mkdir instead of mkdirp #2797
 * CI: drop appveyor and Travis #2784
