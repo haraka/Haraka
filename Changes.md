@@ -4,6 +4,7 @@
 
 ### Changes
 
+* outbound: add extended reason to bounce message #2843
 * outbound: add os.hostname() as default for outbound HELO #2813
 * use node v10's mkdir instead of mkdirp #2797
 * CI: drop appveyor and Travis #2784
