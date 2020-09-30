@@ -1,0 +1,3 @@
+
+queries:
+  - exclude: js/automatic-semicolon-insertion
