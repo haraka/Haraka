@@ -116,7 +116,7 @@ class Connection {
         this.max_bytes = parseInt(config.get('databytes')) || 0;
         this.max_mime_parts = parseInt(config.get('max_mime_parts')) || 1000;
         this.enable_auth_results_clean = config.get('enable_auth_results_clean') || 'true';
-        this.hide_received_header = config.get('hide_received_header') || 'true';
+        this.hide_received_header = config.get('hide_received_header') || 'false';
         this.totalbytes = 0;
         this.rcpt_count = {
             accept:   0,
@@ -1538,7 +1538,7 @@ class Connection {
             this.errors++;
             return this.respond(503, "RCPT required first");
         }
-        if (this.hide_received_header=='true')
+        if (!this.hide_received_header=='true')
             this.accumulate_data(`Received: ${this.received_line()}\r\n`);
         plugins.run_hooks('data', this);
     }
