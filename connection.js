@@ -115,7 +115,7 @@ class Connection {
         this.last_reject = '';
         this.max_bytes = parseInt(config.get('databytes')) || 0;
         this.max_mime_parts = parseInt(config.get('max_mime_parts')) || 1000;
-        this.disable_auth_results_clean = config.get('disable_auth_results_clean') === 'true';
+        this.clean_auth_results = config.get('clean_auth_results') !== 'false'
         this.hide_received_header = config.get('hide_received_header') === 'true';
         this.totalbytes = 0;
         this.rcpt_count = {
@@ -1538,8 +1538,9 @@ class Connection {
             this.errors++;
             return this.respond(503, "RCPT required first");
         }
-        if (!this.hide_received_header)
+        if (!this.hide_received_header) {
             this.accumulate_data(`Received: ${this.received_line()}\r\n`);
+        }
         plugins.run_hooks('data', this);
     }
     data_respond (retval, msg) {
@@ -1644,8 +1645,9 @@ class Connection {
             this.logwarn(`Incoming message reached maximum parsing limit of ${trans.MAX_HEADER_LINES} header lines`);
         }
 
-        if (!this.disable_auth_results_clean)
-            this.auth_results_clean();   // rename old A-R headers
+        if (this.clean_auth_results) {
+            this.auth_results_clean();
+        }   // rename old A-R headers
         const ar_field = this.auth_results();  // assemble new one
         if (ar_field) {
             this.transaction.add_header('Authentication-Results', ar_field);
