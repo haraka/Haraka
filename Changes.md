@@ -4,6 +4,7 @@
 
 ### Changes
 
+* smtp_forward/spamssassin: grab refs of conn/txn to avoid crashes due to lack of existence. #2847
 * outbound: add extended reason to bounce message #2843
 * hgrep: replaced perl script with shell script #2842
 * outbound: add os.hostname() as default for outbound HELO #2813
