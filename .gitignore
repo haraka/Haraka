@@ -5,7 +5,7 @@ Haraka-*.gz
 *~
 bower_components
 coverage
-nyc_output
+.nyc_output
 .idea
 tests/queue/plain
 tests/queue/multibyte
