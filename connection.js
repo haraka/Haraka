@@ -25,7 +25,6 @@ const plugins     = require('./plugins');
 const rfc1869     = require('./rfc1869');
 const outbound    = require('./outbound');
 
-const hpj         = fs.readFileSync(path.join(__dirname, 'package.json'));
 const states      = constants.connection.state;
 
 // Load HAProxy hosts into an object for fast lookups
@@ -89,6 +88,14 @@ class Connection {
         };
         this.set('tls', 'enabled', (!!server.has_tls));
 
+        this.cfg = config.get('smtp.ini', {
+            booleans: [
+                '+headers.add_received',
+                '+headers.show_version',
+                '+headers.clean_auth_results',
+            ]
+        })
+
         this.current_data = null;
         this.current_line = null;
         this.state = states.PAUSE;
@@ -132,9 +139,13 @@ class Connection {
         this.errors = 0;
         this.last_rcpt_msg = null;
         this.hook = null;
-        this.header_hide_version = !!config.get('header_hide_version');
-        if (!this.header_hide_version) {
-            this.local.info += `/${JSON.parse(hpj).version}`;
+        const hhv = config.get('header_hide_version')  // backwards compat
+        if (hhv !== null && !hhv) {
+            this.cfg.headers.show_version = false;
+        }
+        if (this.cfg.headers.show_version) {
+            const hpj = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json')));
+            this.local.info += `/${hpj.version}`;
         }
         Connection.setupClient(this);
     }
@@ -1537,7 +1548,9 @@ class Connection {
             return this.respond(503, "RCPT required first");
         }
 
-        this.accumulate_data(`Received: ${this.received_line()}\r\n`);
+        if (this.cfg.headers.add_received) {
+            this.accumulate_data(`Received: ${this.received_line()}\r\n`);
+        }
         plugins.run_hooks('data', this);
     }
     data_respond (retval, msg) {
@@ -1628,7 +1641,7 @@ class Connection {
         }
 
         // Check max received headers count
-        const max_received = parseInt(config.get('max_received_count')) || 100;
+        const max_received = this.cfg.headers.max_received || parseInt(config.get('max_received_count')) || 100;
         if (this.transaction.header.get_all('received').length > max_received) {
             this.logerror("Incoming message had too many Received headers");
             this.respond(550, "Too many received headers - possible mail loop", () => {
@@ -1642,7 +1655,9 @@ class Connection {
             this.logwarn(`Incoming message reached maximum parsing limit of ${trans.MAX_HEADER_LINES} header lines`);
         }
 
-        this.auth_results_clean();   // rename old A-R headers
+        if (this.cfg.headers.clean_auth_results) {
+            this.auth_results_clean();   // rename old A-R headers
+        }
         const ar_field = this.auth_results();  // assemble new one
         if (ar_field) {
             this.transaction.add_header('Authentication-Results', ar_field);
