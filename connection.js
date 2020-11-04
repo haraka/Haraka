@@ -140,9 +140,7 @@ class Connection {
         this.last_rcpt_msg = null;
         this.hook = null;
         const hhv = config.get('header_hide_version')  // backwards compat
-        if (hhv !== null && !hhv) {
-            this.cfg.headers.show_version = false;
-        }
+        if (hhv !== null && !hhv) this.cfg.headers.show_version = false;
         if (this.cfg.headers.show_version) {
             const hpj = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json')));
             this.local.info += `/${hpj.version}`;
