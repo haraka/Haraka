@@ -1,13 +1,20 @@
 
-## NEXT - 20YY-MM-DD
+## NEXT - 2020-11-18
+
+## 2.8.26 - 2020-11-18
 
 
 ### Changes
 
+* add config options for OAR & AR headers #2855
 * plugins.js: also strip haraka-plugin prefix from plugin.name #2846
 * smtp_forward/spamssassin: grab refs of conn/txn to avoid crashes due to lack of existence. #2847
 * outbound: add extended reason to bounce message #2843
 * hgrep: replaced perl script with shell script #2842
+* connection: send temp error when requested #2841
+* headers: updated deprecated messages #2845
+* hmail: socket.on -> socket.once #2838
+* hmail: check for zero length queue file #2835
 * outbound: add os.hostname() as default for outbound HELO #2813
 * use node v10's mkdir instead of mkdirp #2797
 * CI: drop appveyor and Travis #2784
@@ -20,6 +27,7 @@
 * restore TLS version info, set correctly #2723
 * better error message when invalid HELO hostname is rejected
 * bring STARTTLS "TLS NO-GO" feature in line with Outbound's #2792
+* add listener for secureConnect #2828
 * removed plugins/data.headers to haraka-plugin-headers #2826
 * add zero-length queue size check
 * send temp instead of hard error when asked to by `unrecognized_command`
@@ -34,6 +42,8 @@
 
 ### Fixes
 
+* wait until entire message is spooled when spool_after in use #2840
+* hmail: add missing space in temp_fail emitter #2837
 * fix outbound config reloading after outbound split #2802
 * smtp_forward: remove redundant outbound hook #2796
 * smtp_forward: this plugin does not use the queue_outbound hook anymore #2795
