@@ -4,6 +4,7 @@
 
 ### Changes
 
+* plugins.js: also strip haraka-plugin prefix from plugin.name #2846
 * smtp_forward/spamssassin: grab refs of conn/txn to avoid crashes due to lack of existence. #2847
 * outbound: add extended reason to bounce message #2843
 * hgrep: replaced perl script with shell script #2842

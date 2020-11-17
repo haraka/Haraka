@@ -61,6 +61,7 @@ class Plugin {
         let name = plugin.name;
         if (/^haraka-plugin-/.test(name)) {
             name = name.replace(/^haraka-plugin-/, '');
+            plugin.name = name;
         }
 
         let paths = [];
