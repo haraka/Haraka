@@ -6,6 +6,7 @@ const fs          = require('fs');
 const os          = require('os');
 const path        = require('path');
 const tls         = require('tls');
+const dns         = require('dns');
 
 // let log = require('why-is-node-running');
 const tls_socket  = require('./tls_socket');
@@ -65,8 +66,23 @@ Server.load_http_ini = () => {
     }).main;
 }
 
+Server.load_dns_ini = () => {
+    const cfg = Server.config.get('dns.ini');
+    if (cfg && cfg.main.servers) {
+        const servers = cfg.main.servers.split(',');
+        try {
+            dns.setServers(servers);
+        }
+        catch (err) {
+            logger.logerror(`Invalid DNS servers: ${err.message}`);
+        }
+    }
+}
+
 Server.load_smtp_ini();
 Server.load_http_ini();
+// set default dns servers on startup since setServers() must not be called when a DNS query is in progress
+Server.load_dns_ini();
 
 Server.daemonize = function () {
     const c = this.cfg.main;

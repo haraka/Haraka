@@ -1,6 +1,9 @@
 
 ## NEXT - 2020-MM-DD
 
+### New features
+
+* dns: add configurable dns servers using dns.ini config file
 
 ## 2.8.26 - 2020-11-18
 

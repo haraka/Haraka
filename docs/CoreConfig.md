@@ -144,3 +144,9 @@ The list of plugins to load
 * connection\_close\_message
   
   Defaults to `closing connection. Have a jolly good day.` can be overrridden with custom text
+
+* dns.ini
+
+  The `servers` key contains a comma separated list of [RFC 5952](https://tools.ietf.org/html/rfc5952#section-6)
+  formatted addresses.
+
