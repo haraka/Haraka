@@ -34,6 +34,7 @@
 
 ### Fixes
 
+* check for punycode domain names when resolving MX, avoid crash #2861
 * fix outbound config reloading after outbound split #2802
 * smtp_forward: remove redundant outbound hook #2796
 * smtp_forward: this plugin does not use the queue_outbound hook anymore #2795
