@@ -14,7 +14,7 @@ const Header = require('./mailheader').Header;
 const body   = require('./mailbody');
 const MessageStream = require('./messagestream');
 
-const cfg = config.get('smtp.ini');
+const cfg = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] });
 if (!cfg.headers.max_lines) {
     cfg.headers.max_lines = config.get('max_header_lines') || 1000;
 }
