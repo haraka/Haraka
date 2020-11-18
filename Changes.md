@@ -42,6 +42,7 @@
 
 ### Fixes
 
+* check for punycode domain names when resolving MX, avoid crash #2861
 * wait until entire message is spooled when spool_after in use #2840
 * hmail: add missing space in temp_fail emitter #2837
 * fix outbound config reloading after outbound split #2802
