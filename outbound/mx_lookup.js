@@ -1,6 +1,7 @@
 "use strict";
 
 const dns         = require('dns');
+const net_utils   = require('haraka-net-utils')
 
 exports.lookup_mx = function lookup_mx (domain, cb) {
     const mxs = [];
@@ -44,19 +45,16 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         return 1;
     }
 
-    dns.resolveMx(domain, (err, addresses) => {
-        if (process_dns(err, addresses)) {
-            return;
-        }
+    net_utils.get_mx(domain, (err, addresses) => {
+        if (process_dns(err, addresses)) return;
 
         // if MX lookup failed, we lookup an A record. To do that we change
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = a => ({priority:0,exchange:a});
         // IS: IPv6 compatible
         dns.resolve(domain, (err2, addresses2) => {
-            if (process_dns(err2, addresses2)) {
-                return;
-            }
+            if (process_dns(err2, addresses2)) return;
+
             err2 = new Error("Found nowhere to deliver to");
             err2.code = 'NOMX';
             cb(err2);

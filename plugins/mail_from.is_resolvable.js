@@ -67,7 +67,7 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     // IS: IPv6 compatible
-    dns.resolveMx(domain, (err, addresses) => {
+    net_utils.get_mx(domain, (err, addresses) => {
         if (!txn) return;
         if (err && plugin.mxErr(connection, domain, 'MX', err, mxDone)) return;
 
