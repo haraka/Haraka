@@ -918,8 +918,11 @@ class Connection {
                     `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message}`,
                     "PIPELINING",
                     "8BITMIME",
-                    "SMTPUTF8",
                 ];
+
+                if (!!this.cfg.main.smtputf8) {
+                    response.push("SMTPUTF8");
+                }
 
                 response.push(`SIZE ${this.max_bytes}`);
 
