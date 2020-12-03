@@ -920,7 +920,7 @@ class Connection {
                     "8BITMIME",
                 ];
 
-                if (this.cfg.main.smtputf8) {
+                if (!(this.cfg.main.smtputf8 && this.cfg.main.smtputf8 === true)) {
                     response.push("SMTPUTF8");
                 }
 
