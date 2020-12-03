@@ -441,9 +441,10 @@ plugins.run_hooks = (hook, object, params) => {
     object.hooks_to_run = [];
 
     if (plugins.registered_hooks[hook]) {
+        const registered_plugins = Array.from(Object.values(plugins.registered_plugins).values());
         for (let i=0; i<plugins.registered_hooks[hook].length; i++) {
             const item = plugins.registered_hooks[hook][i];
-            const plugin = plugins.registered_plugins[item.plugin];
+            const plugin = registered_plugins.find(({name}) => name === item.plugin);
             object.hooks_to_run.push([plugin, item.method]);
         }
     }
