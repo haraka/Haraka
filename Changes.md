@@ -1,6 +1,13 @@
 
 ## NEXT - 2020-MM-DD
 
+### Changes
+
+### New features
+
+- add ability to disable SMTPUTF8 advertisement #2866
+
+### Fixes
 
 ## 2.8.26 - 2020-11-18
 
