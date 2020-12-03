@@ -41,6 +41,7 @@ The list of plugins to load
     specify -1 to disable spooling completely or 0 to force all messages to be spooled to disk.
   * graceful\_shutdown - (default: false) enable this to wait for sockets on shutdown instead of closing them quickly
   * force_shutdown_timeout - (default: 30) number of seconds to wait for a graceful shutdown
+  * smtputf8 - (default: true) advertise support for SMTPUTF8
 
 * me
 
