@@ -3,7 +3,7 @@
 
 ### Changes
 
-- pass smtp.ini config from Server into connections & transactions
+- pass smtp.ini config from Server into connections & transactions #2872
 
 ### New features
 
