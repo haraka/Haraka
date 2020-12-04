@@ -175,13 +175,13 @@ exports.implicit_mx = function (connection, domain, mxDone) {
         for (let i=0; i < addresses.length; i++) {
             const addr = addresses[i];
             // Ignore anything obviously bogus
-            if (net.isIPv4(addr)){
+            if (net.isIPv4(addr)) {
                 if (plugin.re_bogus_ip.test(addr)) {
                     connection.logdebug(plugin, `${domain}: discarding ${addr}`);
                     continue;
                 }
             }
-            if (net.isIPv6(addr)){
+            if (net.isIPv6(addr)) {
                 if (net_utils.ipv6_bogus(addr)) {
                     connection.logdebug(plugin, `${domain}: discarding ${addr}`);
                     continue;

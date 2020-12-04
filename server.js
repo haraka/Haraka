@@ -33,7 +33,11 @@ Server.load_smtp_ini = () => {
     Server.cfg = Server.config.get('smtp.ini', {
         booleans: [
             '-main.daemonize',
+            '+main.smtputf8',
             '-main.graceful_shutdown',
+            '+headers.add_received',
+            '+headers.show_version',
+            '+headers.clean_auth_results',
         ],
     }, () => {
         Server.load_smtp_ini();
@@ -51,6 +55,11 @@ Server.load_smtp_ini = () => {
         smtps_port: 465,
         nodes: 1,
     };
+
+    Server.cfg.headers.max_received = parseInt(Server.cfg.headers.max_received) || parseInt(Server.config.get('max_received_count')) || 100;
+
+    const hhv = Server.config.get('header_hide_version')  // backwards compat
+    if (hhv !== null && !hhv) Server.cfg.headers.show_version = false;
 
     for (const key in defaults) {
         if (Server.cfg.main[key] !== undefined) continue;
@@ -344,7 +353,7 @@ Server.get_smtp_server = (ep, inactivity_timeout, done) => {
 
     function onConnect (client) {
         client.setTimeout(inactivity_timeout);
-        const connection = conn.createConnection(client, server);
+        const connection = conn.createConnection(client, server, Server.cfg);
 
         if (!server.has_tls) return;
 

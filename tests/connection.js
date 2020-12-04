@@ -2,6 +2,7 @@
 const constants    = require('haraka-constants');
 
 const connection   = require('../connection');
+const Server       = require('../server');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);
@@ -19,7 +20,7 @@ function _set_up (done) {
             return this.ip_address;
         }
     }
-    this.connection = connection.createConnection(client, server);
+    this.connection = connection.createConnection(client, server, Server.cfg);
     done();
 }
 
@@ -193,7 +194,7 @@ exports.connectionPrivate = {
                 return this.ip_address;
             }
         }
-        this.connection = connection.createConnection(client, server);
+        this.connection = connection.createConnection(client, server, Server.cfg);
         done();
     },
     tearDown : _tear_down,
@@ -219,7 +220,7 @@ exports.connectionLocal = {
                 return this.ip_address;
             }
         };
-        this.connection = connection.createConnection(client, server);
+        this.connection = connection.createConnection(client, server, Server.cfg);
         done();
     },
     tearDown : _tear_down,
