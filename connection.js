@@ -90,6 +90,7 @@ class Connection {
 
         this.cfg = config.get('smtp.ini', {
             booleans: [
+                '+main.smtputf8',
                 '+headers.add_received',
                 '+headers.show_version',
                 '+headers.clean_auth_results',
