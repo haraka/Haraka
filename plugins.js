@@ -58,7 +58,7 @@ class Plugin {
         */
 
         plugin.hasPackageJson = false;
-        const name = ('haraka-plugin-' === plugin.name.substr(0,14)) ? plugin.name.substr(14) : plugin.name;
+        const name = plugin.name.startsWith('haraka-plugin-') ? plugin.name.substr(14) : plugin.name;
         if (plugin.name !== name) plugin.name = name;
 
         let paths = [];
