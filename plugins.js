@@ -58,11 +58,8 @@ class Plugin {
         */
 
         plugin.hasPackageJson = false;
-        let name = plugin.name;
-        if (/^haraka-plugin-/.test(name)) {
-            name = name.replace(/^haraka-plugin-/, '');
-            plugin.name = name;
-        }
+        const name = ('haraka-plugin-' === plugin.name.substr(0,14)) ? plugin.name.substr(14) : plugin.name;
+        if (plugin.name !== name) plugin.name = name;
 
         let paths = [];
         if (process.env.HARAKA) {
@@ -320,6 +317,7 @@ plugins.load_plugins = override => {
     }
 
     plugin_list.forEach(plugin => {
+        if (plugin.substr(0,14) === 'haraka-plugin-') plugin = plugin.substr(14)
         if (plugins.deprecated[plugin]) {
             logger.lognotice(`the plugin ${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
             plugins.load_plugin(plugins.deprecated[plugin]);
