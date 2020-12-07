@@ -38,12 +38,10 @@ function loadHAProxyHosts () {
     for (let i=0; i<hosts.length; i++) {
         const host = hosts[i].split(/\//);
         if (net.isIPv6(host[0])) {
-            new_ipv6_hosts[i] =
-                [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
+            new_ipv6_hosts[i] = [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
         }
         else {
-            new_ipv4_hosts[i] =
-                [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
+            new_ipv4_hosts[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
         }
     }
     haproxy_hosts_ipv4 = new_ipv4_hosts;
@@ -1347,7 +1345,7 @@ class Connection {
         let results;
         let from;
         try {
-            results = rfc1869.parse("mail", line, config.get('strict_rfc1869') && !this.relaying);
+            results = rfc1869.parse('mail', line, this.cfg.main.strict_rfc1869 && !this.relaying);
             from    = new Address (results.shift());
         }
         catch (err) {
@@ -1405,7 +1403,7 @@ class Connection {
         let results;
         let recip;
         try {
-            results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') && !this.relaying);
+            results = rfc1869.parse('rcpt', line, this.cfg.main.strict_rfc1869 && !this.relaying);
             recip   = new Address(results.shift());
         }
         catch (err) {
