@@ -3,6 +3,7 @@
 
 ### Changes
 
+- constrain TLS NO-GO feature to port 25 #2875
 - strip _haraka-plugin-_ prefixes off plugin names in config/plugins #2873
 - pass smtp.ini config from Server into connections & transactions #2872
 

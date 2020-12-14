@@ -42,6 +42,9 @@ exports.advertise_starttls = function (next, connection) {
         next();
     }
 
+    // limit NO-GO to port 25
+    if (connection.local.port !== 25) return enable_tls();
+
     if (!tls_socket.cfg.redis || !server.notes.redis) {
         return enable_tls();
     }
