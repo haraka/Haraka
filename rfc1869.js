@@ -25,11 +25,11 @@ const chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9-]*(?:=[^= \x00-\x1f]+)?)$/;
 exports.parse = (type, line, strict) => {
     let params = [];
     line = (new String(line)).replace(/\s*$/, '');
-    if (type === "mail") {
-        line = line.replace(strict ? /from:/i : /from:\s*/i, "");
+    if (type === 'mail') {
+        line = line.replace(strict ? /from:/i : /from:\s*/i, '');
     }
     else {
-        line = line.replace(strict ? /to:/i : /to:\s*/i, "");
+        line = line.replace(strict ? /to:/i : /to:\s*/i, '');
     }
 
     while (1) {
@@ -38,9 +38,7 @@ exports.parse = (type, line, strict) => {
             params.push(p1);
             return '';
         });
-        if (old_length === line.length) {
-            break;
-        }
+        if (old_length === line.length) break;
     }
 
     params = params.reverse();
@@ -68,30 +66,28 @@ exports.parse = (type, line, strict) => {
         }
     }
 
-    if (type === "mail") {
+    if (type === 'mail') {
         if (!line.length) {
             return ["<>"]; // 'MAIL FROM:' --> 'MAIL FROM:<>'
         }
         if (line.match(/@.*\s/)) {
-            throw new Error("Syntax error in parameters");
+            throw new Error('Syntax error in parameters');
         }
     }
     else {
-        // console.log("Looking at " + line);
+        // console.log(`Looking at ${line}``);
         if (line.match(/@.*\s/)) {
-            throw new Error("Syntax error in parameters");
+            throw new Error('Syntax error in parameters');
         }
         else {
             if (line.match(/\s/)) {
-                throw new Error("Syntax error in parameters");
+                throw new Error('Syntax error in parameters');
             }
             else if (line.match(/@/)) {
-                if (!line.match(/^<.*>$/)) {
-                    line = `<${line}>`;
-                }
+                if (!line.match(/^<.*>$/)) line = `<${line}>`;
             }
             else if (!line.match(/^(postmaster|abuse)$/i)) {
-                throw new Error("Syntax error in address");
+                throw new Error('Syntax error in address');
             }
         }
     }

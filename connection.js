@@ -38,12 +38,10 @@ function loadHAProxyHosts () {
     for (let i=0; i<hosts.length; i++) {
         const host = hosts[i].split(/\//);
         if (net.isIPv6(host[0])) {
-            new_ipv6_hosts[i] =
-                [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
+            new_ipv6_hosts[i] = [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
         }
         else {
-            new_ipv4_hosts[i] =
-                [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
+            new_ipv4_hosts[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
         }
     }
     haproxy_hosts_ipv4 = new_ipv4_hosts;
@@ -52,9 +50,11 @@ function loadHAProxyHosts () {
 loadHAProxyHosts();
 
 class Connection {
-    constructor (client, server) {
+    constructor (client, server, cfg) {
         this.client = client;
         this.server = server;
+        this.cfg = cfg;
+
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
@@ -87,15 +87,6 @@ class Connection {
             timer: null,         // c.proxy_timer
         };
         this.set('tls', 'enabled', (!!server.has_tls));
-
-        this.cfg = config.get('smtp.ini', {
-            booleans: [
-                '+main.smtputf8',
-                '+headers.add_received',
-                '+headers.show_version',
-                '+headers.clean_auth_results',
-            ]
-        })
 
         this.current_data = null;
         this.current_line = null;
@@ -140,9 +131,7 @@ class Connection {
         this.errors = 0;
         this.last_rcpt_msg = null;
         this.hook = null;
-        const hhv = config.get('header_hide_version')  // backwards compat
-        if (hhv !== null && !hhv) this.cfg.headers.show_version = false;
-        if (this.cfg.headers.show_version) {
+        if (cfg.headers.show_version) {
             const hpj = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json')));
             this.local.info += `/${hpj.version}`;
         }
@@ -166,15 +155,12 @@ class Connection {
         self.set('remote', 'port', self.client.remotePort);
         self.results.add({name: 'remote'}, self.remote);
 
-        self.lognotice(
-            'connect',
-            {
-                ip: self.remote.ip,
-                port: self.remote.port,
-                local_ip: self.local.ip,
-                local_port: self.local.port
-            }
-        );
+        self.lognotice( 'connect', {
+            ip: self.remote.ip,
+            port: self.remote.port,
+            local_ip: self.local.ip,
+            local_port: self.local.port
+        });
 
         const has_host = self.remote.host ? `${self.remote.host} ` : '';
         const rhost = `client ${has_host}[${self.remote.ip}]`
@@ -682,7 +668,7 @@ class Connection {
     init_transaction (cb) {
         const self = this;
         this.reset_transaction(() => {
-            self.transaction = trans.createTransaction(self.tran_uuid());
+            self.transaction = trans.createTransaction(self.tran_uuid(), self.cfg);
             // Catch any errors from the message_stream
             self.transaction.message_stream.on('error', (err) => {
                 self.logcrit(`message_stream error: ${err.message}`);
@@ -1359,7 +1345,7 @@ class Connection {
         let results;
         let from;
         try {
-            results = rfc1869.parse("mail", line, config.get('strict_rfc1869') && !this.relaying);
+            results = rfc1869.parse('mail', line, this.cfg.main.strict_rfc1869 && !this.relaying);
             from    = new Address (results.shift());
         }
         catch (err) {
@@ -1417,7 +1403,7 @@ class Connection {
         let results;
         let recip;
         try {
-            results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') && !this.relaying);
+            results = rfc1869.parse('rcpt', line, this.cfg.main.strict_rfc1869 && !this.relaying);
             recip   = new Address(results.shift());
         }
         catch (err) {
@@ -1643,8 +1629,7 @@ class Connection {
         }
 
         // Check max received headers count
-        const max_received = this.cfg.headers.max_received || parseInt(config.get('max_received_count')) || 100;
-        if (this.transaction.header.get_all('received').length > max_received) {
+        if (this.transaction.header.get_all('received').length > this.cfg.headers.max_received) {
             this.logerror("Incoming message had too many Received headers");
             this.respond(550, "Too many received headers - possible mail loop", () => {
                 self.reset_transaction();
@@ -1933,8 +1918,8 @@ class Connection {
 
 exports.Connection = Connection;
 
-exports.createConnection = (client, server) => {
-    return new Connection(client, server);
+exports.createConnection = (client, server, cfg) => {
+    return new Connection(client, server, cfg);
 }
 
 // copy logger methods into Connection:

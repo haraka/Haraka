@@ -26,8 +26,7 @@ The list of plugins to load
   * listen\_host, port - the host and port to listen on (default: ::0 and 25)
   * listen - (default: [::0]:25) Comma separated IP:Port addresses to listen on
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
-  * nodes - specifies how many processes to fork. The string "cpus" will fork as many
-    children as there are CPUs (default: 0, which disables cluster mode)
+  * nodes - specifies how many processes to fork. The string "cpus" will fork as many children as there are CPUs (default: 0, which disables cluster mode)
   * user - optionally a user to drop privileges to. Can be a string or UID.
   * group - optionally a group to drop privileges to. Can be a string or GID.
   * ignore\_bad\_plugins - If a plugin fails to compile by default Haraka will stop at load time.
@@ -42,6 +41,8 @@ The list of plugins to load
   * graceful\_shutdown - (default: false) enable this to wait for sockets on shutdown instead of closing them quickly
   * force_shutdown_timeout - (default: 30) number of seconds to wait for a graceful shutdown
   * smtputf8 - (default: true) advertise support for SMTPUTF8
+  * strict\_rfc1869 - (default: false) Requires senders to conform to RFC 1869 and RFC 821 when sending the MAIL FROM and RCPT TO commands. In particular,
+  the inclusion of spurious spaces or missing angle brackets will be rejected.
 
 * me
 
@@ -126,15 +127,6 @@ The list of plugins to load
 
   A list of HAProxy hosts that Haraka should enable the PROXY protocol from.
   See [HAProxy.md](HAProxy.md)
-
-* strict\_rfc1869
-
-  When enabled, this setting requires senders to conform to RFC 1869 and
-  RFC 821 when sending the MAIL FROM and RCPT TO commands. In particular,
-  the inclusion of spurious spaces or missing angle brackets will be rejected.
-
-  to enable:   `echo 1 > /path/to/haraka/config/strict_rfc1869`
-  to disable:  `echo 0 > /path/to/haraka/config/strict_rfc1869`
 
 * max_mime_parts
 

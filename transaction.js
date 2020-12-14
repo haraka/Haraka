@@ -5,7 +5,6 @@
 const util   = require('util');
 
 // haraka npm modules
-const config = require('haraka-config');
 const Notes  = require('haraka-notes');
 const utils  = require('haraka-utils');
 
@@ -13,11 +12,6 @@ const utils  = require('haraka-utils');
 const Header = require('./mailheader').Header;
 const body   = require('./mailbody');
 const MessageStream = require('./messagestream');
-
-const cfg = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] });
-if (!cfg.headers.max_lines) {
-    cfg.headers.max_lines = config.get('max_header_lines') || 1000;
-}
 
 class Transaction {
     constructor () {
@@ -153,7 +147,7 @@ class Transaction {
         }
         else if (this.header_pos === 0) {
             // Build up headers
-            if (this.header_lines.length < cfg.headers.max_lines) {
+            if (this.header_lines.length < this.cfg.headers.max_lines) {
                 if (line[0] === 0x2E) line = line.slice(1); // Strip leading '.'
                 this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'));
             }
@@ -257,12 +251,24 @@ class Transaction {
 }
 
 exports.Transaction = Transaction;
-exports.MAX_HEADER_LINES = cfg.headers.max_lines;
 
-exports.createTransaction = uuid => {
+exports.createTransaction = (uuid, cfg) => {
     const t = new Transaction();
     t.uuid = uuid || utils.uuid();
+
+    if (!cfg) {
+        const config = require('haraka-config');
+        cfg = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] });
+        if (!cfg.headers.max_lines) {
+            cfg.headers.max_lines = config.get('max_header_lines') || 1000;
+        }
+    }
+    t.cfg = cfg
+
     // Initialize MessageStream here to pass in the UUID
     t.message_stream = new MessageStream(cfg, t.uuid, t.header.header_list);
+
+    exports.MAX_HEADER_LINES = cfg.headers.max_lines;
+
     return t;
 }
