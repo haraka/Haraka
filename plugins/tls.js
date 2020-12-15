@@ -42,11 +42,12 @@ exports.advertise_starttls = function (next, connection) {
         next();
     }
 
-    if (!tls_socket.cfg.redis || !server.notes.redis) {
+    const redis = server.notes.redis;
+    const nogo_ports = tls_socket.cfg.redis.disable_inbound_on_ports || [25];
+    if (!tls_socket.cfg.redis || !redis || !nogo_ports.includes(connection.local.port)) {
         return enable_tls();
     }
 
-    const redis = server.notes.redis;
     const dbkey = `no_tls|${connection.remote.ip}`;
 
     redis.get(dbkey, (err, dbr) => {

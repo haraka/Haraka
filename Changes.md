@@ -5,6 +5,7 @@
 
 - strip _haraka-plugin-_ prefixes off plugin names in config/plugins #2873
 - pass smtp.ini config from Server into connections & transactions #2872
+- constrain STARTTLS "TLS NO-GO" to port 25 (by default)
 
 ### New features
 
