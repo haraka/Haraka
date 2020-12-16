@@ -42,6 +42,9 @@ exports.advertise_starttls = function (next, connection) {
         next();
     }
 
+    // exclude port 587 from NO-GO
+    if (connection.local.port === 587) return enable_tls();
+
     if (!tls_socket.cfg.redis || !server.notes.redis) {
         return enable_tls();
     }
