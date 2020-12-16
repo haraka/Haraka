@@ -10,29 +10,18 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
-
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Observed behavior**
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**Steps To Reproduce**
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+**System Info:**
+
+Please report your OS, Node version, and Haraka version by running this shell script on your Haraka server and replacing this section with the output.
+
+echo "Haraka | $(haraka -v)"; echo " --- | :--- "; echo "Node | $(node -v)"; echo "OS | $(uname -a)"; echo "openssl | $(openssl version)"
 
 **Additional context**
 Add any other context about the problem here.
