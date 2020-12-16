@@ -12,7 +12,7 @@
 
 ### Fixes
 
-- require haraka-net-utils >= 1.2.2
+- require haraka-net-utils >= 1.2.2  #2876
 
 ## 2.8.26 - 2020-11-18
 
