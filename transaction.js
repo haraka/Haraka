@@ -256,19 +256,10 @@ exports.createTransaction = (uuid, cfg) => {
     const t = new Transaction();
     t.uuid = uuid || utils.uuid();
 
-    if (!cfg) {
-        const config = require('haraka-config');
-        cfg = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] });
-        if (!cfg.headers.max_lines) {
-            cfg.headers.max_lines = config.get('max_header_lines') || 1000;
-        }
-    }
     t.cfg = cfg
 
     // Initialize MessageStream here to pass in the UUID
     t.message_stream = new MessageStream(cfg, t.uuid, t.header.header_list);
-
-    exports.MAX_HEADER_LINES = cfg.headers.max_lines;
 
     return t;
 }

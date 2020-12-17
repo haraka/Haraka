@@ -58,6 +58,7 @@ Server.load_smtp_ini = () => {
     };
 
     Server.cfg.headers.max_received = parseInt(Server.cfg.headers.max_received) || parseInt(Server.config.get('max_received_count')) || 100;
+    Server.cfg.headers.max_lines    = parseInt(Server.cfg.headers.max_lines) || parseInt(Server.config.get('max_header_lines')) || 1000;
 
     const strict_ext = Server.config.get('strict_rfc1869');
     if (Server.cfg.main.strict_rfc1869 === false && strict_ext) {
