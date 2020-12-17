@@ -14,8 +14,9 @@ const body   = require('./mailbody');
 const MessageStream = require('./messagestream');
 
 class Transaction {
-    constructor () {
-        this.uuid = null;
+    constructor (uuid, cfg) {
+        this.uuid = uuid || utils.uuid();
+        this.cfg = cfg || load_smtp_ini();
         this.mail_from = null;
         this.rcpt_to = [];
         this.header_lines = [];
@@ -30,7 +31,7 @@ class Transaction {
         this.parse_body = false;
         this.notes = new Notes();
         this.header = new Header();
-        this.message_stream = null;
+        this.message_stream = new MessageStream(this.cfg, this.uuid, this.header.header_list);
         this.discard_data = false;
         this.resetting = false;
         this.rcpt_count = {
@@ -253,13 +254,15 @@ class Transaction {
 exports.Transaction = Transaction;
 
 exports.createTransaction = (uuid, cfg) => {
-    const t = new Transaction();
-    t.uuid = uuid || utils.uuid();
+    return new Transaction(uuid, cfg);
+}
 
-    t.cfg = cfg
-
-    // Initialize MessageStream here to pass in the UUID
-    t.message_stream = new MessageStream(cfg, t.uuid, t.header.header_list);
-
-    return t;
+// sunset after test-fixtures createTransaction() is updated to pass in cfg
+function load_smtp_ini () {
+    const config = require('haraka-config');
+    const cfg = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] });
+    if (!cfg.headers.max_lines) {
+        cfg.headers.max_lines = parseInt(config.get('max_header_lines')) || 1000;
+    }
+    return cfg;
 }
