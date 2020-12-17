@@ -131,7 +131,7 @@ class Connection {
         this.errors = 0;
         this.last_rcpt_msg = null;
         this.hook = null;
-        if (cfg.headers.show_version) {
+        if (this.cfg.headers.show_version) {
             const hpj = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json')));
             this.local.info += `/${hpj.version}`;
         }
@@ -1638,8 +1638,8 @@ class Connection {
         }
 
         // Warn if we hit the maximum parsed header lines limit
-        if (this.transaction.header_lines.length >= trans.MAX_HEADER_LINES) {
-            this.logwarn(`Incoming message reached maximum parsing limit of ${trans.MAX_HEADER_LINES} header lines`);
+        if (this.transaction.header_lines.length >= this.cfg.headers.max_lines) {
+            this.logwarn(`Incoming message reached maximum parsing limit of ${this.cfg.headers.max_lines} header lines`);
         }
 
         if (this.cfg.headers.clean_auth_results) {
@@ -1922,7 +1922,7 @@ exports.createConnection = (client, server, cfg) => {
     return new Connection(client, server, cfg);
 }
 
-// copy logger methods into Connection:
+// add logger methods to Connection:
 for (const key in logger) {
     if (!/^log\w/.test(key)) continue;
     Connection.prototype[key] = (function (level) {
