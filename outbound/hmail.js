@@ -1420,7 +1420,7 @@ class HMailItem extends events.EventEmitter {
                             err_handler(err, "tmp file rename");
                         }
                         else {
-                            const split_mail = new HMailItem (fname, dest_path);
+                            const split_mail = new HMailItem (fname, dest_path, hmail.notes);
                             split_mail.once('ready', () => {
                                 cb(split_mail);
                             });
