@@ -14,11 +14,11 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        node-version: [10.x, 12.x, 13.x]
+        node-version: [12.x, 14.x]
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       name: Checkout Haraka
       with:
         fetch-depth: 1
@@ -28,10 +28,11 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: npm install and test
-      run: |
-        npm install
-        npm run test
+    - name: Install
+      run: npm install
+
+    - name: Test
+      run: npm run test
 
       env:
         CI: true
