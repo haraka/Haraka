@@ -14,6 +14,7 @@
   "license": "MIT",
   "homepage": "http://haraka.github.io/",
   "dependencies": {
+    "express": "^4.x",
   },
   "devDependencies": {
   },
