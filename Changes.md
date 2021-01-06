@@ -5,6 +5,7 @@
 
 - use address-rfc2821 2.0.0
 - drop support for node 10
+- http: use CDN for bootstrap/jquery, drop bower
 
 ### New features
 
