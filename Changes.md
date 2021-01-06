@@ -1,6 +1,18 @@
 
 ## NEXT - 2020-MM-DD
 
+### Changes
+
+- use address-rfc2821 2.0.0
+- drop support for node 10
+
+### New features
+
+- 
+
+### Fixes
+
+- 
 
 ## 2.8.27 - 2021-01-05
 
