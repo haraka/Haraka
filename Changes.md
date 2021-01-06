@@ -1,8 +1,14 @@
 
 ## NEXT - 2020-MM-DD
 
+
+## 2.8.27 - 2021-MM-DD
+
 ### Changes
 
+- bump verions of several dependencies #2888
+- propagate hmail notes to split copies #2887
+- log.ini: add json to list of formats in config doc #2881
 - exclude port 587 from TLS NO-GO feature #2875
 - strip _haraka-plugin-_ prefixes off plugin names in config/plugins #2873
 - pass smtp.ini config from Server into connections & transactions #2872
