@@ -169,6 +169,20 @@ requires the OCSP responses to be fetched again upon the first client
 connection.
 
 
+## Outbound Specific Configuration
+
+### no_tls_client_cert_hosts
+
+By default, when Haraka is acting as a SMTP client, the server cert is sent as the SMTP client certificate.
+This can cause problems for some servers. To disable sending the cert for specific servers:
+
+    no_tls_client_cert_hosts[]=mx.example.com
+    no_tls_client_cert_hosts[]=mx.another.com
+
+You can also set it to `*`, to disable sending client certs to all servers:
+
+    no_tls_client_cert_hosts=*
+
 ## Inbound Specific Configuration
 
 By default the above options are shared with outbound mail (either

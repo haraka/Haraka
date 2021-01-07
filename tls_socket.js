@@ -688,6 +688,15 @@ function createServer (cb) {
     return server;
 }
 
+function shouldSendClientCerts (options) {
+    const no_tls_client_cert_hosts = options.no_tls_client_cert_hosts;
+
+    if (no_tls_client_cert_hosts === '*') return false;
+    if (!Array.isArray(no_tls_client_cert_hosts)) return true;
+
+    return !no_tls_client_cert_hosts.some(h => h === options.servername || h === '*');
+}
+
 function connect (port, host, cb) {
     let conn_options = {};
     if (typeof port === 'object') {
@@ -707,7 +716,7 @@ function connect (port, host, cb) {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
 
-        if (exports.tls_valid) {
+        if (exports.tls_valid && shouldSendClientCerts(options)) {
             options = Object.assign(options, certsByHost['*']);
         }
         options.socket = cryptoSocket;

@@ -8,7 +8,7 @@
 
 ### New features
 
-- 
+- tls: add no_tls_client_cert_hosts to exclude sending certs to specific hosts
 
 ### Fixes
 

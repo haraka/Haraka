@@ -7,7 +7,8 @@ const hkredis      = require('haraka-plugin-redis');
 
 const inheritable_opts = [
     'key', 'cert', 'ciphers', 'minVersion', 'dhparam',
-    'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
+    'requestCert', 'honorCipherOrder', 'rejectUnauthorized',
+    'no_tls_client_cert_hosts'
 ];
 
 class OutboundTLS {
