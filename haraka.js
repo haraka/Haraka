@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 'use strict';
+const fs   = require('fs');
 const path = require('path');
 const makePathJoin = () => path.join(process.env.HARAKA, 'node_modules');
 
@@ -20,7 +21,6 @@ catch (e) {
     require('module')._initPaths(); // Horrible hack
 }
 
-const fs = require('fs');
 const logger = require('./logger');
 const server = require('./server');
 

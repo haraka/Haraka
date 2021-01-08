@@ -2,6 +2,7 @@
 
 const async       = require('async');
 const fs          = require('fs');
+const os          = require('os');
 const path        = require('path');
 
 const Address     = require('address-rfc2821').Address;
@@ -267,8 +268,15 @@ exports.ensure_queue_dir = () => {
     if (fs.existsSync(queue_dir)) return;
 
     logger.logdebug(`[outbound] Creating queue directory ${queue_dir}`);
+    const base_config = require('../config');
+    const smtpini = base_config.load_smtp_ini()
     try {
         fs.mkdirSync(queue_dir, 493); // 493 == 0755
+
+        if (smtpini.main.user) {
+            const ui = os.userInfo(smtpini.main.user)
+            fs.chownSync(queue_dir, ui.uid, ui.gid);
+        }
     }
     catch (err) {
         if (err.code !== 'EEXIST') {

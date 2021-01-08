@@ -23,67 +23,15 @@ Server.plugins    = require('./plugins');
 Server.notes      = {};
 
 const logger      = Server.logger;
+const base_config = require('./config');
 
 // Need these here so we can run hooks
 logger.add_log_methods(Server, 'server');
 
 Server.listeners = [];
 
-Server.load_smtp_ini = () => {
-    Server.cfg = Server.config.get('smtp.ini', {
-        booleans: [
-            '-main.daemonize',
-            '-main.strict_rfc1869',
-            '+main.smtputf8',
-            '-main.graceful_shutdown',
-            '+headers.add_received',
-            '+headers.show_version',
-            '+headers.clean_auth_results',
-        ],
-    }, () => {
-        Server.load_smtp_ini();
-    });
-
-    if (Server.cfg.main.nodes === undefined) {
-        logger.logwarn(`smtp.ini.nodes unset, using 1, see https://github.com/haraka/Haraka/wiki/Performance-Tuning`)
-    }
-
-    const defaults = {
-        inactivity_timeout: 300,
-        daemon_log_file: '/var/log/haraka.log',
-        daemon_pid_file: '/var/run/haraka.pid',
-        force_shutdown_timeout: 30,
-        smtps_port: 465,
-        nodes: 1,
-    };
-
-    Server.cfg.headers.max_received = parseInt(Server.cfg.headers.max_received) || parseInt(Server.config.get('max_received_count')) || 100;
-    Server.cfg.headers.max_lines    = parseInt(Server.cfg.headers.max_lines) || parseInt(Server.config.get('max_header_lines')) || 1000;
-
-    const strict_ext = Server.config.get('strict_rfc1869');
-    if (Server.cfg.main.strict_rfc1869 === false && strict_ext) {
-        logger.logwarn(`legacy config config/strict_rfc1869 is overriding smtp.ini`)
-        Server.cfg.main.strict_rfc1869 = strict_ext;
-    }
-
-    const hhv = Server.config.get('header_hide_version')  // backwards compat
-    if (hhv !== null && !hhv) Server.cfg.headers.show_version = false;
-
-    for (const key in defaults) {
-        if (Server.cfg.main[key] !== undefined) continue;
-        Server.cfg.main[key] = defaults[key];
-    }
-}
-
-Server.load_http_ini = () => {
-    Server.http = {};
-    Server.http.cfg = Server.config.get('http.ini', () => {
-        Server.load_http_ini();
-    }).main;
-}
-
-Server.load_smtp_ini();
-Server.load_http_ini();
+Server.cfg = base_config.load_smtp_ini();
+Server.http = { cfg: base_config.load_http_ini().main };
 
 Server.daemonize = function () {
     const c = this.cfg.main;
@@ -267,12 +215,6 @@ Server.receiveAsMaster = (command, params) => {
 }
 
 function messageHandler (worker, msg, handle) {
-    // sunset Haraka v3 (Node < 6)
-    if (arguments.length === 2) {
-        handle = msg;
-        msg = worker;
-        worker = undefined;
-    }
     // console.log("received cmd: ", msg);
     if (msg && msg.cmd) {
         Server.receiveAsMaster(msg.cmd, msg.params);
