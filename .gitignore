@@ -1,4 +1,5 @@
 node_modules
+http/node_modules
 .coveralls.yml
 Haraka-*.gz
 *~

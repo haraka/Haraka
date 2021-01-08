@@ -631,8 +631,7 @@ Server.init_http_respond = () => {
     let WebSocketServer;
     try { WebSocketServer = require('ws').Server; }
     catch (e) {
-        logger.logerror(`unable to load ws.
-            did you: npm install -g ws?`);
+        logger.logerror(`unable to load ws.\n  did you: npm install -g ws?`);
         return;
     }
 
@@ -655,10 +654,7 @@ Server.init_wss_respond = () => {
 Server.get_http_docroot = () => {
     if (Server.http.cfg.docroot) return Server.http.cfg.docroot;
 
-    Server.http.cfg.docroot = path.join(
-        (process.env.HARAKA || __dirname),
-        '/html'
-    );
+    Server.http.cfg.docroot = path.join( (process.env.HARAKA || __dirname), '/html');
     logger.loginfo(`using html docroot: ${Server.http.cfg.docroot}`);
     return Server.http.cfg.docroot;
 }
