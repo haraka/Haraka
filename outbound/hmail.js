@@ -616,7 +616,7 @@ class HMailItem extends events.EventEmitter {
                 self.refcount++;
                 self.split_to_new_recipients(bounce_recips, "Some recipients rejected", hmail => {
                     self.discard();
-                    hmail.bounce(`Some recipients failed: ${bounce_recips.join(', ')}`, { rcpt: bounce_recips, mx });
+                    hmail.bounce(`Some recipients failed: ${bounce_recips.join(', ')}`, { bounce_recips: bounce_recips, mx });
                 });
             }
             processing_mail = false;
