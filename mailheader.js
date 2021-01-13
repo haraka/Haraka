@@ -98,7 +98,7 @@ class Header {
     }
 
     get_all (key) {
-        return this.headers[key.toLowerCase()] || [];
+        return [].concat(this.headers[key.toLowerCase()] || []);
     }
 
     get_decoded (key) {
@@ -163,7 +163,7 @@ class Header {
     }
 
     lines () {
-        return this.header_list;
+        return [].concat(this.header_list);
     }
 
     toString () {
