@@ -609,7 +609,7 @@ class HMailItem extends events.EventEmitter {
                 self.refcount++;
                 self.split_to_new_recipients(fail_recips, "Some recipients temporarily failed", hmail => {
                     self.discard();
-                    hmail.temp_fail(`Some recipients temp failed: ${fail_recips.join(', ')}`, { rcpt: fail_recips, mx });
+                    hmail.temp_fail(`Some recipients temp failed: ${fail_recips.join(', ')}`, { fail_recips, mx });
                 });
             }
             if (bounce_recips.length) {
