@@ -234,12 +234,15 @@ exports.load_tls_ini = (opts) => {
             '-main.rejectUnauthorized',
             '+main.honorCipherOrder',
             '-main.requestOCSP',
+            '-main.mutual_tls',
         ]
     }, () => {
         tlss.load_tls_ini();
     });
 
-    if (!cfg.no_tls_hosts) cfg.no_tls_hosts = {};
+    if (cfg.no_tls_hosts === undefined) cfg.no_tls_hosts = {};
+    if (cfg.mutual_auth_hosts === undefined) cfg.mutual_auth_hosts = {};
+    if (cfg.mutual_auth_hosts_exclude === undefined) cfg.mutual_auth_hosts_exclude = {};
 
     if (cfg.main.enableOCSPStapling !== undefined) {
         log.logerror('deprecated setting enableOCSPStapling in tls.ini');
@@ -688,6 +691,11 @@ function createServer (cb) {
     return server;
 }
 
+function getCertFor (host) {
+    if (host && certsByHost[host]) return certsByHost[host];
+    return certsByHost['*'];  // the default TLS cert
+}
+
 function connect (port, host, cb) {
     let conn_options = {};
     if (typeof port === 'object') {
@@ -708,7 +716,22 @@ function connect (port, host, cb) {
         cryptoSocket.removeAllListeners('data');
 
         if (exports.tls_valid) {
-            options = Object.assign(options, certsByHost['*']);
+            /* SUNSET notice: code added 2021-01. We've changed the default to not
+               send TLS client certificates. The mutual_tls flag switches them back
+               on. If no need for these settings surfaces in 2 years, nuke this block
+               of code. If you care about these options, create a PR removing this
+               comment. See #2693.
+            */
+            if (exports.cfg === undefined) exports.load_tls_ini();
+            if (exports.cfg.mutual_auth_hosts[host]) {
+                options = Object.assign(options, getCertFor(exports.cfg.mutual_auth_hosts[host]));
+            }
+            else if (exports.cfg.mutual_auth_hosts_exclude[host]) {
+                // send no client cert
+            }
+            else if (exports.cfg.main.mutual_tls) {
+                options = Object.assign(options, getCertFor(host));
+            }
         }
         options.socket = cryptoSocket;
 
