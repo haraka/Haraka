@@ -163,7 +163,7 @@ class Header {
     }
 
     lines () {
-        return [].concat(this.header_list);
+        return Object.freeze([...this.header_list]);
     }
 
     toString () {
