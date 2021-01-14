@@ -132,9 +132,12 @@ exports.load_tls_ini2 = {
                     requestOCSP: false,
                     // enableOCSPStapling: false,
                     requireAuthorized: [],
+                    mutual_tls: false,
                 },
                 redis: { disable_for_failed_hosts: false },
-                no_tls_hosts: {}
+                no_tls_hosts: {},
+                mutual_auth_hosts: {},
+                mutual_auth_hosts_exclude: {},
             });
         test.done();
     },
@@ -153,9 +156,12 @@ exports.load_tls_ini2 = {
                 ciphers: 'ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384',
                 minVersion: 'TLSv1',
                 requireAuthorized: [2465, 2587],
+                mutual_tls: false,
             },
             redis: { disable_for_failed_hosts: false },
             no_tls_hosts: {},
+            mutual_auth_hosts: {},
+            mutual_auth_hosts_exclude: {},
             outbound: {
                 key: 'outbound_tls_key.pem',
                 cert: 'outbound_tls_cert.pem',

@@ -3,9 +3,11 @@
 
 ### Changes
 
+- tls: change default to NOT send TLS client certs #2902
+- dep: redis is now a dependency #2896
 - use address-rfc2821 2.0.0
-- drop support for node 10
-- http: use CDN for bootstrap/jquery, drop bower
+- http: use CDN for bootstrap/jquery, drop bower #2891
+- drop support for node 10  #2890
 
 ### New features
 
@@ -13,7 +15,9 @@
 
 ### Fixes
 
-- 
+- bounce: correctly set fail recipients #2901
+- bounce: correctly set bounce recipients #2899
+
 
 ## 2.8.27 - 2021-01-05
 
