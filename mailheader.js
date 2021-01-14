@@ -98,7 +98,7 @@ class Header {
     }
 
     get_all (key) {
-        return [].concat(this.headers[key.toLowerCase()] || []);
+        return Object.freeze([...(this.headers[key.toLowerCase()] || [])]);
     }
 
     get_decoded (key) {
