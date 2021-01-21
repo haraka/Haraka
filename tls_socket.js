@@ -472,7 +472,7 @@ exports.get_certs_dir = (tlsDir, done) => {
                     return;
                 }
 
-                log.logdebug(cert);
+                // log.logdebug(cert);  // DANGER: Also logs private key!
                 cert.names.forEach(name => {
                     tlss.applySocketOpts(name);
 
