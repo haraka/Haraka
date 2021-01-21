@@ -1535,7 +1535,7 @@ function sort_mx (mx_list) {
     return sorted;
 }
 
-const smtp_regexp = /^(\d{3})([ -])#?(?:(\d\.\d\.\d)\s)?(.*)/;
+const smtp_regexp = /^([2345]\d\d)([ -])#?(?:(\d\.\d\.\d)\s)?(.*)/;
 
 function cram_md5_response (username, password, challenge) {
     const crypto = require('crypto');
