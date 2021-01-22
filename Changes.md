@@ -8,6 +8,7 @@
 - use address-rfc2821 2.0.0
 - http: use CDN for bootstrap/jquery, drop bower #2891
 - drop support for node 10  #2890
+- `outbound_ip` is deprecated and split into `outbound_ip4` and `outbound_ip6`
 
 ### New features
 

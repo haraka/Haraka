@@ -344,8 +344,17 @@ class HMailItem extends events.EventEmitter {
         }
 
         // Allow transaction notes to set outbound IP
-        if (!mx.bind && self.todo.notes.outbound_ip) {
-            mx.bind = self.todo.notes.outbound_ip;
+        if (!mx.bind) {
+            if (mx.family === 'A' && self.todo.notes.outbound_ip4) {
+                mx.bind = self.todo.notes.outbound_ip4;
+            }
+            else if (mx.family === 'AAAA' && self.todo.notes.outbound_ip6) {
+                mx.bind = self.todo.notes.outbound_ip6;
+            }
+            else {
+                // Deprecated
+                mx.bind = self.todo.notes.outbound_ip;
+            }
         }
 
         // Allow transaction notes to set outbound IP helo

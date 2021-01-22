@@ -255,9 +255,13 @@ you can set a transaction note in a plugin to tell Haraka which outbound IP
 address you would like it to use when it tries to deliver the message:
 
 `````
-connection.transaction.notes.outbound_ip = '1.2.3.4';
+connection.transaction.notes.outbound_ip4 = '198.51.100.37';
+connection.transaction.notes.outbound_ip6 = '2001:db8::25';
 connection.transaction.notes.outbound_helo = 'mail-2.example.com';
 `````
+
+(The old note `outbound_ip` is deprecated because it would fail when binding
+the wrong family.)
 
 Note: if the `get_mx` hook returns a `bind` and `bind_helo` parameter, then
 this will be used in preference to the transaction note.
