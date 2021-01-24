@@ -145,12 +145,10 @@ class Connection {
             return;
         }
 
-        const local_addr = self.server.address();
-        if (local_addr && local_addr.address) {
-            self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
-            self.set('local', 'port', local_addr.port);
-            self.results.add({name: 'local'}, self.local);
-        }
+        self.set('local', 'ip', ipaddr.process(self.client.localAddress).toString());
+        self.set('local', 'port', self.client.localPort);
+        self.results.add({name: 'local'}, self.local);
+
         self.set('remote', 'ip', ipaddr.process(ip).toString());
         self.set('remote', 'port', self.client.remotePort);
         self.results.add({name: 'remote'}, self.remote);

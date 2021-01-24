@@ -17,6 +17,7 @@
 
 - bounce: correctly set fail recipients #2901
 - bounce: correctly set bounce recipients #2899
+- Get local_ip from getsockname() instead of server properties #2914
 
 
 ## 2.8.27 - 2021-01-05

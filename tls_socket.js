@@ -99,6 +99,12 @@ class pluggableStream extends stream.Stream {
         if (self.targetsocket.remoteAddress) {
             self.remoteAddress = self.targetsocket.remoteAddress;
         }
+        if (self.targetsocket.localPort) {
+            self.localPort = self.targetsocket.localPort;
+        }
+        if (self.targetsocket.localAddress) {
+            self.localAddress = self.targetsocket.localAddress;
+        }
     }
     clean (data) {
         if (this.targetsocket && this.targetsocket.removeAllListeners) {
