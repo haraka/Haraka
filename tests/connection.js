@@ -186,6 +186,8 @@ exports.connectionPrivate = {
         const client = {
             remotePort: 2525,
             remoteAddress: '172.16.15.1',
+            localPort: 25,
+            localAddress: '172.16.15.254',
             destroy: () => { true; },
         };
         const server = {
@@ -212,6 +214,8 @@ exports.connectionLocal = {
         const client = {
             remotePort: 2525,
             remoteAddress: '127.0.0.2',
+            localPort: 25,
+            localAddress: '172.0.0.1',
             destroy: () => { true; },
         };
         const server = {
