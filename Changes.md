@@ -17,7 +17,7 @@
 
 - bounce: correctly set fail recipients #2901
 - bounce: correctly set bounce recipients #2899
-
+- Received header more RFC compliant #2903
 
 ## 2.8.27 - 2021-01-05
 
