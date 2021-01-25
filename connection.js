@@ -145,8 +145,8 @@ class Connection {
             return;
         }
 
-        self.set('local', 'ip', ipaddr.process(self.client.localAddress).toString());
-        self.set('local', 'port', self.client.localPort);
+        self.set('local', 'ip', ipaddr.process(self.client.localAddress || local_addr.address).toString());
+        self.set('local', 'port', (self.client.localPort || local_addr.port));
         self.results.add({name: 'local'}, self.local);
 
         self.set('remote', 'ip', ipaddr.process(ip).toString());
