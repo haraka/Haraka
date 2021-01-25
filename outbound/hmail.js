@@ -308,15 +308,11 @@ class HMailItem extends events.EventEmitter {
         let host = mx.exchange;
 
         self.force_tls = false;
-        const force_tls_hosts = {};  // ip_in_list doesn't take an array
-        for (const item of obtls.cfg.force_tls_hosts) {
-            force_tls_hosts[item] = 1;
-        }
-        if (net_utils.ip_in_list(force_tls_hosts, host)) {
+        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, host)) {
             this.logdebug(`Forcing TLS for host ${host}`);
             self.force_tls = true;
         }
-        if (net_utils.ip_in_list(force_tls_hosts, self.todo.domain)) {
+        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, self.todo.domain)) {
             this.logdebug(`Forcing TLS for domain ${self.todo.domain}`);
             self.force_tls = true;
         }
