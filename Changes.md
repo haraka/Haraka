@@ -11,7 +11,7 @@
 
 ### New features
 
-- 
+- tls: require secure and verified sockets for configured hosts/domains
 
 ### Fixes
 

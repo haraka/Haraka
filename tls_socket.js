@@ -153,6 +153,14 @@ class pluggableStream extends stream.Stream {
         this._timeout = timeout;
         return this.targetsocket.setTimeout(timeout);
     }
+
+    isEncrypted () {
+        return this.targetsocket.encrypted;
+    }
+
+    isSecure () {
+        return this.targetsocket.encrypted && this.targetsocket.authorized;
+    }
 }
 
 exports.parse_x509_names = string => {

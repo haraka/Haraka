@@ -171,6 +171,7 @@ exports.load_tls_ini2 = {
                 rejectUnauthorized: false,
                 requestCert: false,
                 honorCipherOrder: false,
+                force_tls_hosts: ['first.example.com', 'second.example.net'],
             }
         });
         test.done();
