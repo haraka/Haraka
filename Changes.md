@@ -17,7 +17,7 @@
 
 - bounce: correctly set fail recipients #2901
 - bounce: correctly set bounce recipients #2899
-
+- Received header TLS section adheres more closely to RFC 8314 #2903
 
 ## 2.8.27 - 2021-01-05
 
