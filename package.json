@@ -9,7 +9,7 @@
     "server",
     "email"
   ],
-  "version": "2.8.27",
+  "version": "2.8.28",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -27,6 +27,8 @@
     "generic-pool"          : "~2.5.4",
     "iconv"                 : "~3.0.0",
     "ipaddr.js"             : "~2.0.0",
+    "libqp"                 : "^1.1.0",
+    "libmime"               : "^5.0.0",
     "nopt"                  : "~5.0.0",
     "npid"                  : "~0.4.0",
     "semver"                : "~7.3.4",
