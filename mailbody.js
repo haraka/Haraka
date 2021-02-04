@@ -2,7 +2,7 @@
 
 const events = require('events');
 const config = require('haraka-config');
-const utils  = require('haraka-utils');
+const libqp = require('libqp');
 
 // Mail Body Parser
 const logger = require('./logger');
@@ -37,7 +37,7 @@ class Body extends events.EventEmitter {
         this.buf = Buffer.alloc(buf_siz);
         this.buf_fill = 0;
         this.decode_accumulator = '';
-        this.decode_qp = line => utils.decode_qp(line.toString());
+        this.decode_qp = line => libqp.decode(line.toString());
         this.decode_7bit = this.decode_8bit;
     }
 
@@ -217,7 +217,7 @@ class Body extends events.EventEmitter {
 
             // convert back to base_64 or QP if required:
             if (this.decode_function === this.decode_qp) {
-                line = Buffer.from(`${utils.encode_qp(new_buf)}\n${line}`);
+                line = Buffer.from(`${libqp.wrap(libqp.encode(new_buf))}\n${line}`);
             }
             else if (this.decode_function === this.decode_base64) {
                 line = Buffer.from(new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line);
