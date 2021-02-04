@@ -145,6 +145,7 @@ class Connection {
             return;
         }
 
+        const local_addr = self.server.address();
         self.set('local', 'ip', ipaddr.process(self.client.localAddress || local_addr.address).toString());
         self.set('local', 'port', (self.client.localPort || local_addr.port));
         self.results.add({name: 'local'}, self.local);
