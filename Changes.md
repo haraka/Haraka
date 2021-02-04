@@ -19,7 +19,8 @@
 - bounce: correctly set bounce recipients #2899
 - Get local_ip from getsockname() instead of server properties #2914
 - Received header TLS section adheres more closely to RFC 8314 #2903
-- Improve processing of RFC-2045 Quoted-Printable and RFC-2047 encoded-words
+- use RFC-2045 Quoted-Printable in email message body
+- use RFC-2047 Q encoded-words in email headers
 
 ## 2.8.27 - 2021-01-05
 
