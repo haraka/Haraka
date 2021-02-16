@@ -7,7 +7,8 @@ const hkredis      = require('haraka-plugin-redis');
 
 const inheritable_opts = [
     'key', 'cert', 'ciphers', 'minVersion', 'dhparam',
-    'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
+    'requestCert', 'honorCipherOrder', 'rejectUnauthorized',
+    'force_tls_hosts'
 ];
 
 class OutboundTLS {
@@ -52,6 +53,7 @@ class OutboundTLS {
         }
 
         if (!cfg.no_tls_hosts) cfg.no_tls_hosts = [];
+        if (!cfg.force_tls_hosts) cfg.force_tls_hosts = [];
 
         this.cfg = cfg;
     }

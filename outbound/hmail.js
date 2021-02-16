@@ -307,6 +307,16 @@ class HMailItem extends events.EventEmitter {
         const mx = this.mxlist.shift();
         let host = mx.exchange;
 
+        self.force_tls = false;
+        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, host)) {
+            this.logdebug(`Forcing TLS for host ${host}`);
+            self.force_tls = true;
+        }
+        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, self.todo.domain)) {
+            this.logdebug(`Forcing TLS for domain ${self.todo.domain}`);
+            self.force_tls = true;
+        }
+
         // IP or IP:port
         if (net.isIP(host)) {
             self.hostlist = [ host ];
@@ -465,6 +475,14 @@ class HMailItem extends events.EventEmitter {
                 }
                 return;
             }
+            if (self.force_tls && (cmd != 'EHLO' && cmd != 'STARTTLS') && !socket.isSecure()) {
+                // For safety against programming mistakes
+                self.logerror("Blocking attempt to send unencrypted data to forced TLS socket. This message indicates a programming error in the software.");
+                processing_mail = false;
+                client_pool.release_client(socket, port, host, mx.bind, true);
+                return;
+            }
+
             let line = `${cmd}${data ? ` ${data}` : ''}`;
             if (cmd === 'dot' || cmd === 'dot_lmtp') {
                 line = '.';
@@ -572,6 +590,27 @@ class HMailItem extends events.EventEmitter {
             set_ehlo_props();
 
             if (secured) return auth_and_mail_phase();              // TLS already negotiated
+
+            if (self.force_tls) {
+                self.logdebug(`Using TLS for domain: ${self.todo.domain}, host: ${host}`);
+
+                if (!obc.cfg.enable_tls || !smtp_properties.tls) {
+                    // Prevent further use of the non-securable socket
+                    processing_mail = false;
+                    socket.write("QUIT\r\n", "utf8");  // courtesy
+                    socket.end();
+                    client_pool.release_client(socket, port, host, mx.bind, true);
+                    return self.temp_fail(`No TLS available but required by configuration.`);
+                }
+
+                socket.once('secure', () => {
+                    // Set this flag so we don't try STARTTLS again if it
+                    // is incorrectly offered at EHLO once we are secured.
+                    secured = true;
+                    send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
+                });
+                return send_command('STARTTLS');
+            }
             if (!obc.cfg.enable_tls) return auth_and_mail_phase();      // TLS not enabled
             if (!smtp_properties.tls) return auth_and_mail_phase(); // TLS not advertised by remote
 
@@ -604,7 +643,6 @@ class HMailItem extends events.EventEmitter {
                     return auth_and_mail_phase();
                 }
             );
-
         } // process_ehlo_data()
 
         let fp_called = false;
@@ -821,6 +859,7 @@ class HMailItem extends events.EventEmitter {
                     break;
                 case 'starttls': {
                     const tls_options = obtls.get_tls_options(mx);
+                    if (self.force_tls) tls_options.rejectUnauthorized = true;
 
                     smtp_properties = {};
                     socket.upgrade(tls_options, (authorized, verifyError, cert, cipher) => {
@@ -840,6 +879,13 @@ class HMailItem extends events.EventEmitter {
                         if (cert && cert.valid_to) loginfo.expires = cert.valid_to;
                         if (cert && cert.fingerprint) loginfo.fingerprint = cert.fingerprint;
                         self.loginfo('secured', loginfo);
+
+                        if (self.force_tls && !authorized) {
+                            processing_mail = false;
+                            socket.end();
+                            self.temp_fail('Host failed TLS verification required by configuration.');
+                            client_pool.release_client(socket, port, host, mx.bind, true);
+                        }
                     });
                     break;
                 }
@@ -917,6 +963,8 @@ class HMailItem extends events.EventEmitter {
 
         if (socket.__fromPool) {
             logger.logdebug('[outbound] got pooled socket, trying to deliver');
+            secured = socket.isEncrypted();
+            logger.logdebug(`[outbound] got pooled ${secured ? 'TLS ' : '' }socket, trying to deliver`);
             send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
         }
     }
@@ -1492,7 +1540,7 @@ function sort_mx (mx_list) {
     return sorted;
 }
 
-const smtp_regexp = /^(\d{3})([ -])#?(?:(\d\.\d\.\d)\s)?(.*)/;
+const smtp_regexp = /^([2345]\d\d)([ -])#?(?:(\d\.\d\.\d)\s)?(.*)/;
 
 function cram_md5_response (username, password, challenge) {
     const crypto = require('crypto');

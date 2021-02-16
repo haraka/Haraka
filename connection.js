@@ -146,11 +146,10 @@ class Connection {
         }
 
         const local_addr = self.server.address();
-        if (local_addr && local_addr.address) {
-            self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
-            self.set('local', 'port', local_addr.port);
-            self.results.add({name: 'local'}, self.local);
-        }
+        self.set('local', 'ip', ipaddr.process(self.client.localAddress || local_addr.address).toString());
+        self.set('local', 'port', (self.client.localPort || local_addr.port));
+        self.results.add({name: 'local'}, self.local);
+
         self.set('remote', 'ip', ipaddr.process(ip).toString());
         self.set('remote', 'port', self.client.remotePort);
         self.results.add({name: 'remote'}, self.remote);
@@ -1447,26 +1446,19 @@ class Connection {
         let sslheader;
 
         if (this.get('tls.cipher.version')) {
-            sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name}`;
-            if (this.tls.verified) {
-                sslheader += ' verify=OK)';
-            }
-            else {
-                if (this.tls.verifyError && this.tls.verifyError.code === 'UNABLE_TO_GET_ISSUER_CERT') {
-                    sslheader += ' verify=NO)';
-                }
-                else {
-                    sslheader += ')';
-                }
-            }
+            // standardName appeared in Node.js v12.16 and v13.4
+            // RFC 8314
+            sslheader = `tls ${this.tls.cipher.standardName || this.tls.cipher.name}`;
         }
 
         let received_header = `from ${this.hello.host} (${this.get_remote('info')})
 \tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}
 \tenvelope-from ${this.transaction.mail_from.format()}`;
 
-        if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
         if (sslheader)       received_header += `\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+
+        // Does not follow RFC 5321 section 4.4 grammar
+        if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
 
         received_header += `;\n\t${utils.date_to_str(new Date())}`
 

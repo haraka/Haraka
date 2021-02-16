@@ -458,7 +458,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
                 if (smtp_client.is_dead_sender(plugin, connection)) {
                     return;
                 }
-                smtp_client.send_command('MAIL', `FROM: ${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
+                smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
                 return;
             }
 
