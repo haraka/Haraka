@@ -3,6 +3,7 @@
 
 ### Changes
 
+- connection error logging: use key-value paris #2921
 - tls: change default to NOT send TLS client certs #2902
 - dep: redis is now a dependency #2896
 - use address-rfc2821 2.0.0

@@ -161,35 +161,35 @@ class Connection {
             local_port: self.local.port
         });
 
-        const has_host = self.remote.host ? `${self.remote.host} ` : '';
-        const rhost = `client ${has_host}[${self.remote.ip}]`
-
         if (!self.client.on) return;
+
+        const log_data = {ip: self.remote.ip}
+        if (self.remote.host) log_data.host = self.remote.host
 
         self.client.on('end', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
-            self.loginfo(`${rhost} half closed connection`);
+            self.loginfo('client half closed connection', log_data);
             self.fail();
         });
 
         self.client.on('close', has_error => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
-            self.loginfo(`${rhost} dropped connection`);
+            self.loginfo('client dropped connection', log_data);
             self.fail();
         });
 
         self.client.on('error', err => {
             if (self.state >= states.DISCONNECTING) return;
-            self.loginfo(`${rhost} connection error: ${err}`);
+            self.loginfo(`client connection error: ${err}`, log_data);
             self.fail();
         });
 
         self.client.on('timeout', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.respond(421, 'timeout', () => {
-                self.fail(`${rhost} connection timed out`);
+                self.fail('client connection timed out', log_data);
             });
         });
 
@@ -591,8 +591,8 @@ class Connection {
         // Process any buffered commands (PIPELINING)
         this._process_data();
     }
-    fail (err) {
-        if (err) this.logwarn(err);
+    fail (err, err_data) {
+        if (err) this.logwarn(err, err_data);
         this.hooks_to_run = [];
         this.disconnect();
     }
