@@ -18,6 +18,7 @@ exports.load_spamassassin_ini = function () {
             '+check.private_ip',
             '+check.local_ip',
             '+check.relay',
+            '-check.skip_via_notes',
         ],
     }, () => {
         plugin.load_spamassassin_ini();
@@ -384,6 +385,11 @@ exports.should_check = function (conn) {
             conn.transaction.results.add(plugin, { skip: 'private_ip'});
             result = false;
         }
+    }
+
+    if (plugin.cfg.check.skip_via_notes && conn.transaction.notes.skip_spamassassin) {
+        conn.transaction.results.add(plugin, {skip: 'requested_via_notes'})
+        result = false
     }
 
     return result;
