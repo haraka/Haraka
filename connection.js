@@ -1495,7 +1495,7 @@ class Connection {
             header = header.concat(this.transaction.notes.authentication_results);
         }
         if (header.length === 1) return '';  // no results
-        return header.join('; ');
+        return header.join(";\n\t");
     }
     auth_results_clean () {
         // move any existing Auth-Res headers to Original-Auth-Res headers
@@ -1504,9 +1504,9 @@ class Connection {
         if (ars.length === 0) return;
 
         for (let i=0; i < ars.length; i++) {
-            this.transaction.remove_header( ars[i] );
             this.transaction.add_header('Original-Authentication-Results', ars[i]);
         }
+        this.transaction.remove_header('Authentication-Results');
         this.logdebug("Authentication-Results moved to Original-Authentication-Results");
     }
     cmd_data (args) {
