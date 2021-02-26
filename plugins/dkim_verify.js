@@ -28,7 +28,7 @@ exports.hook_data_post = function (next, connection) {
         results.forEach((res) => {
             let res_err = '';
             if (res.error) res_err = ` (${res.error})`;
-            connection.auth_results(`dkim=${res.result}${res_err} header.i=${res.identity}`);
+            connection.auth_results(`dkim=${res.result}${res_err} header.i=${res.identity} header.d=${res.domain} header.s=${res.selector}`);
             connection.loginfo(self, `identity="${res.identity}" domain="${res.domain}" selector="${res.selector}" result=${res.result} ${res_err}`);
 
             // save to ResultStore
