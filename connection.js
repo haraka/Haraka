@@ -1451,16 +1451,16 @@ class Connection {
             sslheader = `tls ${this.tls.cipher.standardName || this.tls.cipher.name}`;
         }
 
-        let received_header = `from ${this.hello.host} (${this.get_remote('info')})
-\tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}
+        let received_header = `from ${this.hello.host} (${this.get_remote('info')})\r
+\tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}\r
 \tenvelope-from ${this.transaction.mail_from.format()}`;
 
-        if (sslheader)       received_header += `\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+        if (sslheader)       received_header += `\r\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
 
         // Does not follow RFC 5321 section 4.4 grammar
         if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
 
-        received_header += `;\n\t${utils.date_to_str(new Date())}`
+        received_header += `;\r\n\t${utils.date_to_str(new Date())}`
 
         return received_header;
     }
@@ -1495,7 +1495,7 @@ class Connection {
             header = header.concat(this.transaction.notes.authentication_results);
         }
         if (header.length === 1) return '';  // no results
-        return header.join(";\n\t");
+        return header.join(";\r\n\t");
     }
     auth_results_clean () {
         // move any existing Auth-Res headers to Original-Auth-Res headers
