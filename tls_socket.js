@@ -211,18 +211,23 @@ exports.parse_x509_expire = (file, string) => {
 exports.parse_x509 = string => {
     const res = {};
 
-    const match = /^([^-]*)?([-]+BEGIN (?:\w+\s)?PRIVATE KEY[-]+[^-]+[-]+END (?:\w+\s)?PRIVATE KEY[-]+\n)([^]*)$/.exec(string);
-    if (!match) return res;
-
-    if (match[1] && match[1].length) {
-        log.logerror('leading garbage');
-        log.logerror(match[1]);
+    // Search for first private key.
+    const keyMatch = /^[-]+BEGIN (?:\w+\s)?PRIVATE KEY[-]+[^-]+[-]+END (?:\w+\s)?PRIVATE KEY[-]+$/m.exec(string);
+    if (keyMatch && keyMatch[0]) {
+        res.key = Buffer.from(keyMatch[0]);
     }
-    if (!match[2] || !match[2].length) return res;
-    res.key = Buffer.from(match[2]);
 
-    if (!match[3] || !match[3].length) return res;
-    res.cert = Buffer.from(match[3]);
+    // Search for all cetrificates, then concat them into one.
+    const certPattern = /^[-]+BEGIN CERTIFICATE[-]+[^-]+[-]+END CERTIFICATE[-]+$/mg;
+    const certData = [];
+    let certMatch = certPattern.exec(string);
+    while (certMatch && certMatch[0]) {
+        certData.push(certMatch[0]);
+        certMatch = certPattern.exec(string);
+    }
+    if (certData.length) {
+        res.cert = Buffer.from(certData.join('\n'));
+    }
 
     return res;
 }
