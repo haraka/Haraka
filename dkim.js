@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const dns    = require('dns');
 const Stream = require('stream').Stream;
 const utils  = require('haraka-utils');
-const util   = require('util');
 
 //////////////////////
 // Common functions //
@@ -16,7 +15,7 @@ function md5 (str) {
     return h.update(str).digest('hex');
 }
 
-class Buf {
+class Buf { // a stupid temp buffer
     constructor () {
         this.bar = [];
         this.blen = 0;
@@ -37,7 +36,7 @@ class Buf {
         return nb;
     }
 
-    push (buf) {
+    push (buf) { // push myself to temp buf
         if (buf.length) {
             this.bar.push(buf);
             this.blen += buf.length;
@@ -52,18 +51,20 @@ class Buf {
 // There is one DKIMObject created for each signature found
 
 class DKIMObject {
-    constructor (header, header_idx, cb, timeout) {
+    constructor (header, header_idx, cb, opts) {
         this.cb = cb;
         this.sig = header;
         this.sig_md5 = md5(header);
         this.run_cb = false;
         this.header_idx = JSON.parse(JSON.stringify(header_idx));
-        this.timeout = timeout;
+        this.timeout = opts.timeout || 30
+        this.allowed_time_skew = opts.allowed_time_skew
+        this.workaround_mixcased_domains = opts.workaround_mixcased_domains
         this.fields = {};
         this.headercanon = this.bodycanon = 'simple';
         this.signed_headers = [];
         this.identity = 'unknown';
-        this.line_buffer = new Buf();
+        this.line_buffer = []
         this.dns_fields = {
             'v': 'DKIM1',
             'k': 'rsa',
@@ -84,7 +85,6 @@ class DKIMObject {
                 return this.result('header parse error', 'invalid');
             }
         }
-
         /////////////////////
         // Validate fields //
         /////////////////////
@@ -96,6 +96,10 @@ class DKIMObject {
         }
         else {
             return this.result('missing version', 'invalid');
+        }
+
+        if (this.fields.l) {
+            return this.result('length tag is unsupported', 'none');
         }
 
         if (this.fields.a) {
@@ -144,8 +148,10 @@ class DKIMObject {
         if (this.fields.i) {
             // Make sure that this is a sub-domain of the 'd' field
             const dom = this.fields.i.substr(this.fields.i.length - this.fields.d.length);
-            if (dom !== this.fields.d) {
-                return this.result('domain mismatch', 'invalid');
+            if (this.workaround_mixcased_domains
+                ? (dom.toLowerCase() !== this.fields.d.toLowerCase())
+                : (dom !== this.fields.d)) {
+                return this.result('i/d selector domain mismatch', 'invalid')
             }
         }
         else {
@@ -159,8 +165,8 @@ class DKIMObject {
 
         const now = new Date().getTime()/1000;
         if (this.fields.t) {
-            if (this.fields.t > now) {
-                return this.result('bad creation date', 'invalid');
+            if (this.fields.t > (this.allowed_time_skew ? (now + parseInt(this.allowed_time_skew)) : now)) {
+                return this.result('creation date is invalid or in the future', 'invalid')
             }
         }
 
@@ -168,8 +174,8 @@ class DKIMObject {
             if (this.fields.t && parseInt(this.fields.x) < parseInt(this.fields.t)) {
                 return this.result('invalid expiration date', 'invalid');
             }
-            if (now > this.fields.x) {
-                return this.result('signature expired', 'invalid');
+            if ((this.allowed_time_skew ? (now - parseInt(this.allowed_time_skew)) : now) > parseInt(this.fields.x)) {
+                return this.result(`signature expired`, 'invalid');
             }
         }
 
@@ -178,7 +184,7 @@ class DKIMObject {
     }
 
     debug (str) {
-        util.debug(str);
+        console.debug(str)
     }
 
     header_canon_relaxed (header) {
@@ -203,21 +209,17 @@ class DKIMObject {
         if (isCRLF || isLF) {
             // Store any empty lines as both canonicalization alogoriths
             // ignore all empty lines at the end of the message body.
-            this.line_buffer.push(line);
+            this.line_buffer.push(line)
         }
         else {
-            let l;
-            if (this.bodycanon === 'simple') {
-                l = this.line_buffer.pop(line);
-                this.bh.update(l);
+            if (this.bodycanon === 'relaxed') {
+                line = DKIMObject.canonicalize(line)
             }
-            else if (this.bodycanon === 'relaxed') {
-                l = this.line_buffer.pop(line).toString('utf-8');
-                l = l.replace(/[\t ]+(\r?\n)$/,"$1");
-                l = l.replace(/[\t ]+/g,' ');
-                l = this.line_buffer.pop(Buffer.from(l));
-                this.bh.update(l);
+            if (this.line_buffer.length > 0) {
+                this.line_buffer.forEach(v => this.bh.update(v))
+                this.line_buffer = []
             }
+            this.bh.update(line)
         }
     }
 
@@ -395,6 +397,43 @@ class DKIMObject {
             return self.result('no key for signature', 'invalid');
         });
     }
+
+    static canonicalize (bufin) {
+        const tmp = []
+        const len = bufin.length
+        let last_chunk_idx = 0
+        let idx_wsp = 0
+        let in_wsp = false
+
+        for (let idx = 0; idx < len; idx++) {
+            const char = bufin[idx]
+            if (char === 9 || char === 32) { // inside WSP
+                if (!in_wsp) { // WSP started
+                    in_wsp = true
+                    idx_wsp = idx
+                }
+            }
+            else if (char === 13 || char === 10) { // CR?LF
+                if (in_wsp) { // just after WSP
+                    tmp.push(bufin.slice(last_chunk_idx, idx_wsp))
+                }
+                else { // just after regular char
+                    tmp.push(bufin.slice(last_chunk_idx, idx))
+                }
+                break
+            }
+            else if (in_wsp) { // regular char after WSP
+                in_wsp = false
+                tmp.push(bufin.slice(last_chunk_idx, idx_wsp))
+                tmp.push(Buffer.from(' '))
+                last_chunk_idx = idx
+            }
+        }
+
+        tmp.push(Buffer.from([13, 10]))
+
+        return Buffer.concat(tmp)
+    }
 }
 
 exports.DKIMObject = DKIMObject;
@@ -404,7 +443,7 @@ exports.DKIMObject = DKIMObject;
 //////////////////////
 
 class DKIMVerifyStream extends Stream {
-    constructor (cb, timeout) {
+    constructor (opts, cb) {
         super();
         this.run_cb = false;
         this.cb = (err, result, results) => {
@@ -423,11 +462,11 @@ class DKIMVerifyStream extends Stream {
         this.result = 'none';
         this.pending = 0;
         this.writable = true;
-        this.timeout = timeout || 30;
+        this.opts = opts
     }
 
     debug (str) {
-        util.debug(str);
+        console.debug(str)
     }
 
     handle_buf (buf) {
@@ -444,7 +483,7 @@ class DKIMVerifyStream extends Stream {
             if (!!buf && buf[buf.length - 2] === 0x0d && buf[buf.length - 1] === 0x0a) {
                 return true;
             }
-            buf = Buffer.concat([buf, new Buffer('\r\n\r\n')]);
+            buf = Buffer.concat([buf, new Buffer.from('\r\n\r\n')])
         }
         else {
             buf = this.buffer.pop(buf);
@@ -453,13 +492,18 @@ class DKIMVerifyStream extends Stream {
         function callback (err, result) {
             self.pending--;
             if (result) {
-                self.results.push({
+                const results = {
                     identity: result.identity,
                     domain: result.domain,
                     selector: result.selector,
                     result: result.result,
-                    error: ((err) ? err.message : null)
-                });
+
+                }
+                if (err) {
+                    results.error = err.message
+                    if (self.opts.sigerror_log_level) results.emit_log_level = self.opts.sigerror_log_level
+                }
+                self.results.push(results)
 
                 // Set the overall result based on this precedence order
                 const rr = ['pass','tempfail','fail','invalid','none'];
@@ -519,7 +563,7 @@ class DKIMVerifyStream extends Stream {
                         this.debug(`Found ${dkim_headers.length} DKIM signatures`);
                         this.pending = dkim_headers.length;
                         for (let d=0; d<dkim_headers.length; d++) {
-                            this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.timeout));
+                            this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.opts));
                         }
                         if (this.pending === 0) {
                             process.nextTick(() => {
