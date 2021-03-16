@@ -15,7 +15,7 @@ function md5 (str) {
     return h.update(str).digest('hex');
 }
 
-class Buf { // a stupid temp buffer
+class Buf {
     constructor () {
         this.bar = [];
         this.blen = 0;
@@ -36,7 +36,7 @@ class Buf { // a stupid temp buffer
         return nb;
     }
 
-    push (buf) { // push myself to temp buf
+    push (buf) {
         if (buf.length) {
             this.bar.push(buf);
             this.blen += buf.length;
@@ -203,6 +203,10 @@ class DKIMObject {
     add_body_line (line) {
         if (this.run_cb) return;
 
+        if (this.bodycanon === 'relaxed') {
+            line = DKIMObject.canonicalize(line)
+        }
+
         // Buffer any lines
         const isCRLF = line.length === 2 && line[0] === 0x0d && line[1] === 0x0a;
         const isLF = line.length === 1 && line[0] === 0x0a;
@@ -212,9 +216,6 @@ class DKIMObject {
             this.line_buffer.push(line)
         }
         else {
-            if (this.bodycanon === 'relaxed') {
-                line = DKIMObject.canonicalize(line)
-            }
             if (this.line_buffer.length > 0) {
                 this.line_buffer.forEach(v => this.bh.update(v))
                 this.line_buffer = []
