@@ -274,7 +274,7 @@ class DKIMObject {
         }
 
         // Now add in our original DKIM-Signature header without the b= and trailing CRLF
-        let our_sig = this.sig.replace(/b=([^;]+)/,'b=');
+        let our_sig = this.sig.replace(/([:;\s\t]|^)b=([^;]+)/, '$1b=');
         if (this.headercanon === 'relaxed') {
             our_sig = this.header_canon_relaxed(our_sig);
         }
