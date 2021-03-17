@@ -188,10 +188,13 @@ class DKIMObject {
     }
 
     header_canon_relaxed (header) {
-        // || [] prevents errors thrown when no match
-        const [ , header_name, header_value] = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header) || [];
+        // `|| []` prevents errors thrown when no match
+        // `\s*` eats all FWS after the colon
+        // eslint-disable-next-line prefer-const
+        let [, header_name, header_value] = /^([^:]+):\s*([^]*)$/.exec(header) || []
 
         if (!header_name) return header;
+        if (header_value.length === 0) header_value = "\r\n"
 
         let hc = `${header_name.toLowerCase()}:${header_value}`;
         hc = hc.replace(/\r\n([\t ]+)/g, "$1");
