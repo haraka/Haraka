@@ -13,17 +13,32 @@ DKIMVerifyStream.prototype.debug = str => {
     plugin.logdebug(str);
 }
 
+exports.register = function () {
+    this.load_config()
+}
+
+exports.load_config = function () {
+    const cfg = this.config.get('dkim_verify.ini', {
+        booleans: [
+            '-main.workaround_mixcased_domains',
+        ],
+    }, () => this.load_config())
+    this.cfg = Object.assign({}, cfg.main, {
+        timeout: plugin.timeout ? plugin.timeout - 1 : 0
+    })
+}
+
 exports.hook_data_post = function (next, connection) {
     const self = this;
     const txn = connection.transaction;
-    const verifier = new DKIMVerifyStream((err, result, results) => {
+    const verifier = new DKIMVerifyStream(this.cfg, (err, result, results) => {
         if (err) {
             txn.results.add(self, { err });
             return next();
         }
-        if (!results) {
-            txn.results.add(self, { err: 'No results from DKIMVerifyStream' });
-            return next();
+        if (!results || results.length === 0) {
+            txn.results.add(self, { skip: 'no/bad dkim signature' });
+            return next(CONT, 'no/bad signature')
         }
         results.forEach((res) => {
             let res_err = '';
@@ -43,7 +58,7 @@ exports.hook_data_post = function (next, connection) {
         // Store results for other plugins
         txn.notes.dkim_results = results;
         next();
-    }, ((plugin.timeout) ? plugin.timeout - 1 : 0));
+    })
 
     txn.message_stream.pipe(verifier, { line_endings: '\r\n' });
 }

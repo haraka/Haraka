@@ -3,6 +3,7 @@
 
 ### Changes
 
+- breaking: dkim.js has changed the constructor opts
 - connection error logging: use key-value paris #2921
 - tls: change default to NOT send TLS client certs #2902
 - dep: redis is now a dependency #2896
@@ -13,6 +14,7 @@
 ### New features
 
 - tls: require secure and verified sockets for configured hosts/domains
+- DKIM plugin has got a couple of config options now
 
 ### Fixes
 
