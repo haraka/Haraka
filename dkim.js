@@ -371,10 +371,12 @@ class DKIMObject {
                         }
                         else if (flag === 's') {
                             // 'i' and 'd' domain much match exactly
-                            let j = self.fields.i;
-                            j = j.substr(j.indexOf('@')+1, j.length);
-                            if (j !== self.fields.d) {
-                                return self.result('domain mismatch', 'invalid');
+                            let i = self.fields.i
+                            i = i.substr(i.indexOf('@')+1, i.length)
+                            if (this.workaround_mixcased_domains
+                                ? (i.toLowerCase() !== this.fields.d.toLowerCase())
+                                : (i !== this.fields.d)) {
+                                return this.result('i/d selector domain mismatch (t=s)', 'invalid')
                             }
                         }
                     }
