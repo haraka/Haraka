@@ -13,6 +13,7 @@
 ### New features
 
 - tls: require secure and verified sockets for configured hosts/domains
+- tls: add `no_starttls_ports` - an array of incoming ports where STARTTLS is not advertised
 
 ### Fixes
 
