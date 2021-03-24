@@ -124,6 +124,12 @@ meeting following criteria.
 
     If true, messages that are to be relayed will be scored.
 
+- skip_via_notes
+
+    Default: false
+
+    If true, plugin invokation is skipped if `transaction.notes.skip_spamassassin` is set to `true`. 
+
 Extras
 ======
 
