@@ -309,8 +309,8 @@ exports.get_spamd_socket = function (next, conn, headers) {
         else {
             conn.logerror(plugin, 'timeout waiting for results');
         }
-        socket.end();
-        return next();
+        socket.destroy()
+        return next(CONT, 'timeout error');
     });
 
     const connect_timeout = parseInt(plugin.cfg.main.connect_timeout) || 30;
