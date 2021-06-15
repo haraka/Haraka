@@ -33,8 +33,10 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         }
         else if (addresses && addresses.length) {
             for (let i=0,l=addresses.length; i < l; i++) {
-                const mx = wrap_mx(addresses[i]);
-                mxs.push(mx);
+                if (!net_utils.is_local_ip(addresses[i].exchange)) {
+                    const mx = wrap_mx(addresses[i]);
+                    mxs.push(mx);
+                }
             }
             cb(null, mxs);
         }
