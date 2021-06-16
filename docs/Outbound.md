@@ -95,6 +95,12 @@ Set this to `0` to completely disable the pooling code.
 This value determines how many concurrent connections can be made to a single
 IP address (destination) in the pool. Default: 10 connections.
 
+* `local_mx_ok`
+
+Default: false. By default, outbound to a local IP is disabled, to avoid creating 
+outbound loops. Set this to true if you want to allow outbound to local IPs. 
+This is be useful if you want to deliver mail to localhost on another port.
+
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.
