@@ -99,7 +99,7 @@ IP address (destination) in the pool. Default: 10 connections.
 
 Default: false. By default, outbound to a local IP is disabled, to avoid creating 
 outbound loops. Set this to true if you want to allow outbound to local IPs. 
-This is be useful if you want to deliver mail to localhost on another port.
+This could be useful if you want to deliver mail to localhost on another port.
 
 ### outbound.bounce\_message
 
