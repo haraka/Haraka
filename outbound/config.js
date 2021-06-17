@@ -9,6 +9,7 @@ function load_config () {
             '-always_split',
             '+enable_tls',
             '-ipv6_enabled',
+            '-local_mx_ok',
         ],
     }, () => {
         load_config();
@@ -41,6 +42,9 @@ function load_config () {
     }
     if (!cfg.received_header) {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';
+    }
+    if (!cfg.local_mx_ok) {
+        cfg.local_mx_ok = config.get('outbound.local_mx_ok') || false;
     }
 }
 
