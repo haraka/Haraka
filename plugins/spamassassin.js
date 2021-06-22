@@ -104,6 +104,7 @@ exports.hook_data_post = function (next, connection) {
     });
 
     socket.once('end', () => {
+        if (!conn.transaction) return next() // client gone
 
         if (spamd_response.headers && spamd_response.headers.Tests) {
             spamd_response.tests = spamd_response.headers.Tests.replace(/\s/g, '');

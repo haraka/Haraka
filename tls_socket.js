@@ -286,6 +286,8 @@ exports.load_tls_ini = (opts) => {
         cfg.main.requireAuthorized = [cfg.main.requireAuthorized];
     }
 
+    if (!Array.isArray(cfg.main.no_starttls_ports)) cfg.main.no_starttls_ports = [];
+
     tlss.cfg = cfg;
 
     if (!opts || opts.role === 'server') {
