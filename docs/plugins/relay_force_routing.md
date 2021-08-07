@@ -25,8 +25,9 @@ Configuration
     already defined.
 
     Example:
-
+```
     [domains]  
     test.com = { "action": "continue", "nexthop": "127.0.0.1:2525" }
     my.test.com = { "action": "continue", "nexthop": "127.0.0.1:2527" }
     any = { "action": "continue", "nexthop": "10.10.10.1:2525"}
+```
