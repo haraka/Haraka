@@ -191,8 +191,6 @@ exports.force_routing = function (next, hmail, domain) {
 
     if (!route) {
         route = plugin.dest.domains["any"];
-        plugin.logdebug(plugin,"checking wildcard");
-        plugin.logdebug(plugin,plugin.dest.domains);
         if(!route){
             plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
             return next();
