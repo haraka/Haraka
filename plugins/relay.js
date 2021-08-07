@@ -187,11 +187,16 @@ exports.force_routing = function (next, hmail, domain) {
     if (!plugin.cfg.relay.force_routing) { return next(); }
     if (!plugin.dest) { return next(); }
     if (!plugin.dest.domains) { return next(); }
-    const route = plugin.dest.domains[domain];
+    let route = plugin.dest.domains[domain];
 
     if (!route) {
-        plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
-        return next();
+        route = plugin.dest.domains["any"];
+        plugin.logdebug(plugin,"checking wildcard");
+        plugin.logdebug(plugin,plugin.dest.domains);
+        if(!route){
+            plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
+            return next();
+        }
     }
 
     const nexthop = JSON.parse(route).nexthop;
