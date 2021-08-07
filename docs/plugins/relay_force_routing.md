@@ -20,3 +20,13 @@ Configuration
     [domains]  
     test.com = { "action": "continue", "nexthop": "127.0.0.1:2525" }
 
+    You can also define a default relay using the "any" domain, which will be
+    used if the message's destination domain doesn't match any of the domains
+    already defined.
+
+    Example:
+
+    [domains]  
+    test.com = { "action": "continue", "nexthop": "127.0.0.1:2525" }
+    my.test.com = { "action": "continue", "nexthop": "127.0.0.1:2527" }
+    any = { "action": "continue", "nexthop": "10.10.10.1:2525"}
