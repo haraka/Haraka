@@ -334,7 +334,7 @@ class MessageStream extends Stream {
         this.in_pipe = true;
         this.readable = true;
         this.paused = false;
-        this.headers_done = false;
+        this.headers_done = (options && options.skip_headers);
         this.headers_found_eoh = false;
         this.rs = null;
         this.read_ce = new ChunkEmitter(this.buffer_size);
