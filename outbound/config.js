@@ -43,9 +43,6 @@ function load_config () {
     if (!cfg.received_header) {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';
     }
-    if (!cfg.local_mx_ok) {
-        cfg.local_mx_ok = config.get('outbound.local_mx_ok') || false;
-    }
 }
 
 load_config();
