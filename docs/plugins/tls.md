@@ -91,6 +91,14 @@ If needed, add this section to the `config/tls.ini` file and list any IP ranges 
 
 The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information about the following options.
 
+### no_starttls_ports
+
+An array of incoming ports on which Haraka will not advertise STARTTLS capability.
+
+```ini
+no_starttls_ports[]=2525
+```
+
 ### force_tls_hosts
 
 For known good TLS hosts, it's possible to force that the outbound mailer will only connect via secure sockets. This makes Haraka use *forced TLS* instead of *opportunistic TLS*. For forced TLS, the STARTTLS upgrade must succeed with a valid certificate (overriding `rejectUnauthorized`). The list is matched both against the host (MX record or `nexthop` in `relay_dest_domains.ini`), and the domain name of the email address.

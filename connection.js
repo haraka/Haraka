@@ -161,35 +161,35 @@ class Connection {
             local_port: self.local.port
         });
 
-        const has_host = self.remote.host ? `${self.remote.host} ` : '';
-        const rhost = `client ${has_host}[${self.remote.ip}]`
-
         if (!self.client.on) return;
+
+        const log_data = {ip: self.remote.ip}
+        if (self.remote.host) log_data.host = self.remote.host
 
         self.client.on('end', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
-            self.loginfo(`${rhost} half closed connection`);
+            self.loginfo('client half closed connection', log_data);
             self.fail();
         });
 
         self.client.on('close', has_error => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
-            self.loginfo(`${rhost} dropped connection`);
+            self.loginfo('client dropped connection', log_data);
             self.fail();
         });
 
         self.client.on('error', err => {
             if (self.state >= states.DISCONNECTING) return;
-            self.loginfo(`${rhost} connection error: ${err}`);
+            self.loginfo(`client connection error: ${err}`, log_data);
             self.fail();
         });
 
         self.client.on('timeout', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.respond(421, 'timeout', () => {
-                self.fail(`${rhost} connection timed out`);
+                self.fail('client connection timed out', log_data);
             });
         });
 
@@ -591,8 +591,8 @@ class Connection {
         // Process any buffered commands (PIPELINING)
         this._process_data();
     }
-    fail (err) {
-        if (err) this.logwarn(err);
+    fail (err, err_data) {
+        if (err) this.logwarn(err, err_data);
         this.hooks_to_run = [];
         this.disconnect();
     }
@@ -1451,16 +1451,16 @@ class Connection {
             sslheader = `tls ${this.tls.cipher.standardName || this.tls.cipher.name}`;
         }
 
-        let received_header = `from ${this.hello.host} (${this.get_remote('info')})
-\tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}
+        let received_header = `from ${this.hello.host} (${this.get_remote('info')})\r
+\tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}\r
 \tenvelope-from ${this.transaction.mail_from.format()}`;
 
-        if (sslheader)       received_header += `\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+        if (sslheader)       received_header += `\r\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
 
         // Does not follow RFC 5321 section 4.4 grammar
         if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
 
-        received_header += `;\n\t${utils.date_to_str(new Date())}`
+        received_header += `;\r\n\t${utils.date_to_str(new Date())}`
 
         return received_header;
     }
@@ -1495,7 +1495,7 @@ class Connection {
             header = header.concat(this.transaction.notes.authentication_results);
         }
         if (header.length === 1) return '';  // no results
-        return header.join('; ');
+        return header.join(";\r\n\t");
     }
     auth_results_clean () {
         // move any existing Auth-Res headers to Original-Auth-Res headers
@@ -1504,9 +1504,9 @@ class Connection {
         if (ars.length === 0) return;
 
         for (let i=0; i < ars.length; i++) {
-            this.transaction.remove_header( ars[i] );
             this.transaction.add_header('Original-Authentication-Results', ars[i]);
         }
+        this.transaction.remove_header('Authentication-Results');
         this.logdebug("Authentication-Results moved to Original-Authentication-Results");
     }
     cmd_data (args) {
