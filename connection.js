@@ -1588,7 +1588,7 @@ class Connection {
             line[0] === 0x2e &&
             line[1] === 0x0a) {
             this.lognotice('Client sent bare line-feed - .\\n rather than .\\r\\n');
-            this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf/", () => {
+            this.respond(451, "Bare line-feed; see http://haraka.github.io/barelf/", () => {
                 self.reset_transaction();
             });
             return;
