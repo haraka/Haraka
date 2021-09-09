@@ -9,6 +9,7 @@ function load_config () {
             '-always_split',
             '+enable_tls',
             '-ipv6_enabled',
+            '-local_mx_ok',
         ],
     }, () => {
         load_config();
