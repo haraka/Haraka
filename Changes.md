@@ -6,6 +6,7 @@
 - connection error logging: use key-value paris #2921
 - tls: change default to NOT send TLS client certs #2902
 - dep: redis is now a dependency #2896
+- dep: use caret version range for all the dependencies to avoid transitive breaking changes #2965
 - use address-rfc2821 2.0.0
 - http: use CDN for bootstrap/jquery, drop bower #2891
 - drop support for node 10  #2890
