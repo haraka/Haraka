@@ -10,7 +10,7 @@
 - http: use CDN for bootstrap/jquery, drop bower #2891
 - drop support for node 10  #2890
 - outbound: disable outbound to localhost by default #2952
-- skip plugins at runtime by pusing name into transaction.skip_plugins
+- skip plugins at runtime by pushing name into transaction.skip_plugins
 
 ### New features
 
