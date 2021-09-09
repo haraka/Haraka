@@ -528,6 +528,11 @@ plugins.run_next_hook = (hook, object, params) => {
     if (hook !== 'log') {
         object.logdebug(`running ${hook} hook in ${item[0].name} plugin`);
     }
+    
+    if (object.transaction && object.transaction.notes.skip_plugins.includes(item[0].name)) {
+		object.logdebug(`skipping ${item[0].name}_${hook} by request in notes`);
+		return callback();
+	}
 
     try {
         object.current_hook = item;
