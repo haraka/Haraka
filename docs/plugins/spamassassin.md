@@ -124,6 +124,32 @@ meeting following criteria.
 
     If true, messages that are to be relayed will be scored.
 
+[check]
+=======
+
+The optional reject section can allow returning a DENYSOFT status back to the
+client.  Turns these on to force the client to retry later in cases where
+spamassassin is not responding properly.  If set to false, then the errors
+will be ignored and message processing will continue.
+
+- error
+
+    Default: false
+
+    If true, return DENYSOFT on socket errors
+
+- connect\_timeout
+
+    Default: false
+
+    If true, return DENYSOFT on socket connection timeouts
+
+- scan\_timeout
+
+    Default: false
+
+    If true, return DENYSOFT on scan timeouts
+
 Extras
 ======
 
