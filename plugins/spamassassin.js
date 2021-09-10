@@ -18,6 +18,10 @@ exports.load_spamassassin_ini = function () {
             '+check.private_ip',
             '+check.local_ip',
             '+check.relay',
+            
+            '-reject.error',
+            '-reject.connect_timeout',
+            '-reject.scan_timeout',
         ],
     }, () => {
         plugin.load_spamassassin_ini();
@@ -274,6 +278,8 @@ exports.get_spamd_headers = function (conn, username) {
 
 exports.get_spamd_socket = function (next, conn, headers) {
     const plugin = this;
+    const txn = conn.transaction;
+    
     // TODO: support multiple spamd backends
 
     const socket = new sock.Socket();
@@ -282,7 +288,7 @@ exports.get_spamd_socket = function (next, conn, headers) {
 
     socket.on('connect', function () {
         // Abort if the transaction is gone
-        if (!conn.transaction) {
+        if (!txn) {
             plugin.logwarn(conn, 'Transaction gone, cancelling SPAMD connection');
             socket.end();
             return;
@@ -296,20 +302,25 @@ exports.get_spamd_socket = function (next, conn, headers) {
     });
 
     socket.on('error', err => {
-        conn.logerror(plugin, `connection failed: ${err}`);
-        // TODO: optionally DENYSOFT
-        // TODO: add a transaction note
-        return next();
+        socket.destroy();
+        conn.logerror(plugin, `connection failed: ${err.message}`);
+        if (txn) txn.results.add(plugin, {err: `socket error: ${err.message}` });
+        if (!plugin.cfg.reject.error) return next();
+        return next(DENYSOFT, 'Spam scan error');
     });
 
     socket.on('timeout', function () {
+        socket.destroy();
         if (!this.is_connected) {
             conn.logerror(plugin, 'spamd connection timed out');
+            if (txn) txn.results.add(plugin, {err: `spamd socket connect timeout` });
+            if (plugin.cfg.reject.connect_timeout) return next(DENYSOFT, 'Spam connect error');
         }
         else {
             conn.logerror(plugin, 'timeout waiting for results');
+            if (txn) txn.results.add(plugin, {err: `spamd timeout waiting for results` });
+            if (plugin.cfg.reject.scan_timeout) return next(DENYSOFT, 'Spam timeout error');
         }
-        socket.end();
         return next();
     });
 
