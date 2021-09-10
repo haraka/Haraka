@@ -124,7 +124,7 @@ meeting following criteria.
 
     If true, messages that are to be relayed will be scored.
 
-[check]
+[reject]
 =======
 
 The optional reject section can allow returning a DENYSOFT status back to the
