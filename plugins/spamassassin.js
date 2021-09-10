@@ -18,7 +18,7 @@ exports.load_spamassassin_ini = function () {
             '+check.private_ip',
             '+check.local_ip',
             '+check.relay',
-            
+
             '-reject.error',
             '-reject.connect_timeout',
             '-reject.scan_timeout',
@@ -279,7 +279,7 @@ exports.get_spamd_headers = function (conn, username) {
 exports.get_spamd_socket = function (next, conn, headers) {
     const plugin = this;
     const txn = conn.transaction;
-    
+
     // TODO: support multiple spamd backends
 
     const socket = new sock.Socket();
