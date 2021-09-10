@@ -305,8 +305,8 @@ exports.get_spamd_socket = function (next, conn, headers) {
         socket.destroy();
         conn.logerror(plugin, `connection failed: ${err.message}`);
         if (txn) txn.results.add(plugin, {err: `socket error: ${err.message}` });
-        if (!plugin.cfg.reject.error) return next();
-        return next(DENYSOFT, 'Spam scan error');
+        if (plugin.cfg.reject.error) return next(DENYSOFT, 'Spam scan error');
+        return next();
     });
 
     socket.on('timeout', function () {
