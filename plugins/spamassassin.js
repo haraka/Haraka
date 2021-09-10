@@ -303,7 +303,6 @@ exports.get_spamd_socket = function (next, conn, headers) {
 
     socket.on('error', err => {
         socket.destroy();
-        conn.logerror(plugin, `connection failed: ${err.message}`);
         if (txn) txn.results.add(plugin, {err: `socket error: ${err.message}` });
         if (plugin.cfg.reject.error) return next(DENYSOFT, 'Spam scan error');
         return next();
@@ -312,13 +311,11 @@ exports.get_spamd_socket = function (next, conn, headers) {
     socket.on('timeout', function () {
         socket.destroy();
         if (!this.is_connected) {
-            conn.logerror(plugin, 'spamd connection timed out');
-            if (txn) txn.results.add(plugin, {err: `spamd socket connect timeout` });
+            if (txn) txn.results.add(plugin, {err: `socket connect timeout` });
             if (plugin.cfg.reject.connect_timeout) return next(DENYSOFT, 'Spam connect error');
         }
         else {
-            conn.logerror(plugin, 'timeout waiting for results');
-            if (txn) txn.results.add(plugin, {err: `spamd timeout waiting for results` });
+            if (txn) txn.results.add(plugin, {err: `timeout waiting for results` });
             if (plugin.cfg.reject.scan_timeout) return next(DENYSOFT, 'Spam timeout error');
         }
         return next();
