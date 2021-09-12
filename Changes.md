@@ -17,6 +17,7 @@
 - tls: require secure and verified sockets for configured hosts/domains
 - tls: add `no_starttls_ports` - an array of incoming ports where STARTTLS is not advertised
 - outbound: add local_mx_ok config #2952
+- skip plugins at runtime by pushing name into transaction.skip_plugins #2966
 
 ### Fixes
 
