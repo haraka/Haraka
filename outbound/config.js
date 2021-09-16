@@ -51,7 +51,7 @@ function load_config () {
     set_temp_fail_intervals(cfg);
 }
 
-function set_temp_fail_intervals(cfg) {
+function set_temp_fail_intervals (cfg) {
     // Set the outbound temp fail intervals (retry times) using the following rules:
     //   1) temp_fail_intervals takes precedence over maxTempFailures if both are specified
     //   2) if temp_fail_intervals is not specified or is illegaly specified, then initialize
@@ -60,7 +60,7 @@ function set_temp_fail_intervals(cfg) {
     //      equivalent behavior of specifying maxTempFailures=1
 
     // Fallback function to create an array of the original retry times
-    function set_old_defaults() {
+    function set_old_defaults () {
         cfg.temp_fail_intervals = [];
         for (let i=1; i<cfg.maxTempFailures; i++) {
             cfg.temp_fail_intervals.push(Math.pow(2, (i + 5)));
@@ -68,7 +68,7 @@ function set_temp_fail_intervals(cfg) {
     }
 
     // Helpful error function in case of parsing failure
-    function error(i, msg) {
+    function error (i, msg) {
         logger.logerror(`outbound temp_fail_intervals syntax error parsing element ${i}: ${msg}`);
         logger.logwarn('Setting outbound temp_fail_intervals to old defaults because of previous error');
         set_old_defaults();
@@ -82,7 +82,7 @@ function set_temp_fail_intervals(cfg) {
     // If here then turn the text input into an expanded array of intervals (in seconds)
     // i.e, turn "1m,5m*2,1h*3" into [60,300,300,3600,3600,3600]
     // Parse manually to do better syntax checking and provide better failure messages
-    let times = [];
+    const times = [];
     let input = cfg.temp_fail_intervals.replace(/\s+/g, '').toLowerCase();
     if (input.length === 0) return error(0, 'nothing specified');
     if (input === 'none') {
