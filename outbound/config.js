@@ -48,16 +48,17 @@ function load_config () {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';
     }
 
-    set_temp_fail_intervals(cfg);
+    exports.set_temp_fail_intervals();
 }
 
-function set_temp_fail_intervals (cfg) {
+exports.set_temp_fail_intervals = function () {
     // Set the outbound temp fail intervals (retry times) using the following rules:
     //   1) temp_fail_intervals takes precedence over maxTempFailures if both are specified
-    //   2) if temp_fail_intervals is not specified or is illegaly specified, then initialize
+    //   2) if temp_fail_intervals is not specified or is illegally specified, then initialize
     //      it with the equivalent times of maxTempFailures using the original 2^N formula
     //   3) the word "none" can be specified if you do not want to retry a temp failure,
     //      equivalent behavior of specifying maxTempFailures=1
+    const cfg = this.cfg;
 
     // Fallback function to create an array of the original retry times
     function set_old_defaults () {
