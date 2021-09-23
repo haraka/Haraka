@@ -190,7 +190,7 @@ exports.force_routing = function (next, hmail, domain) {
     let route = plugin.dest.domains[domain];
 
     if (!route) {
-        route = plugin.dest.domains["any"];
+        route = plugin.dest.domains.any;
         if(!route){
             plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
             return next();
