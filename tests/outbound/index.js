@@ -52,7 +52,7 @@ exports.outbound = {
         });
         test.done();
     },
-	'set_temp_fail_intervals coverage': test => {
+    'set_temp_fail_intervals coverage': test => {
         test.expect(5);
 
         const config = require('../../outbound/config');
@@ -75,7 +75,7 @@ exports.outbound = {
         config.set_temp_fail_intervals();
         test.deepEqual(config.cfg.temp_fail_intervals, [64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072]);
         test.done();
-	}
+    }
 }
 
 exports.qfile = {
