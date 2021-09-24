@@ -124,11 +124,11 @@ meeting following criteria.
 
     If true, messages that are to be relayed will be scored.
 
-[reject]
+[defer]
 =======
 
-The optional reject section can allow returning a DENYSOFT status back to the
-client.  Turns these on to force the client to retry later in cases where
+The optional defer section can allow returning a DENYSOFT status back to the
+client.  Setting these to true will force the client to retry later in cases where
 spamassassin is not responding properly.  If set to false, then the errors
 will be ignored and message processing will continue.
 

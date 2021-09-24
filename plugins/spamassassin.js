@@ -19,9 +19,9 @@ exports.load_spamassassin_ini = function () {
             '+check.local_ip',
             '+check.relay',
 
-            '-reject.error',
-            '-reject.connect_timeout',
-            '-reject.scan_timeout',
+            '-defer.error',
+            '-defer.connect_timeout',
+            '-defer.scan_timeout',
         ],
     }, () => {
         plugin.load_spamassassin_ini();
@@ -304,7 +304,7 @@ exports.get_spamd_socket = function (next, conn, headers) {
     socket.on('error', err => {
         socket.destroy();
         if (txn) txn.results.add(plugin, {err: `socket error: ${err.message}` });
-        if (plugin.cfg.reject.error) return next(DENYSOFT, 'Spam scan error');
+        if (plugin.cfg.defer.error) return next(DENYSOFT, 'spamd scan error');
         return next();
     });
 
@@ -312,11 +312,11 @@ exports.get_spamd_socket = function (next, conn, headers) {
         socket.destroy();
         if (!this.is_connected) {
             if (txn) txn.results.add(plugin, {err: `socket connect timeout` });
-            if (plugin.cfg.reject.connect_timeout) return next(DENYSOFT, 'Spam connect error');
+            if (plugin.cfg.defer.connect_timeout) return next(DENYSOFT, 'spamd connect timeout');
         }
         else {
             if (txn) txn.results.add(plugin, {err: `timeout waiting for results` });
-            if (plugin.cfg.reject.scan_timeout) return next(DENYSOFT, 'Spam timeout error');
+            if (plugin.cfg.defer.scan_timeout) return next(DENYSOFT, 'spamd scan timeout');
         }
         return next();
     });
