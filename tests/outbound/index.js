@@ -51,6 +51,30 @@ exports.outbound = {
             test.ok(HMailItem.prototype[`log${level.toLowerCase()}`], `Log method for level: ${level}`);
         });
         test.done();
+    },
+    'set_temp_fail_intervals coverage': test => {
+        test.expect(5);
+
+        const config = require('../../outbound/config');
+        // Test default configuration
+        test.deepEqual(config.cfg.temp_fail_intervals, [64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072]);
+        // Test a simple configuration
+        config.cfg.temp_fail_intervals = '10s, 1m*2';
+        config.set_temp_fail_intervals();
+        test.deepEqual(config.cfg.temp_fail_intervals, [10, 60, 60]);
+        // Test a complex configuration
+        config.cfg.temp_fail_intervals = '30s, 1m, 5m, 9m, 15m*3, 30m*2, 1h*3, 2h*3, 1d';
+        config.set_temp_fail_intervals();
+        test.deepEqual(config.cfg.temp_fail_intervals, [30,60,300,540,900,900,900,1800,1800,3600,3600,3600,7200,7200,7200,86400]);
+        // Test the "none" configuration
+        config.cfg.temp_fail_intervals = 'none';
+        config.set_temp_fail_intervals();
+        test.deepEqual(config.cfg.temp_fail_intervals, []);
+        // Test bad config (should revert to default)
+        config.cfg.temp_fail_intervals = '60 min';
+        config.set_temp_fail_intervals();
+        test.deepEqual(config.cfg.temp_fail_intervals, [64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072]);
+        test.done();
     }
 }
 

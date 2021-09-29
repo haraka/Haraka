@@ -443,7 +443,7 @@ exports.requireAuthorized_SMTPS = {
                 if (error) {
                     // console.log(error);
                     if (error.message === 'socket hang up') {   // node 6 & 8
-                        test.equal(error.message, 'socket hang up')
+                        test.equal(error.message, 'socket hang up');
                     }
                     else {     // node 10+
                         test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
@@ -488,7 +488,7 @@ exports.requireAuthorized_STARTTLS = {
             (error, info) => {
                 if (error) {
                     // console.log(error);
-                    test.equal(error.message, ['Unexpected socket close'])
+                    test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
                 }
                 test.done();
             });

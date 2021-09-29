@@ -1368,19 +1368,11 @@ class HMailItem extends events.EventEmitter {
         this.num_failures++;
 
         // Test for max failures which is configurable.
-        if (this.num_failures >= (obc.cfg.maxTempFailures)) {
+        if (this.num_failures > (obc.cfg.temp_fail_intervals.length)) {
             return this.convert_temp_failed_to_bounce(`Too many failures (${err})`, extra);
         }
 
-        // basic strategy is we exponentially grow the delay to the power
-        // two each time, starting at 2 ** 6 seconds
-
-        // Note: More advanced options should be explored in the future as the
-        // last delay is 2**17 secs (1.5 days), which is a bit long... Exim has a max delay of
-        // 6 hours (configurable) and the expire time is also configurable... But
-        // this is good enough for now.
-
-        const delay = Math.pow(2, (this.num_failures + 5));
+        const delay = obc.cfg.temp_fail_intervals[this.num_failures-1];
 
         plugins.run_hooks('deferred', this, {delay, err});
     }
