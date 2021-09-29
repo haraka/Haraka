@@ -11,6 +11,7 @@
 - http: use CDN for bootstrap/jquery, drop bower #2891
 - drop support for node 10  #2890
 - outbound: disable outbound to localhost by default #2952
+- spamassassin: allow returning DENYSOFT on errors #2967
 
 ### New features
 
