@@ -54,8 +54,7 @@ exports.hook_data_post = function (next, connection) {
     const conn = connection;
     const txn  = connection.transaction;
 
-    if (plugin.msg_too_big(conn)) return next();
-    if (!plugin.should_check(conn)) return next();
+    if (plugin.should_skip(conn)) return next();
 
     txn.remove_header(plugin.cfg.main.spamc_auth_header); // just to be safe
 
@@ -335,16 +334,46 @@ exports.get_spamd_socket = function (next, conn, headers) {
     return socket;
 }
 
-exports.msg_too_big = function (conn) {
+exports.should_skip = function (conn) {
     const plugin = this;
-    if (!plugin.cfg.main.max_size) return false;
-
-    const size = conn.transaction.data_bytes;
 
     const max = plugin.cfg.main.max_size;
-    if (size <= max) { return false; }
-    conn.loginfo(plugin, `skipping, size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`);
-    return true;
+    if (max) {
+        const size = conn.transaction.data_bytes;
+        if (size > max) {
+            conn.loginfo(plugin, `skipping, size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`);
+            return true;
+        }
+    }
+
+    let result = false;  // default
+
+    if (plugin.cfg.check.authenticated == false && conn.notes.auth_user) {
+        conn.transaction.results.add(plugin, { skip: 'authed'});
+        result = true;
+    }
+
+    if (plugin.cfg.check.relay == false && conn.relaying) {
+        conn.transaction.results.add(plugin, { skip: 'relay'});
+        result = true;
+    }
+
+    if (plugin.cfg.check.local_ip == false && conn.remote.is_local) {
+        conn.transaction.results.add(plugin, { skip: 'local_ip'});
+        result = true;
+    }
+
+    if (plugin.cfg.check.private_ip == false && conn.remote.is_private) {
+        if (plugin.cfg.check.local_ip == true && conn.remote.is_local) {
+            // local IPs are included in private IPs
+        }
+        else {
+            conn.transaction.results.add(plugin, { skip: 'private_ip'});
+            result = true;
+        }
+    }
+
+    return result;
 }
 
 exports.log_results = function (conn, spamd_response) {
@@ -363,37 +392,4 @@ exports.log_results = function (conn, spamd_response) {
         status: spamd_response.flag, score: parseFloat(spamd_response.score),
         required: parseFloat(spamd_response.reqd), reject: reject_threshold, tests: spamd_response.tests,
         emit: true});
-}
-
-exports.should_check = function (conn) {
-    const plugin = this;
-
-    let result = true;  // default
-
-    if (plugin.cfg.check.authenticated == false && conn.notes.auth_user) {
-        conn.transaction.results.add(plugin, { skip: 'authed'});
-        result = false;
-    }
-
-    if (plugin.cfg.check.relay == false && conn.relaying) {
-        conn.transaction.results.add(plugin, { skip: 'relay'});
-        result = false;
-    }
-
-    if (plugin.cfg.check.local_ip == false && conn.remote.is_local) {
-        conn.transaction.results.add(plugin, { skip: 'local_ip'});
-        result = false;
-    }
-
-    if (plugin.cfg.check.private_ip == false && conn.remote.is_private) {
-        if (plugin.cfg.check.local_ip == true && conn.remote.is_local) {
-            // local IPs are included in private IPs
-        }
-        else {
-            conn.transaction.results.add(plugin, { skip: 'private_ip'});
-            result = false;
-        }
-    }
-
-    return result;
 }
