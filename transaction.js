@@ -30,6 +30,7 @@ class Transaction {
         this.body = null;
         this.parse_body = false;
         this.notes = new Notes();
+        this.notes.skip_plugins = [];
         this.header = new Header();
         this.message_stream = new MessageStream(this.cfg, this.uuid, this.header.header_list);
         this.discard_data = false;
