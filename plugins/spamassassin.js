@@ -334,6 +334,24 @@ exports.get_spamd_socket = function (next, conn, headers) {
     return socket;
 }
 
+exports.log_results = function (conn, spamd_response) {
+    const plugin = this;
+    const cfg = plugin.cfg.main;
+    const reject_threshold = (conn.relaying) ? (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold;
+
+    const human_text = `status=${spamd_response.flag}` +
+              `, score=${spamd_response.score}` +
+              `, required=${spamd_response.reqd}` +
+              `, reject=${reject_threshold}` +
+              `, tests="${spamd_response.tests}"`;
+
+    conn.transaction.results.add(plugin, {
+        human: human_text,
+        status: spamd_response.flag, score: parseFloat(spamd_response.score),
+        required: parseFloat(spamd_response.reqd), reject: reject_threshold, tests: spamd_response.tests,
+        emit: true});
+}
+
 exports.should_skip = function (conn) {
     const plugin = this;
 
@@ -374,22 +392,4 @@ exports.should_skip = function (conn) {
     }
 
     return result;
-}
-
-exports.log_results = function (conn, spamd_response) {
-    const plugin = this;
-    const cfg = plugin.cfg.main;
-    const reject_threshold = (conn.relaying) ? (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold;
-
-    const human_text = `status=${spamd_response.flag}` +
-              `, score=${spamd_response.score}` +
-              `, required=${spamd_response.reqd}` +
-              `, reject=${reject_threshold}` +
-              `, tests="${spamd_response.tests}"`;
-
-    conn.transaction.results.add(plugin, {
-        human: human_text,
-        status: spamd_response.flag, score: parseFloat(spamd_response.score),
-        required: parseFloat(spamd_response.reqd), reject: reject_threshold, tests: spamd_response.tests,
-        emit: true});
 }
