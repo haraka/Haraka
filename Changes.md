@@ -2,7 +2,7 @@
 ## NEXT - 2020-MM-DD
 
 ### Changes
-
+- added ability to define a default relay in relay_dest_domains
 - connection error logging: use key-value paris #2921
 - tls: change default to NOT send TLS client certs #2902
 - dep: redis is now a dependency #2896
@@ -449,7 +449,7 @@
     * update js-yaml to version 3.10.0 #2097
     * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
-    
+
 * New Features
     * Bounces can have an HTML part #2091
 * Fixes
