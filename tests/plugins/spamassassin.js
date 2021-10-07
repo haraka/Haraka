@@ -3,9 +3,6 @@
 const Address      = require('address-rfc2821');
 const fixtures     = require('haraka-test-fixtures');
 
-const Connection   = fixtures.connection;
-const stub         = fixtures.stub.stub;
-
 function _set_up (done) {
 
     this.plugin = new fixtures.plugin('spamassassin');
@@ -16,9 +13,8 @@ function _set_up (done) {
         check: {},
     };
 
-    this.connection = Connection.createConnection();
-    this.connection.transaction = stub;
-    this.connection.transaction.notes = {};
+    this.connection = fixtures.connection.createConnection();
+    this.connection.transaction = fixtures.transaction.createTransaction()
 
     done();
 }

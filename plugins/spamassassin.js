@@ -355,16 +355,17 @@ exports.log_results = function (conn, spamd_response) {
 exports.should_skip = function (conn) {
     const plugin = this;
 
+    // a message might be skipped for multiple reasons, store each in results
+    let result = false;  // default
+
     const max = plugin.cfg.main.max_size;
     if (max) {
         const size = conn.transaction.data_bytes;
         if (size > max) {
-            conn.loginfo(plugin, `skipping, size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`);
-            return true;
+            conn.transaction.results.add(plugin, { skip: `size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`});
+            result = true;
         }
     }
-
-    let result = false;  // default
 
     if (plugin.cfg.check.authenticated == false && conn.notes.auth_user) {
         conn.transaction.results.add(plugin, { skip: 'authed'});
