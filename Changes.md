@@ -1,17 +1,19 @@
 
-## NEXT - 2020-MM-DD
+## NEXT - 2021-MM-DD
 
 ### Changes
 
+- added ability to define a default relay in relay_dest_domains
+- spamassassin: replace msg_too_big & should_check with should_skip #2972
+- spamassassin: allow returning DENYSOFT on errors #2967
+- dep: use caret version range for all dependencies #2965
+- outbound: disable outbound to localhost by default #2952
 - connection error logging: use key-value paris #2921
 - tls: change default to NOT send TLS client certs #2902
 - dep: redis is now a dependency #2896
-- dep: use caret version range for all the dependencies to avoid transitive breaking changes #2965
 - use address-rfc2821 2.0.0
 - http: use CDN for bootstrap/jquery, drop bower #2891
 - drop support for node 10  #2890
-- outbound: disable outbound to localhost by default #2952
-- spamassassin: allow returning DENYSOFT on errors #2967
 
 ### New features
 
@@ -449,7 +451,7 @@
     * update js-yaml to version 3.10.0 #2097
     * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
-    
+
 * New Features
     * Bounces can have an HTML part #2091
 * Fixes

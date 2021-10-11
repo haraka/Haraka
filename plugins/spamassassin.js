@@ -54,8 +54,7 @@ exports.hook_data_post = function (next, connection) {
     const conn = connection;
     const txn  = connection.transaction;
 
-    if (plugin.msg_too_big(conn)) return next();
-    if (!plugin.should_check(conn)) return next();
+    if (plugin.should_skip(conn)) return next();
 
     txn.remove_header(plugin.cfg.main.spamc_auth_header); // just to be safe
 
@@ -335,18 +334,6 @@ exports.get_spamd_socket = function (next, conn, headers) {
     return socket;
 }
 
-exports.msg_too_big = function (conn) {
-    const plugin = this;
-    if (!plugin.cfg.main.max_size) return false;
-
-    const size = conn.transaction.data_bytes;
-
-    const max = plugin.cfg.main.max_size;
-    if (size <= max) { return false; }
-    conn.loginfo(plugin, `skipping, size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`);
-    return true;
-}
-
 exports.log_results = function (conn, spamd_response) {
     const plugin = this;
     const cfg = plugin.cfg.main;
@@ -365,24 +352,34 @@ exports.log_results = function (conn, spamd_response) {
         emit: true});
 }
 
-exports.should_check = function (conn) {
+exports.should_skip = function (conn) {
     const plugin = this;
 
-    let result = true;  // default
+    // a message might be skipped for multiple reasons, store each in results
+    let result = false;  // default
+
+    const max = plugin.cfg.main.max_size;
+    if (max) {
+        const size = conn.transaction.data_bytes;
+        if (size > max) {
+            conn.transaction.results.add(plugin, { skip: `size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`});
+            result = true;
+        }
+    }
 
     if (plugin.cfg.check.authenticated == false && conn.notes.auth_user) {
         conn.transaction.results.add(plugin, { skip: 'authed'});
-        result = false;
+        result = true;
     }
 
     if (plugin.cfg.check.relay == false && conn.relaying) {
         conn.transaction.results.add(plugin, { skip: 'relay'});
-        result = false;
+        result = true;
     }
 
     if (plugin.cfg.check.local_ip == false && conn.remote.is_local) {
         conn.transaction.results.add(plugin, { skip: 'local_ip'});
-        result = false;
+        result = true;
     }
 
     if (plugin.cfg.check.private_ip == false && conn.remote.is_private) {
@@ -391,7 +388,7 @@ exports.should_check = function (conn) {
         }
         else {
             conn.transaction.results.add(plugin, { skip: 'private_ip'});
-            result = false;
+            result = true;
         }
     }
 
