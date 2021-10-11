@@ -74,7 +74,7 @@
     "mock-require"          : "^3.0.3",
     "eslint"                : "^7.32.0",
     "eslint-plugin-haraka"  : "^1.0.14",
-    "nodemailer"            : "6.6.5"
+    "nodemailer"            : "6.7.0"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
