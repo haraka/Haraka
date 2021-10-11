@@ -17,7 +17,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">=12.20.1"
+    "node": ">=12.22.6"
   },
   "dependencies": {
     "address-rfc2821"       : "^2.0.1",
