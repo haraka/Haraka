@@ -72,7 +72,7 @@
     "nodeunit"              : "^0.11",
     "haraka-test-fixtures"  : "^1.0.33",
     "mock-require"          : "^3.0.3",
-    "eslint"                : "^7.32.0",
+    "eslint"                : "^8.0",
     "eslint-plugin-haraka"  : "^1.0.14",
     "nodemailer"            : "6.7.0"
   },
