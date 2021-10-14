@@ -1,5 +1,6 @@
 const fs     = require('fs')
 const path   = require('path')
+const os     = require('os')
 
 function _setup (done) {
     this.socket = require('../tls_socket');
@@ -271,7 +272,7 @@ AwEHoUQDQgAEZg2nHEFy9nquFPF3DQyQE28e/ytjXeb4nD/8U+L4KHKFtglaX3R4
 uZ+5JcwfcDghpL4Z8h4ouUD/xqe957e2+g==
 -----END EC PRIVATE KEY-----`
         );
-        test.deepEqual(res.cert.toString(), `-----BEGIN CERTIFICATE-----
+        test.deepEqual(res.cert.toString().split(os.EOL).join('\n'), `-----BEGIN CERTIFICATE-----
 MIICaTCCAg+gAwIBAgIUEDa9VX16wCdo97WvIk7jyEBz1wQwCgYIKoZIzj0EAwIw
 gYkxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApXYXNoaW5ndG9uMRAwDgYDVQQHDAdT
 ZWF0dGxlMRQwEgYDVQQKDAtIYXJha2EgTWFpbDEXMBUGA1UEAwwObWFpbC5oYXJh
