@@ -3,17 +3,18 @@
 const Address      = require('address-rfc2821');
 const fixtures     = require('haraka-test-fixtures');
 
-const Connection   = fixtures.connection;
-const stub         = fixtures.stub.stub;
-
 function _set_up (done) {
 
     this.plugin = new fixtures.plugin('spamassassin');
-    this.plugin.cfg = { main: { spamc_auth_header: 'X-Haraka-Relaying123' } };
+    this.plugin.cfg = {
+        main: {
+            spamc_auth_header: 'X-Haraka-Relaying123'
+        },
+        check: {},
+    };
 
-    this.connection = Connection.createConnection();
-    this.connection.transaction = stub;
-    this.connection.transaction.notes = {};
+    this.connection = fixtures.connection.createConnection();
+    this.connection.transaction = fixtures.transaction.createTransaction()
 
     done();
 }
@@ -46,25 +47,26 @@ exports.load_spamassassin_ini = {
     },
 }
 
-exports.msg_too_big = {
+exports.should_skip = {
     setUp : _set_up,
     'max_size not set' (test) {
+        // this.plugin.cfg = { main: {}}
         test.expect(1);
-        test.equal(false, this.plugin.msg_too_big(this.connection));
+        test.equal(false, this.plugin.should_skip(this.connection));
         test.done();
     },
     'max_size 10, data_bytes 9 = false' (test) {
         test.expect(1);
         this.plugin.cfg.main = { max_size: 10 };
         this.connection.transaction.data_bytes = 9;
-        test.equal(false, this.plugin.msg_too_big(this.connection));
+        test.equal(false, this.plugin.should_skip(this.connection));
         test.done();
     },
     'max_size 10, data_bytes 11 = true' (test) {
         test.expect(1);
         this.plugin.cfg.main = { max_size: 10 };
         this.connection.transaction.data_bytes = 11;
-        test.equal(true, this.plugin.msg_too_big(this.connection));
+        test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
 }
