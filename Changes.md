@@ -4,6 +4,8 @@
 ### Changes
 
 - breaking: dkim.js has changed the constructor opts
+- tls_socket: more flexible pem file parsing #2986
+    - move bad certs into different directory, avoid test suite noise
 - added ability to define a default relay in relay_dest_domains
 - spamassassin: replace msg_too_big & should_check with should_skip #2972
 - spamassassin: allow returning DENYSOFT on errors #2967
@@ -33,6 +35,7 @@
 - Received header TLS section adheres more closely to RFC 8314 #2903
 - use RFC-2045 Quoted-Printable in email message body
 - use RFC-2047 Q encoded-words in email headers
+
 
 ## 2.8.27 - 2021-01-05
 
