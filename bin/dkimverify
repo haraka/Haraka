@@ -11,7 +11,7 @@ const DKIMVerifyStream = dkim.DKIMVerifyStream;
 const parsed = nopt({ 'debug': Boolean, 'time_skew': Number, 'help': Boolean });
 
 function print_usage () {
-    console.log('Usage: dkimverify [--debug] [--ok_mixcase] [--time_skew=123] < message');
+    console.log('Usage: dkimverify [--debug] [--time_skew=123] < message');
     process.exit(1);
 }
 
