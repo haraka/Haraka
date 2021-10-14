@@ -265,14 +265,16 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
         const fp = fs.readFileSync(path.join('tests','config','tls','ec.pem'))
         const res = this.socket.parse_x509(fp.toString())
         test.deepEqual(
-            res.key.toString(),
+            res.key.toString().split(os.EOL).join('\n'),
             `-----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIIDhiI5q6l7txfMJ6kIEYjK12EFcHLvDIkfWIwzdZBsloAoGCCqGSM49
 AwEHoUQDQgAEZg2nHEFy9nquFPF3DQyQE28e/ytjXeb4nD/8U+L4KHKFtglaX3R4
 uZ+5JcwfcDghpL4Z8h4ouUD/xqe957e2+g==
 -----END EC PRIVATE KEY-----`
         );
-        test.deepEqual(res.cert.toString().split(os.EOL).join('\n'), `-----BEGIN CERTIFICATE-----
+        test.deepEqual(
+            res.cert.toString().split(os.EOL).join('\n'),
+            `-----BEGIN CERTIFICATE-----
 MIICaTCCAg+gAwIBAgIUEDa9VX16wCdo97WvIk7jyEBz1wQwCgYIKoZIzj0EAwIw
 gYkxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApXYXNoaW5ndG9uMRAwDgYDVQQHDAdT
 ZWF0dGxlMRQwEgYDVQQKDAtIYXJha2EgTWFpbDEXMBUGA1UEAwwObWFpbC5oYXJh
