@@ -69,7 +69,7 @@
     "tmp"                   : "~0.2.1"
   },
   "devDependencies": {
-    "nodeunit"              : "^0.11",
+    "nodeunit-x"            : "^0.15.0",
     "haraka-test-fixtures"  : "^1.0.33",
     "mock-require"          : "^3.0.3",
     "eslint"                : "^8.0",
