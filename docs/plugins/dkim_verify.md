@@ -11,10 +11,6 @@ Configuration
 * allowed_time_skew
   
   How far can we stretch on time matching, in secs. Useful when clock is skewed.
-  
-* workaround_mixcased_domains
-
-  When dkim signer decides miXcAsEd domains are fun.
 
 * sigerror_log_level
 

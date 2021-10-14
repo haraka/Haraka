@@ -18,11 +18,8 @@ exports.register = function () {
 }
 
 exports.load_config = function () {
-    const cfg = this.config.get('dkim_verify.ini', {
-        booleans: [
-            '-main.workaround_mixcased_domains',
-        ],
-    }, () => this.load_config())
+    const cfg = this.config.get('dkim_verify.ini', {}, () => this.load_config())
+
     this.cfg = Object.assign({}, cfg.main, {
         timeout: plugin.timeout ? plugin.timeout - 1 : 0
     })

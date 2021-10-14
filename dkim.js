@@ -59,7 +59,6 @@ class DKIMObject {
         this.header_idx = JSON.parse(JSON.stringify(header_idx));
         this.timeout = opts.timeout || 30
         this.allowed_time_skew = opts.allowed_time_skew
-        this.workaround_mixcased_domains = opts.workaround_mixcased_domains
         this.fields = {};
         this.headercanon = this.bodycanon = 'simple';
         this.signed_headers = [];
@@ -148,9 +147,7 @@ class DKIMObject {
         if (this.fields.i) {
             // Make sure that this is a sub-domain of the 'd' field
             const dom = this.fields.i.substr(this.fields.i.length - this.fields.d.length);
-            if (this.workaround_mixcased_domains
-                ? (dom.toLowerCase() !== this.fields.d.toLowerCase())
-                : (dom !== this.fields.d)) {
+            if (dom.toLowerCase() !== this.fields.d.toLowerCase()) {
                 return this.result('i/d selector domain mismatch', 'invalid')
             }
         }
@@ -214,7 +211,7 @@ class DKIMObject {
         const isCRLF = line.length === 2 && line[0] === 0x0d && line[1] === 0x0a;
         const isLF = line.length === 1 && line[0] === 0x0a;
         if (isCRLF || isLF) {
-            // Store any empty lines as both canonicalization alogoriths
+            // Store any empty lines as both canonicalization algorithms
             // ignore all empty lines at the end of the message body.
             this.line_buffer.push(line)
         }
@@ -373,9 +370,7 @@ class DKIMObject {
                             // 'i' and 'd' domain much match exactly
                             let i = self.fields.i
                             i = i.substr(i.indexOf('@')+1, i.length)
-                            if (this.workaround_mixcased_domains
-                                ? (i.toLowerCase() !== this.fields.d.toLowerCase())
-                                : (i !== this.fields.d)) {
+                            if (i.toLowerCase() !== this.fields.d.toLowerCase()) {
                                 return this.result('i/d selector domain mismatch (t=s)', 'invalid')
                             }
                         }
@@ -400,7 +395,7 @@ class DKIMObject {
                 return self.result(null, ((verified) ? 'pass' : 'fail'));
             }
             // We didn't find a valid DKIM record for this signature
-            return self.result('no key for signature', 'invalid');
+            self.result('no key for signature', 'invalid');
         });
     }
 
@@ -489,7 +484,7 @@ class DKIMVerifyStream extends Stream {
             if (!!buf && buf[buf.length - 2] === 0x0d && buf[buf.length - 1] === 0x0a) {
                 return true;
             }
-            buf = Buffer.concat([buf, new Buffer.from('\r\n\r\n')])
+            buf = Buffer.concat([buf, Buffer.from('\r\n\r\n')])
         }
         else {
             buf = this.buffer.pop(buf);
