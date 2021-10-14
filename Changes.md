@@ -113,6 +113,7 @@
 * TLS: don't abort loading certs in config/tls dir when an error is encountered. Process every cert file and then emit errors. #2729
 * restore TLS version, correctly #2723
 
+
 ## 2.8.25 - 2019-10-11
 
 ### Changes
