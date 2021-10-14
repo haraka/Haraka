@@ -8,8 +8,13 @@ an Authentication-Results header as appropriate.
 Configuration
 -------------
 
-There is no configuration required for this plugin.
+* allowed_time_skew
+  
+  How far can we stretch on time matching, in secs. Useful when clock is skewed.
 
+* sigerror_log_level
+
+  
 
 Testing
 -------

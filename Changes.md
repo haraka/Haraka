@@ -3,6 +3,7 @@
 
 ### Changes
 
+- breaking: dkim.js has changed the constructor opts
 - added ability to define a default relay in relay_dest_domains
 - spamassassin: replace msg_too_big & should_check with should_skip #2972
 - spamassassin: allow returning DENYSOFT on errors #2967
@@ -18,6 +19,7 @@
 ### New features
 
 - tls: require secure and verified sockets for configured hosts/domains
+- DKIM plugin has got a couple of config options now
 - tls: add `no_starttls_ports` - an array of incoming ports where STARTTLS is not advertised
 - outbound: add local_mx_ok config #2952
 - skip plugins at runtime by pushing name into transaction.skip_plugins #2966
