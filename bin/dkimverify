@@ -8,7 +8,7 @@ const base_path = path.join(__dirname, '..');
 const dkim = require(`${base_path}/dkim`);
 const DKIMVerifyStream = dkim.DKIMVerifyStream;
 
-const parsed = nopt({ 'debug': Boolean, 'ok_mixcase': Boolean, 'time_skew': Number, 'help': Boolean });
+const parsed = nopt({ 'debug': Boolean, 'time_skew': Number, 'help': Boolean });
 
 function print_usage () {
     console.log('Usage: dkimverify [--debug] [--ok_mixcase] [--time_skew=123] < message');
@@ -22,9 +22,7 @@ if (!parsed.debug) {
     DKIMVerifyStream.prototype.debug = function (str) {}
 }
 
-const opts = {
-    workaround_mixcased_domains: parsed.ok_mixcase
-}
+const opts = {}
 if (parsed.time_skew) opts.allowed_time_skew = parsed.time_skew
 
 const verifier = new DKIMVerifyStream(opts, (err, result, results) => {
