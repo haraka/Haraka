@@ -1,8 +1,7 @@
-
-const path   = require('path');
+const fs     = require('fs')
+const path   = require('path')
 
 function _setup (done) {
-
     this.socket = require('../tls_socket');
 
     // use tests/config instead of ./config
@@ -260,7 +259,35 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
         test.deepEqual(res.key.length, 446);
         test.deepEqual(res.cert.length, 1195);
         test.done();
-    }
+    },
+    'returns cert and key from EC pem' (test) {
+        const fp = fs.readFileSync(path.join('tests','config','tls','ec.pem'))
+        const res = this.socket.parse_x509(fp.toString())
+        test.deepEqual(
+            res.key.toString(),
+            `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIIDhiI5q6l7txfMJ6kIEYjK12EFcHLvDIkfWIwzdZBsloAoGCCqGSM49
+AwEHoUQDQgAEZg2nHEFy9nquFPF3DQyQE28e/ytjXeb4nD/8U+L4KHKFtglaX3R4
+uZ+5JcwfcDghpL4Z8h4ouUD/xqe957e2+g==
+-----END EC PRIVATE KEY-----`
+        );
+        test.deepEqual(res.cert.toString(), `-----BEGIN CERTIFICATE-----
+MIICaTCCAg+gAwIBAgIUEDa9VX16wCdo97WvIk7jyEBz1wQwCgYIKoZIzj0EAwIw
+gYkxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApXYXNoaW5ndG9uMRAwDgYDVQQHDAdT
+ZWF0dGxlMRQwEgYDVQQKDAtIYXJha2EgTWFpbDEXMBUGA1UEAwwObWFpbC5oYXJh
+a2EuaW8xJDAiBgkqhkiG9w0BCQEWFWhhcmFrYS5tYWlsQGdtYWlsLmNvbTAeFw0y
+MTEwMTQwNjQxMTlaFw0yMjEwMTQwNjQxMTlaMIGJMQswCQYDVQQGEwJVUzETMBEG
+A1UECAwKV2FzaGluZ3RvbjEQMA4GA1UEBwwHU2VhdHRsZTEUMBIGA1UECgwLSGFy
+YWthIE1haWwxFzAVBgNVBAMMDm1haWwuaGFyYWthLmlvMSQwIgYJKoZIhvcNAQkB
+FhVoYXJha2EubWFpbEBnbWFpbC5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNC
+AARmDaccQXL2eq4U8XcNDJATbx7/K2Nd5vicP/xT4vgocoW2CVpfdHi5n7klzB9w
+OCGkvhnyHii5QP/Gp73nt7b6o1MwUTAdBgNVHQ4EFgQU094ROMLHmLEspT4ZoCfX
+Rz0mR/YwHwYDVR0jBBgwFoAU094ROMLHmLEspT4ZoCfXRz0mR/YwDwYDVR0TAQH/
+BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiEAsmshzvMDjmYDHyGRrKdMmsnnESFd
+GMtfRXYIv0AZe7ICIGD2Sta9LL0zZ44ARGXhh+sPjxd78I/+0FdIPsofr2I+
+-----END CERTIFICATE-----`);
+        test.done();
+    },
 }
 
 exports.parse_x509_names = {
