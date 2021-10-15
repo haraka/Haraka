@@ -1,6 +1,9 @@
 
 ## NEXT - 2021-MM-DD
 
+
+## 2.8.28 - 2021-10-14
+
 ### Changes
 
 - breaking: dkim.js has changed the constructor opts
@@ -112,6 +115,7 @@
 * fix bannering on nested mime parts #2737
 * TLS: don't abort loading certs in config/tls dir when an error is encountered. Process every cert file and then emit errors. #2729
 * restore TLS version, correctly #2723
+
 
 ## 2.8.25 - 2019-10-11
 
