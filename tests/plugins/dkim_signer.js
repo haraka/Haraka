@@ -33,7 +33,7 @@ frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=
 function getValueFromDKIM (dkim_header, key) {
     const kv = dkim_header.split(';');
     for (let i = 0, len = kv.length; i < len; i++) {
-        const arr = kv[i].match(/^([^=]+)=(.*)$/);
+        const arr = kv[i].match(/^\s*([^=]+)=(.*)$/);
         if (arr[1] === key) {
             return arr[2];
         }
