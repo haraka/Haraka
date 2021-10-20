@@ -1,6 +1,9 @@
 
 ## NEXT - 2021-MM-DD
 
+### Changes
+
+- reformat dkim signature to multi-line #2991
 
 ## 2.8.28 - 2021-10-14
 
