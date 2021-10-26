@@ -17,8 +17,10 @@ function _fill_body (body, quote) {
     body.parse_more(" URL*0=\"ftp://\"\n");
     body.parse_more(" URL*1=\"cs.utk.edu/pub/moore/bulk-mailer/bulk-mailer.tar\"\n");
     body.parse_more(" title*=us-ascii'en-us'This%20is%20%2A%2A%2Afun%2A%2A%2A\n");
+    body.parse_more("Content-Transfer-Encoding: quoted-printable\n");
     body.parse_more("\n");
-    body.parse_more("Some text for your testing pleasure.\n");
+    body.parse_more("Some text for your =\n");
+    body.parse_more("testing pleasure.   \n");
     body.parse_more("Yup that was some text all right.\n");
     body.parse_more("\n");
     let text = body.parse_more("--abcdef\n");

@@ -66,11 +66,11 @@ exports.add_headers = {
     add_utf8 (test) {
         test.expect(4);
         this.h.add('Foo', 'bøø');
-        test.equal(this.h.lines()[0], 'Foo: =?UTF-8?q?b=C3=B8=C3=B8?=\n');
+        test.equal(this.h.lines()[0], 'Foo: =?UTF-8?Q?b=C3=B8=C3=B8?=\n');
         test.equal(this.h.get_decoded('Foo'), 'bøø');
         // test wrapping
         this.h.add('Bar', 'bøø 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
-        test.equal(this.h.lines()[0], 'Bar: =?UTF-8?q?b=C3=B8=C3=B8 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890?=\n');
+        test.equal(this.h.lines()[0], 'Bar: =?UTF-8?Q?b=C3=B8=C3=B8?= 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\n');
         test.equal(this.h.get_decoded('Bar'), 'bøø 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
         test.done();
     }
@@ -95,6 +95,17 @@ exports.remove = {
         test.equal(this.h.get('X-Test'), '')
         test.equal(this.h.get('X-Test-1'), 'do-not-remove-me')
         test.ok(this.h.header_list.find(name => name === 'X-Test-1: do-not-remove-me\n'));
+        test.done()
+    },
+    'removes multiple matching headers' (test) {
+        test.expect(3)
+        this.h.add('X-Test', 'remove me')
+        this.h.add('X-Test', 'and remove me')
+        this.h.add('X-Test-No', 'leave me')
+        this.h.remove('X-Test')
+        test.equal(this.h.get('X-Test'), '')
+        test.equal(this.h.get('X-Test-No'), 'leave me')
+        test.ok(this.h.header_list.find(name => name === 'X-Test-No: leave me\n'));
         test.done()
     }
 }

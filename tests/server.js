@@ -98,7 +98,11 @@ exports.get_smtp_server = {
         this.server.config = this.config.module_config(path.resolve('tests'));
         this.server.plugins.config = this.config.module_config(path.resolve('tests'));
 
-        this.server.load_default_tls_config(() => done());
+        this.server.load_default_tls_config(() => {
+            setTimeout(() => {
+                done();
+            }, 200);
+        });
     },
     'gets a net server object' (test) {
         this.server.get_smtp_server(endpoint('0.0.0.0:2501'), 10, (server) => {
@@ -173,7 +177,9 @@ function _setupServer (test, ip_port, done) {
     // console.log(test.server.cfg);
     test.server.load_default_tls_config(() => {
         test.server.createServer({});
-        done();
+        setTimeout(() => {
+            done();
+        }, 200);
     })
 }
 
@@ -443,7 +449,7 @@ exports.requireAuthorized_SMTPS = {
                 if (error) {
                     // console.log(error);
                     if (error.message === 'socket hang up') {   // node 6 & 8
-                        test.equal(error.message, 'socket hang up')
+                        test.equal(error.message, 'socket hang up');
                     }
                     else {     // node 10+
                         test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
@@ -466,6 +472,7 @@ exports.requireAuthorized_STARTTLS = {
         const transporter = nodemailer.createTransport({
             host: '127.0.0.1',
             port: 2587,
+            secure: false,
             tls: {
                 // do not fail on invalid certs
                 rejectUnauthorized: false
@@ -488,7 +495,7 @@ exports.requireAuthorized_STARTTLS = {
             (error, info) => {
                 if (error) {
                     // console.log(error);
-                    test.equal(error.message, ['Unexpected socket close'])
+                    test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
                 }
                 test.done();
             });

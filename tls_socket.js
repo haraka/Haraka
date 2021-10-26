@@ -210,19 +210,15 @@ exports.parse_x509_expire = (file, string) => {
 
 exports.parse_x509 = string => {
     const res = {};
+    if (!string) return res
 
-    const match = /^([^-]*)?([-]+BEGIN (?:\w+\s)?PRIVATE KEY[-]+[^-]+[-]+END (?:\w+\s)?PRIVATE KEY[-]+\n)([^]*)$/.exec(string);
-    if (!match) return res;
+    const keyRe  = new RegExp('([-]+BEGIN (?:\\w+ )?PRIVATE KEY[-]+[^-]*[-]+END (?:\\w+ )?PRIVATE KEY[-]+)', 'gm')
+    const keys = string.match(keyRe)
+    if (keys) res.key = Buffer.from(keys.join('\n'));
 
-    if (match[1] && match[1].length) {
-        log.logerror('leading garbage');
-        log.logerror(match[1]);
-    }
-    if (!match[2] || !match[2].length) return res;
-    res.key = Buffer.from(match[2]);
-
-    if (!match[3] || !match[3].length) return res;
-    res.cert = Buffer.from(match[3]);
+    const certRe = new RegExp('([-]+BEGIN CERTIFICATE[-]+[^-]*[-]+END CERTIFICATE[-]+)', 'gm')
+    const certs = string.match(certRe)
+    if (certs) res.cert = Buffer.from(certs.join('\n'));
 
     return res;
 }
@@ -281,6 +277,8 @@ exports.load_tls_ini = (opts) => {
         cfg.main.requireAuthorized = [cfg.main.requireAuthorized];
     }
 
+    if (!Array.isArray(cfg.main.no_starttls_ports)) cfg.main.no_starttls_ports = [];
+
     tlss.cfg = cfg;
 
     if (!opts || opts.role === 'server') {
@@ -318,19 +316,19 @@ exports.applySocketOpts = name => {
 
     const allOpts = TLSSocketOptions.concat(createSecureContextOptions);
 
-    allOpts.forEach(opt => {
+    for (const opt of allOpts) {
 
         if (tlss.cfg[name] && tlss.cfg[name][opt] !== undefined) {
             // if the setting exists in tls.ini [name]
             tlss.saveOpt(name, opt, tlss.cfg[name][opt]);
-            return;
+            continue;
         }
 
         if (tlss.cfg.main[opt] !== undefined) {
             // if the setting exists in tls.ini [main]
             // then save it to the certsByHost options
             tlss.saveOpt(name, opt, tlss.cfg.main[opt]);
-            return;
+            continue;
         }
 
         // defaults
@@ -354,7 +352,7 @@ exports.applySocketOpts = name => {
                 tlss.saveOpt(name, opt, SNICallback);
                 break;
         }
-    })
+    }
 }
 
 exports.load_default_opts = () => {
@@ -635,15 +633,11 @@ exports.ocsp = ocsp;
 
 exports.get_rejectUnauthorized = (rejectUnauthorized, port, port_list) => {
     // console.log(`rejectUnauthorized: ${rejectUnauthorized}, port ${port}, list: ${port_list}`)
-    if (rejectUnauthorized) {
-        // console.log('true for all ports');
-        return true;
-    }
-    if (port_list.includes(port)) {
-        // console.log('port matched true');
-        return true;
-    }
-    // console.log('returning default false');
+
+    if (rejectUnauthorized) return true;
+
+    if (port_list.includes(port)) return true;
+
     return false;
 }
 

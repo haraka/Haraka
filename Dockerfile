@@ -13,7 +13,7 @@
 # DOCKER-VERSION    0.5.3
 
 # See http://phusion.github.io/baseimage-docker/
-FROM phusion/baseimage:latest
+FROM phusion/baseimage:master
 
 MAINTAINER Justin Plock <jplock@gmail.com>
 

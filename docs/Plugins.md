@@ -267,6 +267,10 @@ Check the order that the plugins will run on each hook by running:
 
 `haraka -o -c /path/to/config`
 
+## Skipping Plugins
+
+Plugins can be skipped at runtime by pushing the name of the plugin into the `skip_plugins` array in `transaction.notes`.  This array is reset for every transaction and once a plugin is added to the list, it will not run any hooks in that plugin for the remainder of the transaction.  For example, one could create a whitelist plugin that skipped `spamassassin` if the sender was in a whitelist.
+
 ## Logging
 
 Plugins inherit all the logging methods of `logger.js`, which are:

@@ -1,8 +1,23 @@
 
-## NEXT - 2020-MM-DD
+## NEXT - 2021-MM-DD
 
 ### Changes
 
+- reformat dkim signature to multi-line #2991
+
+## 2.8.28 - 2021-10-14
+
+### Changes
+
+- breaking: dkim.js has changed the constructor opts
+- tls_socket: more flexible pem file parsing #2986
+    - move bad certs into different directory, avoid test suite noise
+- added ability to define a default relay in relay_dest_domains
+- spamassassin: replace msg_too_big & should_check with should_skip #2972
+- spamassassin: allow returning DENYSOFT on errors #2967
+- dep: use caret version range for all dependencies #2965
+- outbound: disable outbound to localhost by default #2952
+- connection error logging: use key-value paris #2921
 - tls: change default to NOT send TLS client certs #2902
 - dep: redis is now a dependency #2896
 - use address-rfc2821 2.0.0
@@ -12,6 +27,11 @@
 ### New features
 
 - tls: require secure and verified sockets for configured hosts/domains
+- DKIM plugin has got a couple of config options now
+- tls: add `no_starttls_ports` - an array of incoming ports where STARTTLS is not advertised
+- outbound: add local_mx_ok config #2952
+- skip plugins at runtime by pushing name into transaction.skip_plugins #2966
+- outbound: add ability to specify delay times for temporary fails in `temp_fail_intervals` #2969
 
 ### Fixes
 
@@ -19,6 +39,8 @@
 - bounce: correctly set bounce recipients #2899
 - Get local_ip from getsockname() instead of server properties #2914
 - Received header TLS section adheres more closely to RFC 8314 #2903
+- use RFC-2045 Quoted-Printable in email message body
+- use RFC-2047 Q encoded-words in email headers
 
 
 ## 2.8.27 - 2021-01-05
@@ -96,6 +118,7 @@
 * fix bannering on nested mime parts #2737
 * TLS: don't abort loading certs in config/tls dir when an error is encountered. Process every cert file and then emit errors. #2729
 * restore TLS version, correctly #2723
+
 
 ## 2.8.25 - 2019-10-11
 
@@ -440,7 +463,7 @@
     * update js-yaml to version 3.10.0 #2097
     * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
-    
+
 * New Features
     * Bounces can have an HTML part #2091
 * Fixes
