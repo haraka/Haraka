@@ -142,7 +142,7 @@ exports.hook_data_post = function (next, connection) {
 
         plugin.munge_subject(conn, spamd_response.score);
 
-        next();
+        return next();
     });
 }
 
