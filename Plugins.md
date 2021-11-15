@@ -77,6 +77,7 @@ Create a PR adding yours to this list.
 | queue/[quarantine][url-qquart]    | queue to a quarantine directory |
 | queue/[rabbitmq][url-qrabbit]     | queue to RabbitMQ |
 | queue/[rabbitmq_amqplib][url-qrabbita]  | queue to RabbitMQ using amqplib |
+| queue/[rails][url-qrails]          | queue messages to a Rails app using [Action Mailbox][url-action-mailbox] |
 | queue/[smtp_bridge][url-qbridge]   | Bridge SMTP sessions to another MTA |
 | queue/[smtp_forward][url-qforward] | Forward emails to another MTA |
 | queue/[smtp_proxy][url-qproxy]     | Proxy SMTP connections to another MTA |
@@ -110,6 +111,7 @@ Create a PR adding yours to this list.
 [plugins-doc]: https://haraka.github.io/manual/Plugins.html
 [url-access]: https://github.com/haraka/haraka-plugin-access
 [url-acc-files]: https://github.com/acharkizakaria/haraka-plugin-accounting-files/blob/master/README.md
+[url-action-mailbox]: https://guides.rubyonrails.org/action_mailbox_basics.html
 [url-aliases]: https://github.com/haraka/Haraka/blob/master/docs/plugins/aliases.md
 [url-asn]: https://github.com/haraka/haraka-plugin-asn
 [url-attach]: https://github.com/haraka/Haraka/blob/master/docs/plugins/attachment.md
@@ -167,6 +169,7 @@ Create a PR adding yours to this list.
 [url-qbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_bridge.md
 [url-qforward]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_forward.md
 [url-qproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_proxy.md
+[url-qrails]: https://github.com/mailprotector/haraka-plugin-queue-rails
 [url-redis]: https://github.com/haraka/haraka-plugin-redis
 [url-rhost]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.in_host_list.md
 [url-rcpt-ldap]: https://github.com/haraka/haraka-plugin-rcpt-ldap
