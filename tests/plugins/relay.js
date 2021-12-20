@@ -290,6 +290,17 @@ exports.force_routing = {
         this.plugin.dest = { domains: { foo: '{"action":"blah blah","nexthop":"other-server"}' } };
         this.plugin.force_routing(next, this.connection, 'foo');
     },
+    'dest-domains, any' (test) {
+        test.expect(2);
+        function next (rc, nexthop) {
+            test.equal(OK, rc);
+            test.equal('any-server', nexthop);
+            test.done();
+        }
+        this.plugin.dest = { domains: { foo: '{"action":"blah blah","nexthop":"other-server"}',
+            any: '{"action":"blah blah","nexthop":"any-server"}'} };
+        this.plugin.force_routing(next, this.connection, 'not');
+    }
 }
 
 exports.all = {

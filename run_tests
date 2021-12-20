@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-"use strict";
+'use strict';
+
 let reporter;
 try {
-    reporter = require('nodeunit').reporters.default;
+    reporter = require('nodeunit-x').reporters.default;
 }
 catch (e) {
     console.log(`Error: ${e.message}

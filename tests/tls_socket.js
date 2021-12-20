@@ -1,8 +1,8 @@
-
-const path   = require('path');
+const fs     = require('fs')
+const path   = require('path')
+const os     = require('os')
 
 function _setup (done) {
-
     this.socket = require('../tls_socket');
 
     // use tests/config instead of ./config
@@ -72,13 +72,26 @@ exports.load_tls_ini = {
     },
 }
 
-exports.get_certs_dir = {
+exports.get_loud_certs_dir = {
     setUp: _setup,
-    'loads certs from config/tls' (test) {
+    'loads certs from tests/loud/config/tls' (test) {
         test.expect(2);
+        this.socket.config = this.socket.config.module_config(path.resolve('tests', 'loud'));
         this.socket.get_certs_dir('tls', (err, certs) => {
             test.ifError(err);
-            // console.error(certs);
+            test.ok(certs);
+            test.done();
+        })
+    }
+}
+
+exports.get_certs_dir = {
+    setUp: _setup,
+    'loads certs from tests/config/tls' (test) {
+        test.expect(2);
+        this.socket.config = this.socket.config.module_config(path.resolve('tests'));
+        this.socket.get_certs_dir('tls', (err, certs) => {
+            test.ifError(err);
             test.ok(certs);
             test.done();
         })
@@ -189,24 +202,93 @@ exports.parse_x509 = {
     },
     'returns key from BEGIN PRIVATE KEY block' (test) {
         const res = this.socket.parse_x509('-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n-its me-\n');
-        res.key.toString();
         test.deepEqual(
             res.key.toString(),
-            '-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n'
+            '-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--'
         );
-        // everything after the private key is cert(s)
-        test.deepEqual(res.cert.toString(), '-its me-\n');
+        test.deepEqual(res.cert, undefined);
         test.done();
     },
     'returns key from BEGIN RSA PRIVATE KEY block' (test) {
         const res = this.socket.parse_x509('-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n-its me-\n');
-        res.key.toString();
         test.deepEqual(
             res.key.toString(),
-            '-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n'
+            '-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--'
         );
-        // everything after the private key is cert(s)
-        test.deepEqual(res.cert.toString(), '-its me-\n');
+        test.deepEqual(res.cert, undefined);
+        test.done();
+    },
+    'returns a key and certificate chain' (test) {
+        const str = `-----BEGIN RSA PRIVATE KEY-----
+MIIEogIBAAKCAQEAoDGOlvw6lQptaNwqxYsW4aJCPIgvjYw3qA9Y0qykp8I8PapT
+ercA8BsInrZg5+3wt2PT1+REprBvv6xfHyQ08o/udsSCBRf4Awadp0fxzUulENNi
+3wWuuPy0WgaE4jam7tWItDBeEhXkEfcMTr9XkFxenuTcNw9O1+E8TtNP9KMmJDAe
+<snip>
+F+T5AoGAMRH1+JrjTpPYcs1hOyHMWnxkHv7fsJMJY/KN2NPoTlI4d4V1W5xyCZ0D
+rl7RlVdVTQdZ9VjkWVjJcafNSmNyQEK4IQsaczwOU59IPhC/nUAyRgeoRbKWPQ4r
+mj3g7uX9f07j34c01mH1zLgDa24LO9SW7B5ZbYYu4DORk7005B4=
+-----END RSA PRIVATE KEY-----
+-----BEGIN CERTIFICATE-----
+MIIFVzCCBD+gAwIBAgISA/5ofbB6cUAp/PrYaBxTITF2MA0GCSqGSIb3DQEBCwUA
+MDIxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQD
+<snip>
+kOk4JdlpuBSPwx9wNAEYF15/4LDyev+tyAg7GxCZ9MW53leOxF+j2NQgc4kRIdQc
+DYsruShsnwn4HErJKQAfE5Aq77UM32hfKzMb2PH6Ebw0TB2NCLVocOULAGTw4NPO
+wBpsGsIFUxeDHZvhKohZyNqLrj7gR+XlKRKM
+-----END CERTIFICATE-----
+
+-----BEGIN CERTIFICATE-----
+MIIFFjCCAv6gAwIBAgIRAJErCErPDBinU/bWLiWnX1owDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjAwOTA0MDAwMDAw
+<snip>
+HlUjr8gRsI3qfJOQFy/9rKIJR0Y/8Omwt/8oTWgy1mdeHmmjk7j1nYsvC9JSQ6Zv
+MldlTTKB3zhThV1+XWYp6rjd5JW1zbVWEkLNxE7GJThEUG3szgBVGP7pSWTUTsqX
+nLRbwHOoq7hHwg==
+-----END CERTIFICATE-----
+
+-----BEGIN CERTIFICATE-----
+MIIFYDCCBEigAwIBAgIQQAF3ITfU6UK47naqPGQKtzANBgkqhkiG9w0BAQsFADA/
+MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT
+DkRTVCBSb290IENBIFgzMB4XDTIxMDEyMDE5MTQwM1oXDTI0MDkzMDE4MTQwM1ow
+<snip>
+WCLKTVXkcGdtwlfFRjlBz4pYg1htmf5X6DYO8A4jqv2Il9DjXA6USbW1FzXSLr9O
+he8Y4IWS6wY7bCkjCWDcRQJMEhg76fsO3txE+FiYruq9RUWhiF1myv4Q6W+CyBFC
+Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
+-----END CERTIFICATE-----`
+        const res = this.socket.parse_x509(str);
+        test.deepEqual(res.key.length, 446);
+        test.deepEqual(res.cert.length, 1195);
+        test.done();
+    },
+    'returns cert and key from EC pem' (test) {
+        const fp = fs.readFileSync(path.join('tests','config','tls','ec.pem'))
+        const res = this.socket.parse_x509(fp.toString())
+        test.deepEqual(
+            res.key.toString().split(os.EOL).join('\n'),
+            `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIIDhiI5q6l7txfMJ6kIEYjK12EFcHLvDIkfWIwzdZBsloAoGCCqGSM49
+AwEHoUQDQgAEZg2nHEFy9nquFPF3DQyQE28e/ytjXeb4nD/8U+L4KHKFtglaX3R4
+uZ+5JcwfcDghpL4Z8h4ouUD/xqe957e2+g==
+-----END EC PRIVATE KEY-----`
+        );
+        test.deepEqual(
+            res.cert.toString().split(os.EOL).join('\n'),
+            `-----BEGIN CERTIFICATE-----
+MIICaTCCAg+gAwIBAgIUEDa9VX16wCdo97WvIk7jyEBz1wQwCgYIKoZIzj0EAwIw
+gYkxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApXYXNoaW5ndG9uMRAwDgYDVQQHDAdT
+ZWF0dGxlMRQwEgYDVQQKDAtIYXJha2EgTWFpbDEXMBUGA1UEAwwObWFpbC5oYXJh
+a2EuaW8xJDAiBgkqhkiG9w0BCQEWFWhhcmFrYS5tYWlsQGdtYWlsLmNvbTAeFw0y
+MTEwMTQwNjQxMTlaFw0yMjEwMTQwNjQxMTlaMIGJMQswCQYDVQQGEwJVUzETMBEG
+A1UECAwKV2FzaGluZ3RvbjEQMA4GA1UEBwwHU2VhdHRsZTEUMBIGA1UECgwLSGFy
+YWthIE1haWwxFzAVBgNVBAMMDm1haWwuaGFyYWthLmlvMSQwIgYJKoZIhvcNAQkB
+FhVoYXJha2EubWFpbEBnbWFpbC5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNC
+AARmDaccQXL2eq4U8XcNDJATbx7/K2Nd5vicP/xT4vgocoW2CVpfdHi5n7klzB9w
+OCGkvhnyHii5QP/Gp73nt7b6o1MwUTAdBgNVHQ4EFgQU094ROMLHmLEspT4ZoCfX
+Rz0mR/YwHwYDVR0jBBgwFoAU094ROMLHmLEspT4ZoCfXRz0mR/YwDwYDVR0TAQH/
+BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiEAsmshzvMDjmYDHyGRrKdMmsnnESFd
+GMtfRXYIv0AZe7ICIGD2Sta9LL0zZ44ARGXhh+sPjxd78I/+0FdIPsofr2I+
+-----END CERTIFICATE-----`);
         test.done();
     },
 }

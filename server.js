@@ -397,8 +397,10 @@ Server.get_smtp_server = (ep, inactivity_timeout, done) => {
     else {
         server = tls_socket.createServer(onConnect);
         server.has_tls = false;
-        Server.listeners.push(server);
-        done(server);
+        tls_socket.getSocketOpts('*', opts => {
+            Server.listeners.push(server);
+            done(server);
+        })
     }
 }
 
