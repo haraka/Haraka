@@ -281,7 +281,7 @@ class SMTPClient extends events.EventEmitter {
         if (connection?.transaction == null) {
             connection.logwarn(plugin, "transaction went away, releasing smtp_client");
             this.release();
-            return true;    
+            return true;
         }
         return false;
     }

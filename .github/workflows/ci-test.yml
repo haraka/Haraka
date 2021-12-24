@@ -18,7 +18,8 @@ jobs:
         # node 6, maint. ended 2018-04
         # node 8, maint. ended 2019-12
         # node 10, maint. ends 2021-04
-        node-version: [12.x, 14.x]
+        # node 12, maint. ends 2022-04
+        node-version: [14.x]
       fail-fast: false
 
     steps:
