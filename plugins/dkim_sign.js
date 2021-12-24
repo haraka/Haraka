@@ -343,8 +343,8 @@ exports.get_headers_to_sign = function (cfg) {
 
 exports.get_sender_domain = function (connection) {
     const plugin = this;
-    if (!connection.transaction) {
-        connection.logerror(plugin, 'no transaction!')
+    if (connection?.transaction == null) {
+        connection.logwarn(plugin, "get_sender_domain could not find transaction, returning undefined");
         return;
     }
 

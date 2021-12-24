@@ -307,8 +307,10 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 
 exports.save_to_header = (connection, spf, result, mfrom, host, id, ip) => {
     // Add a trace header
-    if (!connection) return;
-    if (!connection.transaction) return;
+    if (connection?.transaction == null) {
+        connection.logwarn(plugin, "save_to_header could not find transaction, returning undefined");
+        return; 
+    }
     const des = result === spf.SPF_PASS ? 'designates' : 'does not designate';
     const identity = `identity=${id}; client-ip=${ip ? ip : connection.remote.ip}`;
     connection.transaction.add_leading_header('Received-SPF',

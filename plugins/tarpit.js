@@ -26,11 +26,14 @@ exports.tarpit = function (next, connection) {
 
     let delay = connection.notes.tarpit;
 
-    if (!delay && connection.transaction) {
+    if (delay == null && connection.transaction != null) {
         delay = connection.transaction.notes.tarpit;
     }
 
-    if (!delay) return next();
+    if (delay == null) {
+        connection.logwarn("tarpit Delay not found, skipping >>>")
+        return next();
+    }
 
     connection.loginfo(plugin, `tarpitting response for ${delay}s`);
     setTimeout(() => next(),  delay * 1000);

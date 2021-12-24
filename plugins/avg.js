@@ -36,7 +36,10 @@ exports.get_tmp_file = function (transaction) {
 
 exports.hook_data_post = function (next, connection) {
     const plugin = this;
-    if (!connection.transaction) return next();
+    if (connection?.transaction == null) {
+        connection.logwarn(plugin, "hook_data_post could not find transaction, skipping >>>");
+        return next();
+    }
 
     const tmpfile = plugin.get_tmp_file(connection.transaction);
     const ws      = fs.createWriteStream(tmpfile);

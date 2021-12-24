@@ -71,7 +71,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
 
     // Store the results in the correct place based on the lookup type
     let results = connection.results;
-    if (connection.transaction) {
+    if (connection.transaction != null) {
         results = connection.transaction.results;
     }
 

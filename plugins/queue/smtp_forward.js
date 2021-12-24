@@ -83,7 +83,10 @@ exports.is_outbound_enabled = function (dom_cfg) {
 
 exports.check_sender = function (next, connection, params) {
     const plugin = this;
-    if (!connection.transaction) return;
+    if (connection?.transaction == null) {
+        connection.logwarn(plugin, "check_sender could not find transaction, returning undefined");
+        return;
+    }
     const txn = connection.transaction;
 
     const email = params[0].address();
@@ -254,7 +257,7 @@ exports.queue_forward = function (next, connection) {
         );
 
         function get_rs () {
-            if (connection.transaction) return txn.results;
+            if (connection.transaction != null) return txn.results;
             return conn.results;
         }
 

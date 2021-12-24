@@ -58,9 +58,9 @@ exports.hook_queue = function (next, connection) {
     connection.transaction.message_stream.pipe(qmail_queue.stdin, { line_endings: '\n' });
 
     qmail_queue.stdin.on('close', () => {
-        if (!connection.transaction) {
+        if (connection?.transaction == null) {
             plugin.logerror("Transaction went away while delivering mail to qmail-queue");
-
+            
             try {
                 qmail_queue.stdout.end();
             }
