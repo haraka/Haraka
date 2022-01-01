@@ -24,7 +24,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
 
     // default wrap_mx just returns our object with "priority" and "exchange" keys
     let wrap_mx = a => a;
-    function process_dns (err, addresses) {
+    async function process_dns (err, addresses) {
         if (err) {
             if (err.code === 'ENODATA' || err.code === 'ENOTFOUND') {
                 // Most likely this is a hostname with no MX record
@@ -35,7 +35,10 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         }
         else if (addresses && addresses.length) {
             for (let i=0,l=addresses.length; i < l; i++) {
-                if (obc.cfg.local_mx_ok || !net_utils.is_local_host(addresses[i].exchange)) {
+                if (
+                    obc.cfg.local_mx_ok ||
+                    await net_utils.is_local_host(addresses[i].exchange).catch(() => null) === false
+                ) {
                     const mx = wrap_mx(addresses[i]);
                     mxs.push(mx);
                 }
