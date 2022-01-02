@@ -52,14 +52,14 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         return 1;
     }
 
-    net_utils.get_mx(domain, (err, addresses) => {
+    net_utils.get_mx(domain, async (err, addresses) => {
         if (await process_dns(err, addresses)) return;
 
         // if MX lookup failed, we lookup an A record. To do that we change
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = a => ({priority:0,exchange:a});
         // IS: IPv6 compatible
-        dns.resolve(domain, (err2, addresses2) => {
+        dns.resolve(domain, async (err2, addresses2) => {
             if (await process_dns(err2, addresses2)) return;
 
             err2 = new Error("Found nowhere to deliver to");
