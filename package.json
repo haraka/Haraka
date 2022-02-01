@@ -36,7 +36,7 @@
     "haraka-config"         : "^1.0.20",
     "haraka-constants"      : "^1.0.5",
     "haraka-dsn"            : "^1.0.3",
-    "haraka-net-utils"      : "^1.3.2",
+    "haraka-net-utils"      : "^1.3.3",
     "haraka-notes"          : "^1.0.4",
     "haraka-plugin-redis"   : "^1.0.12",
     "haraka-results"        : "^2.0.3",
