@@ -141,7 +141,7 @@ exports.helo_spf = function (next, connection, helo) {
 exports.hook_mail = function (next, connection, params) {
     const plugin = this;
 
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
     if (!txn) return next();
 
     // bypass auth'ed or relay'ing hosts if told to
@@ -152,9 +152,9 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     // For messages from private IP space...
-    if (connection.remote.is_private) {
+    if (connection.remote?.is_private) {
         if (!connection.relaying) return next();
-        if (connection.relaying && plugin.cfg.relay.context !== 'myself') {
+        if (connection.relaying && plugin.cfg.relay?.context !== 'myself') {
             txn.results.add(plugin, {skip: 'host(private_ip)'});
             return next(CONT, 'envelope from private IP space');
         }
@@ -165,9 +165,9 @@ exports.hook_mail = function (next, connection, params) {
     let spf = new SPF();
     let auth_result;
 
-    if (connection.notes.spf_helo) {
+    if (connection.notes?.spf_helo) {
         const h_result = connection.notes.spf_helo;
-        const h_host = connection.hello.host;
+        const h_host = connection.hello?.host;
         plugin.save_to_header(connection, spf, h_result, mfrom, h_host, 'helo');
         if (!host) {   // Use results from HELO if the return-path is null
             auth_result = spf.result(h_result).toLowerCase();
@@ -187,7 +187,7 @@ exports.hook_mail = function (next, connection, params) {
         next();
     }, plugin.cfg.lookup_timeout * 1000);
 
-    spf.helo = connection.hello.host;
+    spf.helo = connection.hello?.host;
 
     function ch_cb (err, result, ip) {
         if (timer) clearTimeout(timer);
@@ -307,10 +307,7 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 
 exports.save_to_header = (connection, spf, result, mfrom, host, id, ip) => {
     // Add a trace header
-    if (connection?.transaction == null) {
-        connection.logwarn("save_to_header could not find transaction, returning undefined");
-        return;
-    }
+    if (!connection?.transaction) return;
     const des = result === spf.SPF_PASS ? 'designates' : 'does not designate';
     const identity = `identity=${id}; client-ip=${ip ? ip : connection.remote.ip}`;
     connection.transaction.add_leading_header('Received-SPF',

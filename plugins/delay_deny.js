@@ -18,7 +18,7 @@ exports.hook_deny = function (next, connection, params) {
     const pi_hook     = params[5];
 
     const plugin = this;
-    const transaction = connection.transaction;
+    const transaction = connection;
 
     // Don't delay ourselves...
     if (pi_name == 'delay_deny') return next();
@@ -100,7 +100,8 @@ exports.hook_deny = function (next, connection, params) {
 
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     const plugin = this;
-    const transaction = connection.transaction;
+    const transaction = connection?.transaction;
+    if  (!transaction) return next();
 
     // Bypass all pre-DATA deny for AUTH/RELAY
     if (connection.relaying) {
@@ -110,7 +111,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 
     // Apply any delayed rejections
     // Check connection level pre-DATA rejections first
-    if (connection.notes.delay_deny_pre) {
+    if (connection.notes?.delay_deny_pre) {
         for (let i=0; i<connection.notes.delay_deny_pre.length; i++) {
             const params = connection.notes.delay_deny_pre[i];
             return next(params[0], params[1]);
@@ -118,7 +119,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     }
 
     // Then check transaction level pre-DATA
-    if (transaction.notes.delay_deny_pre) {
+    if (transaction.notes?.delay_deny_pre) {
         for (let i=0; i<transaction.notes.delay_deny_pre.length; i++) {
             const params = transaction.notes.delay_deny_pre[i];
 
@@ -134,14 +135,15 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 }
 
 exports.hook_data = (next, connection) => {
-    const transaction = connection.transaction;
+    const transaction = connection?.transaction;
+    if (!transaction) return next();
 
     // Add a header showing all pre-DATA rejections
     const fails = [];
-    if (connection.notes.delay_deny_pre_fail) {
+    if (connection.notes?.delay_deny_pre_fail) {
         fails.push.apply(Object.keys(connection.notes.delay_deny_pre_fail));
     }
-    if (transaction.notes.delay_deny_pre_fail) {
+    if (transaction.notes?.delay_deny_pre_fail) {
         fails.push.apply(Object.keys(transaction.notes.delay_deny_pre_fail));
     }
     if (fails.length) transaction.add_header('X-Haraka-Fail-Pre', fails.join(' '));

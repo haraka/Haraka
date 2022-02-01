@@ -42,12 +42,12 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     }
 
     // XCLIENT is not allowed after transaction start
-    if (connection.transaction != null) {
+    if (connection?.transaction) {
         return next(DENY,
             DSN.proto_unspecified('Mail transaction in progress', 503));
     }
 
-    if (!(xclient_allowed(connection.remote.ip))) {
+    if (!(xclient_allowed(connection?.remote?.ip))) {
         return next(DENY, DSN.proto_unspecified('Not authorized', 550));
     }
 

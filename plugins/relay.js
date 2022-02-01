@@ -130,10 +130,10 @@ exports.is_acl_allowed = function (connection) {
 exports.dest_domains = function (next, connection, params) {
     const plugin = this;
     if (!plugin.cfg.relay.dest_domains) { return next(); }
-    const transaction = connection.transaction;
-
+    const { relaying, transaction } = connection ?? {}
+    if (!transaction) return next();
     // Skip this if the host is already allowed to relay
-    if (connection.relaying) {
+    if (relaying) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(relay)'});
         return next();
     }

@@ -13,7 +13,7 @@ exports.hook_data = (next, connection) => {
 }
 
 exports.hook_data_post = function (next, connection) {
-    if (!connection.relaying) {
+    if (!connection?.relaying || !connection?.transaction) {
         return next();
     }
 

@@ -70,10 +70,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
     const plugin = this;
 
     // Store the results in the correct place based on the lookup type
-    let results = connection.results;
-    if (connection.transaction != null) {
-        results = connection.transaction.results;
-    }
+    const results = connection?.transaction?.results || connection?.results;
+    if (!results) return next();
 
     if (typeof hosts === 'string') {
         hosts = [ hosts ];
@@ -307,6 +305,7 @@ exports.hook_mail = function (next, connection, params) {
 }
 
 exports.hook_data = (next, connection) => {
+    if (!connection?.transaction) return next();
     // enable mail body parsing
     connection.transaction.parse_body = true;
     return next();

@@ -6,16 +6,18 @@
 // of recipients based on past behavior (good, bad, unknown)
 
 exports.hook_rcpt = function (next, connection) {
-    if (connection.transaction.notes.rcpt_to_count) {
-        connection.transaction.notes.rcpt_to_count++;
+    const { notes } = connection.transaction ?? {}
+
+    if (notes.rcpt_to_count) {
+        notes.rcpt_to_count++;
     }
     else {
-        connection.transaction.notes.rcpt_to_count = 1;
+        notes.rcpt_to_count = 1;
     }
 
     const max_count = this.config.get('rcpt_to.max_count') || 40;
 
-    if (connection.transaction.notes.rcpt_to_count > max_count) {
+    if (notes.rcpt_to_count > max_count) {
         return next(DENYDISCONNECT, "Too many recipient attempts");
     }
     return next();

@@ -169,11 +169,10 @@ exports.hook_data = function (next, connection) {
 
 exports.hook_data_post = function (next, connection) {
     const plugin = this;
-    const txn = connection.transaction;
-    const cfg = plugin.cfg;
-
     if (!plugin.should_check(connection)) return next();
 
+    const txn = connection.transaction;
+    const cfg = plugin.cfg;
     // Do we need to run?
     if (cfg.main.only_with_attachments && !txn.notes.clamd_found_attachment) {
         connection.logdebug(plugin, 'skipping: no attachments found');
@@ -328,6 +327,8 @@ exports.should_check = function (connection) {
     const plugin = this;
 
     let result = true;  // default
+    // ok ?
+    if (!connection?.transaction) return false
 
     if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
         connection.transaction.results.add(plugin, { skip: 'authed'});

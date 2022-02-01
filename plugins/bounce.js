@@ -72,7 +72,6 @@ exports.load_bounce_ini = function () {
 exports.reject_all = function (next, connection, params) {
     const plugin = this;
     if (!plugin.cfg.check.reject_all) { return next(); }
-
     const mail_from = params[0];
 
     if (!plugin.has_null_sender(connection, mail_from)) {
@@ -86,13 +85,12 @@ exports.reject_all = function (next, connection, params) {
 
 exports.single_recipient = function (next, connection) {
     const plugin = this;
-    if (!plugin.cfg.check.single_recipient) return next();
-    if (!plugin.has_null_sender(connection)) return next();
-
-    const transaction = connection.transaction;
+    if (!plugin?.cfg?.check?.single_recipient) return next();
+    if (!plugin?.has_null_sender(connection)) return next();
+    const { transaction, relaying, remote } = connection;
 
     // Valid bounces have a single recipient
-    if (connection.transaction.rcpt_to.length === 1) {
+    if (transaction.rcpt_to.length === 1) {
         transaction.results.add(plugin,
             {pass: 'single_recipient', emit: true });
         return next();
@@ -103,18 +101,18 @@ exports.single_recipient = function (next, connection) {
     // to distribution groups using the null-sender if
     // the option 'Do not send delivery reports' is
     // checked (not sure if this is default or not)
-    if (connection.relaying) {
+    if (relaying) {
         transaction.results.add(plugin,
             {skip: 'single_recipient(relay)', emit: true });
         return next();
     }
-    if (connection.remote.is_private) {
+    if (remote.is_private) {
         transaction.results.add(plugin,
             {skip: 'single_recipient(private_ip)', emit: true });
         return next();
     }
 
-    connection.loginfo(plugin, `bounce with too many recipients to: ${connection.transaction.rcpt_to.join(',')}`);
+    connection.loginfo(plugin, `bounce with too many recipients to: ${transaction.rcpt_to.join(',')}`);
 
     transaction.results.add(plugin, {fail: 'single_recipient', emit: true });
 
@@ -129,7 +127,6 @@ exports.empty_return_path = function (next, connection) {
     if (!plugin.has_null_sender(connection)) return next();
 
     const transaction = connection.transaction;
-
     // Bounce messages generally do not have a Return-Path set. This checks
     // for that. But whether it should is worth questioning...
 
@@ -144,7 +141,7 @@ exports.empty_return_path = function (next, connection) {
     // Return-Path, aka Reverse-PATH, Envelope FROM, RFC5321.MailFrom
     // validate that the Return-Path header is empty, RFC 3834
 
-    const rp = connection.transaction.header.get('Return-Path');
+    const rp = transaction.header.get('Return-Path');
     if (!rp) {
         transaction.results.add(plugin, {pass: 'empty_return_path' });
         return next();
@@ -161,14 +158,13 @@ exports.empty_return_path = function (next, connection) {
 
 exports.bad_rcpt = function (next, connection) {
     const plugin = this;
-    const transaction = connection.transaction;
-
     if (!plugin.cfg.check.bad_rcpt) return next();
     if (!plugin.has_null_sender(connection)) return next();
     if (!plugin.cfg.invalid_addrs) return next();
+    const transaction = connection.transaction;
 
-    for (let i=0; i < connection.transaction.rcpt_to.length; i++) {
-        const rcpt = connection.transaction.rcpt_to[i].address();
+    for (let i=0; i < transaction.rcpt_to.length; i++) {
+        const rcpt = transaction.rcpt_to[i].address();
         if (!plugin.cfg.invalid_addrs[rcpt]) continue;
         transaction.results.add(plugin, {fail: 'bad_rcpt', emit: true });
         return next(DENY, 'That recipient does not accept bounces');
@@ -179,15 +175,16 @@ exports.bad_rcpt = function (next, connection) {
 }
 
 exports.has_null_sender = function (connection, mail_from) {
-    const plugin = this;
-    const transaction = connection.transaction;
+    // ok ?
+    const transaction = connection?.transaction;
+    if (!transaction) return false;
 
-    if (!mail_from) mail_from = connection.transaction.mail_from;
+    const plugin = this;
+    if (!mail_from) mail_from = transaction.mail_from;
 
     // bounces have a null sender.
     // null sender could also be tested with mail_from.user
     // Why would isNull() exist if it wasn't the right way to test this?
-
     if (mail_from.isNull()) {
         transaction.results.add(plugin, {isa: 'yes'});
         return true;
@@ -217,8 +214,8 @@ exports.non_local_msgid = function (next, connection) {
     if (!plugin.cfg.check.non_local_msgid) return next();
     if (!plugin.has_null_sender(connection)) return next();
 
-    const transaction = connection.transaction;
-
+    const transaction = connection?.transaction;
+    if (!transaction) return next();
     // Bounce messages usually contain the headers of the original message
     // in the body. This parses the body, searching for the Message-ID header.
     // It then inspects the contents of that header, extracting the domain part,
@@ -307,6 +304,7 @@ function find_received_headers (ips, body, connection, self) {
 }
 
 exports.bounce_spf_enable = function (next, connection) {
+    if (!connection.transaction) return next();
     const plugin = this;
     if (plugin.cfg.check.bounce_spf) {
         connection.transaction.parse_body = true;
@@ -318,7 +316,9 @@ exports.bounce_spf = function (next, connection) {
     const plugin = this;
     if (!plugin.cfg.check.bounce_spf) return next();
     if (!plugin.has_null_sender(connection)) return next();
-    const txn = connection.transaction;
+
+    const txn = connection?.transaction;
+    if (!txn) return next();
 
     // Recurse through all textual parts and store all parsed IPs
     // in an object to remove any duplicates which might appear.

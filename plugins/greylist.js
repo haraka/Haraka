@@ -111,6 +111,8 @@ exports.shutdown = function () {
 
 // We check for IP and envelope whitelist
 exports.hook_mail = function (next, connection, params) {
+    if (!connection.transaction) return next();
+
     const plugin = this;
     const mail_from = params[0];
 
@@ -150,14 +152,15 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     const plugin = this;
 
     if (plugin.should_skip_check(connection)) return next();
-
     if (plugin.was_whitelisted_in_session(connection)) {
         plugin.logdebug(connection, 'host already whitelisted in this session');
         return next();
     }
 
-    const ctr = connection.transaction.results;
-    const mail_from = connection.transaction.mail_from;
+    const transaction = connection.transaction
+
+    const ctr = transaction.results;
+    const mail_from = transaction.mail_from;
 
     // check rcpt in whitelist (email & domain)
     if (plugin.addr_in_list('rcpt', rcpt.address().toLowerCase())) {
@@ -241,6 +244,7 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
     const plugin = this;
 
     const key = plugin.craft_grey_key(connection, sender, rcpt);
+    if (!key) return;
 
     return plugin.db_lookup(key, (err, record) => {
         if (err) {
@@ -310,9 +314,12 @@ exports.invoke_outcome_cb = function (next, is_whitelisted) {
 // Should we skip greylisting invokation altogether?
 exports.should_skip_check = function (connection) {
     const plugin = this;
-    const ctr = connection.transaction && connection.transaction.results;
+    const { transaction, relaying, remote } = connection ?? {}
 
-    if (connection.relaying) {
+    if (!transaction) return true;
+    const ctr = transaction.results;
+
+    if (relaying) {
         plugin.logdebug(connection, 'skipping GL for relaying host');
         ctr.add(plugin, {
             skip : 'relaying'
@@ -320,7 +327,7 @@ exports.should_skip_check = function (connection) {
         return true;
     }
 
-    if (connection.remote.is_private) {
+    if (remote && remote.is_private) {
         connection.logdebug(plugin, `skipping private IP: ${connection.remote.ip}`);
         ctr.add(plugin, {
             skip : 'private-ip'
@@ -344,6 +351,7 @@ exports.should_skip_check = function (connection) {
 
 // Was whitelisted previously in this session
 exports.was_whitelisted_in_session = function (connection) {
+    if (!connection?.transaction?.results) return false;
     return connection.transaction.results.has(this, 'pass', 'whitelisted');
 }
 
@@ -372,7 +380,11 @@ exports.process_skip_rules = function (connection) {
 // When _to_ is String, we craft +rcpt+ key
 exports.craft_grey_key = function (connection, from, to) {
     const plugin = this;
-    let key = `grey:${plugin.craft_hostid(connection)}:${(from || '<>')}`;
+
+    const crafted_host_id = plugin.craft_hostid(connection)
+    if (!crafted_host_id) return null;
+
+    let key = `grey:${crafted_host_id}:${(from || '<>')}`;
     if (to != undefined) {
         key += `:${(to || '<>')}`;
     }
@@ -388,19 +400,19 @@ exports.craft_white_key = function (connection) {
 // Return so-called +hostid+.
 exports.craft_hostid = function (connection) {
     const plugin = this;
-    const trx = connection.transaction;
+    const { transaction, remote } = connection ?? {};
+    if (!transaction || !remote) return null;
 
-    if (trx.notes.greylist && trx.notes.greylist.hostid)
-        return trx.notes.greylist.hostid; // "caching"
+    if (transaction.notes?.greylist && transaction.notes.greylist.hostid) return transaction.notes.greylist.hostid; // "caching"
 
-    const ip = connection.remote.ip;
-    let rdns = connection.remote.host;
+    const ip = remote.ip;
+    let rdns = remote.host;
 
     function chsit (value, reason) { // cache the return value
         if (!value)
             plugin.logdebug(connection, `hostid set to IP: ${reason}`);
 
-        trx.results.add(plugin, {
+        transaction.results.add(plugin, {
             hostid_type : value ? 'domain' : 'ip',
             rdns : (value || ip),
             msg : reason
@@ -408,7 +420,7 @@ exports.craft_hostid = function (connection) {
 
         value = value || ip;
 
-        return ((trx.notes.greylist = trx.notes.greylist || {}).hostid = value);
+        return ((transaction.notes.greylist = transaction.notes.greylist || {}).hostid = value);
     }
 
     if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') // no rDNS . FIXME: use fcrdns results
@@ -539,6 +551,7 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
     };
 
     const white_key = plugin.craft_white_key(connection);
+    if (!white_key) return;
 
     return plugin.db.hmset(white_key, white_rec, (err, result) => {
         if (err) {

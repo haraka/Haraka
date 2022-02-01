@@ -255,10 +255,11 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
 
 exports.start_attachment = function (connection, ctype, filename, body, stream) {
     const plugin = this;
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
 
     function next () {
-        if (txn.notes.attachment_count === 0 && txn.notes.attachment_next) {
+
+        if (txn?.notes?.attachment_next && txn.notes.attachment_count === 0) {
             return txn.notes.attachment_next();
         }
         return;
@@ -386,7 +387,9 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
 
 exports.hook_data = function (next, connection) {
     const plugin = this;
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
+    if (!txn) return next();
+
     txn.parse_body = 1;
     txn.notes.attachment_count = 0;
     txn.notes.attachments = [];
@@ -400,7 +403,11 @@ exports.hook_data = function (next, connection) {
 }
 
 exports.check_attachments = function (next, connection) {
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
+    if (!txn) {
+        return next();
+    }
+
     const ctype_config = this.config.get('attachment.ctype.regex','list');
     const file_config = this.config.get('attachment.filename.regex','list');
     const archive_config = this.config.get('attachment.archive.filename.regex','list');
@@ -492,8 +499,8 @@ exports.check_items_against_regexps = function (items, regexps) {
 }
 
 exports.wait_for_attachment_hooks = (next, connection) => {
-    const txn = connection.transaction;
-    if (txn.notes.attachment_count > 0) {
+    const txn = connection?.transaction;
+    if (txn && txn.notes?.attachment_count > 0) {
         // this.loginfo("We still have attachment hooks running");
         txn.notes.attachment_next = next;
     }

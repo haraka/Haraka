@@ -11,6 +11,7 @@ exports.register = function () {
 }
 
 exports.rabbitmq_queue = function (next, connection) {
+    if (!connection?.transaction) return next();
     const plugin = this;
     connection.transaction.message_stream.get_data(str => {
         if (channel && channel.sendToQueue(queue, str, {deliveryMode})) {

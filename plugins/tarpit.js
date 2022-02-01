@@ -22,12 +22,14 @@ exports.register = function () {
 }
 
 exports.tarpit = function (next, connection) {
-    const plugin = this;
+    const { transaction } = connection;
+    if (!transaction) return next();
 
+    const plugin = this;
     let delay = connection.notes.tarpit;
 
-    if (delay == null && connection.transaction != null) {
-        delay = connection.transaction.notes.tarpit;
+    if (delay == null) {
+        delay = transaction.notes.tarpit;
     }
 
     if (delay == null) {

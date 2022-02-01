@@ -277,8 +277,8 @@ class SMTPClient extends events.EventEmitter {
 
 
     is_dead_sender (plugin, connection) {
-        // This likely means the sender went away on us, cleanup.
-        if (connection?.transaction == null) {
+        //no transaction  means sender is dead
+        if (!connection?.transaction) {
             connection.logwarn(plugin, "transaction went away, releasing smtp_client");
             this.release();
             return true;
