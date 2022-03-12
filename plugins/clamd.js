@@ -327,8 +327,9 @@ exports.should_check = function (connection) {
     const plugin = this;
 
     let result = true;  // default
-    // ok ?
-    if (!connection?.transaction) return false
+    if (!connection?.transaction) {
+        return false
+    }
 
     if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
         connection.transaction.results.add(plugin, { skip: 'authed'});

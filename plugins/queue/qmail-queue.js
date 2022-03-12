@@ -35,7 +35,9 @@ exports.hook_queue = function (next, connection) {
     const plugin = this;
 
     const txn = connection?.transaction;
-    if (!txn) return next();
+    if (!txn) {
+        return next();
+    }
     const q_wants = txn.notes.get('queue.wants');
     if (q_wants && q_wants !== 'qmail-queue') return next();
 

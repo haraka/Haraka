@@ -71,9 +71,11 @@ exports.load_bounce_ini = function () {
 
 exports.reject_all = function (next, connection, params) {
     const plugin = this;
-    if (!plugin.cfg.check.reject_all) { return next(); }
-    const mail_from = params[0];
+    if (!plugin.cfg.check.reject_all) { 
+        return next(); 
+    }
 
+    const mail_from = params[0];
     if (!plugin.has_null_sender(connection, mail_from)) {
         return next(); // bounce messages are from null senders
     }
@@ -85,8 +87,12 @@ exports.reject_all = function (next, connection, params) {
 
 exports.single_recipient = function (next, connection) {
     const plugin = this;
-    if (!plugin?.cfg?.check?.single_recipient) return next();
-    if (!plugin?.has_null_sender(connection)) return next();
+    if (!plugin?.cfg?.check?.single_recipient) {
+        return next();
+    } 
+    if (!plugin?.has_null_sender(connection)) {
+        return next();
+    }
     const { transaction, relaying, remote } = connection;
 
     // Valid bounces have a single recipient
@@ -158,29 +164,39 @@ exports.empty_return_path = function (next, connection) {
 
 exports.bad_rcpt = function (next, connection) {
     const plugin = this;
-    if (!plugin.cfg.check.bad_rcpt) return next();
-    if (!plugin.has_null_sender(connection)) return next();
-    if (!plugin.cfg.invalid_addrs) return next();
-    const transaction = connection.transaction;
+    if (!plugin.cfg.check.bad_rcpt) {
+        return next();
+    }
+    if (!plugin.has_null_sender(connection)) {
+        return next();
+    }
+    if (!plugin.cfg.invalid_addrs) {
+        return next();
+    }
 
+    const transaction = connection.transaction;
     for (let i=0; i < transaction.rcpt_to.length; i++) {
         const rcpt = transaction.rcpt_to[i].address();
         if (!plugin.cfg.invalid_addrs[rcpt]) continue;
         transaction.results.add(plugin, {fail: 'bad_rcpt', emit: true });
         return next(DENY, 'That recipient does not accept bounces');
     }
-
     transaction.results.add(plugin, {pass: 'bad_rcpt'});
+
     return next();
 }
 
 exports.has_null_sender = function (connection, mail_from) {
     // ok ?
     const transaction = connection?.transaction;
-    if (!transaction) return false;
+    if (!transaction) {
+        return false;
+    }
 
     const plugin = this;
-    if (!mail_from) mail_from = transaction.mail_from;
+    if (!mail_from) {
+        mail_from = transaction.mail_from;
+    }
 
     // bounces have a null sender.
     // null sender could also be tested with mail_from.user
@@ -197,12 +213,16 @@ exports.has_null_sender = function (connection, mail_from) {
 const message_id_re = /^Message-ID:\s*(<?[^>]+>?)/mig;
 
 function find_message_id_headers (headers, body, connection, self) {
-    if (!body) return;
+    if (!body) {
+        return;
+    }
+
     let match;
     while ((match = message_id_re.exec(body.bodytext))) {
         const mid = match[1];
         headers[mid] = true;
     }
+    
     for (let i=0,l=body.children.length; i < l; i++) {
         // Recure to any MIME children
         find_message_id_headers(headers, body.children[i], connection, self);

@@ -83,7 +83,9 @@ exports.aliases = function (next, connection, params) {
 function _drop (plugin, connection, rcpt) {
     connection.logdebug(plugin, `marking ${rcpt} for drop`);
 
-    if (!connection?.transaction?.notes) return;
+    if (!connection?.transaction?.notes) {
+        return;
+    }
     connection.transaction.notes.discard = true;
 }
 

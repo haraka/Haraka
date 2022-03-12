@@ -244,7 +244,9 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
     const plugin = this;
 
     const key = plugin.craft_grey_key(connection, sender, rcpt);
-    if (!key) return;
+    if (!key) {
+        return;
+    }
 
     return plugin.db_lookup(key, (err, record) => {
         if (err) {
@@ -316,7 +318,9 @@ exports.should_skip_check = function (connection) {
     const plugin = this;
     const { transaction, relaying, remote } = connection ?? {}
 
-    if (!transaction) return true;
+    if (!transaction) {
+        return true;
+    } 
     const ctr = transaction.results;
 
     if (relaying) {
@@ -401,9 +405,13 @@ exports.craft_white_key = function (connection) {
 exports.craft_hostid = function (connection) {
     const plugin = this;
     const { transaction, remote } = connection ?? {};
-    if (!transaction || !remote) return null;
+    if (!transaction || !remote) {
+        return null;
+    }
 
-    if (transaction.notes?.greylist && transaction.notes.greylist.hostid) return transaction.notes.greylist.hostid; // "caching"
+    if (transaction.notes?.greylist && transaction.notes.greylist.hostid) {
+        return transaction.notes.greylist.hostid; // "caching"
+    }
 
     const ip = remote.ip;
     let rdns = remote.host;

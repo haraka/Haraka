@@ -131,7 +131,9 @@ exports.dest_domains = function (next, connection, params) {
     const plugin = this;
     if (!plugin.cfg.relay.dest_domains) { return next(); }
     const { relaying, transaction } = connection ?? {}
-    if (!transaction) return next();
+    if (!transaction) {
+        return next();
+    } 
     // Skip this if the host is already allowed to relay
     if (relaying) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(relay)'});

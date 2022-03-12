@@ -142,7 +142,9 @@ exports.hook_mail = function (next, connection, params) {
     const plugin = this;
 
     const txn = connection?.transaction;
-    if (!txn) return next();
+    if (!txn) {
+        return next();
+    }
 
     // bypass auth'ed or relay'ing hosts if told to
     const skip_reason = exports.skip_hosts(connection);
@@ -178,7 +180,9 @@ exports.hook_mail = function (next, connection, params) {
         }
     }
 
-    if (!host) return next();  // null-sender
+    if (!host) {
+        return next();  // null-sender
+    }
 
     let timeout = false;
     const timer = setTimeout(() => {
@@ -307,7 +311,9 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 
 exports.save_to_header = (connection, spf, result, mfrom, host, id, ip) => {
     // Add a trace header
-    if (!connection?.transaction) return;
+    if (!connection?.transaction) {
+        return;
+    }
     const des = result === spf.SPF_PASS ? 'designates' : 'does not designate';
     const identity = `identity=${id}; client-ip=${ip ? ip : connection.remote.ip}`;
     connection.transaction.add_leading_header('Received-SPF',

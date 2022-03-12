@@ -95,10 +95,14 @@ exports.hook_data = (next, connection) => {
 
 exports.hook_queue = function (next, connection) {
     const plugin = this;
-    if (!connection?.transaction || !connection?.notes) return next();
+    if (!connection?.transaction || !connection?.notes) {
+        return next();
+    }
 
     const smtp_client = connection.notes.smtp_client;
-    if (!smtp_client) return next();
+    if (!smtp_client) {
+        return next();
+    }
     smtp_client.next = next;
     if (smtp_client.is_dead_sender(plugin, connection)) {
         delete connection.notes.smtp_client;

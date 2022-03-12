@@ -388,7 +388,9 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
 exports.hook_data = function (next, connection) {
     const plugin = this;
     const txn = connection?.transaction;
-    if (!txn) return next();
+    if (!txn) {
+        return next();
+    }
 
     txn.parse_body = 1;
     txn.notes.attachment_count = 0;

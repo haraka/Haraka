@@ -354,7 +354,9 @@ exports.log_results = function (conn, spamd_response) {
 
 exports.should_skip = function (connection) {
     const { transaction } = connection ?? {};
-    if (!transaction) return true;
+    if (!transaction) {
+        return true;
+    }
 
     const plugin = this;
     // a message might be skipped for multiple reasons, store each in results

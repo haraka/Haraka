@@ -23,17 +23,18 @@ exports.register = function () {
 
 exports.tarpit = function (next, connection) {
     const { transaction } = connection;
-    if (!transaction) return next();
+    if (!transaction) {
+        return next();
+    }
 
     const plugin = this;
     let delay = connection.notes.tarpit;
 
-    if (delay == null) {
+    if (!delay) {
         delay = transaction.notes.tarpit;
     }
 
-    if (delay == null) {
-        connection.logwarn("tarpit Delay not found, skipping >>>")
+    if (!delay) {
         return next();
     }
 

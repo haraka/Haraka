@@ -3,14 +3,18 @@
 
 exports.hook_data = (next, connection) => {
     // enable mail body parsing
-    if (!connection?.transaction) return next();
+    if (!connection?.transaction) {
+        return next();
+    }
 
     connection.transaction.parse_body = true;
     next();
 }
 
 exports.hook_data_post = function (next, connection) {
-    if (!connection?.transaction) return next();
+    if (!connection?.transaction) {
+        return next();
+    }
 
     const sigs = this.config.get('data.signatures', 'list');
 

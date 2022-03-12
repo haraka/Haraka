@@ -53,11 +53,17 @@ exports.clean_tmp_directory = function (next) {
 function wants_quarantine (connection) {
     const { notes, transaction } = connection ?? {}
 
-    if (notes.quarantine) return notes.quarantine;
+    if (notes.quarantine) {
+        return notes.quarantine;
+    }
 
-    if (transaction.notes.quarantine) return transaction.notes.quarantine;
+    if (transaction.notes.quarantine) {
+        return transaction.notes.quarantine;
+    }
 
-    if (transaction.notes.get('queue.wants') === 'quarantine') return true;
+    if (transaction.notes.get('queue.wants') === 'quarantine') {
+        return true;
+    } 
 
     return false;
 }

@@ -101,7 +101,9 @@ exports.hook_deny = function (next, connection, params) {
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     const plugin = this;
     const transaction = connection?.transaction;
-    if  (!transaction) return next();
+    if  (!transaction) {
+        return next();
+    }
 
     // Bypass all pre-DATA deny for AUTH/RELAY
     if (connection.relaying) {
@@ -146,7 +148,9 @@ exports.hook_data = (next, connection) => {
     if (transaction.notes?.delay_deny_pre_fail) {
         fails.push.apply(Object.keys(transaction.notes.delay_deny_pre_fail));
     }
-    if (fails.length) transaction.add_header('X-Haraka-Fail-Pre', fails.join(' '));
+    if (fails.length) {
+        transaction.add_header('X-Haraka-Fail-Pre', fails.join(' '));
+    }
 
     return next();
 }
