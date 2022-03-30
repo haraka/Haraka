@@ -103,8 +103,7 @@ exports.single_recipient = function (next, connection) {
         return next();
     }
     if (remote.is_private) {
-        transaction.results.add(plugin,
-            {skip: 'single_recipient(private_ip)', emit: true });
+        transaction.results.add(plugin, {skip: 'single_recipient(private_ip)', emit: true });
         return next();
     }
 
@@ -154,15 +153,9 @@ exports.empty_return_path = function (next, connection) {
 
 exports.bad_rcpt = function (next, connection) {
     const plugin = this;
-    if (!plugin.cfg.check.bad_rcpt) {
-        return next();
-    }
-    if (!plugin.has_null_sender(connection)) {
-        return next();
-    }
-    if (!plugin.cfg.invalid_addrs) {
-        return next();
-    }
+    if (!plugin.cfg.check.bad_rcpt) return next();
+    if (!plugin.has_null_sender(connection)) return next();
+    if (!plugin.cfg.invalid_addrs) return next();
 
     const transaction = connection.transaction;
     for (let i=0; i < transaction.rcpt_to.length; i++) {
@@ -179,33 +172,26 @@ exports.bad_rcpt = function (next, connection) {
 exports.has_null_sender = function (connection, mail_from) {
     // ok ?
     const transaction = connection?.transaction;
-    if (!transaction) {
-        return false;
-    }
+    if (!transaction) return false;
 
-    const plugin = this;
-    if (!mail_from) {
-        mail_from = transaction.mail_from;
-    }
+    if (!mail_from) mail_from = transaction.mail_from;
 
     // bounces have a null sender.
     // null sender could also be tested with mail_from.user
     // Why would isNull() exist if it wasn't the right way to test this?
     if (mail_from.isNull()) {
-        transaction.results.add(plugin, {isa: 'yes'});
+        transaction.results.add(this, {isa: 'yes'});
         return true;
     }
 
-    transaction.results.add(plugin, {isa: 'no'});
+    transaction.results.add(this, {isa: 'no'});
     return false;
 }
 
 const message_id_re = /^Message-ID:\s*(<?[^>]+>?)/mig;
 
 function find_message_id_headers (headers, body, connection, self) {
-    if (!body) {
-        return;
-    }
+    if (!body) return;
 
     let match;
     while ((match = message_id_re.exec(body.bodytext))) {
@@ -260,8 +246,7 @@ exports.non_local_msgid = function (next, connection) {
     }
 
     if (domains.length === 0) {
-        connection.loginfo(plugin,
-            'no domain(s) parsed from Message-ID headers');
+        connection.loginfo(plugin, 'no domain(s) parsed from Message-ID headers');
         transaction.results.add(plugin, { fail: 'Message-ID parseable' });
         if (!plugin.cfg.reject.non_local_msgid) return next();
         return next(DENY, `bounce with invalid Message-ID, I didn't send it.`);
