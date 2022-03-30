@@ -15,9 +15,9 @@ exports.register = function () {
 exports.hook_connect = function (next, connection) {
     const self = this;
     const cfg = this.config.get('messagesniffer.ini');
-
     // Skip any private IP ranges
-    if (connection.remote.is_private) return next();
+    // Skip connection.transaction undefined
+    if (connection?.remote?.is_private || !connection?.transaction) return next();
 
     // Retrieve GBUdb information for the connecting IP
     SNFClient(`<snf><xci><gbudb><test ip='${connection.remote.ip}'/></gbudb></xci></snf>`, (err, result) => {
@@ -102,7 +102,7 @@ exports.hook_connect = function (next, connection) {
 exports.hook_data_post = function (next, connection) {
     const self = this;
     const cfg = this.config.get('messagesniffer.ini');
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
     if (!txn) return next();
 
     function tag_subject (){

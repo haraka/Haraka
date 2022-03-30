@@ -175,13 +175,15 @@ exports.load_key = function (file) {
 exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next, connection) {
     const plugin = this;
     if (plugin.cfg.main.disabled) return next();
+    if (!connection?.transaction) return next();
 
-    if (connection.transaction.notes.dkim_signed) {
+    if (connection.transaction.notes?.dkim_signed) {
         connection.logdebug(plugin, 'already signed');
         return next();
     }
 
     exports.get_sign_properties(connection, (err, props) => {
+        if (!connection?.transaction) return next();
         // props: selector, domain, & private_key
         if (err) connection.logerror(plugin, `${err.message}`);
 
@@ -214,6 +216,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
 }
 
 exports.get_sign_properties = function (connection, done) {
+    if (!connection.transaction) return;
     const plugin = this;
 
     const domain = plugin.get_sender_domain(connection);
@@ -230,6 +233,8 @@ exports.get_sign_properties = function (connection, done) {
             connection.logerror(plugin, err);
             return done(new Error(`Error getting DKIM key_dir for ${domain}: ${err}`), props)
         }
+
+        if (!connection.transaction) return done(null, props);
 
         // a directory for ${domain} exists
         if (keydir) {
@@ -343,12 +348,9 @@ exports.get_headers_to_sign = function (cfg) {
 
 exports.get_sender_domain = function (connection) {
     const plugin = this;
-    if (!connection.transaction) {
-        connection.logerror(plugin, 'no transaction!')
-        return;
-    }
 
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
+    if (!txn) return;
 
     // fallback: use Envelope FROM when header parsing fails
     let domain;

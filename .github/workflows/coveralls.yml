@@ -15,10 +15,10 @@ jobs:
       with:
         fetch-depth: 1
 
-    - name: Use Node.js 12
+    - name: Use Node.js 14
       uses: actions/setup-node@master
       with:
-        node-version: 12.x
+        node-version: 14.x
 
     - name: install, run
       run: |
