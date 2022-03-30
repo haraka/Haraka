@@ -1,0 +1,11 @@
+.github
+.DS_Store
+.editorconfig
+.gitignore
+.gitmodules
+.lgtm.yml
+http/bower_components
+http/node_modules
+appveyor.yml
+codecov.yml
+.codeclimate.yml

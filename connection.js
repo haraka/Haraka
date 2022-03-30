@@ -187,6 +187,12 @@ class Connection {
         });
 
         self.client.on('timeout', () => {
+            // FIN has sent, when timeout just destroy socket
+            if (self.state >= states.DISCONNECTED) {
+                self.client.destroy();
+                self.loginfo(`timeout, destroy socket (state:${self.state})`)
+                return;
+            }
             if (self.state >= states.DISCONNECTING) return;
             self.respond(421, 'timeout', () => {
                 self.fail('client connection timed out', log_data);
