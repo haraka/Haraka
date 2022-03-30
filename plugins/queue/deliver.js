@@ -5,9 +5,9 @@
 const outbound = require('./outbound');
 
 exports.hook_queue_outbound = (next, connection) => {
-    if (!connection.relaying) {
+    if (!connection?.relaying) {
         return next(); // we're not relaying so don't deliver outbound
     }
 
-    outbound.send_email(connection.transaction, next);
+    outbound.send_email(connection?.transaction, next);
 }

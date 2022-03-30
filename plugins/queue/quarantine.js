@@ -51,14 +51,13 @@ exports.clean_tmp_directory = function (next) {
 }
 
 function wants_quarantine (connection) {
-    if (connection.notes.quarantine)
-        return connection.notes.quarantine;
+    const { notes, transaction } = connection ?? {}
 
-    if (connection.transaction.notes.quarantine)
-        return connection.transaction.notes.quarantine;
+    if (notes.quarantine) return notes.quarantine;
 
-    if (connection.transaction.notes.get('queue.wants') === 'quarantine')
-        return true;
+    if (transaction.notes.quarantine) return transaction.notes.quarantine;
+
+    if (transaction.notes.get('queue.wants') === 'quarantine') return true;
 
     return false;
 }
@@ -96,7 +95,9 @@ exports.quarantine = function (next, connection) {
         subdir = path.join(quarantine, yyyymmdd);
     }
 
-    const txn      = connection.transaction;
+    const txn = connection?.transaction;
+    if (!txn) return next();
+
     const base_dir = plugin.get_base_dir();
     const msg_dir  = path.join(base_dir, subdir);
     const tmp_path = path.join(base_dir, 'tmp', txn.uuid);

@@ -37,17 +37,14 @@ exports.hook_capabilities = (next, connection) => {
 }
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    if (params[0] !== 'XCLIENT') {
-        return next();
-    }
+    if (params[0] !== 'XCLIENT') return next();
 
     // XCLIENT is not allowed after transaction start
-    if (connection.transaction) {
-        return next(DENY,
-            DSN.proto_unspecified('Mail transaction in progress', 503));
+    if (connection?.transaction) {
+        return next(DENY, DSN.proto_unspecified('Mail transaction in progress', 503));
     }
 
-    if (!(xclient_allowed(connection.remote.ip))) {
+    if (!(xclient_allowed(connection?.remote?.ip))) {
         return next(DENY, DSN.proto_unspecified('Not authorized', 550));
     }
 
@@ -104,8 +101,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     // Abort if we don't have a valid IP address
     if (!xclient.addr) {
-        return next(DENY,
-            DSN.proto_invalid_cmd_args('No valid IP address found', 501));
+        return next(DENY, DSN.proto_invalid_cmd_args('No valid IP address found', 501));
     }
 
     // Apply changes
@@ -125,10 +121,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     }
     connection.esmtp = (xclient.proto === 'esmtp');
     connection.xclient = true;
-    if (!xclient.name) {
-        return next(NEXT_HOOK, 'lookup_rdns');
-    }
-    else {
-        return next(NEXT_HOOK, 'connect');
-    }
+    if (!xclient.name) return next(NEXT_HOOK, 'lookup_rdns');
+
+    return next(NEXT_HOOK, 'connect');
 }
