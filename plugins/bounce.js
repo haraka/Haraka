@@ -71,34 +71,25 @@ exports.load_bounce_ini = function () {
 
 exports.reject_all = function (next, connection, params) {
     const plugin = this;
-    if (!plugin.cfg.check.reject_all) { 
-        return next(); 
-    }
+    if (!plugin.cfg.check.reject_all) return next();
 
     const mail_from = params[0];
-    if (!plugin.has_null_sender(connection, mail_from)) {
-        return next(); // bounce messages are from null senders
-    }
+    // bounce messages are from null senders
+    if (!plugin.has_null_sender(connection, mail_from)) return next();
 
-    connection.transaction.results.add(plugin,
-        {fail: 'bounces_accepted', emit: true });
+    connection.transaction.results.add(plugin, {fail: 'bounces_accepted', emit: true });
     return next(DENY, 'No bounces accepted here');
 }
 
 exports.single_recipient = function (next, connection) {
     const plugin = this;
-    if (!plugin?.cfg?.check?.single_recipient) {
-        return next();
-    } 
-    if (!plugin?.has_null_sender(connection)) {
-        return next();
-    }
+    if (!plugin?.cfg?.check?.single_recipient) return next();
+    if (!plugin?.has_null_sender(connection)) return next();
     const { transaction, relaying, remote } = connection;
 
     // Valid bounces have a single recipient
     if (transaction.rcpt_to.length === 1) {
-        transaction.results.add(plugin,
-            {pass: 'single_recipient', emit: true });
+        transaction.results.add(plugin, {pass: 'single_recipient', emit: true });
         return next();
     }
 
@@ -108,8 +99,7 @@ exports.single_recipient = function (next, connection) {
     // the option 'Do not send delivery reports' is
     // checked (not sure if this is default or not)
     if (relaying) {
-        transaction.results.add(plugin,
-            {skip: 'single_recipient(relay)', emit: true });
+        transaction.results.add(plugin, {skip: 'single_recipient(relay)', emit: true });
         return next();
     }
     if (remote.is_private) {
