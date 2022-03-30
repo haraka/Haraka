@@ -457,6 +457,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
         smtp_client.on('xclient', helo);
 
         function on_secured () {
+            if (secured) return;
             secured = true;
             smtp_client.secured = true;
             smtp_client.emit('greeting', 'EHLO');
