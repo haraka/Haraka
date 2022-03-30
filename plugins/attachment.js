@@ -387,10 +387,8 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
 
 exports.hook_data = function (next, connection) {
     const plugin = this;
+    if (!connection?.transaction) return next();
     const txn = connection?.transaction;
-    if (!txn) {
-        return next();
-    }
 
     txn.parse_body = 1;
     txn.notes.attachment_count = 0;
@@ -406,9 +404,7 @@ exports.hook_data = function (next, connection) {
 
 exports.check_attachments = function (next, connection) {
     const txn = connection?.transaction;
-    if (!txn) {
-        return next();
-    }
+    if (!txn) return next();
 
     const ctype_config = this.config.get('attachment.ctype.regex','list');
     const file_config = this.config.get('attachment.filename.regex','list');
@@ -501,10 +497,9 @@ exports.check_items_against_regexps = function (items, regexps) {
 }
 
 exports.wait_for_attachment_hooks = (next, connection) => {
-    const txn = connection?.transaction;
-    if (txn && txn.notes?.attachment_count > 0) {
+    if (connection?.transaction?.notes?.attachment_count > 0) {
         // this.loginfo("We still have attachment hooks running");
-        txn.notes.attachment_next = next;
+        connection.transaction.notes.attachment_next = next;
     }
     else {
         next();
