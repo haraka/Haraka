@@ -198,7 +198,7 @@ function find_message_id_headers (headers, body, connection, self) {
         const mid = match[1];
         headers[mid] = true;
     }
-    
+
     for (let i=0,l=body.children.length; i < l; i++) {
         // Recure to any MIME children
         find_message_id_headers(headers, body.children[i], connection, self);

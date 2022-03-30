@@ -17,9 +17,8 @@ exports.hook_connect = function (next, connection) {
     const cfg = this.config.get('messagesniffer.ini');
     // Skip any private IP ranges
     // Skip connection.transaction undefined
-    if (connection?.remote?.is_private || !connection?.transaction) {
-        return next();  
-    } 
+    if (connection?.remote?.is_private || !connection?.transaction) return next();
+
     // Retrieve GBUdb information for the connecting IP
     SNFClient(`<snf><xci><gbudb><test ip='${connection.remote.ip}'/></gbudb></xci></snf>`, (err, result) => {
         if (err) {
@@ -104,9 +103,7 @@ exports.hook_data_post = function (next, connection) {
     const self = this;
     const cfg = this.config.get('messagesniffer.ini');
     const txn = connection?.transaction;
-    if (!txn) {
-        return next();
-    } 
+    if (!txn) return next();
 
     function tag_subject (){
         const tag = cfg.main.tag_string || '[SPAM]';

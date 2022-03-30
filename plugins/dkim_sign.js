@@ -234,9 +234,7 @@ exports.get_sign_properties = function (connection, done) {
             return done(new Error(`Error getting DKIM key_dir for ${domain}: ${err}`), props)
         }
 
-        if (!connection.transaction) {
-            return done(null, props);
-        }
+        if (!connection.transaction) return done(null, props);
 
         // a directory for ${domain} exists
         if (keydir) {
@@ -352,9 +350,7 @@ exports.get_sender_domain = function (connection) {
     const plugin = this;
 
     const txn = connection?.transaction;
-    if (!txn) {
-        return;
-    } 
+    if (!txn) return;
 
     // fallback: use Envelope FROM when header parsing fails
     let domain;

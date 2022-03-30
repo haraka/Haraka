@@ -71,13 +71,10 @@ exports.do_lookups = function (connection, next, hosts, type) {
 
     // Store the results in the correct place based on the lookup type
     const results = connection?.transaction?.results || connection?.results;
-    if (!results) {
-        return next();
-    }
+    if (!results) return next();
 
-    if (typeof hosts === 'string') {
-        hosts = [ hosts ];
-    }
+    if (typeof hosts === 'string') hosts = [ hosts ];
+
     if (!hosts || !hosts.length) {
         connection.logdebug(plugin, `(${type}) no items found for lookup`);
         results.add(plugin, {skip: type});

@@ -164,9 +164,8 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
 exports.implicit_mx = function (connection, domain, mxDone) {
     const plugin = this;
     const txn = connection?.transaction;
-    if (!txn) {
-        return;
-    }
+    if (!txn) return;
+
     net_utils.get_ips_by_host(domain, (err, addresses) => {
         if (!addresses || !addresses.length) {
             txn.results.add(plugin, {fail: 'has_fwd_dns'});

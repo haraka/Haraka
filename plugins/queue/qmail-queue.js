@@ -4,17 +4,16 @@ const childproc = require('child_process');
 const fs        = require('fs');
 
 exports.register = function () {
-    const plugin = this;
 
-    plugin.queue_exec = plugin.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
-    if (!fs.existsSync(plugin.queue_exec)) {
-        throw new Error(`Cannot find qmail-queue binary (${plugin.queue_exec})`);
+    this.queue_exec = this.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
+    if (!fs.existsSync(this.queue_exec)) {
+        throw new Error(`Cannot find qmail-queue binary (${this.queue_exec})`);
     }
 
-    plugin.load_qmail_queue_ini();
+    this.load_qmail_queue_ini();
 
-    if (plugin.cfg.main.enable_outbound) {
-        plugin.register_hook('queue_outbound', 'hook_queue');
+    if (this.cfg.main.enable_outbound) {
+        this.register_hook('queue_outbound', 'hook_queue');
     }
 }
 
@@ -35,9 +34,8 @@ exports.hook_queue = function (next, connection) {
     const plugin = this;
 
     const txn = connection?.transaction;
-    if (!txn) {
-        return next();
-    }
+    if (!txn) return next();
+
     const q_wants = txn.notes.get('queue.wants');
     if (q_wants && q_wants !== 'qmail-queue') return next();
 

@@ -120,17 +120,13 @@ exports.hook_mail = function (next, connection, params) {
     if (plugin.ip_in_list(connection.remote.ip)) { // check connecting IP
 
         plugin.loginfo(connection, 'Connecting IP was whitelisted via config');
-        connection.transaction.results.add(plugin, {
-            skip : 'config-whitelist(ip)'
-        });
+        connection.transaction.results.add(plugin, { skip : 'config-whitelist(ip)' })
 
     }
     else if (plugin.addr_in_list('mail', mail_from.address().toLowerCase())) { // check envelope (email & domain)
 
         plugin.loginfo(connection, 'Envelope was whitelisted via config');
-        connection.transaction.results.add(plugin, {
-            skip : 'config-whitelist(envelope)'
-        });
+        connection.transaction.results.add(plugin, { skip : 'config-whitelist(envelope)' });
 
     }
     else {
@@ -138,13 +134,11 @@ exports.hook_mail = function (next, connection, params) {
 
         if (why_skip) {
             plugin.loginfo(connection, `Requested to skip the GL because skip rule matched: ${why_skip}`);
-            connection.transaction.results.add(plugin, {
-                skip : `requested(${why_skip})`
-            });
+            connection.transaction.results.add(plugin, { skip : `requested(${why_skip})` });
         }
     }
 
-    return next();
+    next();
 }
 
 //
@@ -165,9 +159,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     // check rcpt in whitelist (email & domain)
     if (plugin.addr_in_list('rcpt', rcpt.address().toLowerCase())) {
         plugin.loginfo(connection, 'RCPT was whitelisted via config');
-        ctr.add(plugin, {
-            skip : 'config-whitelist(recipient)'
-        });
+        ctr.add(plugin, { skip : 'config-whitelist(recipient)' });
         return next();
     }
 
@@ -178,63 +170,54 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         }
         if (white_rec) {
             plugin.logdebug(connection, 'host in WHITE zone');
-            ctr.add(plugin, {
-                pass : 'whitelisted'
-            });
-            ctr.push(plugin, {
-                stats : {
-                    rcpt : white_rec
-                },
-                stage : 'rcpt'
-            });
+            ctr.add(plugin, { pass : 'whitelisted' });
+            ctr.push(plugin, { stats : { rcpt : white_rec }, stage : 'rcpt' });
 
             return next();
         }
-        else {
 
-            return plugin.process_tuple(connection, mail_from.address(), rcpt.address(), (err2, white_promo_rec) => {
-                if (err2) {
-                    if (err2 instanceof Error && err2.notanerror) {
-                        plugin.logdebug(connection, 'host in GREY zone');
+        return plugin.process_tuple(connection, mail_from.address(), rcpt.address(), (err2, white_promo_rec) => {
+            if (err2) {
+                if (err2 instanceof Error && err2.notanerror) {
+                    plugin.logdebug(connection, 'host in GREY zone');
 
-                        ctr.add(plugin, {
-                            fail : 'greylisted'
-                        });
-                        ctr.push(plugin, {
-                            stats : {
-                                rcpt : err2.record
-                            },
-                            stage : 'rcpt'
-                        });
-
-                        return plugin.invoke_outcome_cb(next, false);
-                    }
-
-                    throw err2;
-                }
-
-                if (!white_promo_rec) {
                     ctr.add(plugin, {
-                        fail : 'greylisted',
+                        fail : 'greylisted'
+                    });
+                    ctr.push(plugin, {
+                        stats : {
+                            rcpt : err2.record
+                        },
                         stage : 'rcpt'
                     });
+
                     return plugin.invoke_outcome_cb(next, false);
                 }
-                else {
-                    plugin.loginfo(connection, 'host has been promoted to WHITE zone');
-                    ctr.add(plugin, {
-                        pass : 'whitelisted',
-                        stats : white_promo_rec,
-                        stage : 'rcpt'
-                    });
-                    ctr.add(plugin, {
-                        pass : 'whitelisted'
-                    });
-                    return plugin.invoke_outcome_cb(next, true);
-                }
-            });
-        }
-    });
+
+                throw err2;
+            }
+
+            if (!white_promo_rec) {
+                ctr.add(plugin, {
+                    fail : 'greylisted',
+                    stage : 'rcpt'
+                });
+                return plugin.invoke_outcome_cb(next, false);
+            }
+            else {
+                plugin.loginfo(connection, 'host has been promoted to WHITE zone');
+                ctr.add(plugin, {
+                    pass : 'whitelisted',
+                    stats : white_promo_rec,
+                    stage : 'rcpt'
+                });
+                ctr.add(plugin, {
+                    pass : 'whitelisted'
+                });
+                return plugin.invoke_outcome_cb(next, true);
+            }
+        })
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -244,9 +227,7 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
     const plugin = this;
 
     const key = plugin.craft_grey_key(connection, sender, rcpt);
-    if (!key) {
-        return;
-    }
+    if (!key) return;
 
     return plugin.db_lookup(key, (err, record) => {
         if (err) {
@@ -303,14 +284,11 @@ exports.check_and_update_white = function (connection, cb) {
 exports.invoke_outcome_cb = function (next, is_whitelisted) {
     const plugin = this;
 
-    if (is_whitelisted) {
-        return next();
-    }
-    else {
-        const text = plugin.cfg.main.text || '';
+    if (is_whitelisted) return next();
 
-        return next(DENYSOFT, DSN.sec_unauthorized(text, '451'));
-    }
+    const text = plugin.cfg.main.text || '';
+
+    return next(DENYSOFT, DSN.sec_unauthorized(text, '451'));
 }
 
 // Should we skip greylisting invokation altogether?
@@ -318,9 +296,8 @@ exports.should_skip_check = function (connection) {
     const plugin = this;
     const { transaction, relaying, remote } = connection ?? {}
 
-    if (!transaction) {
-        return true;
-    } 
+    if (!transaction) return true;
+
     const ctr = transaction.results;
 
     if (relaying) {
@@ -331,7 +308,7 @@ exports.should_skip_check = function (connection) {
         return true;
     }
 
-    if (remote && remote.is_private) {
+    if (remote?.is_private) {
         connection.logdebug(plugin, `skipping private IP: ${connection.remote.ip}`);
         ctr.add(plugin, {
             skip : 'private-ip'
@@ -405,16 +382,11 @@ exports.craft_white_key = function (connection) {
 exports.craft_hostid = function (connection) {
     const plugin = this;
     const { transaction, remote } = connection ?? {};
-    if (!transaction || !remote) {
-        return null;
-    }
+    if (!transaction || !remote) return null;
 
     if (transaction.notes?.greylist && transaction.notes.greylist.hostid) {
         return transaction.notes.greylist.hostid; // "caching"
     }
-
-    const ip = remote.ip;
-    let rdns = remote.host;
 
     function chsit (value, reason) { // cache the return value
         if (!value)
@@ -422,19 +394,20 @@ exports.craft_hostid = function (connection) {
 
         transaction.results.add(plugin, {
             hostid_type : value ? 'domain' : 'ip',
-            rdns : (value || ip),
+            rdns : (value || remote.ip),
             msg : reason
         }); // !don't move me.
 
-        value = value || ip;
+        value = value || remote.ip;
 
         return ((transaction.notes.greylist = transaction.notes.greylist || {}).hostid = value);
     }
 
-    if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') // no rDNS . FIXME: use fcrdns results
+    // no rDNS . FIXME: use fcrdns results
+    if (!remote.host || [ 'Unknown' | 'DNSERROR' ].includes(remote.host))
         return chsit(null, 'no rDNS info for this host');
 
-    rdns = rdns.replace(/\.$/, ''); // strip ending dot, just in case
+    remote.host = remote.host.replace(/\.$/, ''); // strip ending dot, just in case
 
     const fcrdns = connection.results.get('fcrdns');
     if (!fcrdns) {
@@ -455,22 +428,20 @@ exports.craft_hostid = function (connection) {
         return chsit(null, 'invalid org domain in rDNS');
 
     // strip first label up until the tld boundary.
-    const decoupled = tlds.split_hostname(rdns, 3);
+    const decoupled = tlds.split_hostname(!remote.host, 3);
     const vardom = decoupled[0]; // "variable" portion of domain
     const dom = decoupled[1]; // "static" portion of domain
 
     // we check for special cases where rdns looks custom/static, but really is dynamic
-    const special_case_info = plugin.check_rdns_for_special_cases(rdns, vardom);
-    if (special_case_info) {
-        return chsit(null, special_case_info.why);
-    }
+    const special_case_info = plugin.check_rdns_for_special_cases(!remote.host, vardom);
+    if (special_case_info) return chsit(null, special_case_info.why);
 
     let stripped_dom = dom;
 
     if (vardom) {
 
         // check for decimal IP in rDNS
-        if (vardom.match(String(net_utils.ip_to_long(ip))))
+        if (vardom.match(String(net_utils.ip_to_long(remote.ip))))
             return chsit(null, 'decimal IP');
 
         // craft the +hostid+
