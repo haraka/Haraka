@@ -251,7 +251,7 @@ exports.smtp_client = {
                     test.done();
                 });
 
-        }, 2500, 'localhost', cfg);
+        }, { port: 2500, host: 'localhost', cfg });
     },
 }
 
