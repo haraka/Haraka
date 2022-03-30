@@ -88,42 +88,6 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'mxs4am.josef-froehle.de' (test) {
-        test.expect(1);
-        const t = this;
-        const txn = this.connection.transaction;
-        t.plugin.implicit_mx(t.connection, 'mxs4am.josef-froehle.de', () => {
-            //console.log(arguments);
-            const mf = txn.results.get('mail_from.is_resolvable');
-            //console.log(mf);
-            test.equal(mf.pass.length, 1);
-            test.done();
-        });
-    },
-    'mxs4am-a.josef-froehle.de' (test) {
-        test.expect(1);
-        const t = this;
-        const txn = this.connection.transaction;
-        t.plugin.implicit_mx(t.connection, 'mxs4am-a.josef-froehle.de', () => {
-            //console.log(arguments);
-            const mf = txn.results.get('mail_from.is_resolvable');
-            //console.log(mf);
-            test.equal(mf.pass.length, 1);
-            test.done();
-        });
-    },
-    'mxs4am-aaaa.josef-froehle.de' (test) {
-        test.expect(1);
-        const t = this;
-        const txn = this.connection.transaction;
-        t.plugin.implicit_mx(t.connection, 'mxs4am-aaaa.josef-froehle.de', () => {
-            //console.log(arguments);
-            const mf = txn.results.get('mail_from.is_resolvable');
-            //console.log(mf);
-            test.equal(mf.pass.length, 1);
-            test.done();
-        });
-    },
     'resolve-fail-definitive.josef-froehle.de' (test) {
         test.expect(1);
         const t = this;
