@@ -94,9 +94,7 @@ exports.check_sender = function (next, connection, params) {
     }
 
     const domain = params[0].host.toLowerCase();
-    if (!plugin.cfg[domain]) {
-        return next();
-    }
+    if (!plugin.cfg[domain]) return next();
 
     // domain is defined in smtp_forward.ini
     txn.notes.local_sender = true;
@@ -116,12 +114,9 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     let dom_cfg = plugin.cfg[domain];
     if (dom_cfg === undefined) dom_cfg = {};
 
-    if (!queue_wanted) {
-        queue_wanted = dom_cfg.queue || plugin.cfg.main.queue;
-    }
-    if (!queue_wanted) {
-        return true;
-    }
+    if (!queue_wanted) queue_wanted = dom_cfg.queue || plugin.cfg.main.queue;
+    if (!queue_wanted) return true;
+
 
     let dst_host = dom_cfg.host || plugin.cfg.main.host;
     if (dst_host) {
@@ -139,16 +134,11 @@ exports.set_queue = function (connection, queue_wanted, domain) {
 
     // multiple recipients with same destination
     if (notes.get('queue.wants') === queue_wanted) {
-        if (!dst_host) {
-            return true;
-        }
+        if (!dst_host) return true;
+
         const next_hop = notes.get('queue.next_hop');
-        if (!next_hop) {
-            return true;
-        }
-        if (next_hop === dst_host) {
-            return true;
-        }
+        if (!next_hop) return true;
+        if (next_hop === dst_host) return true;
     }
 
     // multiple recipients with different forward host, soft deny
@@ -158,9 +148,7 @@ exports.set_queue = function (connection, queue_wanted, domain) {
 exports.check_recipient = function (next, connection, params) {
     const plugin = this;
     const txn = connection?.transaction;
-    if (!txn) {
-        return;
-    }
+    if (!txn) return;
 
     const rcpt = params[0];
     if (!rcpt.host) {
@@ -257,18 +245,14 @@ exports.queue_forward = function (next, connection) {
     const txn = connection?.transaction;
 
     const cfg = plugin.get_config(conn);
-    if (!plugin.forward_enabled(conn, cfg)) {
-        return next();
-    }
+    if (!plugin.forward_enabled(conn, cfg)) return next();
 
     smtp_client_mod.get_client_plugin(plugin, conn, cfg, (err, smtp_client) => {
         smtp_client.next = next;
 
         let rcpt = 0;
 
-        if (cfg.auth_user) {
-            plugin.auth(cfg, conn, smtp_client);
-        }
+        if (cfg.auth_user) plugin.auth(cfg, conn, smtp_client);
 
         conn.loginfo(plugin, `forwarding to ${
             cfg.forwarding_host_pool ? 'host_pool' : `${cfg.host}:${cfg.port}`}`
@@ -309,16 +293,13 @@ exports.queue_forward = function (next, connection) {
         }
 
         smtp_client.on('data', () => {
-            if (dead_sender()) {
-                return;
-            }
+            if (dead_sender()) return;
             smtp_client.start_data(txn.message_stream);
         });
 
         smtp_client.on('dot', () => {
-            if (dead_sender() || !txn) {
-                return;
-            }
+            if (dead_sender() || !txn) return;
+
             get_rs().add(plugin, { pass: smtp_client.response });
             if (rcpt < txn.rcpt_to.length) {
                 smtp_client.send_command('RSET');

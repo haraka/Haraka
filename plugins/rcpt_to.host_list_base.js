@@ -32,9 +32,7 @@ exports.load_host_list_regex = function () {
 exports.hook_mail = function (next, connection, params) {
     const plugin = this;
     const txn = connection?.transaction;
-    if (!txn) {
-        return;
-    }
+    if (!txn) return;
 
     const email = params[0].address();
     if (!email) {

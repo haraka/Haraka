@@ -352,46 +352,43 @@ exports.log_results = function (conn, spamd_response) {
         emit: true});
 }
 
-exports.should_skip = function (connection) {
-    const { transaction } = connection ?? {};
-    if (!transaction) {
-        return true;
-    }
+exports.should_skip = function (connection = {}) {
+    const { transaction } = connection;
+    if (!transaction) return true;
 
-    const plugin = this;
     // a message might be skipped for multiple reasons, store each in results
     let result = false;  // default
 
-    const max = plugin.cfg.main.max_size;
+    const max = this.cfg.main.max_size;
     if (max) {
         const size = connection.transaction.data_bytes;
         if (size > max) {
-            connection.transaction.results.add(plugin, { skip: `size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`});
+            connection.transaction.results.add(this, { skip: `size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`});
             result = true;
         }
     }
 
-    if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
-        connection.transaction.results.add(plugin, { skip: 'authed'});
+    if (this.cfg.check.authenticated == false && connection.notes.auth_user) {
+        connection.transaction.results.add(this, { skip: 'authed'});
         result = true;
     }
 
-    if (plugin.cfg.check.relay == false && connection.relaying) {
-        connection.transaction.results.add(plugin, { skip: 'relay'});
+    if (this.cfg.check.relay == false && connection.relaying) {
+        connection.transaction.results.add(this, { skip: 'relay'});
         result = true;
     }
 
-    if (plugin.cfg.check.local_ip == false && connection.remote.is_local) {
-        connection.transaction.results.add(plugin, { skip: 'local_ip'});
+    if (this.cfg.check.local_ip == false && connection.remote.is_local) {
+        connection.transaction.results.add(this, { skip: 'local_ip'});
         result = true;
     }
 
-    if (plugin.cfg.check.private_ip == false && connection.remote.is_private) {
-        if (plugin.cfg.check.local_ip == true && connection.remote.is_local) {
+    if (this.cfg.check.private_ip == false && connection.remote.is_private) {
+        if (this.cfg.check.local_ip == true && connection.remote.is_local) {
             // local IPs are included in private IPs
         }
         else {
-            connection.transaction.results.add(plugin, { skip: 'private_ip'});
+            connection.transaction.results.add(this, { skip: 'private_ip'});
             result = true;
         }
     }
