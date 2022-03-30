@@ -167,6 +167,7 @@ exports.implicit_mx = function (connection, domain, mxDone) {
     if (!txn) return;
 
     net_utils.get_ips_by_host(domain, (err, addresses) => {
+        if (!txn) return;
         if (!addresses || !addresses.length) {
             txn.results.add(plugin, {fail: 'has_fwd_dns'});
             return mxDone(((plugin.cfg.main.reject_no_mx) ? DENY : DENYSOFT),

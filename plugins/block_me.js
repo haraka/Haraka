@@ -13,9 +13,7 @@ exports.hook_data = (next, connection) => {
 }
 
 exports.hook_data_post = function (next, connection) {
-    if (!connection?.relaying || !connection?.transaction) {
-        return next();
-    }
+    if (!connection?.relaying || !connection?.transaction) return next();
 
     const recip = (this.config.get('block_me.recipient') || '').toLowerCase();
     const senders = this.config.get('block_me.senders', 'list');

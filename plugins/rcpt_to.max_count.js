@@ -5,10 +5,10 @@
 // Consider using the karma plugin. It supports limiting the number
 // of recipients based on past behavior (good, bad, unknown)
 
-exports.hook_rcpt = function (next, connection) {
-    const { notes } = connection.transaction ?? {}
+exports.hook_rcpt = function (next, connection = {}) {
+    const { notes } = connection.transaction
 
-    if (notes.rcpt_to_count) {
+    if (notes?.rcpt_to_count) {
         notes.rcpt_to_count++;
     }
     else {

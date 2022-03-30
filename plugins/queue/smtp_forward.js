@@ -119,16 +119,13 @@ exports.set_queue = function (connection, queue_wanted, domain) {
 
 
     let dst_host = dom_cfg.host || plugin.cfg.main.host;
-    if (dst_host) {
-        dst_host = `smtp://${dst_host}`;
-    }
+    if (dst_host) dst_host = `smtp://${dst_host}`;
+
     const notes = connection?.transaction?.notes;
     if (!notes) return false;
     if (!notes.get('queue.wants')) {
         notes.set('queue.wants', queue_wanted);
-        if (dst_host) {
-            notes.set('queue.next_hop', dst_host);
-        }
+        if (dst_host) notes.set('queue.next_hop', dst_host);
         return true;
     }
 
