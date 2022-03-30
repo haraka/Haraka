@@ -32,11 +32,10 @@ exports.register = function () {
     plugin.register_hook('helo', 'init');
     plugin.register_hook('ehlo', 'init');
 
-    for (let i=0; i < checks.length; i++) {
-        const hook = checks[i];
-        if (!plugin.cfg.check[hook]) continue; // disabled in config
-        plugin.register_hook('helo', hook);
-        plugin.register_hook('ehlo', hook);
+    for (const c in checks) {
+        if (!plugin.cfg.check[c]) continue; // disabled in config
+        plugin.register_hook('helo', c);
+        plugin.register_hook('ehlo', c);
     }
 
     // Always emit a log entry
@@ -116,7 +115,7 @@ exports.should_skip = function (connection, test_name) {
     const plugin = this;
 
     const hc = connection.results.get('helo.checks');
-    if (hc && hc.multi && test_name !== 'host_mismatch' && test_name !== 'proto_mismatch') {
+    if (hc?.multi && test_name !== 'host_mismatch' && test_name !== 'proto_mismatch') {
         return true;
     }
 
@@ -340,7 +339,7 @@ exports.big_company = function (next, connection, helo) {
 exports.literal_mismatch = function (next, connection, helo) {
     const plugin = this;
 
-    if (plugin.should_skip(connection, 'literal_mismatch')) { return next(); }
+    if (plugin.should_skip(connection, 'literal_mismatch')) return next();
 
     const literal = net_utils.get_ipany_re('^\\[(?:IPv6:)?','\\]$','').exec(helo);
     if (!literal) {
@@ -377,7 +376,7 @@ exports.literal_mismatch = function (next, connection, helo) {
     if (plugin.cfg.reject.literal_mismatch) {
         return next(DENY, 'HELO IP literal does not match your IP address');
     }
-    return next();
+    next();
 }
 
 exports.forward_dns = function (next, connection, helo) {
