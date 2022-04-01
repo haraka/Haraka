@@ -288,7 +288,7 @@ class SMTPClient extends events.EventEmitter {
 exports.smtp_client = SMTPClient;
 
 // Separate pools are kept for each set of server attributes.
-exports.get_pool = (server, opts = {}) => {  // (server, port, host, cfg) => {
+exports.get_pool = (server, opts = {}) => {
     if (!opts.port) opts.port = 25
     if (!opts.host) opts.host = 'localhost'
     if (opts.cfg === undefined) opts.cfg = {}

@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ windows-latest, windows-2019 ]
+        os: [ windows-2019 ]
         node-version: [ 14.x, 16.x ]
       fail-fast: false
 
