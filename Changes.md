@@ -6,6 +6,12 @@
 - reformat dkim signature to multi-line #2991
 - add lots of `if (!transaction) return` in places #2732
 - use optional chaining when accessing transactions #2732
+- update generic-pool 2.5 -> 3.8 (promises) #3033
+- smtp_client: run "secured" once, fixes  #3020
+- auth_proxy: run "secured" only once, improvement for #3022
+- windows-latest is now windows-2022, which has issues, specify 2019
+- smtp_client: pass args as objects (was positional)
+- add explicit dependency on node-gyp 9
 
 
 ## 2.8.28 - 2021-10-14
