@@ -187,10 +187,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
         // props: selector, domain, & private_key
         if (err) connection.logerror(plugin, `${err.message}`);
 
-        if (!plugin.has_key_data(connection, props)) {
-            connection.logerror(`missing key data for ${props.selector}.${props.domain}`)
-            return next();
-        }
+        if (!plugin.has_key_data(connection, props)) return next();
 
         connection.logdebug(plugin, `domain: ${props.domain}`);
 

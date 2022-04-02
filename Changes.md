@@ -6,6 +6,7 @@
 - reformat dkim signature to multi-line #2991
 - add lots of `if (!transaction) return` in places #2732
 - use optional chaining when accessing transactions #2732
+- dkim_sign: remove spurious error logging #3034
 
 
 ## 2.8.28 - 2021-10-14
