@@ -12,6 +12,7 @@
 - windows-latest is now windows-2022, which has issues, specify 2019
 - smtp_client: pass args as objects (was positional)
 - add explicit dependency on node-gyp 9
+- dkim_sign: remove spurious error logging #3034
 
 
 ## 2.8.28 - 2021-10-14
