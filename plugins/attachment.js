@@ -93,28 +93,130 @@ function options_to_array (options) {
     return (arr.length ? arr : false);
 }
 
-exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
+exports.unarchive_recursive = async function (connection, f, archive_file_name, cb) {
     if (archives_disabled) {
         connection.logdebug(this, 'archive support disabled');
         return cb();
     }
 
     const plugin = this;
-    const files = [];
     const tmpfiles = [];
-    const depth_exceeded = false;
-    let count = 0;
-    let done_cb = false;
-    let timer;
 
-    function do_cb (err, files2) {
-        if (timer) clearTimeout(timer);
-        if (done_cb) return;
+    let timeouted = false;
+    let encrypted = false;
+    let depthExceeded = false;
 
-        done_cb = true;
-        deleteTempFiles();
-        return cb(err, files2);
+    function timeoutedSpawn (cmd_path, args, env, pipe_stdout_ws) {
+        connection.logdebug(plugin, `running "${cmd_path} ${args.join(' ')}"`);
+
+        return new Promise(function (resolve, reject) {
+
+            let output = '';
+            const p = spawn(cmd_path, args, env);
+
+            // Start timer
+            let timeout = false;
+            const timer = setTimeout(() => {
+                timeout = timeouted = true;
+                p.kill();
+
+                reject(`command "${cmd_path} ${args}" timed out`);
+            },  plugin.cfg.timeout);
+
+
+            if (pipe_stdout_ws) {
+                p.stdout.pipe(pipe_stdout_ws);
+            } else {
+                p.stdout.on('data', (data) => output += data);
+            }
+
+            p.stderr.on('data', (data) => {
+
+                if (data.includes('Incorrect passphrase')) {
+                    encrypted = true;
+                }
+
+                // it seems that stderr might be sometimes filled after exit so we rather print it out than wait for result
+                connection.logdebug(plugin, `"${cmd_path} ${args.join(' ')}": ${data}`);
+            });
+
+            p.on('exit', (code, signal) => {
+                if (timeout) return;
+                clearTimeout(timer);
+
+                if (code && code > 0) {
+                    // Error was returned
+                    return reject(`"${cmd_path} ${args.join(' ')}" returned error code: ${code}}`);
+                }
+
+
+                if (signal) {
+                    // Process terminated due to signal
+                    return reject(`"${cmd_path} ${args.join(' ')}" terminated by signal: ${signal}`);
+                }
+
+                return resolve(output);
+            });
+        });
     }
+
+    function createTmp () {
+        // might be better to use async version of tmp in future not cb based
+        return new Promise((resolve, reject) => {
+            tmp.file((err, tmpfile, fd) => {
+                if (err) reject(err);
+
+                const t = {};
+                t.name = tmpfile;
+                t.fd = fd;
+
+                resolve(t);
+            });
+        });
+    }
+
+    async function unpackArchive (in_file, file) {
+
+        const t = await createTmp();
+        tmpfiles.push([t.fd, t.name]);
+
+        connection.logdebug(plugin, `created tmp file: ${t.name} (fd=${t.fd}) for file ${file}`);
+
+        const tws = fs.createWriteStream(t.name);
+        try {
+            // bsdtar seems to be asking for password if archive is encrypted workaround with --passphrase will end up
+            // with "Incorrect passphrase" for encrypted archives, but will be ignored with nonencrypted
+            await timeoutedSpawn(bsdtar_path,
+                ['-Oxf', in_file, `--include=${file}`, '--passphrase', 'deliberately_invalid'],
+                {
+                    'cwd': '/tmp',
+                    'env': {
+                        'LANG': 'C'
+                    },
+                },
+                tws
+            );
+        } catch (e) {
+            connection.logdebug(plugin, e);
+        }
+        return t;
+    }
+
+    async function listArchive (in_file) {
+        try {
+            const lines = await timeoutedSpawn(bsdtar_path, ['-tf', in_file, '--passphrase', 'deliberately_invalid'], {
+                'cwd': '/tmp',
+                'env': {'LANG': 'C'},
+            });
+
+            // Extract non-empty filenames
+            return lines.split(/\r?\n/).filter(fl => fl);
+        } catch (e) {
+            connection.logdebug(plugin, e);
+            return [];
+        }
+    }
+
 
     function deleteTempFiles () {
         tmpfiles.forEach(t => {
@@ -127,130 +229,75 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
         });
     }
 
-    function listFiles (in_file, prefix, depth) {
-        if (!depth) depth = 0;
-        if (depth >= plugin.archive_max_depth || depth_exceeded) {
-            if (count === 0) {
-                return do_cb(new Error('maximum archive depth exceeded'));
-            }
-            return;
-        }
-        count++;
-        const bsdtar = spawn(bsdtar_path, [ '-tf', in_file ], {
-            'cwd': '/tmp',
-            'env': { 'LANG': 'C' },
-        });
-
-        // Start timer
-        let t1_timeout = false;
-        const t1_timer = setTimeout(() => {
-            t1_timeout = true;
-            bsdtar.kill();
-            return do_cb(new Error('bsdtar timed out'));
-        }, plugin.cfg.timeout);
-
-        let lines = '';
-        bsdtar.stdout.on('data', (data) => {
-            lines += data;
-        });
-
-        let stderr = '';
-        bsdtar.stderr.on('data', (data) => {
-            stderr += data;
-        });
-
-        bsdtar.on('exit', (code, signal) => {
-            count--;
-            if (t1_timeout) return;
-            clearTimeout(t1_timer);
-            if (code && code > 0) {
-                // Error was returned
-                return do_cb(new Error(`bsdtar returned error code: ${code} error=${stderr.replace(/\r?\n/,' ')}`));
-            }
-            if (signal) {
-                // Process terminated due to signal
-                return do_cb(new Error(`bsdtar terminated by signal: ${signal}`));
-            }
-            // Process filenames
-            const fl = lines.split(/\r?\n/);
-            for (let i=0; i<fl.length; i++) {
-                const file = fl[i];
-                // Skip any blank lines
-                if (!file) continue;
-                connection.logdebug(plugin, `file: ${file} depth=${depth}`);
-                files.push((prefix ? `${prefix}/` : '') + file);
-                const extn = path.extname(file.toLowerCase());
-                if (!plugin.archive_exts.includes(extn) &&
-                    !plugin.archive_exts.includes(extn.substring(1))) {
-                    // Not an archive file extension
-                    continue;
-                }
-                connection.logdebug(plugin, `need to extract file: ${file}`);
-                count++;
-                depth++;
-                ((file, depth) => {
-                    tmp.file((err, tmpfile, fd) => {
-                        count--;
-                        if (err) return do_cb(err.message);
-                        connection.logdebug(plugin, `created tmp file: ${tmpfile} (fd=${fd}) for file ${prefix ? `${prefix}/` : ''} ${file}`);
-                        tmpfiles.push([fd, tmpfile]);
-                        // Extract this file from the archive
-                        count++;
-                        const cmd = spawn(bsdtar_path,
-                            [ '-Oxf', in_file, `--include=${file}` ],
-                            {
-                                'cwd': '/tmp',
-                                'env': {
-                                    'LANG': 'C'
-                                },
-                            }
-                        );
-                        // Start timer
-                        let t2_timeout = false;
-                        const t2_timer = setTimeout(() => {
-                            t2_timeout = true;
-                            return do_cb(new Error(`bsdtar timed out extracting file ${file}`));
-                        }, plugin.cfg.timeout);
-
-                        // Create WriteStream for this file
-                        const tws = fs.createWriteStream(tmpfile, { fd });
-                        err = "";
-
-                        cmd.stderr.on('data', (data) => {
-                            err += data;
-                        });
-
-                        cmd.on('exit', (code, signal) => {
-                            count--;
-                            if (t2_timeout) return;
-                            clearTimeout(t2_timer);
-                            if (code && code > 0) {
-                                // Error was returned
-                                return do_cb(new Error(`bsdtar returned error code: ${code} error=${err.replace(/\r?\n/,' ')}`));
-                            }
-                            if (signal) {
-                                // Process terminated due to signal
-                                return do_cb(new Error(`bsdtar terminated by signal: ${signal}`));
-                            }
-                            // Recurse
-                            return listFiles(tmpfile, (prefix ? `${prefix}/` : '') + file, depth);
-                        });
-                        cmd.stdout.pipe(tws);
-                    });
-                })(file, depth);
-            }
-            connection.loginfo(plugin, `finish: count=${count} depth=${depth}`);
-            if (count === 0) {
-                return do_cb(null, files);
-            }
-        });
+    function isArchive (file) {
+        const extn = path.extname(file.toLowerCase());
+        return plugin.archive_exts.includes(extn) || plugin.archive_exts.includes(extn.substring(1));
     }
 
-    timer = setTimeout(() => {
-        return do_cb(new Error('timeout unpacking attachments'));
+    async function processFile (in_file, prefix, file, depth) {
+        let result = [(prefix ? `${prefix}/` : '') + file];
+
+        connection.logdebug(plugin, `found file: ${prefix ? `${prefix}/` : ''}${file} depth=${depth}`);
+
+        if (!isArchive(file)) {
+            return result;
+        }
+
+        connection.logdebug(plugin, `need to extract file: ${prefix ? `${prefix}/` : ''}${file}`);
+
+        const t = await unpackArchive(in_file, file);
+
+        // Recurse
+        try {
+            result = result.concat(await listFiles(t.name, (prefix ? `${prefix}/` : '') + file, depth + 1));
+        } catch (e) {
+            connection.logdebug(plugin, e);
+        }
+
+        return result;
+    }
+
+    async function listFiles (in_file, prefix, depth) {
+        const result = [];
+        depth = depth || 0;
+
+        if (timeouted) {
+            connection.logdebug(plugin, `already timeouted, not going to process ${prefix ? `${prefix}/` : ''}${in_file}`);
+            return result;
+        }
+
+        if (depth >= plugin.archive_max_depth) {
+            depthExceeded = true;
+            connection.logdebug(plugin, `hit maximum depth with ${prefix ? `${prefix}/` : ''}${in_file}`);
+            return result;
+        }
+
+        const fls = await listArchive(in_file);
+        await Promise.all(fls.map(async (file) => {
+            const output = await processFile(in_file, prefix, file, depth + 1);
+            result.push(...output);
+        }));
+
+        connection.loginfo(plugin, `finish (${prefix ? `${prefix}/` : ''}${in_file}): count=${result.length} depth=${depth}`);
+        return result;
+    }
+
+    setTimeout(() => {
+        timeouted = true;
     }, plugin.cfg.timeout);
 
-    listFiles(f, archive_file_name);
+    const files = await listFiles(f, archive_file_name);
+    deleteTempFiles();
+
+    if (timeouted) {
+        cb(new Error("archive extraction timeouted"), files);
+    } else if (depthExceeded) {
+        cb(new Error("maximum archive depth exceeded"), files);
+    } else if (encrypted) {
+        cb(new Error("archive encrypted"), files);
+    } else {
+        cb(null, files);
+    }
 }
 
 exports.start_attachment = function (connection, ctype, filename, body, stream) {
@@ -310,7 +357,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     // See if filename extension matches archive extension list
     // We check with the dot prefixed and without
     if (archives_disabled || (!plugin.archive_exts.includes(fileext) &&
-            !plugin.archive_exts.includes(fileext.substring(1)))) {
+        !plugin.archive_exts.includes(fileext.substring(1)))) {
         return;
     }
     connection.logdebug(plugin, `found ${fileext} on archive list`);
@@ -374,9 +421,8 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
                         }
                     }
                 }
-                else {
-                    txn.notes.attachment_archive_files = txn.notes.attachment_archive_files.concat(files);
-                }
+
+                txn.notes.attachment_archive_files = txn.notes.attachment_archive_files.concat(files);
                 connection.resume();
                 return next();
             });
@@ -498,7 +544,6 @@ exports.check_items_against_regexps = function (items, regexps) {
 
 exports.wait_for_attachment_hooks = (next, connection) => {
     if (connection?.transaction?.notes?.attachment_count > 0) {
-        // this.loginfo("We still have attachment hooks running");
         connection.transaction.notes.attachment_next = next;
     }
     else {
