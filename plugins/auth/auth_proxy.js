@@ -131,6 +131,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     cert = self.config.get(self.tls_cfg.main.cert || 'tls_cert.pem', 'binary');
                     if (key && cert) {
                         this.on('secure', () => {
+                            if (secure) return;
                             secure = true;
                             socket.send_command('EHLO', connection.local.host);
                         });
