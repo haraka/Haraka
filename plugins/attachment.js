@@ -68,7 +68,7 @@ exports.hook_init_master = exports.hook_init_child = function (next) {
 
     if (os.platform() === "win32") {
         plugin.logdebug(`Windows! Assuming bsdtar at path as "tar"`);
-        bsdtar_path = `tar`;
+        bsdtar_path = 'C:\\Windows\\System32\\tar.exe';
         return next();
     }
     else {
@@ -76,7 +76,8 @@ exports.hook_init_master = exports.hook_init_child = function (next) {
             if (err) {
                 archives_disabled = true;
                 plugin.logwarn(`This plugin requires the 'bsdtar' binary to extract filenames from archive files`);
-            } else {
+            }
+            else {
                 plugin.logdebug(`found bsdtar in ${dir}`);
                 bsdtar_path = `${dir}/bsdtar`;
             }
