@@ -48,7 +48,7 @@ exports.find_bsdtar_path = cb => {
     ['/bin', '/usr/bin', '/usr/local/bin'].forEach((dir) => {
         if (found) return;
         i++;
-        fs.stat(`${dir}/bsdtar`, (err, stats) => {
+        fs.stat(`${dir}/bsdtar`, (err) => {
             i--;
             if (found) return;
             if (err) {
@@ -126,7 +126,8 @@ exports.unarchive_recursive = async function (connection, f, archive_file_name, 
 
             if (pipe_stdout_ws) {
                 p.stdout.pipe(pipe_stdout_ws);
-            } else {
+            }
+            else {
                 p.stdout.on('data', (data) => output += data);
             }
 
@@ -196,7 +197,8 @@ exports.unarchive_recursive = async function (connection, f, archive_file_name, 
                 },
                 tws
             );
-        } catch (e) {
+        }
+        catch (e) {
             connection.logdebug(plugin, e);
         }
         return t;
@@ -211,7 +213,8 @@ exports.unarchive_recursive = async function (connection, f, archive_file_name, 
 
             // Extract non-empty filenames
             return lines.split(/\r?\n/).filter(fl => fl);
-        } catch (e) {
+        }
+        catch (e) {
             connection.logdebug(plugin, e);
             return [];
         }
@@ -250,7 +253,8 @@ exports.unarchive_recursive = async function (connection, f, archive_file_name, 
         // Recurse
         try {
             result = result.concat(await listFiles(t.name, (prefix ? `${prefix}/` : '') + file, depth + 1));
-        } catch (e) {
+        }
+        catch (e) {
             connection.logdebug(plugin, e);
         }
 
@@ -291,11 +295,14 @@ exports.unarchive_recursive = async function (connection, f, archive_file_name, 
 
     if (timeouted) {
         cb(new Error("archive extraction timeouted"), files);
-    } else if (depthExceeded) {
+    }
+    else if (depthExceeded) {
         cb(new Error("maximum archive depth exceeded"), files);
-    } else if (encrypted) {
+    }
+    else if (encrypted) {
         cb(new Error("archive encrypted"), files);
-    } else {
+    }
+    else {
         cb(null, files);
     }
 }
@@ -305,11 +312,9 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     const txn = connection?.transaction;
 
     function next () {
-
         if (txn?.notes?.attachment_next && txn.notes.attachment_count === 0) {
             return txn.notes.attachment_next();
         }
-        return;
     }
 
     // Parse Content-Type
