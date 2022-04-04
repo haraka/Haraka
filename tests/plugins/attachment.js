@@ -22,22 +22,23 @@ function _set_up (done) {
 
     // we need find bsdtar
     this.plugin.register();
-
-    // we need find bsdtar
     this.plugin.hook_init_master(done);
 }
 
 exports.unarchive = {
     setUp : _set_up,
     '3layers' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/3layer.zip`, '3layer.zip', (e, files) => {
             test.expect(2);
             test.equals(e, null);
             test.equals(files.length, 3);
+
             test.done();
         });
     },
     'empty.gz' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/empty.gz`, 'empty.gz', (e, files) => {
             test.expect(2);
             test.equals(e, null);
@@ -46,6 +47,7 @@ exports.unarchive = {
         });
     },
     'encrypt.zip' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/encrypt.zip`, 'encrypt.zip', (e, files) => {
             // we see files list in encrypted zip, but we can't extract so no error here
             test.expect(2);
@@ -55,6 +57,7 @@ exports.unarchive = {
         });
     },
     'encrypt-recursive.zip' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/encrypt-recursive.zip`, 'encrypt-recursive.zip', (e, files) => {
             // we can't extract encrypted file in encrypted zip so error here
             test.expect(2);
@@ -64,6 +67,8 @@ exports.unarchive = {
         });
     },
     'gz-in-zip.zip' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
+
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/gz-in-zip.zip`, 'gz-in-zip.zip', (e, files) => {
             // gz is not listable in bsdtar
             test.expect(2);
@@ -73,6 +78,7 @@ exports.unarchive = {
         });
     },
     'invalid.zip' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/invalid.zip`, 'invalid.zip', (e, files) => {
             // invalid zip is assumed to be just file, so error of bsdtar is ignored
             test.expect(2);
@@ -82,6 +88,7 @@ exports.unarchive = {
         });
     },
     'invalid-in-valid.zip' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/invalid-in-valid.zip`, 'invalid-in-valid.zip', (e, files) => {
             test.expect(2);
             test.equals(e, null);
@@ -90,6 +97,7 @@ exports.unarchive = {
         });
     },
     'password.zip' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/password.zip`, 'password.zip', (e, files) => {
             // we see files list in encrypted zip, but we can't extract so no error here
             test.expect(2);
@@ -99,6 +107,7 @@ exports.unarchive = {
         });
     },
     'valid.zip' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/valid.zip`, 'valid.zip', (e, files) => {
             test.expect(2);
             test.equals(e, null);
@@ -107,6 +116,7 @@ exports.unarchive = {
         });
     },
     'timeout' (test) {
+        if (!this.plugin.bsdtar_path) return test.done();
         this.plugin.cfg.timeout = 0;
         this.plugin.unarchive_recursive(this.connection, `${this.directory}/encrypt-recursive.zip`, 'encrypt-recursive.zip', (e, files) => {
             test.expect(2);

@@ -7,7 +7,6 @@ const { spawn } = require('child_process');
 const path = require('path');
 const crypto = require('crypto');
 const utils = require('haraka-utils');
-const os = require('os');
 
 let tmp;
 let bsdtar_path;
@@ -66,24 +65,17 @@ exports.find_bsdtar_path = cb => {
 exports.hook_init_master = exports.hook_init_child = function (next) {
     const plugin = this;
 
-    if (os.platform() === "win32") {
-        plugin.logdebug(`Windows! Assuming bsdtar at path as "tar"`);
-        bsdtar_path = 'C:\\Windows\\System32\\tar.exe';
+    plugin.find_bsdtar_path((err, dir) => {
+        if (err) {
+            archives_disabled = true;
+            plugin.logwarn(`This plugin requires the 'bsdtar' binary to extract filenames from archive files`);
+        }
+        else {
+            plugin.logdebug(`found bsdtar in ${dir}`);
+            bsdtar_path = `${dir}/bsdtar`;
+        }
         return next();
-    }
-    else {
-        plugin.find_bsdtar_path((err, dir) => {
-            if (err) {
-                archives_disabled = true;
-                plugin.logwarn(`This plugin requires the 'bsdtar' binary to extract filenames from archive files`);
-            }
-            else {
-                plugin.logdebug(`found bsdtar in ${dir}`);
-                bsdtar_path = `${dir}/bsdtar`;
-            }
-            return next();
-        });
-    }
+    });
 }
 
 function options_to_array (options) {
