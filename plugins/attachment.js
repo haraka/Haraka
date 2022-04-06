@@ -72,7 +72,7 @@ exports.hook_init_master = exports.hook_init_child = function (next) {
         }
         else {
             plugin.logdebug(`found bsdtar in ${dir}`);
-            bsdtar_path = `${dir}/bsdtar`;
+            plugin.bsdtar_path = bsdtar_path = `${dir}/bsdtar`;
         }
         return next();
     });
