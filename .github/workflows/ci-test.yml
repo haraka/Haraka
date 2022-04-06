@@ -36,6 +36,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Install bsdtar
+      run: sudo apt-get install -y libarchive-tools
+
     - name: Install
       run: npm install
 

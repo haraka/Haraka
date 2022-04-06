@@ -3,6 +3,7 @@
 
 ### Changes
 
+- fix attachment.js error handling with complex archive #3035
 - reformat dkim signature to multi-line #2991
 - add lots of `if (!transaction) return` in places #2732
 - use optional chaining when accessing transactions #2732
