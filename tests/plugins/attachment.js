@@ -15,7 +15,7 @@ function _set_up (done) {
     this.connection = Connection.createConnection();
     this.connection.init_transaction();
 
-    this.connection.logdebug = function (where, message) { console.log(message); };
+    this.connection.logdebug = function (where, message) { if (process.env.DEBUG) console.log(message); };
     this.connection.loginfo = function (where, message) { console.log(message); };
 
     this.directory = path.resolve(__dirname, '../attachment');
