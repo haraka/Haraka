@@ -105,19 +105,11 @@ exports.init = function (next, connection, helo) {
         return next();
     }
 
-    // we've been here before
-    connection.results.add(plugin, {multi: true});
-
-    return next();
+    next();
 }
 
 exports.should_skip = function (connection, test_name) {
     const plugin = this;
-
-    const hc = connection.results.get('helo.checks');
-    if (hc?.multi && test_name !== 'host_mismatch' && test_name !== 'proto_mismatch') {
-        return true;
-    }
 
     if (plugin.cfg.skip.relaying && connection.relaying) {
         connection.results.add(plugin, {skip: `${test_name}(relay)`});
