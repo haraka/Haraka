@@ -244,7 +244,7 @@ exports.queue_forward = function (next, connection) {
     const cfg = plugin.get_config(conn);
     if (!plugin.forward_enabled(conn, cfg)) return next();
 
-    smtp_client_mod.get_client_plugin(plugin, connection, cfg, (smtp_client) => {
+    smtp_client_mod.get_client_plugin(plugin, connection, cfg, (err, smtp_client) => {
         smtp_client.next = next;
 
         let rcpt = 0;
