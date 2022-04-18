@@ -33,7 +33,4 @@ jobs:
 
     - run: npm install
 
-#npm config set msvs_version 20xx
-#npm config set msbuild_path "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
-
     - run: npm run test
