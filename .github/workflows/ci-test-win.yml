@@ -1,4 +1,4 @@
-name: Haraka Tests - Windows
+name: Windows Tests
 
 on: [ push, pull_request ]
 
@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-2019 ]
-        node-version: [ 14.x ]
+        node-version: [ 14, 16 ]
       fail-fast: false
 
     steps:
@@ -27,12 +27,10 @@ jobs:
         fetch-depth: 1
 
     - uses: actions/setup-node@v3
-      name: Use Node.js ${{ matrix.node-version }}
+      name: Use Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Install
-      run: npm install
+    - run: npm install
 
-    - name: Test
-      run: npm run test
+    - run: npm run test
