@@ -1,19 +1,20 @@
-name: Haraka Lint
+name: Lint
 
 on: [ push, pull_request ]
 
+env:
+  CI: true
+
 jobs:
-
   lint:
-
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [ 14.x ]
+        node-version: [ 14 ]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       name: Checkout Haraka
       with:
         fetch-depth: 1
@@ -23,11 +24,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: npm install
-      run: npm install
+    - run: npm install
 
-    - name: Lint using eslint
-      run: npm run lint
+    - run: npm run lint
 
-      env:
-        CI: true
