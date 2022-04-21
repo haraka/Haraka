@@ -262,7 +262,7 @@ exports.load_pid_queue = pid => {
 }
 
 exports.ensure_queue_dir = () => {
-    // No reason not to do this stuff asyncronously -
+    // No reason to do this asynchronously
     // this code is only run at start-up.
     if (fs.existsSync(queue_dir)) return;
 
