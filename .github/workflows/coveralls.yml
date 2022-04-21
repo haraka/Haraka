@@ -2,6 +2,9 @@ on: [ pull_request ]
 
 name: Test Coverage
 
+env:
+  node_version: 14
+
 jobs:
 
   coverage:
@@ -10,15 +13,15 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
       name: Checkout Haraka
       with:
         fetch-depth: 1
 
-    - name: Use Node.js 14
-      uses: actions/setup-node@master
+    - name: Use Node.js ${{ env.node_version }}
+      uses: actions/setup-node@v3
       with:
-        node-version: 14
+        node-version: ${{ env.node_version }}
 
     - name: install
       run: |

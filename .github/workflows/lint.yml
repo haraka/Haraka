@@ -4,6 +4,7 @@ on: [ push, pull_request ]
 
 env:
   CI: true
+  node_version: 14
 
 jobs:
   lint:
@@ -19,10 +20,10 @@ jobs:
       with:
         fetch-depth: 1
 
-    - uses: actions/setup-node@master
-      name: Use Node.js ${{ matrix.node-version }}
+    - uses: actions/setup-node@v3
+      name: Use Node.js ${{ env.node_version }}
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ env.node_version }}
 
     - run: npm install
 
