@@ -53,7 +53,6 @@ class MessageStream extends Stream {
         const self = this;
 
         if (typeof line === 'string') {
-            console.log("its a string!!! " + line);
             line = Buffer.from(line);
         }
 
@@ -62,7 +61,6 @@ class MessageStream extends Stream {
             this.write_ce = new ChunkEmitter();
             this.write_ce.on('data', chunk => {
                 self._write(chunk);
-                console.log("chunk> " + chunk.toString().slice(-30,-1));
             });
         }
 
@@ -124,7 +122,6 @@ class MessageStream extends Stream {
             this.buffered += data.length;
             this.total_buffered += data.length;
             this._queue.push(data);
-            console.log("_write() > " + data.toString().slice(0,10) + "...." + data.toString().slice(-50,-1))
         }
         // Stats
         if (this.buffered > this.max_data_inflight) {
@@ -224,13 +221,10 @@ class MessageStream extends Stream {
         if (this.headers.length && !this.headers_done) {
             this.headers_done = true;
             for (let i=0; i<this.headers.length; i++) {
-                //console.log("_read headers>: " + this.headers[i].replace(/\r?\n/g,this.line_endings));
-                //this.read_ce.fill(this.headers[i].replace(/\r?\n/g,this.line_endings));
+                this.read_ce.fill(this.headers[i].replace(/\r?\n/g,this.line_endings));
             }
-            console.log("header info: " + this.headers_done + ", length: " + this.headers.length);
-
             // Add end of headers marker
-            //this.read_ce.fill(this.line_endings);
+            this.read_ce.fill(this.line_endings);
             // Loop
             setImmediate(() => {
                 if (self.readable && !self.paused) self._read();
@@ -244,7 +238,6 @@ class MessageStream extends Stream {
                 // TODO: implement start/end offsets
                 for (let i=0; i<this._queue.length; i++) {
                     this.process_buf(this._queue[i].slice(0));
-                    console.log("_read() > " + this._queue[i].toString().slice(0,10) + "...." + this._queue[i].toString().slice(-20,-1))
                 }
                 this._read_finish();
             }
@@ -266,26 +259,21 @@ class MessageStream extends Stream {
     }
 
     process_buf (buf) {
-        console.log("buf len:> " + buf.length);
         let offset = 0;
         while ((offset = utils.indexOfLF(buf)) !== -1) {
             let line = buf.slice(0, offset+1);
-            console.log("buffer> " + line);
             buf = buf.slice(line.length);
             // Don't output headers if they where sent already
-            //if (this.headers_done && !this.headers_found_eoh) 
-            {
+            if (this.headers_done && !this.headers_found_eoh) {
                 // Allow \r\n or \n here...
                 if (
                     (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
                     (line.length === 1 && line[0] === 0x0a)
                 ) {
                     this.headers_found_eoh = true;
-                    console.log("headers done>");
                 }
-                //continue;
+                continue;
             }
-            //console.log("working on body>");
             // Remove dot-stuffing if required
             if (!this.dot_stuffing && line.length >= 4 &&
                 line[0] === 0x2e && line[1] === 0x2e
@@ -302,14 +290,11 @@ class MessageStream extends Stream {
                 line = line.slice(0, line.length-1);
             }
             this.read_ce.fill(line);
-            //console.log("line...>" + line);
         }
         // Check for data left in the buffer
-        if (buf.length > 0 /*&& this.headers_found_eoh*/) {
-            console.log("filling remaining - " + buf.length);
+        if (buf.length > 0) {
             this.read_ce.fill(buf);
-        }else
-        console.log("skipping as headers done! - " + buf.length);
+        }
     }
 
     _read_finish () {
