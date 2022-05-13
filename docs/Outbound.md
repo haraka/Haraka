@@ -95,6 +95,13 @@ Set this to `0` to completely disable the pooling code.
 This value determines how many concurrent connections can be made to a single
 IP address (destination) in the pool. Default: 10 connections.
 
+* `pool_waiting_queue_max`
+
+Set this to `0` to disable queue length restrictions.
+
+This value determines max amount of connections waited to be processed in pool
+of connections to single IP address (destination). Default: 20 connections.
+
 * `local_mx_ok`
 
 Default: false. By default, outbound to a local IP is disabled, to avoid creating 
