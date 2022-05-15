@@ -16,8 +16,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ windows-latest ]
-        node-version: [ 14 ]
+        os: [ windows-2019, windows-latest ]
+        node-version: [ 14, 16 ]
       fail-fast: false
 
     steps:
@@ -33,8 +33,8 @@ jobs:
 
     - run: npm install -g npm
 
-    - name: Install node-gyp (temp workaround)
-      run: npx node-gyp install
+    #- name: Install node-gyp (temp workaround)
+    #  run: npx node-gyp install
 
     - run: npm install
 
