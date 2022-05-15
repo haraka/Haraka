@@ -32,7 +32,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: Install node-gyp (temp workaround)
-      run: npm install -g node-gyp
+      run: npx node-gyp install
 
     - run: npm install
 
