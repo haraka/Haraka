@@ -31,10 +31,10 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - run: npm install -g npm
+    #- run: npm install -g npm
 
-    #- name: Install node-gyp (temp workaround)
-    #  run: npx node-gyp install
+    - name: Install node-gyp (temp workaround)
+      run: npx node-gyp@9.0.0 install
 
     - run: npm install
 
