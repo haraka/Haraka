@@ -35,6 +35,7 @@ jobs:
     # The default node-gyp installed with Node 14 doesn't recognize VS 2022
     # Remove this when Node 14 support is dropped (2023-04-30)
     - name: Update npm
+      if: matrix.node-version == 14
       run: npm install -g npm
 
     # To address a node-gyp install issues in Windows starting in Node 16
