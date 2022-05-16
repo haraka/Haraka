@@ -82,9 +82,10 @@ exports.is_outbound_enabled = function (dom_cfg) {
 };
 
 exports.check_sender = function (next, connection, params) {
+    const txn = connection?.transaction;
+    if (!txn) return;
+
     const plugin = this;
-    if (!connection.transaction) return;
-    const txn = connection.transaction;
 
     const email = params[0].address();
     if (!email) {
@@ -116,21 +117,22 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     if (!queue_wanted) queue_wanted = dom_cfg.queue || plugin.cfg.main.queue;
     if (!queue_wanted) return true;
 
+
     let dst_host = dom_cfg.host || plugin.cfg.main.host;
     if (dst_host) dst_host = `smtp://${dst_host}`;
 
-    const notes = connection.transaction.notes;
+    const notes = connection?.transaction?.notes;
+    if (!notes) return false;
     if (!notes.get('queue.wants')) {
         notes.set('queue.wants', queue_wanted);
-        if (dst_host) {
-            notes.set('queue.next_hop', dst_host);
-        }
+        if (dst_host) notes.set('queue.next_hop', dst_host);
         return true;
     }
 
     // multiple recipients with same destination
     if (notes.get('queue.wants') === queue_wanted) {
         if (!dst_host) return true;
+
         const next_hop = notes.get('queue.next_hop');
         if (!next_hop) return true;
         if (next_hop === dst_host) return true;
@@ -142,7 +144,7 @@ exports.set_queue = function (connection, queue_wanted, domain) {
 
 exports.check_recipient = function (next, connection, params) {
     const plugin = this;
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
     if (!txn) return;
 
     const rcpt = params[0];
@@ -237,12 +239,12 @@ exports.forward_enabled = function (conn, dom_cfg) {
 exports.queue_forward = function (next, connection) {
     const plugin = this;
     const conn = connection;
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
 
     const cfg = plugin.get_config(conn);
     if (!plugin.forward_enabled(conn, cfg)) return next();
 
-    smtp_client_mod.get_client_plugin(plugin, conn, cfg, (err, smtp_client) => {
+    smtp_client_mod.get_client_plugin(plugin, connection, cfg, (err, smtp_client) => {
         smtp_client.next = next;
 
         let rcpt = 0;
@@ -254,7 +256,7 @@ exports.queue_forward = function (next, connection) {
         );
 
         function get_rs () {
-            if (connection.transaction) return txn.results;
+            if (txn) return txn.results;
             return conn.results;
         }
 
@@ -267,7 +269,7 @@ exports.queue_forward = function (next, connection) {
         }
 
         function send_rcpt () {
-            if (dead_sender()) return;
+            if (dead_sender() || !txn) return;
             if (rcpt === txn.rcpt_to.length) {
                 smtp_client.send_command('DATA');
                 return;
@@ -293,7 +295,8 @@ exports.queue_forward = function (next, connection) {
         });
 
         smtp_client.on('dot', () => {
-            if (dead_sender()) return;
+            if (dead_sender() || !txn) return;
+
             get_rs().add(plugin, { pass: smtp_client.response });
             if (rcpt < txn.rcpt_to.length) {
                 smtp_client.send_command('RSET');
@@ -304,12 +307,12 @@ exports.queue_forward = function (next, connection) {
         });
 
         smtp_client.on('rset', () => {
-            if (dead_sender()) return;
+            if (dead_sender() || !txn) return;
             smtp_client.send_command('MAIL', `FROM:${txn.mail_from}`);
         });
 
         smtp_client.on('bad_code', (code, msg) => {
-            if (dead_sender()) return;
+            if (dead_sender() || !txn) return;
             smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
                 msg);
             smtp_client.release();

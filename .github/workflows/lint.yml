@@ -1,33 +1,27 @@
-name: Haraka Lint
+name: Lint
 
 on: [ push, pull_request ]
 
+env:
+  CI: true
+  node_version: 16
+
 jobs:
-
   lint:
-
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [ 12.x ]
-
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       name: Checkout Haraka
       with:
         fetch-depth: 1
 
-    - uses: actions/setup-node@v1
-      name: Use Node.js ${{ matrix.node-version }}
+    - uses: actions/setup-node@v3
+      name: Use Node.js ${{ env.node_version }}
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ env.node_version }}
 
-    - name: npm install
-      run: npm install
+    - run: npm install
 
-    - name: Lint using eslint
-      run: npm run lint
+    - run: npm run lint
 
-      env:
-        CI: true

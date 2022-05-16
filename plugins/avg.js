@@ -35,9 +35,9 @@ exports.get_tmp_file = function (transaction) {
 }
 
 exports.hook_data_post = function (next, connection) {
-    const plugin = this;
-    if (!connection.transaction) return next();
+    if (!connection?.transaction) return next()
 
+    const plugin = this;
     const tmpfile = plugin.get_tmp_file(connection.transaction);
     const ws      = fs.createWriteStream(tmpfile);
 
@@ -103,7 +103,7 @@ exports.hook_data_post = function (next, connection) {
             const cont = matches[2];
             const rest = matches[3];
             response.push(rest);
-            if (cont !== ' ') { return; }
+            if (cont !== ' ') return;
 
             switch (command) {
                 case 'connect':

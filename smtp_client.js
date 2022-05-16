@@ -30,11 +30,11 @@ const STATE = {
 }
 
 class SMTPClient extends events.EventEmitter {
-    constructor (port, host, connect_timeout, idle_timeout, socket) {
+    constructor (opts = {}) {
         super();
         this.uuid = utils.uuid();
-        this.connect_timeout = parseInt(connect_timeout) || 30;
-        this.socket = socket || line_socket.connect(port, host);
+        this.connect_timeout = parseInt(opts.connect_timeout) || 30;
+        this.socket = opts.socket || line_socket.connect(opts.port, opts.host);
         this.socket.setTimeout(this.connect_timeout * 1000);
         this.socket.setKeepAlive(true);
         this.state = STATE.IDLE;
@@ -44,8 +44,8 @@ class SMTPClient extends events.EventEmitter {
         this.authenticating= false;
         this.authenticated = false;
         this.auth_capabilities = [];
-        this.host = host;
-        this.port = port;
+        this.host = opts.host;
+        this.port = opts.port;
         this.smtputf8 = false;
 
         const client = this;
@@ -150,7 +150,7 @@ class SMTPClient extends events.EventEmitter {
 
         client.socket.on('connect', () => {
             // Replace connection timeout with idle timeout
-            client.socket.setTimeout((idle_timeout || 300) * 1000);
+            client.socket.setTimeout((opts.idle_timeout || 300) * 1000);
             if (!client.socket.remoteAddress) {
                 // "Value may be undefined if the socket is destroyed"
                 logger.logdebug('socket.remoteAddress undefined');
@@ -161,26 +161,26 @@ class SMTPClient extends events.EventEmitter {
 
         function closed (msg) {
             return error => {
-                if (!error) {
-                    error = '';
-                }
-                // msg is e.g. "errored" or "timed out"
+                if (!error) error = '';
+
                 // error is e.g. "Error: connect ECONNREFUSED"
                 const errMsg = `${client.uuid}: [${client.host}:${client.port}] SMTP connection ${msg} ${error}`;
-                if (client.state === STATE.ACTIVE) {
-                    client.emit('error', errMsg);
-                }
+
                 switch (client.state) {
                     case STATE.ACTIVE:
+                        client.emit('error', errMsg);
+                    // eslint-disable no-fallthrough
                     case STATE.IDLE:
                     case STATE.RELEASED:
                         client.destroy();
                         break;
+                    case STATE.DESTROYED:
+                        if (msg === 'errored' || msg === 'timed out') {
+                            client.emit('connection-error', errMsg);
+                        }
+                        break
                     default:
                 }
-                if ((msg === 'errored' || msg === 'timed out') && client.state === STATE.DESTROYED) {
-                    client.emit('connection-error', errMsg);
-                } // don't return, continue (original behavior)
 
                 logger.logdebug(`[smtp_client_pool] ${errMsg} (state=${client.state})`);
             }
@@ -248,7 +248,7 @@ class SMTPClient extends events.EventEmitter {
             this.state = STATE.IDLE;
             this.removeAllListeners('rset');
             this.removeAllListeners('bad_code');
-            this.pool.release(this);
+            if (this.pool) this.pool.release(this);
         });
 
         this.send_command('RSET');
@@ -256,7 +256,7 @@ class SMTPClient extends events.EventEmitter {
 
     destroy () {
         if (this.state !== STATE.DESTROYED) {
-            this.pool.destroy(this);
+            if (this.pool) this.pool.destroy(this);
         }
     }
 
@@ -275,9 +275,8 @@ class SMTPClient extends events.EventEmitter {
         });
     }
 
-
     is_dead_sender (plugin, connection) {
-        if (connection.transaction) return false;
+        if (connection?.transaction) return false;
 
         // This likely means the sender went away on us, cleanup.
         connection.logwarn(plugin, "transaction went away, releasing smtp_client");
@@ -289,60 +288,75 @@ class SMTPClient extends events.EventEmitter {
 exports.smtp_client = SMTPClient;
 
 // Separate pools are kept for each set of server attributes.
-exports.get_pool = (server, port, host, cfg) => {
-    port = port || 25;
-    host = host || 'localhost';
-    if (cfg === undefined) cfg = {};
-    const connect_timeout = cfg.connect_timeout || 30;
-    const pool_timeout = cfg.pool_timeout || cfg.timeout || 300;
-    const auth_user = cfg.auth_user || 'no_user';
-    const name = `${port}:${host}:${pool_timeout}:${auth_user}`;
+exports.get_pool = (server, opts = {}) => {
+    if (!opts.port) opts.port = 25
+    if (!opts.host) opts.host = 'localhost'
+    if (opts.cfg === undefined) opts.cfg = {}
+    if (!opts.cfg.connect_timeout) opts.cfg.connect_timeout = 30
+    if (!opts.cfg.pool_timeout) opts.cfg.pool_timeout = opts.cfg.timeout || 300
+    if (!opts.cfg.auth_user) opts.cfg.auth_user = 'no_user'
+    if (!opts.cfg.max_connections) opts.cfg.max_connections = 1000
+
+    const name = `${opts.port}:${opts.host}:${opts.cfg.pool_timeout}:${opts.cfg.auth_user}`;
     if (!server.notes.pool) server.notes.pool = {};
     if (server.notes.pool[name]) return server.notes.pool[name];
 
-    const pool = generic_pool.Pool({
-        name,
-        create: callback => {
-            const smtp_client = new SMTPClient(port, host, connect_timeout, pool_timeout);
-            logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} host=${host}` +
-                ` port=${port} pool_timeout=${pool_timeout} created`);
-            callback(null, smtp_client);
-        },
-        destroy: smtp_client => {
-            logger.logdebug(`[smtp_client_pool] ${smtp_client.uuid} destroyed, state={smtp_client.state}`);
-            smtp_client.state = STATE.DESTROYED;
-            smtp_client.socket.destroy();
-            // Remove pool object from server notes once empty
-            const size = pool.getPoolSize();
-            if (size === 0) {
-                delete server.notes.pool[name];
-            }
-        },
-        max: cfg.max_connections || 1000,
-        idleTimeoutMillis: (pool_timeout - 1) * 1000,
-        log: (str, level) => {
-            level = (level === 'verbose') ? 'debug' : level;
-            logger[`log${level}`](`[smtp_client_pool] [${name}] ${str}`);
-        }
-    });
+    let pool;
 
-    const acquire = pool.acquire;
-    pool.acquire = (callback, priority) => {
-        function callback_wrapper (err, smtp_client) {
-            smtp_client.pool = pool;
-            smtp_client.state = STATE.ACTIVE;
-            callback(err, smtp_client);
-        }
-        acquire.call(pool, callback_wrapper, priority);
+    const factory = {
+        create () {
+            return new Promise((resolve) => {
+                const smtp_client = new SMTPClient(opts)
+                logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} host=${opts.host}` +
+                    ` port=${opts.port} pool_timeout=${opts.cfg.pool_timeout} created`);
+                resolve(smtp_client);
+            })
+        },
+        destroy (smtp_client) {
+            return new Promise((resolve, reject) => {
+                logger.logdebug(`[smtp_client_pool] ${smtp_client.uuid} destroyed, state={smtp_client.state}`);
+                smtp_client.state = STATE.DESTROYED;
+                smtp_client.socket.destroy();
+
+                if (pool.getPoolSize() === 0) {       // when pool is empty
+                    delete server.notes.pool[name];   // remove pool object
+                }
+                resolve()
+            })
+        },
+    }
+
+    const config = {
+        idleTimeoutMillis: (opts.cfg.pool_timeout - 1) * 1000,
+        max: opts.cfg.max_connections,
     };
+
+    function onPoolError (err) {
+        logger.logerror(`[smtp_client_pool] ${err.message}`)
+    }
+
+    pool = generic_pool.createPool(factory, config);
+    pool.on('factoryCreateError', onPoolError)
+    pool.on('factoryDestroyError', onPoolError)
+    pool.start()
+
+    pool.acquire().then(smtp_client => {
+        smtp_client.pool = pool;
+        smtp_client.state = STATE.ACTIVE;
+    })
+        .catch(err => {
+            // this is generally a timeout or maxWaitingClients error
+            logger.logerror(`[smtp_client_pool] ERROR ${err}`);
+        });
+
     server.notes.pool[name] = pool;
     return pool;
 }
 
 // Get a smtp_client for the given attributes.
-exports.get_client = (server, callback, port, host, cfg) => {
-    const pool = exports.get_pool(server, port, host, cfg);
-    pool.acquire(callback);
+exports.get_client = (server, callback, opts) => {
+    const pool = exports.get_pool(server, opts);
+    pool.acquire().then(callback).catch(callback);
 }
 
 
@@ -407,9 +421,8 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
 
     const hostport = get_hostport(connection, connection.server, c);
 
-    const pool = exports.get_pool(connection.server, hostport.port, hostport.host, c);
-
-    pool.acquire((err, smtp_client) => {
+    const pool = exports.get_pool(connection.server, { port: hostport.port, host: hostport.host, cfg: c });
+    pool.acquire().then(smtp_client => {
         connection.logdebug(plugin, `Got smtp_client: ${smtp_client.uuid}`);
 
         let secured = false;
@@ -444,6 +457,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
         smtp_client.on('xclient', helo);
 
         function on_secured () {
+            if (secured) return;
             secured = true;
             smtp_client.secured = true;
             smtp_client.emit('greeting', 'EHLO');
@@ -455,9 +469,8 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
 
         smtp_client.on('helo', () => {
             if (!c.auth || smtp_client.authenticated) {
-                if (smtp_client.is_dead_sender(plugin, connection)) {
-                    return;
-                }
+                if (smtp_client.is_dead_sender(plugin, connection)) return;
+
                 smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
                 return;
             }
@@ -473,8 +486,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
                         throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
                     }
                     logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} authenticating as "${c.auth.user}"`);
-                    smtp_client.send_command('AUTH',
-                        `PLAIN ${utils.base64(`${c.auth.user}\0${c.auth.user}\0${c.auth.pass}`)}`);
+                    smtp_client.send_command('AUTH', `PLAIN ${utils.base64(`${c.auth.user}\0${c.auth.user}\0${c.auth.pass}`)}`);
                     break;
                 case 'cram-md5':
                     throw new Error("Not implemented");
@@ -520,8 +532,8 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
             }
         }
 
-        callback(err, smtp_client);
-    });
+        callback(null, smtp_client);
+    }).catch(callback);
 }
 
 function get_hostport (connection, server, cfg) {
@@ -543,11 +555,8 @@ function get_hostport (connection, server, cfg) {
         throw new Error("no backend hosts found in pool!");
     }
 
-    if (cfg.host && cfg.port) {
-        return { host: cfg.host, port: cfg.port };
-    }
+    if (cfg.host && cfg.port) return { host: cfg.host, port: cfg.port };
 
-    logger.logwarn("[smtp_client_pool] forwarding_host_pool or host and port " +
-            "were not found in config file");
+    logger.logwarn("[smtp_client_pool] forwarding_host_pool or host and port were not found in config file");
     throw new Error("You must specify either forwarding_host_pool or host and port");
 }

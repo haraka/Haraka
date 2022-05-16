@@ -211,7 +211,7 @@ exports.smtp_client = {
         const smtp_client   = require('../smtp_client');
         const MessageStream = require('../messagestream');
 
-        smtp_client.get_client(server, (err, client) => {
+        smtp_client.get_client(server, (client) => {
 
             client
                 .on('greeting', command => {
@@ -251,7 +251,7 @@ exports.smtp_client = {
                     test.done();
                 });
 
-        }, 2500, 'localhost', cfg);
+        }, { port: 2500, host: 'localhost', cfg });
     },
 }
 
@@ -415,7 +415,7 @@ exports.nodemailer = {
 
 exports.requireAuthorized_SMTPS = {
     setUp (done) {
-        _setupServer(this, 'localhost:2465', done);
+        _setupServer(this, '127.0.0.1:2465', done);
     },
     tearDown: _tearDownServer,
     'rejects non-validated SMTPS connection': test => {
@@ -463,7 +463,7 @@ exports.requireAuthorized_SMTPS = {
 
 exports.requireAuthorized_STARTTLS = {
     setUp (done) {
-        _setupServer(this, 'localhost:2587', done);
+        _setupServer(this, '127.0.0.1:2587', done);
     },
     'rejects non-validated STARTTLS connection': test => {
 

@@ -19,7 +19,7 @@ exports.register = function () {
 
 exports.hook_rcpt = function (next, connection, params) {
     const plugin = this;
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
     if (!txn) return;
 
     const rcpt = params[0];

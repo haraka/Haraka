@@ -6,8 +6,10 @@ function escapeRegExp (str) {
 }
 
 exports.hook_data = (next, connection) => {
-    if (connection.notes.auth_user && connection.notes.auth_passwd) {
-        connection.transaction.parse_body = true;
+    const { notes, transaction } = connection ?? {}
+
+    if (transaction && notes?.auth_user && notes.auth_passwd) {
+        transaction.parse_body = true;
     }
     next();
 }
@@ -34,7 +36,7 @@ exports.hook_data_post = (next, connection) => {
                                    (domain ? `(?:${escapeRegExp(domain)})?` : '') +
                                    bound_regexp, 'im');
 
-    if (look_for_credentials(user_regexp, passwd_regexp, connection.transaction.body)) {
+    if (look_for_credentials(user_regexp, passwd_regexp, connection?.transaction?.body)) {
         return next(DENY, "Credential leak detected: never give out your username/password to anyone!");
     }
 

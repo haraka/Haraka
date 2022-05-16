@@ -48,9 +48,8 @@ class HMailItem extends events.EventEmitter {
         super();
 
         const parts = _qfile.parts(filename);
-        if (!parts) {
-            throw new Error(`Bad filename: ${filename}`);
-        }
+        if (!parts) throw new Error(`Bad filename: ${filename}`);
+
         this.path         = filePath;
         this.filename     = filename;
         this.next_process = parts.next_attempt;
@@ -387,7 +386,7 @@ class HMailItem extends events.EventEmitter {
         this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
         client_pool.get_client(port, host, mx.bind, !!mx.path, (err, socket) => {
             if (err) {
-                if (err.match(/connection timed out|connect ECONNREFUSED/)) {
+                if (/connection timed out|connect ECONNREFUSED/.test(err)) {
                     logger.lognotice(`[outbound] Failed to get pool entry: ${err}`);
                 }
                 else {
@@ -401,7 +400,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     try_deliver_host_on_socket (mx, host, port, socket) {
-        const self            = this;
+        const self = this;
         let processing_mail = true;
         let command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
 
@@ -427,12 +426,12 @@ class HMailItem extends events.EventEmitter {
         });
 
         socket.once('close', () => {
-            if (processing_mail) {
-                self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`);
-                processing_mail = false;
-                client_pool.release_client(socket, port, host, mx.bind, true);
-                return self.try_deliver_host(mx);
-            }
+            if (!processing_mail) return
+
+            self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`);
+            processing_mail = false;
+            client_pool.release_client(socket, port, host, mx.bind, true);
+            return self.try_deliver_host(mx);
         });
 
         let fin_sent = false;
@@ -1467,17 +1466,15 @@ class HMailItem extends events.EventEmitter {
                     fs.rename(tmp_path, dest_path, err => {
                         if (err) {
                             err_handler(err, "tmp file rename");
+                            return
                         }
-                        else {
-                            const split_mail = new HMailItem (fname, dest_path, hmail.notes);
-                            split_mail.once('ready', () => {
-                                cb(split_mail);
-                            });
-                        }
+                        const split_mail = new HMailItem (fname, dest_path, hmail.notes);
+                        split_mail.once('ready', () => {
+                            cb(split_mail);
+                        });
                     });
                 });
                 ws.destroySoon();
-                return;
             });
         }
 

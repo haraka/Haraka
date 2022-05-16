@@ -38,7 +38,8 @@ exports.hook_get_mx = function (next, hmail, domain) {
 }
 
 exports.hook_queue = (next, connection) => {
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
+    if (!txn) return next();
 
     const q_wants = txn.notes.get('queue.wants');
     if (q_wants && q_wants !== 'lmtp') return next();
