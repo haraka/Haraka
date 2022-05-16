@@ -1,21 +1,32 @@
 
-## NEXT - 2021-MM-DD
+## NEXT - 2022-MM-DD
 
 ### Changes
 
-- reformat dkim signature to multi-line #2991
+
+- dkim_sign: reformat dkim signature to multi-line #2991
+- dkim_sign: remove spurious error logging #3034
 - chore: add lots of `if (!transaction) return` in places #2732
+- doc(queue.js) spelling & grammar improvement #3051
+- doc(rails): add haraka-plugin-queue-rails #2995
+- doc(smtp.ini): correct spelling of SMTPUTF8 #2993
 - style(es6): use optional chaining when accessing transactions #2732
-- dep(generic-pool): 2.5 -> 3.8 (promises) #3033
+- style(smtp_client): pass args as objects (was positional)
+- style(plugin/*): transaction guarding #3032
+- dep(generic-pool): 2.5 -> 3.8 (promises) #3033, #3060
 - dep(redis): 3.1 -> 4.1 #3058
+- dep(haraka-plugin-redis): 1.0 -> 2.0  #3038
+- dep(nodemailer): 6.7.0 to 6.7.2 #3000, #3004
 - deps: add explicit dependency on node-gyp 9
+- fix(conn): socket can't be release when disconnect after DATA command #2994
 - fix(attachment): error handling with complex archive #3035
 - fix(smtp_client): run "secured" once, fixes  #3020
 - fix(auth_proxy): run "secured" only once, improvement for #3022
 - fix(helo): remove multi-check from should_skip #3041
-- ci: windows-latest is now windows-2022, which has issues, specify 2019
-- style(smtp_client): pass args as objects (was positional)
-- dkim_sign: remove spurious error logging #3034
+- fix(outbound): outbound local mx check #3010
+- fix(outbound): prevent delivery loop when target MX resolves to local hostname #3002
+- test(windows): build shims for windows-2022 & node on windows #3052
+- test: restore CI tests to working order #3030
 
 
 ## 2.8.28 - 2021-10-14
