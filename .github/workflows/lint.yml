@@ -4,15 +4,11 @@ on: [ push, pull_request ]
 
 env:
   CI: true
-  node_version: 14
+  node_version: 16
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [ 14 ]
 
     steps:
     - uses: actions/checkout@v2

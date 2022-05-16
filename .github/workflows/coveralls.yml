@@ -3,7 +3,7 @@ on: [ pull_request ]
 name: Test Coverage
 
 env:
-  node_version: 14
+  node_version: 16
 
 jobs:
 
