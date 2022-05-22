@@ -55,7 +55,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
 
         create () {
             return new Promise(function (resolve, reject) {
-                _create_socket(this.name, port, host, local_addr, is_unix_socket, (err, socket) => {
+                _create_socket(name, port, host, local_addr, is_unix_socket, (err, socket) => {
                     if (err) return reject(err)
                     resolve(socket)
                 })
@@ -111,9 +111,10 @@ exports.get_client = (port, host, local_addr, is_unix_socket, callback) => {
     }
 
     const pool = get_pool(port, host, local_addr, is_unix_socket, obc.cfg.pool_concurrency_max);
-    if (pool.waitingClientsCount() >= obc.cfg.pool_concurrency_max) {
+    if (obc.cfg.pool_waiting_queue_max != 0 && pool.pending >= obc.cfg.pool_waiting_queue_max) {
         return callback("Too many waiting clients for pool", null);
     }
+
     pool.acquire().then(socket => {
         socket.__acquired = true;
         logger.loginfo(`[outbound] acquired socket ${socket.__uuid} for ${socket.__pool_name}`);

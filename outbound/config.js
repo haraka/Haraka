@@ -41,6 +41,9 @@ function load_config () {
     if (cfg.pool_concurrency_max === undefined) {
         cfg.pool_concurrency_max = 10;
     }
+    if (cfg.pool_waiting_queue_max === undefined) {
+        cfg.pool_waiting_queue_max = 20;
+    }
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
         cfg.ipv6_enabled = true;
     }
