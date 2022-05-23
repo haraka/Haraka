@@ -48,7 +48,7 @@
   },
   "optionalDependencies": {
     "haraka-plugin-access"  : "^1.1.4",
-    "haraka-plugin-asn"     : "^1.0.8",
+    "haraka-plugin-asn"     : "^2.0.0",
     "haraka-plugin-auth-ldap": "^1.0.2",
     "haraka-plugin-dcc"     : "^1.0.1",
     "haraka-plugin-elasticsearch" : "^1.0.6",
