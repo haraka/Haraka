@@ -4,9 +4,24 @@ on: [ push ]
 
 env:
   CI: true
+  node-version: 16
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      name: Node.js ${{ env.node-version }}
+      with:
+        node-version: ${{ env.node-version }}
+    - run: npm install
+    - run: npm run lint
+
+
   test:
+    needs: lint
     runs-on: ${{ matrix.os }}
     services:
       redis:
@@ -44,6 +59,7 @@ jobs:
 
 
   test-win:
+    needs: lint
     # no docker/images support on Windows (currently), so run w/o Redis
     # also, stack run commands so test doesn't begin before install completes
 
@@ -51,15 +67,12 @@ jobs:
 
     strategy:
       matrix:
-        os: [ windows-2019, windows-latest ]
+        os: [ windows-latest ]
         node-version: [ 14, 16, 18 ]
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v2
-      name: Checkout Haraka
-      with:
-        fetch-depth: 1
+    - uses: actions/checkout@v3
 
     - uses: actions/setup-node@v3
       name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
@@ -75,6 +88,34 @@ jobs:
 
     # To address a node-gyp install issues in Windows starting in Node 16
     # This should be temporary and hopefully should be removed in the future
+    - name: Install node-gyp (temp workaround)
+      run: npx node-gyp@^9.0.0 install
+
+    - run: npm install
+    - run: npm run test
+
+
+  test-win-2019:
+    needs: test-win
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-2019 ]
+        node-version: [ 14, 16, 18 ]
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-node@v3
+      name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Update npm
+      if: matrix.node-version == 14
+      run: npm install -g npm
+
     - name: Install node-gyp (temp workaround)
       run: npx node-gyp@^9.0.0 install
 
