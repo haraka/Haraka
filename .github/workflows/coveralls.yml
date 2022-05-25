@@ -1,13 +1,12 @@
-on: [ pull_request ]
-
 name: Test Coverage
+
+on: [ pull_request ]
 
 env:
   CI: true
   node_version: 16
 
 jobs:
-
   coverage:
     name: Codecov
     runs-on: ubuntu-latest
@@ -33,7 +32,7 @@ jobs:
         npm install --no-save nyc
         npx nyc --reporter=lcovonly npm run test
       env:
-        NODE_ENV=cov
+        NODE_ENV: cov
 
     - name: codecov
       uses: codecov/codecov-action@v2
