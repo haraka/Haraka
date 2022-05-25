@@ -1,16 +1,18 @@
-name: Haraka Tests
+name: CI
 
-on: [ push, pull_request ]
+on: [ push ]
 
 env:
   CI: true
 
 jobs:
-
-  ci-test:
-
+  test:
     runs-on: ${{ matrix.os }}
-
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
     strategy:
       matrix:
         os: [ ubuntu-latest ]
@@ -24,15 +26,11 @@ jobs:
         # node 12, maint. ended 2022-04
         node-version: [ 14, 16, 18 ]
       fail-fast: false
-
     steps:
-    - uses: actions/checkout@v2
-      name: Checkout Haraka
-      with:
-        fetch-depth: 1
+    - uses: actions/checkout@v3
 
     - uses: actions/setup-node@v3
-      name: Use Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
+      name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
       with:
         node-version: ${{ matrix.node-version }}
 
@@ -42,11 +40,43 @@ jobs:
         sudo apt-get install -y libarchive-tools
 
     - run: npm install
-
     - run: npm run test
 
-    services:
-      redis:
-        image: redis
-        ports:
-          - 6379/tcp
+
+  test-win:
+    # no docker/images support on Windows (currently), so run w/o Redis
+    # also, stack run commands so test doesn't begin before install completes
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ windows-2019, windows-latest ]
+        node-version: [ 14, 16, 18 ]
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v2
+      name: Checkout Haraka
+      with:
+        fetch-depth: 1
+
+    - uses: actions/setup-node@v3
+      name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    # Needed for Node 14 on Windows 2022 (which uses Visual Studio 2022)
+    # The default node-gyp installed with Node 14 doesn't recognize VS 2022
+    # Remove this when Node 14 support is dropped (2023-04-30)
+    - name: Update npm
+      if: matrix.node-version == 14
+      run: npm install -g npm
+
+    # To address a node-gyp install issues in Windows starting in Node 16
+    # This should be temporary and hopefully should be removed in the future
+    - name: Install node-gyp (temp workaround)
+      run: npx node-gyp@^9.0.0 install
+
+    - run: npm install
+    - run: npm run test

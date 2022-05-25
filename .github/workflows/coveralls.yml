@@ -3,6 +3,7 @@ on: [ pull_request ]
 name: Test Coverage
 
 env:
+  CI: true
   node_version: 16
 
 jobs:
@@ -13,24 +14,29 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
-      name: Checkout Haraka
-      with:
-        fetch-depth: 1
+    - uses: actions/checkout@v3
 
-    - name: Use Node.js ${{ env.node_version }}
-      uses: actions/setup-node@v3
+    - uses: actions/setup-node@v3
+      name: Node.js ${{ env.node_version }}
       with:
         node-version: ${{ env.node_version }}
 
-    - name: install
+    - name: install libarchive-tools
       run: |
         sudo apt-get update
         sudo apt-get install -y libarchive-tools
-        npm install
-        npm install --no-save nyc codecov
 
-    - run: npm run cover
+    - run: npm install
+
+    - name: run coverage
+      run: |
+        npm install --no-save nyc
+        npx nyc --reporter=lcovonly npm run test
+      env:
+        NODE_ENV=cov
+
+    - name: codecov
+      uses: codecov/codecov-action@v2
 
     - name: Coveralls
       uses: coverallsapp/github-action@master
