@@ -57,7 +57,7 @@
     "haraka-plugin-geoip"   : "^1.0.16",
     "haraka-plugin-headers" : "^1.0.2",
     "haraka-plugin-karma"   : "^2.0.0",
-    "haraka-plugin-limit"   : "^1.0.4",
+    "haraka-plugin-limit"   : "^1.0.6",
     "haraka-plugin-p0f"     : "^1.0.5",
     "haraka-plugin-qmail-deliverable" : "^1.0.5",
     "haraka-plugin-rcpt-ldap": "^1.0.0",
