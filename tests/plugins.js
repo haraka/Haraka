@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.WITHOUT_CONFIG_CACHE=true;
+
 const fs     = require('fs');
 const path   = require('path');
 const plugin = require('../plugins');
@@ -46,46 +48,43 @@ exports.plugin = {
     }
 }
 
-const toPath = path.join('config', `${piName  }.timeout`);
-
-const toVals = [ '0', '3', '60', 'apple'];
-function getVal () {
-    return toVals.shift();
-}
+const toPath = path.join('config', `${piName}.timeout`);
 
 exports.get_timeout = {
-    setUp (done) {
-        process.env.WITHOUT_CONFIG_CACHE=true;
-        this.to = getVal();
-        const self = this;
-        fs.writeFile(toPath, this.to, () => {
-            self.plugin = new plugin.Plugin(piName);
-            done();
-        });
-    },
     tearDown : done => {
-        delete process.env.WITHOUT_CONFIG_CACHE;
         fs.unlink(toPath, done);
     },
     '0s' (test) {
         test.expect(1);
-        test.equal( this.plugin.timeout, this.to );
-        test.done();
+        fs.writeFile(toPath, '0', () => {
+            this.plugin = new plugin.Plugin(piName);
+            test.equal( this.plugin.timeout, 0 );
+            test.done();
+        })
     },
     '3s' (test) {
         test.expect(1);
-        test.equal( this.plugin.timeout, this.to );
-        test.done();
+        fs.writeFile(toPath, '3', () => {
+            this.plugin = new plugin.Plugin(piName);
+            test.equal( this.plugin.timeout, 3 );
+            test.done();
+        })
     },
     '60s' (test) {
         test.expect(1);
-        test.equal( this.plugin.timeout, this.to );
-        test.done();
+        fs.writeFile(toPath, '60', () => {
+            this.plugin = new plugin.Plugin(piName);
+            test.equal( this.plugin.timeout, 60 );
+            test.done();
+        })
     },
-    '30s default (overrides NaN apple)' (test) {
+    '30s default (overrides NaN)' (test) {
         test.expect(1);
-        test.equal( this.plugin.timeout, 30 );
-        test.done();
+        fs.writeFile(toPath, 'apple', () => {
+            this.plugin = new plugin.Plugin(piName);
+            test.equal( this.plugin.timeout, 30 );
+            test.done();
+        })
     },
 }
 

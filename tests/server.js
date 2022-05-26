@@ -98,7 +98,11 @@ exports.get_smtp_server = {
         this.server.config = this.config.module_config(path.resolve('tests'));
         this.server.plugins.config = this.config.module_config(path.resolve('tests'));
 
-        this.server.load_default_tls_config(() => done());
+        this.server.load_default_tls_config(() => {
+            setTimeout(() => {
+                done();
+            }, 200);
+        });
     },
     'gets a net server object' (test) {
         this.server.get_smtp_server(endpoint('0.0.0.0:2501'), 10, (server) => {
@@ -173,7 +177,9 @@ function _setupServer (test, ip_port, done) {
     // console.log(test.server.cfg);
     test.server.load_default_tls_config(() => {
         test.server.createServer({});
-        done();
+        setTimeout(() => {
+            done();
+        }, 200);
     })
 }
 
@@ -205,7 +211,7 @@ exports.smtp_client = {
         const smtp_client   = require('../smtp_client');
         const MessageStream = require('../messagestream');
 
-        smtp_client.get_client(server, (err, client) => {
+        smtp_client.get_client(server, (client) => {
 
             client
                 .on('greeting', command => {
@@ -245,7 +251,7 @@ exports.smtp_client = {
                     test.done();
                 });
 
-        }, 2500, 'localhost', cfg);
+        }, { port: 2500, host: 'localhost', cfg });
     },
 }
 
@@ -409,7 +415,7 @@ exports.nodemailer = {
 
 exports.requireAuthorized_SMTPS = {
     setUp (done) {
-        _setupServer(this, 'localhost:2465', done);
+        _setupServer(this, '127.0.0.1:2465', done);
     },
     tearDown: _tearDownServer,
     'rejects non-validated SMTPS connection': test => {
@@ -443,7 +449,7 @@ exports.requireAuthorized_SMTPS = {
                 if (error) {
                     // console.log(error);
                     if (error.message === 'socket hang up') {   // node 6 & 8
-                        test.equal(error.message, 'socket hang up')
+                        test.equal(error.message, 'socket hang up');
                     }
                     else {     // node 10+
                         test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
@@ -457,7 +463,7 @@ exports.requireAuthorized_SMTPS = {
 
 exports.requireAuthorized_STARTTLS = {
     setUp (done) {
-        _setupServer(this, 'localhost:2587', done);
+        _setupServer(this, '127.0.0.1:2587', done);
     },
     'rejects non-validated STARTTLS connection': test => {
 
@@ -466,6 +472,7 @@ exports.requireAuthorized_STARTTLS = {
         const transporter = nodemailer.createTransport({
             host: '127.0.0.1',
             port: 2587,
+            secure: false,
             tls: {
                 // do not fail on invalid certs
                 rejectUnauthorized: false
@@ -488,7 +495,7 @@ exports.requireAuthorized_STARTTLS = {
             (error, info) => {
                 if (error) {
                     // console.log(error);
-                    test.equal(error.message, ['Unexpected socket close'])
+                    test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
                 }
                 test.done();
             });

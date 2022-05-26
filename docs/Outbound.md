@@ -95,6 +95,31 @@ Set this to `0` to completely disable the pooling code.
 This value determines how many concurrent connections can be made to a single
 IP address (destination) in the pool. Default: 10 connections.
 
+* `pool_waiting_queue_max`
+
+Set this to `0` to disable queue length restrictions.
+
+This value determines max amount of connections waited to be processed in pool
+of connections to single IP address (destination). Default: 20 connections.
+
+* `local_mx_ok`
+
+Default: false. By default, outbound to a local IP is disabled, to avoid creating 
+outbound loops. Set this to true if you want to allow outbound to local IPs. 
+This could be useful if you want to deliver mail to localhost on another port.
+
+* `temp_fail_intervals`
+
+Set this to specify the delay intervals to use between trying to re-send an email
+that has a temporary failure condition.  The setting is a comma separated list of
+time spans and multipliers.  The time span is a number followed by `s`, `m`, `h`, or `d`
+to represent seconds, minutes, hours, and days, respectively.  The multiplier is an
+asterisk followed by an integer representing the number of times to repeat the interval.
+For example, the entry `1m, 5m*2, 1h*3` results in an array of delay times of
+`[60,300,300,3600,3600,3600]` in seconds.  The email will be bounced when the array
+runs out of intervals (the 7th failure in this case).  Set this to `none` to bounce the
+email on the first temporary failure.
+
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.

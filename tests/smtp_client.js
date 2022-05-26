@@ -11,6 +11,10 @@ vm_harness.add_tests(
 const smtp_client = require('../smtp_client');
 const fixtures    = require('haraka-test-fixtures');
 
+function getClientOpts (socket) {
+    return { port: 25, host: 'localhost', connect_timeout: 30, idle_timeout: 30, socket }
+}
+
 exports.testUpgradeIsCalledOnSTARTTLS = test => {
     test.expect(1);
 
@@ -35,7 +39,7 @@ exports.testUpgradeIsCalledOnSTARTTLS = test => {
         }
     };
 
-    const client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
+    const client = new smtp_client.smtp_client(getClientOpts(socket));
     client.load_tls_config({ key: Buffer.from('OutboundTlsKeyLoaded')});
 
     client.command = 'starttls';
@@ -63,7 +67,7 @@ exports.startTLS = test => {
         write: arg => { cmd = arg; }
     };
 
-    const client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
+    const client = new smtp_client.smtp_client(getClientOpts(socket));
     client.tls_options = {};
 
     client.secured = false;

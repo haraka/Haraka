@@ -1,7 +1,6 @@
 // quarantine
 
 const fs   = require('fs');
-const mkdirp = require('mkdirp');
 const path = require('path');
 
 exports.register = function () {
@@ -52,14 +51,13 @@ exports.clean_tmp_directory = function (next) {
 }
 
 function wants_quarantine (connection) {
-    if (connection.notes.quarantine)
-        return connection.notes.quarantine;
+    const { notes, transaction } = connection ?? {}
 
-    if (connection.transaction.notes.quarantine)
-        return connection.transaction.notes.quarantine;
+    if (notes.quarantine) return notes.quarantine;
 
-    if (connection.transaction.notes.get('queue.wants') === 'quarantine')
-        return true;
+    if (transaction.notes.quarantine) return transaction.notes.quarantine;
+
+    if (transaction.notes.get('queue.wants') === 'quarantine') return true;
 
     return false;
 }
@@ -72,7 +70,7 @@ exports.get_base_dir = function () {
 exports.init_quarantine_dir = function (done) {
     const plugin = this;
     const tmp_dir = path.join(plugin.get_base_dir(), 'tmp');
-    mkdirp(tmp_dir)
+    fs.promises.mkdir(tmp_dir, { recursive: true })
         .then(made => plugin.loginfo(`created ${tmp_dir}`))
         .catch(err => plugin.logerror(`Unable to create ${tmp_dir}`))
         .finally(done);
@@ -97,7 +95,9 @@ exports.quarantine = function (next, connection) {
         subdir = path.join(quarantine, yyyymmdd);
     }
 
-    const txn      = connection.transaction;
+    const txn = connection?.transaction;
+    if (!txn) return next();
+
     const base_dir = plugin.get_base_dir();
     const msg_dir  = path.join(base_dir, subdir);
     const tmp_path = path.join(base_dir, 'tmp', txn.uuid);
@@ -108,7 +108,7 @@ exports.quarantine = function (next, connection) {
     // successful we hardlink the file to the final destination and then
     // remove the temporary file to guarantee a complete file in the
     // final destination.
-    mkdirp(msg_dir)
+    fs.promises.mkdir(msg_dir, { recursive: true })
         .catch(err => {
             connection.logerror(plugin, `Error creating directory: ${msg_dir}`);
             next();

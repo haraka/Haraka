@@ -61,7 +61,12 @@ class pluggableStream extends stream.Stream {
         self.targetsocket.on('connect', (a, b) => {
             self.emit('connect', a, b);
         });
+        self.targetsocket.on('secureConnect', (a, b) => {
+            self.emit('secureConnect', a, b);
+            self.emit('secure', a, b);
+        });
         self.targetsocket.on('secureConnection', (a, b) => {
+            // investigate this for removal, see #2743
             self.emit('secureConnection', a, b);
             self.emit('secure', a, b);
         });
@@ -94,17 +99,20 @@ class pluggableStream extends stream.Stream {
         if (self.targetsocket.remoteAddress) {
             self.remoteAddress = self.targetsocket.remoteAddress;
         }
+        if (self.targetsocket.localPort) {
+            self.localPort = self.targetsocket.localPort;
+        }
+        if (self.targetsocket.localAddress) {
+            self.localAddress = self.targetsocket.localAddress;
+        }
     }
-
     clean (data) {
         if (this.targetsocket && this.targetsocket.removeAllListeners) {
-            this.targetsocket.removeAllListeners('data');
-            this.targetsocket.removeAllListeners('secureConnection');
-            this.targetsocket.removeAllListeners('secure');
-            this.targetsocket.removeAllListeners('end');
-            this.targetsocket.removeAllListeners('close');
-            this.targetsocket.removeAllListeners('error');
-            this.targetsocket.removeAllListeners('drain');
+            [   'data', 'secure', 'secureConnect', 'secureConnection',
+                'end', 'close', 'error', 'drain'
+            ].forEach((name) => {
+                this.targetsocket.removeAllListeners(name);
+            })
         }
         this.targetsocket = {};
         this.targetsocket.write = () => {};
@@ -151,6 +159,14 @@ class pluggableStream extends stream.Stream {
         this._timeout = timeout;
         return this.targetsocket.setTimeout(timeout);
     }
+
+    isEncrypted () {
+        return this.targetsocket.encrypted;
+    }
+
+    isSecure () {
+        return this.targetsocket.encrypted && this.targetsocket.authorized;
+    }
 }
 
 exports.parse_x509_names = string => {
@@ -194,19 +210,15 @@ exports.parse_x509_expire = (file, string) => {
 
 exports.parse_x509 = string => {
     const res = {};
+    if (!string) return res
 
-    const match = /^([^-]*)?([-]+BEGIN (?:\w+\s)?PRIVATE KEY[-]+[^-]+[-]+END (?:\w+\s)?PRIVATE KEY[-]+\n)([^]*)$/.exec(string);
-    if (!match) return res;
+    const keyRe  = new RegExp('([-]+BEGIN (?:\\w+ )?PRIVATE KEY[-]+[^-]*[-]+END (?:\\w+ )?PRIVATE KEY[-]+)', 'gm')
+    const keys = string.match(keyRe)
+    if (keys) res.key = Buffer.from(keys.join('\n'));
 
-    if (match[1] && match[1].length) {
-        log.logerror('leading garbage');
-        log.logerror(match[1]);
-    }
-    if (!match[2] || !match[2].length) return res;
-    res.key = Buffer.from(match[2]);
-
-    if (!match[3] || !match[3].length) return res;
-    res.cert = Buffer.from(match[3]);
+    const certRe = new RegExp('([-]+BEGIN CERTIFICATE[-]+[^-]*[-]+END CERTIFICATE[-]+)', 'gm')
+    const certs = string.match(certRe)
+    if (certs) res.cert = Buffer.from(certs.join('\n'));
 
     return res;
 }
@@ -232,12 +244,15 @@ exports.load_tls_ini = (opts) => {
             '-main.rejectUnauthorized',
             '+main.honorCipherOrder',
             '-main.requestOCSP',
+            '-main.mutual_tls',
         ]
     }, () => {
         tlss.load_tls_ini();
     });
 
-    if (!cfg.no_tls_hosts) cfg.no_tls_hosts = {};
+    if (cfg.no_tls_hosts === undefined) cfg.no_tls_hosts = {};
+    if (cfg.mutual_auth_hosts === undefined) cfg.mutual_auth_hosts = {};
+    if (cfg.mutual_auth_hosts_exclude === undefined) cfg.mutual_auth_hosts_exclude = {};
 
     if (cfg.main.enableOCSPStapling !== undefined) {
         log.logerror('deprecated setting enableOCSPStapling in tls.ini');
@@ -261,6 +276,8 @@ exports.load_tls_ini = (opts) => {
     else if (!Array.isArray(cfg.main.requireAuthorized)) {
         cfg.main.requireAuthorized = [cfg.main.requireAuthorized];
     }
+
+    if (!Array.isArray(cfg.main.no_starttls_ports)) cfg.main.no_starttls_ports = [];
 
     tlss.cfg = cfg;
 
@@ -299,19 +316,19 @@ exports.applySocketOpts = name => {
 
     const allOpts = TLSSocketOptions.concat(createSecureContextOptions);
 
-    allOpts.forEach(opt => {
+    for (const opt of allOpts) {
 
         if (tlss.cfg[name] && tlss.cfg[name][opt] !== undefined) {
             // if the setting exists in tls.ini [name]
             tlss.saveOpt(name, opt, tlss.cfg[name][opt]);
-            return;
+            continue;
         }
 
         if (tlss.cfg.main[opt] !== undefined) {
             // if the setting exists in tls.ini [main]
             // then save it to the certsByHost options
             tlss.saveOpt(name, opt, tlss.cfg.main[opt]);
-            return;
+            continue;
         }
 
         // defaults
@@ -335,7 +352,7 @@ exports.applySocketOpts = name => {
                 tlss.saveOpt(name, opt, SNICallback);
                 break;
         }
-    })
+    }
 }
 
 exports.load_default_opts = () => {
@@ -467,7 +484,7 @@ exports.get_certs_dir = (tlsDir, done) => {
                     return;
                 }
 
-                log.logdebug(cert);
+                // log.logdebug(cert);  // DANGER: Also logs private key!
                 cert.names.forEach(name => {
                     tlss.applySocketOpts(name);
 
@@ -616,15 +633,11 @@ exports.ocsp = ocsp;
 
 exports.get_rejectUnauthorized = (rejectUnauthorized, port, port_list) => {
     // console.log(`rejectUnauthorized: ${rejectUnauthorized}, port ${port}, list: ${port_list}`)
-    if (rejectUnauthorized) {
-        // console.log('true for all ports');
-        return true;
-    }
-    if (port_list.includes(port)) {
-        // console.log('port matched true');
-        return true;
-    }
-    // console.log('returning default false');
+
+    if (rejectUnauthorized) return true;
+
+    if (port_list.includes(port)) return true;
+
     return false;
 }
 
@@ -686,6 +699,11 @@ function createServer (cb) {
     return server;
 }
 
+function getCertFor (host) {
+    if (host && certsByHost[host]) return certsByHost[host];
+    return certsByHost['*'];  // the default TLS cert
+}
+
 function connect (port, host, cb) {
     let conn_options = {};
     if (typeof port === 'object') {
@@ -706,7 +724,22 @@ function connect (port, host, cb) {
         cryptoSocket.removeAllListeners('data');
 
         if (exports.tls_valid) {
-            options = Object.assign(options, certsByHost['*']);
+            /* SUNSET notice: code added 2021-01. We've changed the default to not
+               send TLS client certificates. The mutual_tls flag switches them back
+               on. If no need for these settings surfaces in 2 years, nuke this block
+               of code. If you care about these options, create a PR removing this
+               comment. See #2693.
+            */
+            if (exports.cfg === undefined) exports.load_tls_ini();
+            if (exports.cfg.mutual_auth_hosts[host]) {
+                options = Object.assign(options, getCertFor(exports.cfg.mutual_auth_hosts[host]));
+            }
+            else if (exports.cfg.mutual_auth_hosts_exclude[host]) {
+                // send no client cert
+            }
+            else if (exports.cfg.main.mutual_tls) {
+                options = Object.assign(options, getCertFor(host));
+            }
         }
         options.socket = cryptoSocket;
 

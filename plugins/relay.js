@@ -130,10 +130,11 @@ exports.is_acl_allowed = function (connection) {
 exports.dest_domains = function (next, connection, params) {
     const plugin = this;
     if (!plugin.cfg.relay.dest_domains) { return next(); }
-    const transaction = connection.transaction;
+    const { relaying, transaction } = connection ?? {}
+    if (!transaction) return next();
 
     // Skip this if the host is already allowed to relay
-    if (connection.relaying) {
+    if (relaying) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(relay)'});
         return next();
     }
@@ -187,11 +188,14 @@ exports.force_routing = function (next, hmail, domain) {
     if (!plugin.cfg.relay.force_routing) { return next(); }
     if (!plugin.dest) { return next(); }
     if (!plugin.dest.domains) { return next(); }
-    const route = plugin.dest.domains[domain];
+    let route = plugin.dest.domains[domain];
 
     if (!route) {
-        plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
-        return next();
+        route = plugin.dest.domains.any;
+        if (!route) {
+            plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
+            return next();
+        }
     }
 
     const nexthop = JSON.parse(route).nexthop;

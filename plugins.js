@@ -58,10 +58,8 @@ class Plugin {
         */
 
         plugin.hasPackageJson = false;
-        let name = plugin.name;
-        if (/^haraka-plugin-/.test(name)) {
-            name = name.replace(/^haraka-plugin-/, '');
-        }
+        const name = plugin.name.startsWith('haraka-plugin-') ? plugin.name.substr(14) : plugin.name;
+        if (plugin.name !== name) plugin.name = name;
 
         let paths = [];
         if (process.env.HARAKA) {
@@ -319,6 +317,7 @@ plugins.load_plugins = override => {
     }
 
     plugin_list.forEach(plugin => {
+        if (plugin.startsWith('haraka-plugin-')) plugin = plugin.substr(14)
         if (plugins.deprecated[plugin]) {
             logger.lognotice(`the plugin ${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
             plugins.load_plugin(plugins.deprecated[plugin]);
@@ -353,9 +352,10 @@ plugins.deprecated = {
     'connect.fcrdns'      : 'fcrdns',
     'connect.geoip'       : 'geoip',
     'connect.rdns_access' : 'access',
-    'data.nomsgid'        : 'data.headers',
-    'data.noreceived'     : 'data.headers',
-    'data.rfc5322_header_checks': 'data.headers',
+    'data.nomsgid'        : 'headers',
+    'data.noreceived'     : 'headers',
+    'data.rfc5322_header_checks': 'headers',
+    'data.headers'        : 'headers',
     'log.syslog'          : 'syslog',
     'mail_from.access'    : 'access',
     'mail_from.blocklist' : 'access',
@@ -527,6 +527,11 @@ plugins.run_next_hook = (hook, object, params) => {
 
     if (hook !== 'log') {
         object.logdebug(`running ${hook} hook in ${item[0].name} plugin`);
+    }
+
+    if (object.transaction && object.transaction.notes.skip_plugins.includes(item[0].name)) {
+        object.logdebug(`skipping ${item[0].name}_${hook} by request in notes`);
+        return callback();
     }
 
     try {

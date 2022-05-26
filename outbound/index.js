@@ -16,7 +16,7 @@ const trans       = require('../transaction');
 const plugins     = require('../plugins');
 const FsyncWriteStream = require('./fsync_writestream');
 
-const cfg         = require('./config');
+const obc         = require('./config');
 const queuelib    = require('./queue');
 const HMailItem   = require('./hmail');
 const TODOItem    = require('./todo');
@@ -205,7 +205,7 @@ function stream_line_reader (stream, transaction, cb) {
 function get_deliveries (transaction) {
     const deliveries = [];
 
-    if (cfg.always_split) {
+    if (obc.cfg.always_split) {
         logger.logdebug({name: "outbound"}, "always split");
         transaction.rcpt_to.forEach(rcpt => {
             deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
@@ -232,15 +232,15 @@ exports.send_trans_email = function (transaction, next) {
     // add potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
         logger.loginfo("[outbound] Adding missing Message-Id header");
-        transaction.add_header('Message-Id', `<${transaction.uuid}@${config.get('me')}>`);
+        transaction.add_header('Message-Id', `<${transaction.uuid}@${net_utils.get_primary_host_name()}>`);
     }
     if (!transaction.header.get_all('Date').length) {
         logger.loginfo("[outbound] Adding missing Date header");
         transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
-    if (cfg.received_header !== 'disabled') {
-        transaction.add_leading_header('Received', `(${cfg.received_header}); ${utils.date_to_str(new Date())}`);
+    if (obc.cfg.received_header !== 'disabled') {
+        transaction.add_leading_header('Received', `(${obc.cfg.received_header}); ${utils.date_to_str(new Date())}`);
     }
 
     const connection = {

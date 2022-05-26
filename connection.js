@@ -25,7 +25,6 @@ const plugins     = require('./plugins');
 const rfc1869     = require('./rfc1869');
 const outbound    = require('./outbound');
 
-const hpj         = fs.readFileSync(path.join(__dirname, 'package.json'));
 const states      = constants.connection.state;
 
 // Load HAProxy hosts into an object for fast lookups
@@ -39,12 +38,10 @@ function loadHAProxyHosts () {
     for (let i=0; i<hosts.length; i++) {
         const host = hosts[i].split(/\//);
         if (net.isIPv6(host[0])) {
-            new_ipv6_hosts[i] =
-                [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
+            new_ipv6_hosts[i] = [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
         }
         else {
-            new_ipv4_hosts[i] =
-                [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
+            new_ipv4_hosts[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
         }
     }
     haproxy_hosts_ipv4 = new_ipv4_hosts;
@@ -53,13 +50,15 @@ function loadHAProxyHosts () {
 loadHAProxyHosts();
 
 class Connection {
-    constructor (client, server) {
+    constructor (client, server, cfg) {
         this.client = client;
         this.server = server;
+        this.cfg = cfg;
+
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
-            host: config.get('me') || os.hostname(),
+            host: net_utils.get_primary_host_name(),
             info: 'Haraka',
         };
         this.remote = {
@@ -132,9 +131,9 @@ class Connection {
         this.errors = 0;
         this.last_rcpt_msg = null;
         this.hook = null;
-        this.header_hide_version = !!config.get('header_hide_version');
-        if (!this.header_hide_version) {
-            this.local.info += `/${JSON.parse(hpj).version}`;
+        if (this.cfg.headers.show_version) {
+            const hpj = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json')));
+            this.local.info += `/${hpj.version}`;
         }
         Connection.setupClient(this);
     }
@@ -147,54 +146,56 @@ class Connection {
         }
 
         const local_addr = self.server.address();
-        if (local_addr && local_addr.address) {
-            self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
-            self.set('local', 'port', local_addr.port);
-            self.results.add({name: 'local'}, self.local);
-        }
+        self.set('local', 'ip', ipaddr.process(self.client.localAddress || local_addr.address).toString());
+        self.set('local', 'port', (self.client.localPort || local_addr.port));
+        self.results.add({name: 'local'}, self.local);
+
         self.set('remote', 'ip', ipaddr.process(ip).toString());
         self.set('remote', 'port', self.client.remotePort);
         self.results.add({name: 'remote'}, self.remote);
 
-        self.lognotice(
-            'connect',
-            {
-                ip: self.remote.ip,
-                port: self.remote.port,
-                local_ip: self.local.ip,
-                local_port: self.local.port
-            }
-        );
-
-        const has_host = self.remote.host ? `${self.remote.host} ` : '';
-        const rhost = `client ${has_host}[${self.remote.ip}]`
+        self.lognotice( 'connect', {
+            ip: self.remote.ip,
+            port: self.remote.port,
+            local_ip: self.local.ip,
+            local_port: self.local.port
+        });
 
         if (!self.client.on) return;
+
+        const log_data = {ip: self.remote.ip}
+        if (self.remote.host) log_data.host = self.remote.host
 
         self.client.on('end', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
-            self.loginfo(`${rhost} half closed connection`);
+            self.loginfo('client half closed connection', log_data);
             self.fail();
         });
 
         self.client.on('close', has_error => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
-            self.loginfo(`${rhost} dropped connection`);
+            self.loginfo('client dropped connection', log_data);
             self.fail();
         });
 
         self.client.on('error', err => {
             if (self.state >= states.DISCONNECTING) return;
-            self.loginfo(`${rhost} connection error: ${err}`);
+            self.loginfo(`client connection error: ${err}`, log_data);
             self.fail();
         });
 
         self.client.on('timeout', () => {
+            // FIN has sent, when timeout just destroy socket
+            if (self.state >= states.DISCONNECTED) {
+                self.client.destroy();
+                self.loginfo(`timeout, destroy socket (state:${self.state})`)
+                return;
+            }
             if (self.state >= states.DISCONNECTING) return;
             self.respond(421, 'timeout', () => {
-                self.fail(`${rhost} connection timed out`);
+                self.fail('client connection timed out', log_data);
             });
         });
 
@@ -248,6 +249,7 @@ class Connection {
         let loc = this;
         for (let i=0; i < path_parts.length; i++) {
             const part = path_parts[i];
+            if (part === "__proto__" || part === "constructor") continue;
 
             // while another part remains
             if (i < (path_parts.length - 1)) {
@@ -596,8 +598,8 @@ class Connection {
         // Process any buffered commands (PIPELINING)
         this._process_data();
     }
-    fail (err) {
-        if (err) this.logwarn(err);
+    fail (err, err_data) {
+        if (err) this.logwarn(err, err_data);
         this.hooks_to_run = [];
         this.disconnect();
     }
@@ -672,7 +674,7 @@ class Connection {
     init_transaction (cb) {
         const self = this;
         this.reset_transaction(() => {
-            self.transaction = trans.createTransaction(self.tran_uuid());
+            self.transaction = trans.createTransaction(self.tran_uuid(), self.cfg);
             // Catch any errors from the message_stream
             self.transaction.message_stream.on('error', (err) => {
                 self.logcrit(`message_stream error: ${err.message}`);
@@ -779,7 +781,7 @@ class Connection {
                 break;
             case constants.denydisconnect:
             case constants.denysoftdisconnect:
-                this.respond(521, msg || "Unrecognized command", () => {
+                this.respond(retval === constants.denydisconnect ? 521 : 421, msg || "Unrecognized command", () => {
                     self.disconnect();
                 });
                 break;
@@ -909,8 +911,11 @@ class Connection {
                     `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message}`,
                     "PIPELINING",
                     "8BITMIME",
-                    "SMTPUTF8",
                 ];
+
+                if (this.cfg.main.smtputf8) {
+                    response.push("SMTPUTF8");
+                }
 
                 response.push(`SIZE ${this.max_bytes}`);
 
@@ -1052,18 +1057,16 @@ class Connection {
 
         if (msg && action !== 'accept') {
             if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
-                recipient.msg   = msg.reply;
-                recipient.code  = msg.code;
+                recipient.msg  = msg.reply;
+                recipient.code = msg.code;
             }
             else {
                 recipient.msg  = msg;
-                recipient.code  = constants.translate(retval);
+                recipient.code = constants.translate(retval);
             }
         }
 
-        this.transaction.results.push({name: 'rcpt_to'}, {
-            recipient,
-        });
+        this.transaction.results.push({name: 'rcpt_to'}, { recipient });
     }
     rcpt_ok_respond (retval, msg) {
         const self = this;
@@ -1348,7 +1351,7 @@ class Connection {
         let results;
         let from;
         try {
-            results = rfc1869.parse("mail", line, config.get('strict_rfc1869') && !this.relaying);
+            results = rfc1869.parse('mail', line, this.cfg.main.strict_rfc1869 && !this.relaying);
             from    = new Address (results.shift());
         }
         catch (err) {
@@ -1406,7 +1409,7 @@ class Connection {
         let results;
         let recip;
         try {
-            results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') && !this.relaying);
+            results = rfc1869.parse('rcpt', line, this.cfg.main.strict_rfc1869 && !this.relaying);
             recip   = new Address(results.shift());
         }
         catch (err) {
@@ -1450,28 +1453,21 @@ class Connection {
         let sslheader;
 
         if (this.get('tls.cipher.version')) {
-            sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name}`;
-            if (this.tls.verified) {
-                sslheader += ' verify=OK)';
-            }
-            else {
-                if (this.tls.verifyError && this.tls.verifyError.code === 'UNABLE_TO_GET_ISSUER_CERT') {
-                    sslheader += ' verify=NO)';
-                }
-                else {
-                    sslheader += ')';
-                }
-            }
+            // standardName appeared in Node.js v12.16 and v13.4
+            // RFC 8314
+            sslheader = `tls ${this.tls.cipher.standardName || this.tls.cipher.name}`;
         }
 
-        let received_header = `from ${this.hello.host} (${this.get_remote('info')})
-\tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}
+        let received_header = `from ${this.hello.host} (${this.get_remote('info')})\r
+\tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}\r
 \tenvelope-from ${this.transaction.mail_from.format()}`;
 
-        if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
-        if (sslheader)       received_header += `\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+        if (sslheader)       received_header += `\r\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
 
-        received_header += `;\n\t${utils.date_to_str(new Date())}`
+        // Does not follow RFC 5321 section 4.4 grammar
+        if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
+
+        received_header += `;\r\n\t${utils.date_to_str(new Date())}`
 
         return received_header;
     }
@@ -1506,7 +1502,7 @@ class Connection {
             header = header.concat(this.transaction.notes.authentication_results);
         }
         if (header.length === 1) return '';  // no results
-        return header.join('; ');
+        return header.join(";\r\n\t");
     }
     auth_results_clean () {
         // move any existing Auth-Res headers to Original-Auth-Res headers
@@ -1515,9 +1511,9 @@ class Connection {
         if (ars.length === 0) return;
 
         for (let i=0; i < ars.length; i++) {
-            this.transaction.remove_header( ars[i] );
             this.transaction.add_header('Original-Authentication-Results', ars[i]);
         }
+        this.transaction.remove_header('Authentication-Results');
         this.logdebug("Authentication-Results moved to Original-Authentication-Results");
     }
     cmd_data (args) {
@@ -1539,7 +1535,9 @@ class Connection {
             return this.respond(503, "RCPT required first");
         }
 
-        this.accumulate_data(`Received: ${this.received_line()}\r\n`);
+        if (this.cfg.headers.add_received) {
+            this.accumulate_data(`Received: ${this.received_line()}\r\n`);
+        }
         plugins.run_hooks('data', this);
     }
     data_respond (retval, msg) {
@@ -1597,7 +1595,7 @@ class Connection {
             line[0] === 0x2e &&
             line[1] === 0x0a) {
             this.lognotice('Client sent bare line-feed - .\\n rather than .\\r\\n');
-            this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf.html", () => {
+            this.respond(451, "Bare line-feed; see http://haraka.github.io/barelf/", () => {
                 self.reset_transaction();
             });
             return;
@@ -1630,8 +1628,7 @@ class Connection {
         }
 
         // Check max received headers count
-        const max_received = parseInt(config.get('max_received_count')) || 100;
-        if (this.transaction.header.get_all('received').length > max_received) {
+        if (this.transaction.header.get_all('received').length > this.cfg.headers.max_received) {
             this.logerror("Incoming message had too many Received headers");
             this.respond(550, "Too many received headers - possible mail loop", () => {
                 self.reset_transaction();
@@ -1640,11 +1637,13 @@ class Connection {
         }
 
         // Warn if we hit the maximum parsed header lines limit
-        if (this.transaction.header_lines.length >= trans.MAX_HEADER_LINES) {
-            this.logwarn(`Incoming message reached maximum parsing limit of ${trans.MAX_HEADER_LINES} header lines`);
+        if (this.transaction.header_lines.length >= this.cfg.headers.max_lines) {
+            this.logwarn(`Incoming message reached maximum parsing limit of ${this.cfg.headers.max_lines} header lines`);
         }
 
-        this.auth_results_clean();   // rename old A-R headers
+        if (this.cfg.headers.clean_auth_results) {
+            this.auth_results_clean();   // rename old A-R headers
+        }
         const ar_field = this.auth_results();  // assemble new one
         if (ar_field) {
             this.transaction.add_header('Authentication-Results', ar_field);
@@ -1921,11 +1920,11 @@ class Connection {
 
 exports.Connection = Connection;
 
-exports.createConnection = (client, server) => {
-    return new Connection(client, server);
+exports.createConnection = (client, server, cfg) => {
+    return new Connection(client, server, cfg);
 }
 
-// copy logger methods into Connection:
+// add logger methods to Connection:
 for (const key in logger) {
     if (!/^log\w/.test(key)) continue;
     Connection.prototype[key] = (function (level) {

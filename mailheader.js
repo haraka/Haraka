@@ -3,7 +3,8 @@
 /* eslint no-control-regex: 0 */
 
 const logger = require('./logger');
-const utils  = require('haraka-utils');
+const libmime = require('libmime');
+const libqp = require('libqp');
 let Iconv;
 try { Iconv = require('iconv').Iconv }
 catch (err) {
@@ -98,7 +99,7 @@ class Header {
     }
 
     get_all (key) {
-        return this.headers[key.toLowerCase()] || [];
+        return Object.freeze([...(this.headers[key.toLowerCase()] || [])]);
     }
 
     get_decoded (key) {
@@ -127,9 +128,7 @@ class Header {
         if (!key) key = 'X-Haraka-Blank';
         value = value.replace(/(\r?\n)*$/, '');
         if (/[^\x00-\x7f]/.test(value)) {
-            // Need to QP encode this header value and assume UTF-8
-            value = `=?UTF-8?q?${utils.encode_qp(value)}?=`;
-            value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
+            value = libmime.encodeWords(value, 'Q');
         }
         this._add_header(key.toLowerCase(), value, "unshift");
         this._add_header_decode(key.toLowerCase(), value, "unshift");
@@ -152,10 +151,7 @@ class Header {
         if (!key) key = 'X-Haraka-Blank';
         value = value.replace(/(\r?\n)*$/, '');
         if (/[^\x00-\x7f]/.test(value)) {
-            // Need to QP encode this header value and assume UTF-8
-            value = `=?UTF-8?q?${utils.encode_qp(value)}?=`;
-            // remove wraps - headers can only wrap at whitespace (with continuations)
-            value = value.replace(/=\n/g, '');
+            value = libmime.encodeWords(value, 'Q');
         }
         this._add_header(key.toLowerCase(), value, "push");
         this._add_header_decode(key.toLowerCase(), value, "push");
@@ -163,7 +159,7 @@ class Header {
     }
 
     lines () {
-        return this.header_list;
+        return Object.freeze([...this.header_list]);
     }
 
     toString () {
@@ -201,7 +197,7 @@ function _decode_header (matched, encoding, lang, cte, data) {
 
     switch (cte) {
         case 'Q':
-            data = utils.decode_qp(data.replace(/_/g, ' '));
+            data = libqp.decode(data.replace(/_/g, ' '));
             break;
         case 'B':
             data = Buffer.from(data, "base64");

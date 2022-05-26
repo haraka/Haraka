@@ -3,6 +3,7 @@
 
 const dns = require('dns');
 const ipaddr = require('ipaddr.js');
+const net_utils = require('haraka-net-utils')
 
 class SPF {
     constructor (count, been_there) {
@@ -467,7 +468,7 @@ class SPF {
             domain = dm[1];
         }
         // Fetch the MX records for the specified domain
-        dns.resolveMx(domain, (err, mxes) => {
+        net_utils.get_mx(domain, (err, mxes) => {
             if (err) {
                 switch (err.code) {
                     case dns.NOTFOUND:

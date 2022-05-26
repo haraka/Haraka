@@ -83,7 +83,7 @@ if [ -f "tests/plugins/$1.js" ]; then
 #!/usr/bin/env node
 'use strict'
 try {
-    var reporter = require('nodeunit').reporters.default;
+    var reporter = require('nodeunit-x').reporters.default;
 }
 catch (e) {
     console.log(`
@@ -102,8 +102,8 @@ reporter.run([ 'test' ], undefined, (err) => {
 EO_TEST_RUN
 
         sed -i '' \
-            -e 's/"_mocha"/"nodeunit"/' \
-            -e 's/"mocha"/"nodeunit"/' \
+            -e 's/"_mocha"/"nodeunit-x"/' \
+            -e 's/"mocha"/"nodeunit-x"/' \
             "$PLUGIN_REPO/package.json"
 
         $GIT_CMD add package.json

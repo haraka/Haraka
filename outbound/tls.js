@@ -7,7 +7,8 @@ const hkredis      = require('haraka-plugin-redis');
 
 const inheritable_opts = [
     'key', 'cert', 'ciphers', 'minVersion', 'dhparam',
-    'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
+    'requestCert', 'honorCipherOrder', 'rejectUnauthorized',
+    'force_tls_hosts'
 ];
 
 class OutboundTLS {
@@ -52,6 +53,7 @@ class OutboundTLS {
         }
 
         if (!cfg.no_tls_hosts) cfg.no_tls_hosts = [];
+        if (!cfg.force_tls_hosts) cfg.force_tls_hosts = [];
 
         this.cfg = cfg;
     }
@@ -95,7 +97,7 @@ class OutboundTLS {
 
         logger.lognotice(obtls, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
 
-        obtls.db.setex(dbkey, expiry, new Date(), (err, dbr) => {
+        obtls.db.setex(dbkey, expiry, (new Date()).toISOString(), (err, dbr) => {
             if (err) logger.logerror(obtls, `Redis returned error: ${err}`);
             cb();
         });

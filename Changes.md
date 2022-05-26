@@ -1,23 +1,147 @@
 
-## NEXT - 20YY-MM-DD
+## NEXT - 2022-MM-DD
 
 ### Changes
 
-* lint: add 'prefer-template'
-* restore TLS version info, set correctly #2723
-* fix broken bannering on nested mime parts #2736
+
+- dkim_sign: reformat dkim signature to multi-line #2991
+- dkim_sign: remove spurious error logging #3034
+- chore: add lots of `if (!transaction) return` in places #2732
+- doc(queue.js) spelling & grammar improvement #3051
+- doc(rails): add haraka-plugin-queue-rails #2995
+- doc(smtp.ini): correct spelling of SMTPUTF8 #2993
+- style(es6): use optional chaining when accessing transactions #2732
+- style(smtp_client): pass args as objects (was positional)
+- style(plugin/*): transaction guarding #3032
+- dep(generic-pool): 2.5 -> 3.8 (promises) #3033, #3060
+- dep(redis): 3.1 -> 4.1 #3058
+- dep(haraka-plugin-redis): 1.0 -> 2.0  #3038
+- dep(nodemailer): 6.7.0 to 6.7.2 #3000, #3004
+- deps: add explicit dependency on node-gyp 9
+- fix(conn): socket can't be release when disconnect after DATA command #2994
+- fix(attachment): error handling with complex archive #3035
+- fix(smtp_client): run "secured" once, fixes  #3020
+- fix(auth_proxy): run "secured" only once, improvement for #3022
+- fix(helo): remove multi-check from should_skip #3041
+- fix(outbound): outbound local mx check #3010
+- fix(outbound): prevent delivery loop when target MX resolves to local hostname #3002
+- test(windows): build shims for windows-2022 & node on windows #3052
+- test: restore CI tests to working order #3030
+
+
+## 2.8.28 - 2021-10-14
+
+### Changes
+
+- breaking: dkim.js has changed the constructor opts
+- tls_socket: more flexible pem file parsing #2986
+    - move bad certs into different directory, avoid test suite noise
+- added ability to define a default relay in relay_dest_domains
+- spamassassin: replace msg_too_big & should_check with should_skip #2972
+- spamassassin: allow returning DENYSOFT on errors #2967
+- dep: use caret version range for all dependencies #2965
+- outbound: disable outbound to localhost by default #2952
+- connection error logging: use key-value pairs #2921
+- tls: change default to NOT send TLS client certs #2902
+- dep: redis is now a dependency #2896
+- use address-rfc2821 2.0.0
+- http: use CDN for bootstrap/jquery, drop bower #2891
+- drop support for node 10  #2890
 
 ### New features
 
-* connection_close_message: added ability to override close connection message replacing `closing connection. Have a jolly good day.`
-* tls: add configurable minVersion to tls socket options
-* add JSON format for logging
+- tls: require secure and verified sockets for configured hosts/domains
+- DKIM plugin has got a couple of config options now
+- tls: add `no_starttls_ports` - an array of incoming ports where STARTTLS is not advertised
+- outbound: add local_mx_ok config #2952
+- skip plugins at runtime by pushing name into transaction.skip_plugins #2966
+- outbound: add ability to specify delay times for temporary fails in `temp_fail_intervals` #2969
+
+### Fixes
+
+- bounce: correctly set fail recipients #2901
+- bounce: correctly set bounce recipients #2899
+- Get local_ip from getsockname() instead of server properties #2914
+- Received header TLS section adheres more closely to RFC 8314 #2903
+- use RFC-2045 Quoted-Printable in email message body
+- use RFC-2047 Q encoded-words in email headers
+
+
+## 2.8.27 - 2021-01-05
+
+### Changes
+
+- bump verions of several dependencies #2888
+- propagate hmail notes to split copies #2887
+- log.ini: add json to list of formats in config doc #2881
+- exclude port 587 from TLS NO-GO feature #2875
+- strip _haraka-plugin-_ prefixes off plugin names in config/plugins #2873
+- pass smtp.ini config from Server into connections & transactions #2872
+
+### New features
+
+- add ability to disable SMTPUTF8 advertisement #2866
+
+### Fixes
+
+- assure headers.max_lines is initialized as integer #2878
+- require haraka-net-utils >= 1.2.2  #2876
+
+
+## 2.8.26 - 2020-11-18
+
+### Changes
+
+* add config options for OAR & AR headers #2855
+* plugins.js: also strip haraka-plugin prefix from plugin.name #2846
+* smtp_forward/spamssassin: grab refs of conn/txn to avoid crashes due to lack of existence. #2847
+* outbound: add extended reason to bounce message #2843
+* hgrep: replaced perl script with shell script #2842
+* connection: send temp error when requested #2841
+* headers: updated deprecated messages #2845
+* hmail: socket.on -> socket.once #2838
+* hmail: check for zero length queue file #2835
+* outbound: add os.hostname() as default for outbound HELO #2813
+* use node v10's mkdir instead of mkdirp #2797
+* CI: drop appveyor and Travis #2784
+* lint: add 'prefer-template'
+* update async to version 3.2.0 #2764
+* update redis to version 3.0.0 #2759
+* remove deprecated max_unrecognized_commands from config #2755
+* CI: add ES2017 support, drop node 8 #2740
+* fix broken bannering on nested mime parts #2736
+* restore TLS version info, set correctly #2723
+* better error message when invalid HELO hostname is rejected
+* bring STARTTLS "TLS NO-GO" feature in line with Outbound's #2792
+* add listener for secureConnect #2828
+* removed plugins/data.headers to haraka-plugin-headers #2826
+* add zero-length queue size check
+* send temp instead of hard error when asked to by `unrecognized_command`
+
+### New features
+
+* Allow web interface to be bound to unix socket #2768
+* tls: add configurable minVersion to tls socket options #2738
+* connection_close_message: added ability to override close connection message replacing `closing connection. Have a jolly good day.` #2730
+* add JSON format for logging #2739
 * support binding web interface to unix socket
 
 ### Fixes
 
-* TLS: don't abort loading certs in config/tls dir when an error is encountered.
-  Process every cert file and then emit errors. #2729
+* check for punycode domain names when resolving MX, avoid crash #2861
+* wait until entire message is spooled when spool_after in use #2840
+* hmail: add missing space in temp_fail emitter #2837
+* fix outbound config reloading after outbound split #2802
+* smtp_forward: remove redundant outbound hook #2796
+* smtp_forward: this plugin does not use the queue_outbound hook anymore #2795
+* Fix connection pool not being unique when hosts and ports were equal between domains #2789
+* fix connection pool not being unique when hosts and ports were equal between domains #2788
+* Fix outbound.bounce_message To: header (and add Auto-Submitted) #2782
+* Fix support for DKIM signing when forwarding and aliasing is enabled #2776
+* Better error message when EHLO hostname does not have a dot #2775
+* fix bannering on nested mime parts #2737
+* TLS: don't abort loading certs in config/tls dir when an error is encountered. Process every cert file and then emit errors. #2729
+* restore TLS version, correctly #2723
 
 
 ## 2.8.25 - 2019-10-11
@@ -363,7 +487,7 @@
     * update js-yaml to version 3.10.0 #2097
     * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
-    
+
 * New Features
     * Bounces can have an HTML part #2091
 * Fixes

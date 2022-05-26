@@ -22,7 +22,7 @@ If the directory `config/tls` exists, each file within the directory is expected
 cat example.com.key example.com.crt ca.crt > config/tls/example.com.pem
 ```
 
-An example [acme.sh](https://acme.sh) deployment [script](https://github.com/msimerson/Mail-Toaster-6/blob/master/provision-letsencrypt.sh) demonstrates how to install [Let's Encrypt](https://letsencrypt.org) certificates to the Haraka `config/tls`directory.
+An example [acme.sh](https://acme.sh) deployment [script](https://github.com/msimerson/Mail-Toaster-6/blob/master/provision/letsencrypt.sh) demonstrates how to install [Let's Encrypt](https://letsencrypt.org) certificates to the Haraka `config/tls`directory.
 
 Haraka has [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) support. When the remote MUA/MTA presents a servername during the TLS handshake and a TLS certificate with that Common Name matches, that certificate will be presented. If no match is found, the default certificate (see Certificate Files above) is presented.
 
@@ -90,6 +90,28 @@ If needed, add this section to the `config/tls.ini` file and list any IP ranges 
 ```
 
 The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information about the following options.
+
+### no_starttls_ports
+
+An array of incoming ports on which Haraka will not advertise STARTTLS capability.
+
+```ini
+no_starttls_ports[]=2525
+```
+
+### force_tls_hosts
+
+For known good TLS hosts, it's possible to force that the outbound mailer will only connect via secure sockets. This makes Haraka use *forced TLS* instead of *opportunistic TLS*. For forced TLS, the STARTTLS upgrade must succeed with a valid certificate (overriding `rejectUnauthorized`). The list is matched both against the host (MX record or `nexthop` in `relay_dest_domains.ini`), and the domain name of the email address.
+
+Note: unlike `no_tls_hosts`, this feature is implemented as an array:
+
+```ini
+[outbound]
+force_tls_hosts[]=172.17.123.1
+force_tls_hosts[]=172.17.124.0/24
+force_tls_hosts[]=mx.example.org
+force_tls_hosts[]=example.com
+```
 
 ### ciphers
 
@@ -178,3 +200,13 @@ mail, put them under an `[inbound]` parameter group. Outbound options
 can go under an `[outbound]` parameter group, and plugins that use
 SMTP tls for queueing such as `smtp_proxy` and `smtp_forward` can
 use that plugin name for plugin specific options.
+
+## `[redis]` section
+
+This section is mainly used to enable so called _TLS NO-GO_ feature that essentially stops advertising/using TLS if there was a problem setting it up previously. We use `no_tls|ip.add.re.ss` key to store the flag in redis. There are a couple of settings that control the behavior:
+
+`disable_for_failed_hosts = true` to enable the feature
+
+`disable_expiry = 604800` to set for how long we disable TLS for failing host, in seconds
+
+`disable_inbound_expiry = 3600` same as above, but applies to inbound (aka STARTTLS capability) only

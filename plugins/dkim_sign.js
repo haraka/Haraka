@@ -118,10 +118,14 @@ class DKIMSignStream extends Stream {
         }
 
         // Create DKIM header
-        let dkim_header = `v=1;a=rsa-sha256;bh=${bodyhash};c=relaxed/simple;d=${this.domain_name};h=${headers.join(':')};s=${this.selector};b=`;
+        let dkim_header = `v=1; a=rsa-sha256; c=relaxed/simple; d=${this.domain_name}; s=${this.selector}; h=${headers.join(':')}; bh=${bodyhash}; b=`;
         this.signer.update(`dkim-signature:${dkim_header}`);
         const signature = this.signer.sign(this.private_key, 'base64');
-        dkim_header += signature;
+        dkim_header = `v=1; a=rsa-sha256; c=relaxed/simple;\r\n\td=${this.domain_name}; s=${this.selector};\r\n\th=${headers.join(':')};\r\n\tbh=${bodyhash};\r\n\tb=`;
+        dkim_header += signature.substring(0,74);
+        for (let i=74; i<signature.length; i+=76) {
+            dkim_header += `\r\n\t${signature.substring(i, i+76)}`;
+        }
 
         if (this.end_callback) this.end_callback(null, dkim_header);
         this.end_callback = null;
@@ -171,20 +175,19 @@ exports.load_key = function (file) {
 exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next, connection) {
     const plugin = this;
     if (plugin.cfg.main.disabled) return next();
+    if (!connection?.transaction) return next();
 
-    if (connection.transaction.notes.dkim_signed) {
+    if (connection.transaction.notes?.dkim_signed) {
         connection.logdebug(plugin, 'already signed');
         return next();
     }
 
     exports.get_sign_properties(connection, (err, props) => {
+        if (!connection?.transaction) return next();
         // props: selector, domain, & private_key
         if (err) connection.logerror(plugin, `${err.message}`);
 
-        if (!plugin.has_key_data(connection, props)) {
-            connection.logerror(`missing key data for ${props.selector}.${props.domain}`)
-            return next();
-        }
+        if (!plugin.has_key_data(connection, props)) return next();
 
         connection.logdebug(plugin, `domain: ${props.domain}`);
 
@@ -210,6 +213,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
 }
 
 exports.get_sign_properties = function (connection, done) {
+    if (!connection.transaction) return;
     const plugin = this;
 
     const domain = plugin.get_sender_domain(connection);
@@ -226,6 +230,8 @@ exports.get_sign_properties = function (connection, done) {
             connection.logerror(plugin, err);
             return done(new Error(`Error getting DKIM key_dir for ${domain}: ${err}`), props)
         }
+
+        if (!connection.transaction) return done(null, props);
 
         // a directory for ${domain} exists
         if (keydir) {
@@ -339,12 +345,9 @@ exports.get_headers_to_sign = function (cfg) {
 
 exports.get_sender_domain = function (connection) {
     const plugin = this;
-    if (!connection.transaction) {
-        connection.logerror(plugin, 'no transaction!')
-        return;
-    }
 
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
+    if (!txn) return;
 
     // fallback: use Envelope FROM when header parsing fails
     let domain;
@@ -355,6 +358,8 @@ exports.get_sender_domain = function (connection) {
         }
     }
 
+    // In case of forwarding, only use the Envelope
+    if (txn.notes.forward) return domain;
     if (!txn.header) return domain;
 
     // the DKIM signing key should be aligned with the domain in the From

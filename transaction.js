@@ -5,7 +5,6 @@
 const util   = require('util');
 
 // haraka npm modules
-const config = require('haraka-config');
 const Notes  = require('haraka-notes');
 const utils  = require('haraka-utils');
 
@@ -14,11 +13,10 @@ const Header = require('./mailheader').Header;
 const body   = require('./mailbody');
 const MessageStream = require('./messagestream');
 
-const MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
-
 class Transaction {
-    constructor () {
-        this.uuid = null;
+    constructor (uuid, cfg) {
+        this.uuid = uuid || utils.uuid();
+        this.cfg = cfg || load_smtp_ini();
         this.mail_from = null;
         this.rcpt_to = [];
         this.header_lines = [];
@@ -32,8 +30,9 @@ class Transaction {
         this.body = null;
         this.parse_body = false;
         this.notes = new Notes();
+        this.notes.skip_plugins = [];
         this.header = new Header();
-        this.message_stream = null;
+        this.message_stream = new MessageStream(this.cfg, this.uuid, this.header.header_list);
         this.discard_data = false;
         this.resetting = false;
         this.rcpt_count = {
@@ -151,7 +150,7 @@ class Transaction {
         }
         else if (this.header_pos === 0) {
             // Build up headers
-            if (this.header_lines.length < MAX_HEADER_LINES) {
+            if (this.header_lines.length < this.cfg.headers.max_lines) {
                 if (line[0] === 0x2E) line = line.slice(1); // Strip leading '.'
                 this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'));
             }
@@ -255,13 +254,17 @@ class Transaction {
 }
 
 exports.Transaction = Transaction;
-exports.MAX_HEADER_LINES = MAX_HEADER_LINES;
 
-exports.createTransaction = uuid => {
-    const t = new Transaction();
-    t.uuid = uuid || utils.uuid();
-    // Initialize MessageStream here to pass in the UUID
-    t.message_stream = new MessageStream(
-        config.get('smtp.ini'), t.uuid, t.header.header_list);
-    return t;
+exports.createTransaction = (uuid, cfg) => {
+    return new Transaction(uuid, cfg);
+}
+
+// sunset after test-fixtures createTransaction() is updated to pass in cfg
+function load_smtp_ini () {
+    const config = require('haraka-config');
+    const cfg = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] });
+    if (!cfg.headers.max_lines) {
+        cfg.headers.max_lines = parseInt(config.get('max_header_lines')) || 1000;
+    }
+    return cfg;
 }

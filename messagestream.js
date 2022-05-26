@@ -22,10 +22,10 @@ class MessageStream extends Stream {
         this.end_called = false;
         this.end_callback = null;
         this.buffered = 0;
+        this.total_buffered = 0;
         this._queue = [];
         this.max_data_inflight = 0;
-        this.buffer_max = (!isNaN(cfg.main.spool_after) ?
-            Number(cfg.main.spool_after) : -1);
+        this.buffer_max = (!isNaN(cfg.main.spool_after) ? Number(cfg.main.spool_after) : -1);
         this.spooling = false;
         this.fd = null;
         this.open_pending = false;
@@ -120,6 +120,7 @@ class MessageStream extends Stream {
         const self = this;
         if (data) {
             this.buffered += data.length;
+            this.total_buffered += data.length;
             this._queue.push(data);
         }
         // Stats
@@ -129,7 +130,7 @@ class MessageStream extends Stream {
         // Abort if we have pending disk operations
         if (this.open_pending || this.write_pending) return false;
         // Do we need to spool to disk?
-        if (this.buffer_max !== -1 && this.buffered > this.buffer_max) {
+        if (this.buffer_max !== -1 && this.total_buffered > this.buffer_max) {
             this.spooling = true;
         }
         // Have we completely finished writing all data?
@@ -206,9 +207,7 @@ class MessageStream extends Stream {
             throw new Error('end not called!');
         }
 
-        if (!this.readable || this.paused || !this.write_complete) {
-            return;
-        }
+        if (!this.readable || this.paused || !this.write_complete) return;
 
         // Buffer and send headers first.
         //
@@ -228,8 +227,7 @@ class MessageStream extends Stream {
             this.read_ce.fill(this.line_endings);
             // Loop
             setImmediate(() => {
-                if (self.readable && !self.paused)
-                    self._read();
+                if (self.readable && !self.paused) self._read();
             });
         }
         else {
@@ -286,7 +284,7 @@ class MessageStream extends Stream {
             if (this.line_endings === '\n' && line.length >= 2 &&
                 line[line.length-1] === 0x0a && line[line.length-2] === 0x0d
             ) {
-                // We copy the line to a new buffer before modifying the copy
+                // copy the line to a new buffer before modifying the copy
                 line = Buffer.from(line);
                 line[line.length-2] = 0x0a;
                 line = line.slice(0, line.length-1);
@@ -336,7 +334,7 @@ class MessageStream extends Stream {
         this.in_pipe = true;
         this.readable = true;
         this.paused = false;
-        this.headers_done = false;
+        this.headers_done = (options && options.skip_headers);
         this.headers_found_eoh = false;
         this.rs = null;
         this.read_ce = new ChunkEmitter(this.buffer_size);

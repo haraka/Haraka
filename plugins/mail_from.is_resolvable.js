@@ -39,7 +39,8 @@ exports.load_ini = function () {
 exports.hook_mail = function (next, connection, params) {
     const plugin    = this;
     const mail_from = params[0];
-    const txn       = connection.transaction;
+    const txn       = connection?.transaction;
+    if (!txn) return next();
     const results   = txn.results;
 
     // Check for MAIL FROM without an @ first - ignore those here
@@ -67,7 +68,7 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     // IS: IPv6 compatible
-    dns.resolveMx(domain, (err, addresses) => {
+    net_utils.get_mx(domain, (err, addresses) => {
         if (!txn) return;
         if (err && plugin.mxErr(connection, domain, 'MX', err, mxDone)) return;
 
@@ -140,8 +141,10 @@ exports.hook_mail = function (next, connection, params) {
 
 exports.mxErr = function (connection, domain, type, err, mxDone) {
     const plugin = this;
-    const txn = connection.transaction;
+
+    const txn = connection?.transaction;
     if (!txn) return;
+
     txn.results.add(plugin, {msg: `${domain}:${type}:${err.message}`});
     connection.logdebug(plugin, `${domain}:${type} => ${err.message}`);
     switch (err.code) {
@@ -160,7 +163,8 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
 // IS: IPv6 compatible
 exports.implicit_mx = function (connection, domain, mxDone) {
     const plugin = this;
-    const txn = connection.transaction;
+    const txn = connection?.transaction;
+    if (!txn) return;
 
     net_utils.get_ips_by_host(domain, (err, addresses) => {
         if (!txn) return;
@@ -175,13 +179,13 @@ exports.implicit_mx = function (connection, domain, mxDone) {
         for (let i=0; i < addresses.length; i++) {
             const addr = addresses[i];
             // Ignore anything obviously bogus
-            if (net.isIPv4(addr)){
+            if (net.isIPv4(addr)) {
                 if (plugin.re_bogus_ip.test(addr)) {
                     connection.logdebug(plugin, `${domain}: discarding ${addr}`);
                     continue;
                 }
             }
-            if (net.isIPv6(addr)){
+            if (net.isIPv6(addr)) {
                 if (net_utils.ipv6_bogus(addr)) {
                     connection.logdebug(plugin, `${domain}: discarding ${addr}`);
                     continue;
