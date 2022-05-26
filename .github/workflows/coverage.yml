@@ -1,0 +1,40 @@
+name: Test Coverage
+
+on: [ pull_request ]
+
+env:
+  CI: true
+  node_version: 16
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-node@v3
+      name: Node.js ${{ env.node_version }}
+      with:
+        node-version: ${{ env.node_version }}
+
+    - name: install libarchive-tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libarchive-tools
+
+    - run: npm install
+
+    - name: run coverage
+      run: |
+        npm install --no-save c8
+        npx c8 --reporter=lcovonly npm run test
+      env:
+        NODE_ENV: cov
+
+    - name: codecov
+      uses: codecov/codecov-action@v2
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}

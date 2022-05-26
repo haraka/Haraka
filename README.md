@@ -2,8 +2,7 @@
 Haraka - a Node.js Mail Server
 ------------------------------
 
-![Tests](https://github.com/haraka/Haraka/workflows/Haraka%20Tests/badge.svg)
-![Tests - Windows](https://github.com/haraka/Haraka/workflows/Haraka%20Tests%20-%20Windows/badge.svg)
+![Tests](https://github.com/haraka/Haraka/actions/workflows/ci.yml/badge.svg)
 [![Coverage Status][cov-img]][cov-url]
 
 
@@ -131,8 +130,7 @@ Finally run Haraka:
 
 Haraka is MIT licensed - see the [LICENSE][16] file for details.
 
-Haraka is a project started by [Matt Sergeant][17], a 10 year veteran of the email
-and anti-spam world. Previous projects have been the project leader for
+Haraka is a project started by [Matt Sergeant][17], a 10 year veteran of the email and anti-spam world. Previous projects have been the project leader for
 SpamAssassin and a hacker on [Qpsmtpd][13].
 
 [1]: http://nodejs.org/
