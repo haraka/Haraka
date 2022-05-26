@@ -91,7 +91,6 @@
     "test": "node run_tests",
     "lint": "npx eslint *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
     "lintfix": "npx eslint --fix *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "cover": "NODE_ENV=cov npx nyc --reporter=lcovonly npm run test",
     "versions": "npx dependency-version-checker check"
   }
 }
