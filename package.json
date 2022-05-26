@@ -64,7 +64,7 @@
     "haraka-plugin-recipient-routes" : "^1.0.2",
     "haraka-plugin-rspamd"  : "^1.1.6",
     "haraka-plugin-syslog"  : "^1.0.3",
-    "haraka-plugin-watch"   : "^1.0.15",
+    "haraka-plugin-watch"   : "^2.0.0",
     "ocsp"                  : "~1.2.0",
     "redis"                 : "~4.1.0",
     "tmp"                   : "~0.2.1"
