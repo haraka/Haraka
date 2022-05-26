@@ -249,6 +249,7 @@ class Connection {
         let loc = this;
         for (let i=0; i < path_parts.length; i++) {
             const part = path_parts[i];
+            if (part === "__proto__" || part === "constructor") continue;
 
             // while another part remains
             if (i < (path_parts.length - 1)) {
