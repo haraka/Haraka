@@ -6,7 +6,6 @@
 
 - dkim_sign: reformat dkim signature to multi-line #2991
 - dkim_sign: remove spurious error logging #3034
-- chore: add lots of `if (!transaction) return` in places #2732
 - doc(queue.js) spelling & grammar improvement #3051
 - doc(rails): add haraka-plugin-queue-rails #2995
 - doc(smtp.ini): correct spelling of SMTPUTF8 #2993
@@ -25,8 +24,9 @@
 - fix(helo): remove multi-check from should_skip #3041
 - fix(outbound): outbound local mx check #3010
 - fix(outbound): prevent delivery loop when target MX resolves to local hostname #3002
-- test(windows): build shims for windows-2022 & node on windows #3052
-- test: restore CI tests to working order #3030
+- chore: add lots of `if (!transaction) return` in places #2732
+- chore(test): build shims for windows-2022 & node on windows #3052
+- chore(test): restore CI tests to working order #3030
 
 
 ## 2.8.28 - 2021-10-14
