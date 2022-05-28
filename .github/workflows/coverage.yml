@@ -26,7 +26,7 @@ jobs:
     - name: run coverage
       run: |
         npm install --no-save c8
-        npx c8 --reporter=lcovonly npm run test
+        npx c8 --reporter=lcovonly npm test
       env:
         NODE_ENV: cov
 
