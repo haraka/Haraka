@@ -3,7 +3,6 @@
 
 ### Changes
 
-
 - dkim_sign: reformat dkim signature to multi-line #2991
 - dkim_sign: remove spurious error logging #3034
 - doc(queue.js) spelling & grammar improvement #3051
@@ -11,7 +10,7 @@
 - doc(smtp.ini): correct spelling of SMTPUTF8 #2993
 - style(es6): use optional chaining when accessing transactions #2732
 - style(smtp_client): pass args as objects (was positional)
-- style(plugin/*): transaction guarding #3032
+- style(plugin/\*): transaction guarding #3032
 - dep(generic-pool): 2.5 -> 3.8 (promises) #3033, #3060
 - dep(redis): 3.1 -> 4.1 #3058
 - dep(haraka-plugin-redis): 1.0 -> 2.0  #3038
