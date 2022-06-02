@@ -68,7 +68,10 @@ class SMTPClient extends events.EventEmitter {
 
             if (client.command === 'auth' || client.authenticating) {
                 logger.loginfo(`SERVER RESPONSE, CLIENT ${client.command}, authenticating=${client.authenticating},code=${code},cont=${cont},msg=${msg}`);
-                if (/^3/.test(code) && msg === 'VXNlcm5hbWU6') {
+                if (/^3/.test(code) && (
+                    msg === 'VXNlcm5hbWU6' ||
+                    msg === 'dXNlcm5hbWU6' // Workaround ill-mannered SMTP servers (namely smtp.163.com)
+                )) {
                     client.emit('auth_username');
                     return;
                 }
