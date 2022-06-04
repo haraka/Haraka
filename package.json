@@ -56,7 +56,7 @@
     "haraka-plugin-auth-ldap": "^1.0.2",
     "haraka-plugin-dcc"     : "^1.0.1",
     "haraka-plugin-elasticsearch" : "^1.0.6",
-    "haraka-plugin-fcrdns"  : "^1.0.3",
+    "haraka-plugin-fcrdns"  : "^1.1.0",
     "haraka-plugin-graph"   : "^1.0.3",
     "haraka-plugin-geoip"   : "^1.0.16",
     "haraka-plugin-headers" : "^1.0.2",
