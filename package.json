@@ -9,7 +9,7 @@
     "server",
     "email"
   ],
-  "version": "2.8.28",
+  "version": "3.0.0",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -60,6 +60,7 @@
     "haraka-plugin-limit"   : "^1.1.0",
     "haraka-plugin-p0f"     : "^1.0.8",
     "haraka-plugin-qmail-deliverable" : "^1.1.1",
+    "haraka-plugin-known-senders": "^1.0.8",
     "haraka-plugin-rcpt-ldap": "^1.0.0",
     "haraka-plugin-recipient-routes" : "^1.0.4",
     "haraka-plugin-rspamd"  : "^1.2.0",

@@ -1,44 +1,62 @@
 
 ### Unreleased
 
-### Changes
+### [3.0.0] - 2022-12-17
 
-- dep(generic-pool): remove pooling from outbound #3115
-- smtp_client: disable pooling in get_client_plugin, #3113
+#### Added
+
+- feat: prevent local delivery loop when target exchange resolves to a local hostname #3002
+- feat: format DKIM signature to multiline #2991
+
+#### Fixed
+
+- fix(tls): redis promise syntax for tls & ob/tls #3064
+- fix(attachment): error handling with complex archive #3035
+- fix(smtp_client): run "secured" once, fixes  #3020
 - fix(smtp_client): add missing `$` char in front of interpolated string
-- config/plugins: update name of uribl plugin
-- uribl: timeout DNS 1 second before plugin, #3077
-- uribl: load .ini config to plugin.cfg, add basic tests #3077
+- fix(auth_proxy): run "secured" only once, improvement for #3022
+- fix(helo): remove multi-check from should_skip #3041
+- fix(outbound): outbound local mx check #3010
+- fix(outbound): prevent delivery loop when target MX resolves to local hostname #3002
+- fix(conn): socket can't be released when disconnect after DATA command #2994
+
+#### Changed
+
 - ./mailbody & ./mailheader moved to haraka-email-message #3071
-- dkim_sign: reformat dkim signature to multi-line #2991
-- dkim_sign: remove spurious error logging #3034
+- config/plugins: update name of uribl plugin
 - doc(queue.js) spelling & grammar improvement #3051
 - doc(rails): add haraka-plugin-queue-rails #2995
 - doc(smtp.ini): correct spelling of SMTPUTF8 #2993
-- style(es6): use optional chaining when accessing transactions #2732
-- style(smtp_client): pass args as objects (was positional)
-- style(plugin/\*): transaction guarding #3032
 - dep(iconv): removed, declared in haraka-email-message)
+- dep(haraka-plugin-redis)!: 1.0 -> 2.0  #3038
+- dep(redis)!: 3.1 -> 4.1 #3058
+- dep(generic-pool): remove pooling from outbound #3115
+- smtp_client: remove smtp_\* pooling support in #3113
+- dep: bump plugin versions #3063
+- dep: bump haraka-plugin-asn from 1.0.9 to 2.0.0 #3062
 - dep(redis): 3.1 -> 4.1 #3058
 - dep(nopt): 5 -> 6.0.0  #3076
 - dep(haraka-plugin-fcrdns): 1.0.3 -> 1.1.0  #3076
 - dep(haraka-plugin-redis): 1.0 -> 2.0  #3038
 - dep(nodemailer): 6.7.0 to 6.7.2 #3000, #3004
-- deps: add explicit dependency on node-gyp 9
-- fix(conn): socket can't be release when disconnect after DATA command #2994
-- fix(attachment): error handling with complex archive #3035
-- fix(smtp_client): run "secured" once, fixes  #3020
-- fix(auth_proxy): run "secured" only once, improvement for #3022
-- fix(helo): remove multi-check from should_skip #3041
-- fix(outbound): outbound local mx check #3010
-- fix(outbound): prevent delivery loop when target MX resolves to local hostname #3002
+- dep: add explicit dependency on node-gyp 9
+- ci: github action tweaks #3047
+- chore: transaction guarding #3032
+- ci: enable windows node 16 testing #3036
+- chore: update phusion image #2988
 - chore: add lots of `if (!transaction) return` in places #2732
 - chore(test): build shims for windows-2022 & node on windows #3052
 - chore(test): restore CI tests to working order #3030
+- dkim_sign: reformat dkim signature to multi-line #2991
+- dkim_sign: remove spurious error logging #3034
 - tls: add force_tls option to the ToDo object
 - fix(banner): banner was inserted erroneously into text attachments
 - outbound: remove hardcoded AUTH PLAIN authorization identity
 - outbound: set acquireTimeoutMillis to prevent constant reconnect to unreachable servers
+- style(smtp_client): pass args as objects (was positional)
+- uribl: timeout DNS 1 second before plugin, #3077
+- uribl: load .ini config to plugin.cfg, add basic tests #3077
+
 
 ## 2.8.28 - 2021-10-14
 
@@ -1301,3 +1319,6 @@
 * Small fixes to data.uribl
 
 ## 1.4.0 -
+
+
+[3.0.0]: https://github.com/haraka/Haraka/releases/tag/3.0.0

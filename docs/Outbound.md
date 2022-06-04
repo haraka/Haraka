@@ -40,12 +40,9 @@ Default: true. Switch to false to disable TLS for outbound mail.
 
 This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
 plugin uses, along with other values in `tls.ini`. See the [tls plugin
-docs](http://haraka.github.io/manual/plugins/tls.html) for information on generating those
-files.
+docs](http://haraka.github.io/manual/plugins/tls.html) for information on generating those files.
 
-Within `tls.ini` you can specify global options for the values `ciphers`, `minVersion`,
-`requestCert` and `rejectUnauthorized`, alternatively you can provide
-separate values by putting them under a key: `[outbound]`, such as:
+Within `tls.ini` you can specify global options for the values `ciphers`, `minVersion`, `requestCert` and `rejectUnauthorized`, alternatively you can provide separate values by putting them under a key: `[outbound]`, such as:
 
 ```
 [outbound]
@@ -84,13 +81,9 @@ This could be useful if you want to deliver mail to localhost on another port.
 
 Set this to specify the delay intervals to use between trying to re-send an email
 that has a temporary failure condition.  The setting is a comma separated list of
-time spans and multipliers.  The time span is a number followed by `s`, `m`, `h`, or `d`
-to represent seconds, minutes, hours, and days, respectively.  The multiplier is an
-asterisk followed by an integer representing the number of times to repeat the interval.
+time spans and multipliers.  The time span is a number followed by `s`, `m`, `h`, or `d` to represent seconds, minutes, hours, and days, respectively.  The multiplier is an asterisk followed by an integer representing the number of times to repeat the interval.
 For example, the entry `1m, 5m*2, 1h*3` results in an array of delay times of
-`[60,300,300,3600,3600,3600]` in seconds.  The email will be bounced when the array
-runs out of intervals (the 7th failure in this case).  Set this to `none` to bounce the
-email on the first temporary failure.
+`[60,300,300,3600,3600,3600]` in seconds.  The email will be bounced when the array runs out of intervals (the 7th failure in this case).  Set this to `none` to bounce the email on the first temporary failure.
 
 ### outbound.bounce\_message
 
@@ -249,7 +242,7 @@ interface (or alias) on the local system.
 
 As described above the outbound IP can be set using the `bind` parameter
 and also the outbound helo for the IP can be set using the `bind_ehlo` 
-parameter returned my the `get_mx` hook or during the reception of the message 
+parameter returned by the `get_mx` hook or during the reception of the message 
 you can set a transaction note in a plugin to tell Haraka which outbound IP 
 address you would like it to use when it tries to deliver the message:
 
@@ -282,9 +275,7 @@ The contents of the bounce message are configured by a file called
 contains several template entries wrapped in curly brackets. These will be
 populated as follows:
 
-Optional: Possibility to add HTML code (with optional image) to the bounce message is possible 
-by adding the files `config/outbound.bounce_message_html`. An image can be attached 
-to the mail by using `config/outbound.bounce_message_image`.
+Optional: Possibility to add HTML code (with optional image) to the bounce message is possible by adding the files `config/outbound.bounce_message_html`. An image can be attached to the mail by using `config/outbound.bounce_message_image`.
 
 * pid - the current process id
 * date - the current date when the bounce occurred
