@@ -247,8 +247,8 @@ exports.boundarymarkercorrupt_test = {
         self.transaction.add_data('To: "User1_firstname_middlename_lastname" <user1_firstname_middlename_lastname@test.com>,\r\n');
         buffer += 'To: "User1_firstname_middlename_lastname" <user1_firstname_middlename_lastname@test.com>,\r\n';
         // make sure we add headers so that it exceeds 64k bytes to expose this issue
-        for(let i=0;i<1000;i++){
-            self.transaction.add_data(` \"User${i}_firstname_middlename_lastname\" <user${i}_firstname_middlename_lastname@test.com>,\r\n`);
+        for (let i=0;i<725;i++){
+            self.transaction.add_data(` "User${i}_firstname_middlename_lastname" <user${i}_firstname_middlename_lastname@test.com>,\r\n`);
             buffer += ` "User${i}_firstname_middlename_lastname" <user${i}_firstname_middlename_lastname@test.com>,\r\n`
         }
         self.transaction.add_data(' "Final User_firstname_middlename_lastname" <final_user_firstname_middlename_lastname@test.com>\r\n');
