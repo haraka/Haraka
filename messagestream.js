@@ -292,7 +292,7 @@ class MessageStream extends Stream {
             this.read_ce.fill(line);
         }
         // Check for data left in the buffer
-        if (buf.length > 0) {
+        if (buf.length > 0 && this.headers_found_eoh) {
             this.read_ce.fill(buf);
         }
     }

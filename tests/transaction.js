@@ -229,3 +229,61 @@ exports.base64_handling = {
         test.done();
     },
 }
+
+// Test is to ensure boundary marker just after the headers, is in-tact
+// Issue:    "User1990" <--abcd
+// Expected: --abcd
+exports.boundarymarkercorrupt_test = {
+    setUp : _set_up,
+    tearDown: _tear_down,
+
+    // populate the same email data in transaction (self.transaction.add_data()) and
+    // in raw buffer, then compare
+    'fix mime boundary corruption issue' (test) {
+        const self = this;
+        let buffer = '';
+        self.transaction.add_data("Content-Type: multipart/alternative; boundary=abcd\r\n");
+        buffer += "Content-Type: multipart/alternative; boundary=abcd\r\n";
+        self.transaction.add_data('To: "User1_firstname_middlename_lastname" <user1_firstname_middlename_lastname@test.com>,\r\n');
+        buffer += 'To: "User1_firstname_middlename_lastname" <user1_firstname_middlename_lastname@test.com>,\r\n';
+        // make sure we add headers so that it exceeds 64k bytes to expose this issue
+        for(let i=0;i<1000;i++){
+            self.transaction.add_data(` \"User${i}_firstname_middlename_lastname\" <user${i}_firstname_middlename_lastname@test.com>,\r\n`);
+            buffer += ` "User${i}_firstname_middlename_lastname" <user${i}_firstname_middlename_lastname@test.com>,\r\n`
+        }
+        self.transaction.add_data(' "Final User_firstname_middlename_lastname" <final_user_firstname_middlename_lastname@test.com>\r\n');
+        buffer += ' "Final User_firstname_middlename_lastname" <final_user_firstname_middlename_lastname@test.com>\r\n';
+        self.transaction.add_data('Message-ID: <Boundary_Marker_Test>\r\n');
+        buffer += 'Message-ID: <Boundary_Marker_Test>\r\n';
+        self.transaction.add_data('MIME-Version: 1.0\r\n');
+        buffer += 'MIME-Version: 1.0\r\n';
+        self.transaction.add_data('Date: Wed, 1 Jun 2022 16:44:39 +0530 (IST)\r\n');
+        buffer += 'Date: Wed, 1 Jun 2022 16:44:39 +0530 (IST)\r\n';
+        self.transaction.add_data('\r\n');
+        buffer += '\r\n';
+        self.transaction.add_data("--abcd\r\n");
+        buffer += "--abcd\r\n";
+
+        [
+            "Content-Type: text/plain\r\n",
+            "\r\n",
+            "Text part\r\n",
+            "--abcd\r\n",
+            "Content-Type: text/html\r\n",
+            "\r\n",
+            "<p>HTML part</p>\r\n",
+            "--abcd--\r\n",
+        ].forEach(line => {
+            self.transaction.add_data(line);
+            buffer += line;
+        });
+
+        this.transaction.end_data(function () {
+            self.transaction.message_stream.get_data(function (body) {
+                test.ok(body.includes(buffer), "message is damaged");
+                test.done();
+            });
+        });
+    },
+}
+
