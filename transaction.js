@@ -7,6 +7,7 @@ const util   = require('util');
 // haraka npm modules
 const Notes  = require('haraka-notes');
 const utils  = require('haraka-utils');
+const MessageStream = require('haraka-message-stream');
 
 // Haraka modules
 const message = require('haraka-email-message')
