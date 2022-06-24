@@ -241,18 +241,18 @@ exports.boundarymarkercorrupt_test = {
     // in raw buffer, then compare
     'fix mime boundary corruption issue' (test) {
         const self = this;
-        var buffer = '';  
+        let buffer = '';
         self.transaction.add_data("Content-Type: multipart/alternative; boundary=abcd\r\n");
         buffer += "Content-Type: multipart/alternative; boundary=abcd\r\n";
-        self.transaction.add_data('To: \"User1\" <user1@test.com>,\r\n');
-        buffer += 'To: \"User1\" <user1@test.com>,\r\n';
+        self.transaction.add_data('To: "User1_firstname_middlename_lastname" <user1_firstname_middlename_lastname@test.com>,\r\n');
+        buffer += 'To: "User1_firstname_middlename_lastname" <user1_firstname_middlename_lastname@test.com>,\r\n';
         // make sure we add headers so that it exceeds 64k bytes to expose this issue
-        for(let i=0;i<2000;i++){
-            self.transaction.add_data(` \"User${i}\" <user${i}@test.com>,\r\n`);
-            buffer += ` \"User${i}\" <user${i}@test.com>,\r\n`
+        for (let i=0;i<725;i++){
+            self.transaction.add_data(` "User${i}_firstname_middlename_lastname" <user${i}_firstname_middlename_lastname@test.com>,\r\n`);
+            buffer += ` "User${i}_firstname_middlename_lastname" <user${i}_firstname_middlename_lastname@test.com>,\r\n`
         }
-        self.transaction.add_data(' \"Final User\" <final_user@test.com>\r\n');
-        buffer += ' \"Final User\" <final_user@test.com>\r\n';
+        self.transaction.add_data(' "Final User_firstname_middlename_lastname" <final_user_firstname_middlename_lastname@test.com>\r\n');
+        buffer += ' "Final User_firstname_middlename_lastname" <final_user_firstname_middlename_lastname@test.com>\r\n';
         self.transaction.add_data('Message-ID: <Boundary_Marker_Test>\r\n');
         buffer += 'Message-ID: <Boundary_Marker_Test>\r\n';
         self.transaction.add_data('MIME-Version: 1.0\r\n');
