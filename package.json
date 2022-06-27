@@ -37,6 +37,7 @@
     "haraka-config"         : "^1.0.20",
     "haraka-constants"      : "^1.0.5",
     "haraka-dsn"            : "^1.0.3",
+    "haraka-email-message"  : "^1.0.0",
     "haraka-message-stream" : "^1.1.0",
     "haraka-net-utils"      : "^1.3.3",
     "haraka-notes"          : "^1.0.4",
