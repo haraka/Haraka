@@ -1,4 +1,4 @@
-const MessageStream = require('./messagestream');
+const message = require('haraka-email-message')
 
 test.expect(21);
 const server = {notes: {}};
@@ -14,7 +14,7 @@ exports.get_client(server, (smtp_client) => {
     test.equals(2, server.notes.pool[pool_name].size);
     test.equals(0, server.notes.pool[pool_name].available);
 
-    const message_stream = new MessageStream(
+    const message_stream = new message.stream(
         { main : { spool_after : 1024 } }, "123456789"
     );
 
