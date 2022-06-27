@@ -3,6 +3,7 @@
 
 ### Changes
 
+- ./mailbody & ./mailheader moved to haraka-email-message #3071
 - dkim_sign: reformat dkim signature to multi-line #2991
 - dkim_sign: remove spurious error logging #3034
 - doc(queue.js) spelling & grammar improvement #3051
