@@ -1,5 +1,6 @@
 const path = require('path');
 const endpoint = require('../endpoint');
+const message = require('haraka-email-message')
 
 function _set_up (done) {
 
@@ -209,7 +210,6 @@ exports.smtp_client = {
         }
 
         const smtp_client   = require('../smtp_client');
-        const MessageStream = require('../messagestream');
 
         smtp_client.get_client(server, (client) => {
 
@@ -227,7 +227,7 @@ exports.smtp_client = {
                     client.send_command('DATA');
                 })
                 .on('data', () => {
-                    const message_stream = new MessageStream(
+                    const message_stream = new message.stream(
                         { main : { spool_after : 1024 } }, "theMessageId"
                     );
 

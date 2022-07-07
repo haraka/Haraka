@@ -10,13 +10,13 @@ const Address     = require('address-rfc2821').Address;
 const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const DSN         = require('haraka-dsn');
+const message     = require('haraka-email-message')
 const net_utils   = require('haraka-net-utils');
 const Notes       = require('haraka-notes');
 const utils       = require('haraka-utils');
 
 const logger      = require('../logger');
 const plugins     = require('../plugins');
-const Header      = require('../mailheader').Header;
 
 const client_pool = require('./client_pool');
 const _qfile      = require('./qfile');
@@ -977,7 +977,7 @@ class HMailItem extends events.EventEmitter {
         let buf = '';
         const original_header_lines = [];
         let headers_done = false;
-        const header = new Header();
+        const header = new message.Header();
 
         try {
             const data_stream = this.data_stream();

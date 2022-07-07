@@ -22,8 +22,8 @@ exports.transaction = {
         test.expect(3);
 
         this.transaction.add_body_filter('text/plain', (ct, enc, buf) => {
-            // The actual functionality of these filter functions is tested in
-            // mailbody.js.  This just makes sure the plumbing is in place.
+            // The functionality of these filter functions is tested in
+            // haraka-email-message. This just assures the plumbing is in place.
 
             test.ok(ct.indexOf('text/plain') === 0, "correct body part");
             test.ok(/utf-?8/i.test(enc), "correct encoding");

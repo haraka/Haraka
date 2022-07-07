@@ -2,11 +2,9 @@
 
 const Address      = require('address-rfc2821');
 const fixtures     = require('haraka-test-fixtures');
+const message      = require('haraka-email-message')
 
 const Connection   = fixtures.connection;
-
-const Body         = require('../../mailbody').Body;
-const Header       = require('../../mailheader').Header;
 
 function _set_up (done) {
 
@@ -31,7 +29,7 @@ function _set_up (done) {
     this.connection = Connection.createConnection();
     this.connection.remote.ip = '8.8.8.8';
     this.connection.transaction = {
-        header: new Header(),
+        header: new message.Header(),
         results: new fixtures.results(this.plugin),
     };
 
@@ -126,7 +124,7 @@ exports.non_local_msgid = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        this.connection.transaction.body = new Body();
+        this.connection.transaction.body = new message.Body();
         this.connection.transaction.body.bodytext = '';
         const cb = function () {
             test.equal(DENY, arguments[0]);
@@ -138,7 +136,7 @@ exports.non_local_msgid = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        this.connection.transaction.body = new Body();
+        this.connection.transaction.body = new message.Body();
         this.connection.transaction.body.bodytext = 'Message-ID:<blah>';
         const cb = function () {
             test.equal(DENY, arguments[0]);
@@ -150,7 +148,7 @@ exports.non_local_msgid = {
         test.expect(2);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        this.connection.transaction.body = new Body();
+        this.connection.transaction.body = new message.Body();
         this.connection.transaction.body.bodytext = 'Message-ID: <blah@foo.cooooooom>';
         const cb = function () {
             test.equal(DENY, arguments[0]);
@@ -164,7 +162,7 @@ exports.non_local_msgid = {
         test.expect(2);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        this.connection.transaction.body = new Body();
+        this.connection.transaction.body = new message.Body();
         this.connection.transaction.body.bodytext = 'Message-ID: <blah@foo.com>';
         var cb = function () {
             test.equal(DENY, arguments[0]);

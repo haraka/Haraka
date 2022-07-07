@@ -1,9 +1,9 @@
 'use strict';
 
 const fixtures     = require('haraka-test-fixtures');
+const message      = require('haraka-email-message')
 
 const DKIMSignStream = require('../../plugins/dkim_sign').DKIMSignStream;
-const Header = require('../../mailheader').Header;
 
 const privateKey = `-----BEGIN RSA PRIVATE KEY-----
 MIICXwIBAAKBgQDwIRP/UC3SBsEmGqZ9ZJW3/DkMoGeLnQg1fWn7/zYtIxN2SnFC
@@ -55,7 +55,7 @@ exports.sign = {
         test.expect(1);
         const email = 'Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. Are you hungry yet?\r\n\r\nJoe.\r\n';
 
-        const header = new Header();
+        const header = new message.Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream(props, header, (n, dkim) => {
             test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
@@ -69,7 +69,7 @@ exports.sign = {
 
         const email = 'Ignored: header\r\n\r\n';
 
-        const header = new Header();
+        const header = new message.Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream(props, header, (n, dkim) => {
             test.equal(getValueFromDKIM(dkim, 'bh'), 'frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=');
@@ -81,7 +81,7 @@ exports.sign = {
     'body hash simple, two writes' (test) {
         test.expect(1);
 
-        const header = new Header();
+        const header = new message.Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream(props, header, (n, dkim) => {
             test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
@@ -96,7 +96,7 @@ exports.sign = {
 
         const email = 'Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. Are you hungry yet?\r\n\r\nJoe.\r\n\r\n\r\n';
 
-        const header = new Header();
+        const header = new message.Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream(props, header, (n, dkim) => {
             test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');

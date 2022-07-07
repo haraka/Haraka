@@ -8,17 +8,7 @@ env:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      name: Node.js ${{ env.node-version }}
-      with:
-        node-version: ${{ env.node-version }}
-    - run: npm install
-    - run: npm run lint
-
+    uses: haraka/.github/.github/workflows/lint.yml@master
 
   test:
     needs: lint
@@ -57,67 +47,11 @@ jobs:
     - run: npm install
     - run: npm run test
 
+  # TODO: replace the above with this, after plugin/attachment is split
+  # ubuntu:
+  #   needs: [ lint ]
+  #   uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
-  test-win:
-    needs: lint
-    # no docker/images support on Windows (currently), so run w/o Redis
-    # also, stack run commands so test doesn't begin before install completes
-
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [ windows-latest ]
-        node-version: [ 14, 16, 18 ]
-      fail-fast: false
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - uses: actions/setup-node@v3
-      name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    # Needed for Node 14 on Windows 2022 (which uses Visual Studio 2022)
-    # The default node-gyp installed with Node 14 doesn't recognize VS 2022
-    # Remove this when Node 14 support is dropped (2023-04-30)
-    - name: Update npm
-      if: matrix.node-version == 14
-      run: npm install -g npm
-
-    # To address a node-gyp install issues in Windows starting in Node 16
-    # This should be temporary and hopefully should be removed in the future
-    - name: Install node-gyp (temp workaround)
-      run: npx node-gyp@^9.0.0 install
-
-    - run: npm install
-    - run: npm run test
-
-
-  test-win-2019:
-    needs: test-win
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ windows-2019 ]
-        node-version: [ 14, 16, 18 ]
-      fail-fast: false
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - uses: actions/setup-node@v3
-      name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    - name: Update npm
-      if: matrix.node-version == 14
-      run: npm install -g npm
-
-    - name: Install node-gyp (temp workaround)
-      run: npx node-gyp@^9.0.0 install
-
-    - run: npm install
-    - run: npm run test
+  windows:
+    needs: [ lint ]
+    uses: haraka/.github/.github/workflows/windows.yml@master
