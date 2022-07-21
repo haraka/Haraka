@@ -34,7 +34,6 @@
     "npid"                  : "~0.4.0",
     "semver"                : "~7.3.5",
     "sprintf-js"            : "~1.1.2",
-    "haraka-chunk-emitter"  : "^1.0.1",
     "haraka-config"         : "^1.0.20",
     "haraka-constants"      : "^1.0.5",
     "haraka-dsn"            : "^1.0.3",
