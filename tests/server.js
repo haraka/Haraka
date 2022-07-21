@@ -451,6 +451,9 @@ exports.requireAuthorized_SMTPS = {
                     if (error.message === 'socket hang up') {   // node 6 & 8
                         test.equal(error.message, 'socket hang up');
                     }
+                    else if (/alert certificate required/.test(error.message)) {  // node 18
+                        test.ok(/alert certificate required/.test(error.message))
+                    }
                     else {     // node 10+
                         test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
                     }
@@ -495,7 +498,12 @@ exports.requireAuthorized_STARTTLS = {
             (error, info) => {
                 if (error) {
                     // console.log(error);
-                    test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
+                    if (/alert certificate required/.test(error.message)) {  // node 18
+                        test.ok(/alert certificate required/.test(error.message))
+                    }
+                    else {
+                        test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
+                    }
                 }
                 test.done();
             });
