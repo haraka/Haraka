@@ -8,11 +8,13 @@ updates:
   - package-ecosystem: "npm" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    allow:
+      - dependency-type: production
 
   - package-ecosystem: "docker"
     # Look for a `Dockerfile` in the `root` directory
     directory: "/"
-    # Check for updates once a week
+    # Check for updates once a month
     schedule:
-      interval: "weekly"
+      interval: "monthly"

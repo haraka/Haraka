@@ -1,5 +1,5 @@
 
-## NEXT - 2022-MM-DD
+### Unreleased
 
 ### Changes
 
@@ -14,6 +14,8 @@
 - style(plugin/\*): transaction guarding #3032
 - dep(generic-pool): 2.5 -> 3.8 (promises) #3033, #3060
 - dep(redis): 3.1 -> 4.1 #3058
+- dep(nopt): 5 -> 6.0.0  #3076
+- dep(haraka-plugin-fcrdns): 1.0.3 -> 1.1.0  #3076
 - dep(haraka-plugin-redis): 1.0 -> 2.0  #3038
 - dep(nodemailer): 6.7.0 to 6.7.2 #3000, #3004
 - deps: add explicit dependency on node-gyp 9
