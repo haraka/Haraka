@@ -14,8 +14,6 @@ const numeric_ip = /\w{3,16}:\/+(\S+@)?(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-
 let schemeless = /(?:%(?:25)?(?:2F|3D|40))?((?:www\.)?[a-zA-Z0-9][a-zA-Z0-9\-.]{0,250}\.(?:aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|xxx|[a-zA-Z]{2}))(?!\w)/gi;
 let schemed    = /(\w{3,16}:\/+(?:\S+@)?([a-zA-Z0-9][a-zA-Z0-9\-.]+\.(?:aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|xxx|[a-zA-Z]{2})))(?!\w)/gi;
 
-let lists;
-let zones;
 const excludes = {};
 
 function check_excludes_list (host) {
@@ -28,45 +26,61 @@ function check_excludes_list (host) {
         else {
             check = [ host[i], check ].join('.');
         }
-        if (excludes[check]) {
-            return true;
-        }
+        if (excludes[check]) return true;
     }
     return false;
 }
 
 exports.register = function () {
-    // Override regexps if top_level_tlds file is present
-    if (!tlds.top_level_tlds) return;
-    if (!Object.keys(tlds.top_level_tlds).length) return;
 
-    this.logdebug('Building new regexps from TLD file');
-    const re_schemeless = `(?:%(?:25)?(?:2F|3D|40))?((?:www\\.)?[a-zA-Z0-9][a-zA-Z0-9\\-.]{0,250}\\.(?:${Object.keys(tlds.top_level_tlds).join('|')}))(?!\\w)`;
-    schemeless = new RegExp(re_schemeless, 'gi');
-    const re_schemed = `(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:${Object.keys(tlds.top_level_tlds).join('|')})))(?!\\w)`;
-    schemed = new RegExp(re_schemed, 'gi');
+    // Override regexps if top_level_tlds file is present
+    if (tlds.top_level_tlds && Object.keys(tlds.top_level_tlds).length) {
+        this.logdebug('Building new regexps from TLD file');
+        const re_schemeless = `(?:%(?:25)?(?:2F|3D|40))?((?:www\\.)?[a-zA-Z0-9][a-zA-Z0-9\\-.]{0,250}\\.(?:${Object.keys(tlds.top_level_tlds).join('|')}))(?!\\w)`;
+        schemeless = new RegExp(re_schemeless, 'gi');
+        const re_schemed = `(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:${Object.keys(tlds.top_level_tlds).join('|')})))(?!\\w)`;
+        schemed = new RegExp(re_schemed, 'gi');
+    }
+
+    this.load_uribl_ini()
+    this.load_uribl_exludes()
+
+    if (this.zones.length === 0) {
+        this.logerror('aborting: no zones configured');
+    }
+    else {
+        this.register_hook('lookup_rdns', 'lookup_remote_ip');
+        this.register_hook('helo'       , 'lookup_ehlo')
+        this.register_hook('ehlo'       , 'lookup_ehlo')
+        this.register_hook('mail'       , 'lookup_mailfrom')
+        this.register_hook('data'       , 'enable_body_parsing')
+        this.register_hook('data_post'  , 'lookup_header_zones')
+    }
 }
 
-exports.load_uri_config = function (next) {
-    lists = this.config.get('data.uribl.ini');
-    zones = Object.keys(lists);
-    if (!zones || zones.length <= 1) {
-        this.logerror('aborting: no zones configured');
-        return next();
+exports.load_uribl_ini = function () {
+    const plugin = this
+    this.cfg = this.config.get('data.uribl.ini', () => {
+        plugin.load_uribl_ini()
+    })
+
+    this.zones = Object.keys(this.cfg).filter(a => a !== 'main')
+
+    // defaults
+    if (!this.cfg.main.max_uris_per_list) {
+        this.cfg.main.max_uris_per_list = 20;
     }
-    // Load excludes
+}
+
+exports.load_uribl_exludes = function () {
     this.config.get('data.uribl.excludes', 'list').forEach(domain => {
         excludes[domain.toLowerCase()] = 1;
     });
-    // Set defaults
-    if (lists.main && !lists.main.max_uris_per_list) {
-        lists.main.max_uris_per_list = 20;
-    }
 }
-
 
 // IS: IPv6 compatible (maybe; if the BL is support IPv6 requests)
 exports.do_lookups = function (connection, next, hosts, type) {
+    // console.log(`do_lookups: ${hosts}, ${type}`)
     const plugin = this;
 
     // Store the results in the correct place based on the lookup type
@@ -80,6 +94,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         results.add(plugin, {skip: type});
         return next();
     }
+
     connection.logdebug(plugin, `(${type}) found ${hosts.length} items for lookup` );
     utils.shuffle(hosts);
 
@@ -98,10 +113,10 @@ exports.do_lookups = function (connection, next, hosts, type) {
             continue;
         }
         // Loop through the zones
-        for (j=0; j < zones.length; j++) {
-            const zone = zones[j];
+        for (j=0; j < plugin.zones.length; j++) {
+            const zone = plugin.zones[j];
             if (zone === 'main') continue;  // skip config
-            if (!lists[zone] || (lists[zone] && !/^(?:1|true|yes|enabled|on)$/i.test(lists[zone][type]))) {
+            if (!plugin.cfg[zone] || (plugin.cfg[zone] && !/^(?:1|true|yes|enabled|on)$/i.test(plugin.cfg[zone][type]))) {
                 results.add(plugin, {skip: `${type} unsupported for ${zone}` });
                 continue;
             }
@@ -121,7 +136,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             let lookup;
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
             if (net.isIPv4(host)) {
-                if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
+                if (/^(?:1|true|yes|enabled|on)$/i.test(plugin.cfg[zone].no_ip_lookups)) {
                     results.add(plugin, {skip: `IP (${host}) not supported for ${zone}` });
                     continue;
                 }
@@ -133,8 +148,9 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 // Reverse IP for lookup
                 lookup = host.split(/\./).reverse().join('.');
             }
+
             if (net.isIPv6(host)) {
-                if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].not_ipv6_compatible) || /^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
+                if (/^(?:1|true|yes|enabled|on)$/i.test(plugin.cfg[zone].not_ipv6_compatible) || /^(?:1|true|yes|enabled|on)$/i.test(plugin.cfg[zone].no_ip_lookups)) {
                     results.add(plugin, {skip: `IP (${host}) not supported for ${zone}` });
                     continue;
                 }
@@ -147,16 +163,17 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 lookup = net_utils.ipv6_reverse(host);
             }
             // Handle zones that require host to be stripped to a domain boundary
-            else if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].strip_to_domain)) {
+            else if (/^(?:1|true|yes|enabled|on)$/i.test(plugin.cfg[zone].strip_to_domain)) {
                 lookup = (tlds.split_hostname(host, 3))[1];
             }
             // Anything else..
             else {
                 lookup = host;
             }
+
             if (!lookup) continue;
             if (!queries[zone]) queries[zone] = {};
-            if (Object.keys(queries[zone]).length > lists.main.max_uris_per_list) {
+            if (Object.keys(queries[zone]).length > plugin.cfg.main.max_uris_per_list) {
                 connection.logwarn(plugin, `discarding lookup ${lookup} for zone ${zone} maximum query limit reached`);
                 results.add(plugin, {skip: `max query limit for ${zone}` });
                 continue;
@@ -196,7 +213,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         connection.logdebug(plugin, 'timeout');
         results.add(plugin, {err: `${type} timeout` });
         call_next();
-    }, ((lists.main && lists.main.timeout) ? lists.main.timeout : 30) * 1000);
+    }, ((plugin.cfg.main?.timeout || 30) - 1) * 1000);
 
     function conclude_if_no_pending () {
         if (pending_queries !== 0) return;
@@ -210,8 +227,10 @@ exports.do_lookups = function (connection, next, hosts, type) {
         if (lookup[lookup.length-1] !== '.') {
             lookup = `${lookup}.`;
         }
+
         pending_queries++;
         dns.resolve4(lookup, (err, addrs) => {
+
             pending_queries--;
             connection.logdebug(plugin, `${lookup} => (${(err) ? err : addrs.join(', ')})`);
 
@@ -225,8 +244,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
                     msg = `${query[0]} blacklisted in ${query[1]}`;
                 }
                 // Check for custom message
-                if (lists[query[1]] && lists[query[1]].custom_msg) {
-                    msg = lists[query[1]].custom_msg
+                if (plugin.cfg[query[1]] && plugin.cfg[query[1]].custom_msg) {
+                    msg = plugin.cfg[query[1]].custom_msg
                         .replace(/\{uri\}/g,  query[0])
                         .replace(/\{zone\}/g, query[1]);
                 }
@@ -235,19 +254,19 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 call_next(DENY, msg);
             }
             // Optionally validate first result against a regexp
-            if (lists[query[1]] && lists[query[1]].validate) {
-                const re = new RegExp(lists[query[1]].validate);
+            if (plugin.cfg[query[1]] && plugin.cfg[query[1]].validate) {
+                const re = new RegExp(plugin.cfg[query[1]].validate);
                 if (!re.test(addrs[0])) {
                     connection.logdebug(plugin, `ignoring result (${addrs[0]}) for: ${lookup} as it did not match validation rule`);
                     skip = true;
                 }
             }
             // Check for optional bitmask
-            if (lists[query[1]] && lists[query[1]].bitmask) {
+            if (plugin.cfg[query[1]] && plugin.cfg[query[1]].bitmask) {
                 // A bitmask zone should only return a single result
                 // We only support a bitmask of up to 128 in a single octet
                 const last_octet = Number((addrs[0].split('.'))[3]);
-                const bitmask = Number(lists[query[1]].bitmask);
+                const bitmask = Number(plugin.cfg[query[1]].bitmask);
                 if ((last_octet & bitmask) > 0) {
                     connection.loginfo(plugin, `found ${query[0]} in zone ${query[1]} (${addrs.join(',')}; bitmask=${bitmask})`);
                     do_reject();
@@ -269,8 +288,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     conclude_if_no_pending();
 }
 
-exports.hook_lookup_rdns = function (next, connection) {
-    this.load_uri_config(next);
+exports.lookup_remote_ip = function (next, connection) {
     const plugin = this;
     dns.reverse(connection.remote.ip, (err, rdns) => {
         if (err) {
@@ -281,12 +299,12 @@ exports.hook_lookup_rdns = function (next, connection) {
             connection.results.add(plugin, {err });
             return next();
         }
+        // console.log(`lookup_remote_ip, ${connection.remote.ip} resolves to ${rdns}`)
         plugin.do_lookups(connection, next, rdns, 'rdns');
-    });
+    })
 }
 
-exports.hook_ehlo = function (next, connection, helo) {
-    this.load_uri_config(next);
+exports.lookup_ehlo = function (next, connection, helo) {
     // Handle IP literals
     let literal;
     if ((literal = net_utils.get_ipany_re('^\\[(?:IPv6:)?', '\\]$','').exec(helo))) {
@@ -296,22 +314,20 @@ exports.hook_ehlo = function (next, connection, helo) {
         this.do_lookups(connection, next, helo, 'helo');
     }
 }
-exports.hook_helo = exports.hook_ehlo;
 
-exports.hook_mail = function (next, connection, params) {
-    this.load_uri_config(next);
+exports.lookup_mailfrom = function (next, connection, params) {
     this.do_lookups(connection, next, params[0].host, 'envfrom');
 }
 
-exports.hook_data = (next, connection) => {
-    if (!connection?.transaction) return next();
-    // enable mail body parsing
-    connection.transaction.parse_body = true;
-    return next();
+exports.enable_body_parsing = (next, connection) => {
+    if (connection?.transaction) {
+        connection.transaction.parse_body = true;
+    }
+    next();
 }
 
-exports.hook_data_post = function (next, connection) {
-    this.load_uri_config(next);
+exports.lookup_header_zones = function (next, connection) {
+
     const email_re = /<?[^@]+@([^> ]+)>?/;
     const plugin = this;
     const trans = connection.transaction;
