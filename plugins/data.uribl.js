@@ -133,6 +133,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 }
             }
             let lookup;
+
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
             if (net.isIPv4(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(plugin.cfg[zone].no_ip_lookups)) {
@@ -147,8 +148,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 // Reverse IP for lookup
                 lookup = host.split(/\./).reverse().join('.');
             }
-
-            if (net.isIPv6(host)) {
+            else if (net.isIPv6(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(plugin.cfg[zone].not_ipv6_compatible) || /^(?:1|true|yes|enabled|on)$/i.test(plugin.cfg[zone].no_ip_lookups)) {
                     results.add(plugin, {skip: `IP (${host}) not supported for ${zone}` });
                     continue;
@@ -199,25 +199,18 @@ exports.do_lookups = function (connection, next, hosts, type) {
 
     // Perform the lookups
     let pending_queries = 0;
+
     let called_next = false;
-    let timer;
-    function call_next (code, msg) {
-        clearTimeout(timer);
+    function nextOnce (code, msg) {
         if (called_next) return;
         called_next = true;
         next(code, msg);
     }
 
-    timer = setTimeout(() => {
-        connection.logdebug(plugin, 'timeout');
-        results.add(plugin, {err: `${type} timeout` });
-        call_next();
-    }, ((plugin.cfg.main?.timeout || 30) - 1) * 1000);
-
     function conclude_if_no_pending () {
         if (pending_queries !== 0) return;
         results.add(plugin, {pass: type});
-        call_next();
+        nextOnce();
     }
 
     queries_to_run.forEach(query => {
@@ -239,19 +232,18 @@ exports.do_lookups = function (connection, next, hosts, type) {
             function do_reject (msg) {
                 if (skip) return;
                 if (called_next) return;
-                if (!msg) {
-                    msg = `${query[0]} blacklisted in ${query[1]}`;
-                }
+                if (!msg) msg = `${query[0]} blacklisted in ${query[1]}`;
+
                 // Check for custom message
                 if (plugin.cfg[query[1]] && plugin.cfg[query[1]].custom_msg) {
                     msg = plugin.cfg[query[1]].custom_msg
                         .replace(/\{uri\}/g,  query[0])
                         .replace(/\{zone\}/g, query[1]);
                 }
-                results.add(plugin,
-                    {fail: [type, query[0], query[1]].join('/') });
-                call_next(DENY, msg);
+                results.add(plugin, {fail: [type, query[0], query[1]].join('/') });
+                nextOnce(DENY, msg);
             }
+
             // Optionally validate first result against a regexp
             if (plugin.cfg[query[1]] && plugin.cfg[query[1]].validate) {
                 const re = new RegExp(plugin.cfg[query[1]].validate);
@@ -260,6 +252,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                     skip = true;
                 }
             }
+
             // Check for optional bitmask
             if (plugin.cfg[query[1]] && plugin.cfg[query[1]].bitmask) {
                 // A bitmask zone should only return a single result
@@ -287,35 +280,64 @@ exports.do_lookups = function (connection, next, hosts, type) {
     conclude_if_no_pending();
 }
 
+function getTimedNext (plugin, connection, next, type) {
+
+    let timer
+    let calledNext = false
+
+    function timedNextOnce (code, msg) {
+        clearTimeout(timer);
+        if (calledNext) return;
+        calledNext = true;
+        next(code, msg);
+    }
+
+    timer = setTimeout(() => {
+        connection.logdebug(plugin, 'timeout');
+        connection.results.add(plugin, {err: `${type} timeout` });
+        timedNextOnce();
+    }, ((plugin.cfg.main?.timeout || 30) - 2) * 1000);
+
+    return timedNextOnce
+}
+
 exports.lookup_remote_ip = function (next, connection) {
     const plugin = this;
+
+    const timedNext = getTimedNext(plugin, connection, next, 'rdns')
+
     dns.reverse(connection.remote.ip, (err, rdns) => {
         if (err) {
-            if (err.code) {
-                if (err.code === dns.NXDOMAIN) return next();
-                if (err.code === dns.NOTFOUND) return next();
+            switch (err.code) {
+                case dns.NXDOMAIN:
+                case dns.NOTFOUND:
+                    break;
+                default:
+                    connection.results.add(plugin, {err });
             }
-            connection.results.add(plugin, {err });
-            return next();
+            return timedNext();
         }
         // console.log(`lookup_remote_ip, ${connection.remote.ip} resolves to ${rdns}`)
-        plugin.do_lookups(connection, next, rdns, 'rdns');
+        plugin.do_lookups(connection, timedNext, rdns, 'rdns');
     })
 }
 
 exports.lookup_ehlo = function (next, connection, helo) {
+    const timedNext = getTimedNext(this, connection, next, 'helo')
+
     // Handle IP literals
     let literal;
     if ((literal = net_utils.get_ipany_re('^\\[(?:IPv6:)?', '\\]$','').exec(helo))) {
-        this.do_lookups(connection, next, literal[1], 'helo');
+        this.do_lookups(connection, timedNext, literal[1], 'helo');
     }
     else {
-        this.do_lookups(connection, next, helo, 'helo');
+        this.do_lookups(connection, timedNext, helo, 'helo');
     }
 }
 
 exports.lookup_mailfrom = function (next, connection, params) {
-    this.do_lookups(connection, next, params[0].host, 'envfrom');
+    const timedNext = getTimedNext(this, connection, next, 'envfrom')
+    this.do_lookups(connection, timedNext, params[0].host, 'envfrom');
 }
 
 exports.enable_body_parsing = (next, connection) => {
@@ -330,6 +352,7 @@ exports.lookup_header_zones = function (next, connection) {
     const email_re = /<?[^@]+@([^> ]+)>?/;
     const plugin = this;
     const trans = connection.transaction;
+    const timedNext = getTimedNext(this, connection, next, 'ms, typeg')
 
     // From header
     function do_from_header (cb) {
@@ -365,17 +388,15 @@ exports.lookup_header_zones = function (next, connection) {
     function do_body (cb) {
         const urls = {};
         extract_urls(urls, trans.body, connection, plugin);
-        return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
+        plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
     }
 
     const chain = [ do_from_header, do_replyto_header, do_msgid_header, do_body ];
     function chain_caller (code, msg) {
-        if (code) {
-            return next(code, msg);
-        }
-        if (!chain.length) {
-            return next();
-        }
+        if (code) return timedNext(code, msg);
+
+        if (!chain.length) return timedNext();
+
         const next_in_chain = chain.shift();
         next_in_chain(chain_caller);
     }
