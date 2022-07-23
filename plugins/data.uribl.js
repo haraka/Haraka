@@ -80,7 +80,6 @@ exports.load_uribl_exludes = function () {
 
 // IS: IPv6 compatible (maybe; if the BL is support IPv6 requests)
 exports.do_lookups = function (connection, next, hosts, type) {
-    // console.log(`do_lookups: ${hosts}, ${type}`)
     const plugin = this;
 
     // Store the results in the correct place based on the lookup type

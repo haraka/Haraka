@@ -2,7 +2,6 @@
 
 const path      = require('path');
 const fixtures  = require('haraka-test-fixtures');
-// const ipaddr    = require('ipaddr.js');
 
 const _set_up = function (done) {
 
@@ -14,8 +13,28 @@ const _set_up = function (done) {
     this.connection = fixtures.connection.createConnection();
     this.connection.transaction = fixtures.transaction.createTransaction()
 
-    // console.log(this.plugin)
     done();
+}
+
+exports.do_lookups = {
+    setUp : _set_up,
+    'lookup_test_ip: 127.0.0.2' (test) {
+        test.expect(2);
+        this.plugin.do_lookups(this.connection, (code, msg) => {
+            // no result b/c private IP
+            test.equal(code, undefined)
+            test.equal(msg, undefined)
+            test.done()
+        }, ['127.0.0.2'], 'body')
+    },
+    'lookup_test_ip: test.uribl.com' (test) {
+        test.expect(2);
+        this.plugin.do_lookups(this.connection, (code, msg) => {
+            test.equal(code, undefined)
+            test.equal(msg, undefined)
+            test.done()
+        }, ['test.uribl.com'], 'body')
+    },
 }
 
 exports.lookup_remote_ip = {
@@ -31,3 +50,4 @@ exports.lookup_remote_ip = {
         }, this.connection)
     },
 }
+
