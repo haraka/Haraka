@@ -3,6 +3,8 @@
 
 ### Changes
 
+- uribl: timeout DNS 1 second before plugin, #3077
+- uribl: load .ini config to plugin.cfg, add basic tests #3077
 - ./mailbody & ./mailheader moved to haraka-email-message #3071
 - dkim_sign: reformat dkim signature to multi-line #2991
 - dkim_sign: remove spurious error logging #3034
