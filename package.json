@@ -84,7 +84,6 @@
   },
   "bin": {
     "haraka": "./bin/haraka",
-    "spf": "./bin/spf",
     "dkimverify": "./bin/dkimverify",
     "haraka_grep": "./bin/haraka_grep"
   },
