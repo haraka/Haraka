@@ -157,6 +157,8 @@ you may be interested in are:
 ** outbound_helo - the EHLO domain to use (again, do not set manually)
 * queue_time - the epoch milliseconds time when this mail was queued
 * uuid - the original transaction.uuid
+* force_tls - if true, this mail will be sent over TLS or defer
+
 
 Outbound Mail Hooks
 -------------------
