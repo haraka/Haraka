@@ -306,20 +306,22 @@ class HMailItem extends events.EventEmitter {
         const mx = this.mxlist.shift();
         let host = mx.exchange;
 
-        self.force_tls = false;
-        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, host)) {
-            this.logdebug(`Forcing TLS for host ${host}`);
-            self.force_tls = true;
-        }
-        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, self.todo.domain)) {
-            this.logdebug(`Forcing TLS for domain ${self.todo.domain}`);
-            self.force_tls = true;
-        }
+        self.force_tls = this.todo.force_tls;
+        if (!self.force_tls) {
+            if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, host)) {
+                this.logdebug(`Forcing TLS for host ${host}`);
+                self.force_tls = true;
+            }
+            if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, self.todo.domain)) {
+                this.logdebug(`Forcing TLS for domain ${self.todo.domain}`);
+                self.force_tls = true;
+            }
 
-        // IP or IP:port
-        if (net.isIP(host)) {
-            self.hostlist = [ host ];
-            return self.try_deliver_host(mx);
+            // IP or IP:port
+            if (net.isIP(host)) {
+                self.hostlist = [ host ];
+                return self.try_deliver_host(mx);
+            }
         }
 
         host   = mx.exchange;
