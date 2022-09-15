@@ -32,7 +32,7 @@
 - chore(test): build shims for windows-2022 & node on windows #3052
 - chore(test): restore CI tests to working order #3030
 - tls: add force_tls option to the ToDo object
-
+- fix(banner): banner was inserted erroneously into text attachments
 
 ## 2.8.28 - 2021-10-14
 
