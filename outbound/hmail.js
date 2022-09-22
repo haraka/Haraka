@@ -376,7 +376,7 @@ class HMailItem extends events.EventEmitter {
             host = mx.path;
         }
 
-        this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
+        this.loginfo(`Attempting to deliver to ${mx.bind_helo}: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
         client_pool.get_client(port, host, mx.bind, !!mx.path, (err, socket) => {
             if (err) {
                 if (/connection timed out|connect ECONNREFUSED/.test(err)) {
