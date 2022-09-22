@@ -26,7 +26,7 @@ The list of plugins to load
   * listen\_host, port - the host and port to listen on (default: ::0 and 25)
   * listen - (default: [::0]:25) Comma separated IP:Port addresses to listen on
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
-  * nodes - specifies how many processes to fork. The string "cpus" will fork as many children as there are CPUs (default: 0, which disables cluster mode)
+  * nodes - specifies how many processes to fork. The string "cpus" will fork as many children as there are CPUs (default: 1, which enables cluster mode with a single process)
   * user - optionally a user to drop privileges to. Can be a string or UID.
   * group - optionally a group to drop privileges to. Can be a string or GID.
   * ignore\_bad\_plugins - If a plugin fails to compile by default Haraka will stop at load time.
