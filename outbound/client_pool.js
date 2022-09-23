@@ -15,15 +15,7 @@ function _create_socket (pool_name, port, host, local_addr, is_unix_socket, call
     socket.__pool_name = pool_name;
     socket.__uuid = utils.uuid();
     socket.setTimeout(obc.cfg.connect_timeout * 1000);
-    logger.logdebug(
-        '[outbound] created',
-        {
-            uuid: socket.__uuid,
-            host,
-            port,
-            pool_timeout: obc.cfg.pool_timeout
-        }
-    );
+    logger.logdebug(`[outbound] created. host: ${host} port: ${port} pool_timeout: ${obc.cfg.pool_timeout}`, { uuid: socket.__uuid });
     socket.once('connect', () => {
         socket.removeAllListeners('error'); // these get added after callback
         socket.removeAllListeners('timeout');
