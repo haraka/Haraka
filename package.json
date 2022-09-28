@@ -71,7 +71,7 @@
     "haraka-plugin-uribl"   : "^1.0.4",
     "haraka-plugin-watch"   : "^2.0.1",
     "ocsp"                  : "~1.2.0",
-    "redis"                 : "~4.2.0",
+    "redis"                 : "~4.3.0",
     "tmp"                   : "~0.2.1"
   },
   "devDependencies": {
