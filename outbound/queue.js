@@ -135,11 +135,11 @@ exports._add_file = (file, cb) => {
     const parts = _qfile.parts(file);
 
     if (parts.next_attempt <= self.cur_time) {
-        logger.logdebug("[outbound] File needs processing now");
+        logger.logdebug(`[outbound] File ${file} needs processing now`);
         load_queue.push(file);
     }
     else {
-        logger.logdebug(`[outbound] File needs processing later: ${parts.next_attempt - self.cur_time}ms`);
+        logger.logdebug(`[outbound] File ${file} needs processing later: ${parts.next_attempt - self.cur_time}ms`);
         temp_fail_queue.add(file, parts.next_attempt - self.cur_time, () => { load_queue.push(file);});
     }
 
