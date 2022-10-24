@@ -560,7 +560,7 @@ class HMailItem extends events.EventEmitter {
 
                 switch (mx.auth_type.toUpperCase()) {
                     case 'PLAIN':
-                        return send_command('AUTH', `PLAIN ${utils.base64(`${mx.auth_user}\0${mx.auth_user}\0${mx.auth_pass}`)}`);
+                        return send_command('AUTH', `PLAIN ${utils.base64(`\0${mx.auth_user}\0${mx.auth_pass}`)}`);
                     case 'LOGIN':
                         authenticating = true;
                         return send_command('AUTH', 'LOGIN');
