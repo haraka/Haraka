@@ -34,6 +34,7 @@
 - tls: add force_tls option to the ToDo object
 - fix(banner): banner was inserted erroneously into text attachments
 - outbound: remove hardcoded AUTH PLAIN authorization identity
+- outbound: set acquireTimeoutMillis to prevent constant reconnect to unreachable servers
 
 ## 2.8.28 - 2021-10-14
 

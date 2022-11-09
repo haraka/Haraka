@@ -89,6 +89,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
     const opts = {
         max: max || 10,
         idleTimeoutMillis: obc.cfg.pool_timeout * 1000,
+        acquireTimeoutMillis: 10000 // temporary fix for #3100
     }
     const pool = generic_pool.createPool(factory, opts);
     server.notes.pool[name] = pool;
