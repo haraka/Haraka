@@ -50,6 +50,12 @@ exports.lookup = function (lookup, zone, cb) {
             return cb(err, null);  // Return a null A record
         }
 
+        // <https://www.spamhaus.org/news/article/807/using-our-public-mirrors-check-your-return-codes-now>
+        if (a && a.includes('127.255.255.')) {
+            self.disable_zone(zone, a);
+            return cb(err, null);  // Return a null A record
+        }
+
         if (err) {
             if (err.code === dns.TIMEOUT) {         // list timed out
                 self.disable_zone(zone, err.code); // disable it
