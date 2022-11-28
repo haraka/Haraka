@@ -60,7 +60,7 @@ class Transaction {
 
         for (const o of this.body_filters) {
             this.body.add_filter((ct, enc, buf) => {
-                const re_match = (util.isRegExp(o.ct_match) && o.ct_match.test(ct.toLowerCase()));
+                const re_match = (util.types.isRegExp(o.ct_match) && o.ct_match.test(ct.toLowerCase()));
                 const ct_begins = ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0;
                 if (re_match || ct_begins) return o.filter(ct, enc, buf);
             })
