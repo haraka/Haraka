@@ -18,6 +18,7 @@
 - style(es6): use optional chaining when accessing transactions #2732
 - style(smtp_client): pass args as objects (was positional)
 - style(plugin/\*): transaction guarding #3032
+- dep(spf): remove to separate plugin #3078
 - dep(iconv): removed, declared in haraka-email-message)
 - dep(redis): 3.1 -> 4.1 #3058
 - dep(nopt): 5 -> 6.0.0  #3076
