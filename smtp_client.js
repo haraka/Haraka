@@ -362,7 +362,7 @@ exports.get_pool = (server, opts = {}) => {
 
 // Get a smtp_client for the given attributes.
 // used only in testing
-exports.get_client = (server, callback, opts => {}) => {
+exports.get_client = (server, callback, opts = {}) => {
     if (!opts.port) opts.port = 25
     if (!opts.host) opts.host = 'localhost'
 
@@ -438,116 +438,116 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
     // const pool = exports.get_pool(connection.server, { port: hostport.port, host: hostport.host, cfg: c });
     // pool.acquire().then(smtp_client => {
 
-        connection.logdebug(plugin, `Got smtp_client: ${smtp_client.uuid}`);
+    connection.logdebug(plugin, `Got smtp_client: ${smtp_client.uuid}`);
 
-        let secured = false;
+    let secured = false;
 
-        smtp_client.load_tls_config(plugin.tls_options);
+    smtp_client.load_tls_config(plugin.tls_options);
 
-        smtp_client.call_next = function (retval, msg) {
-            if (this.next) {
-                const next = this.next;
-                delete this.next;
-                next(retval, msg);
-            }
+    smtp_client.call_next = function (retval, msg) {
+        if (this.next) {
+            const next = this.next;
+            delete this.next;
+            next(retval, msg);
         }
+    }
 
-        smtp_client.on('client_protocol', (line) => {
-            connection.logprotocol(plugin, `C: ${line}`);
-        })
+    smtp_client.on('client_protocol', (line) => {
+        connection.logprotocol(plugin, `C: ${line}`);
+    })
 
-        smtp_client.on('server_protocol', (line) => {
-            connection.logprotocol(plugin, `S: ${line}`);
-        })
+    smtp_client.on('server_protocol', (line) => {
+        connection.logprotocol(plugin, `S: ${line}`);
+    })
 
-        function helo (command) {
-            if (smtp_client.xclient) {
-                smtp_client.send_command(command, connection.hello.host);
-            }
-            else {
-                smtp_client.send_command(command, connection.local.host);
-            }
+    function helo (command) {
+        if (smtp_client.xclient) {
+            smtp_client.send_command(command, connection.hello.host);
         }
-        smtp_client.on('greeting', helo);
-        smtp_client.on('xclient', helo);
-
-        function on_secured () {
-            if (secured) return;
-            secured = true;
-            smtp_client.secured = true;
-            smtp_client.emit('greeting', 'EHLO');
+        else {
+            smtp_client.send_command(command, connection.local.host);
         }
+    }
+    smtp_client.on('greeting', helo);
+    smtp_client.on('xclient', helo);
 
-        smtp_client.on('capabilities', () => {
-            exports.onCapabilitiesOutbound(smtp_client, secured, connection, c, on_secured);
-        });
+    function on_secured () {
+        if (secured) return;
+        secured = true;
+        smtp_client.secured = true;
+        smtp_client.emit('greeting', 'EHLO');
+    }
 
-        smtp_client.on('helo', () => {
-            if (!c.auth || smtp_client.authenticated) {
-                if (smtp_client.is_dead_sender(plugin, connection)) return;
+    smtp_client.on('capabilities', () => {
+        exports.onCapabilitiesOutbound(smtp_client, secured, connection, c, on_secured);
+    });
 
-                smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
-                return;
-            }
-
-            if (c.auth.type === null || typeof (c.auth.type) === 'undefined') return; // Ignore blank
-            const auth_type = c.auth.type.toLowerCase();
-            if (!smtp_client.auth_capabilities.includes(auth_type)) {
-                throw new Error(`Auth type "${auth_type}" not supported by server (supports: ${smtp_client.auth_capabilities.join(',')})`);
-            }
-            switch (auth_type) {
-                case 'plain':
-                    if (!c.auth.user || !c.auth.pass) {
-                        throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
-                    }
-                    logger.logdebug(`[smtp_client] uuid=${smtp_client.uuid} authenticating as "${c.auth.user}"`);
-                    smtp_client.send_command('AUTH', `PLAIN ${utils.base64(`${c.auth.user}\0${c.auth.user}\0${c.auth.pass}`)}`);
-                    break;
-                case 'cram-md5':
-                    throw new Error("Not implemented");
-                default:
-                    throw new Error(`Unknown AUTH type: ${auth_type}`);
-            }
-        });
-
-        smtp_client.on('auth', () => {
-            // if authentication has been handled by plugin(s)
-            if (smtp_client.authenticating) return;
-
+    smtp_client.on('helo', () => {
+        if (!c.auth || smtp_client.authenticated) {
             if (smtp_client.is_dead_sender(plugin, connection)) return;
 
-            smtp_client.authenticated = true;
             smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
-        });
-
-        // these errors only get thrown when the connection is still active
-        smtp_client.on('error', (msg) => {
-            connection.logwarn(plugin, msg);
-            smtp_client.call_next();
-        });
-
-        // these are the errors thrown when the connection is dead
-        smtp_client.on('connection-error', (error) => {
-            // error contains e.g. "Error: connect ECONNREFUSE"
-            logger.logerror(`backend failure: ${smtp_client.host}:${smtp_client.port} - ${error}`);
-            const host_pool = connection.server.notes.host_pool;
-            // only exists for if forwarding_host_pool is set in the config
-            if (host_pool) {
-                host_pool.failed(smtp_client.host, smtp_client.port);
-            }
-            smtp_client.call_next();
-        });
-
-        if (smtp_client.connected) {
-            if (smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT', `ADDR=${connection.remote.ip}`);
-            }
-            else {
-                smtp_client.emit('helo');
-            }
+            return;
         }
 
-        callback(null, smtp_client);
+        if (c.auth.type === null || typeof (c.auth.type) === 'undefined') return; // Ignore blank
+        const auth_type = c.auth.type.toLowerCase();
+        if (!smtp_client.auth_capabilities.includes(auth_type)) {
+            throw new Error(`Auth type "${auth_type}" not supported by server (supports: ${smtp_client.auth_capabilities.join(',')})`);
+        }
+        switch (auth_type) {
+            case 'plain':
+                if (!c.auth.user || !c.auth.pass) {
+                    throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
+                }
+                logger.logdebug(`[smtp_client] uuid=${smtp_client.uuid} authenticating as "${c.auth.user}"`);
+                smtp_client.send_command('AUTH', `PLAIN ${utils.base64(`${c.auth.user}\0${c.auth.user}\0${c.auth.pass}`)}`);
+                break;
+            case 'cram-md5':
+                throw new Error("Not implemented");
+            default:
+                throw new Error(`Unknown AUTH type: ${auth_type}`);
+        }
+    });
+
+    smtp_client.on('auth', () => {
+        // if authentication has been handled by plugin(s)
+        if (smtp_client.authenticating) return;
+
+        if (smtp_client.is_dead_sender(plugin, connection)) return;
+
+        smtp_client.authenticated = true;
+        smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
+    });
+
+    // these errors only get thrown when the connection is still active
+    smtp_client.on('error', (msg) => {
+        connection.logwarn(plugin, msg);
+        smtp_client.call_next();
+    });
+
+    // these are the errors thrown when the connection is dead
+    smtp_client.on('connection-error', (error) => {
+        // error contains e.g. "Error: connect ECONNREFUSE"
+        logger.logerror(`backend failure: ${smtp_client.host}:${smtp_client.port} - ${error}`);
+        const host_pool = connection.server.notes.host_pool;
+        // only exists for if forwarding_host_pool is set in the config
+        if (host_pool) {
+            host_pool.failed(smtp_client.host, smtp_client.port);
+        }
+        smtp_client.call_next();
+    });
+
+    if (smtp_client.connected) {
+        if (smtp_client.xclient) {
+            smtp_client.send_command('XCLIENT', `ADDR=${connection.remote.ip}`);
+        }
+        else {
+            smtp_client.emit('helo');
+        }
+    }
+
+    callback(null, smtp_client);
     // }).catch(callback);
 }
 
