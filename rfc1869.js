@@ -86,8 +86,8 @@ exports.parse = (type, line, strict) => {
             else if (line.match(/@/)) {
                 if (!line.match(/^<.*>$/)) line = `<${line}>`;
             }
-            else if (!line.match(/^(postmaster|abuse)$/i)) {
-                throw new Error('Syntax error in address');
+            else if (!line.match(/^<(postmaster|abuse)>$/i)) {
+                throw new Error(`Syntax error in address: ${line}`);
             }
         }
     }
