@@ -363,12 +363,8 @@ exports.get_pool = (server, opts = {}) => {
 // Get a smtp_client for the given attributes.
 // used only in testing
 exports.get_client = (server, callback, opts = {}) => {
-    if (!opts.port) opts.port = 25
-    if (!opts.host) opts.host = 'localhost'
-
-    const smtp_client = new SMTPClient(opts)
-    logger.loginfo(`[get_client] uuid=${smtp_client.uuid} host=${opts.host} port=${opts.port} created`);
-    callback(smtp_client);
+    const pool = exports.get_pool(server, opts);
+    pool.acquire().then(callback).catch(callback);
 }
 
 
