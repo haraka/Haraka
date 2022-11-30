@@ -3,9 +3,9 @@
 
 ### Changes
 
-- smtp_client: disable pooling in get_client_plugin
+- smtp_client: disable pooling in get_client_plugin, #3113
 - fix(smtp_client): update generic-pool getPoolSize() -> pool.size
-- fix(smtp_client): handle a new generic-pool timeout error that caused Haraka to crash
+- fix(smtp_client): handle a crashing new generic-pool timeout error
 - fix(smtp_client): add missing `$` char in front of interpolated string
 - config/plugins: update name of uribl plugin
 - uribl: timeout DNS 1 second before plugin, #3077
