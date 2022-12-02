@@ -20,7 +20,6 @@ const obc         = require('./config');
 const queuelib    = require('./queue');
 const HMailItem   = require('./hmail');
 const TODOItem    = require('./todo');
-const pools       = require('./client_pool');
 const _qfile = exports.qfile = require('./qfile');
 
 const queue_dir = queuelib.queue_dir;
@@ -42,25 +41,21 @@ exports.load_pid_queue = queuelib.load_pid_queue;
 exports.ensure_queue_dir = queuelib.ensure_queue_dir;
 exports.load_queue = queuelib.load_queue;
 exports.stats = queuelib.stats;
-exports.drain_pools = pools.drain_pools;
 
 process.on('message', msg => {
-    if (msg.event && msg.event === 'outbound.load_pid_queue') {
+    if (!msg.event) return
+
+    if (msg.event === 'outbound.load_pid_queue') {
         exports.load_pid_queue(msg.data);
         return;
     }
-    if (msg.event && msg.event === 'outbound.flush_queue') {
+    if (msg.event === 'outbound.flush_queue') {
         exports.flush_queue(msg.domain, process.pid);
         return;
     }
-    if (msg.event && msg.event === 'outbound.shutdown') {
+    if (msg.event === 'outbound.shutdown') {
         logger.loginfo("[outbound] Shutting down temp fail queue");
-        exports.drain_pools();
         temp_fail_queue.shutdown();
-        return;
-    }
-    if (msg.event && msg.event === 'outbound.drain_pools') {
-        exports.drain_pools();
         return;
     }
     // ignores the message

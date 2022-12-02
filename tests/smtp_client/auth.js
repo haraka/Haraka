@@ -1,18 +1,9 @@
 const message = require('haraka-email-message')
 
-test.expect(21);
+test.expect(15);
 const server = {notes: {}};
 
-exports.get_pool(server);
-const pool_name = '25:localhost:300:no_user';
-test.equals(1, Object.keys(server.notes.pool).length);
-test.equals(pool_name, Object.keys(server.notes.pool)[0]);
-test.equals(1, server.notes.pool[pool_name].size);
-test.equals(0, server.notes.pool[pool_name].available);
-
 exports.get_client(server, (smtp_client) => {
-    test.equals(2, server.notes.pool[pool_name].size);
-    test.equals(0, server.notes.pool[pool_name].available);
 
     const message_stream = new message.stream(
         { main : { spool_after : 1024 } }, "123456789"
