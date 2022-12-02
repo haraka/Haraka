@@ -7,13 +7,13 @@ const logger       = require('../logger');
 
 const obc          = require('./config');
 
-function _create_socket (pool_name, port, host, local_addr, is_unix_socket, callback) {
+function _create_socket (name, port, host, local_addr, is_unix_socket, callback) {
 
     const socket = is_unix_socket ? sock.connect({path: host}) : sock.connect({port, host, localAddress: local_addr});
-    socket.__pool_name = pool_name;
+    socket.name = name;
     socket.__uuid = utils.uuid();
     socket.setTimeout(obc.cfg.connect_timeout * 1000);
-    logger.logdebug(`[outbound] created. host: ${host} port: ${port} pool_timeout: ${obc.cfg.pool_timeout}`, { uuid: socket.__uuid });
+    logger.logdebug(`[outbound] created. host: ${host} port: ${port}`, { uuid: socket.__uuid });
     socket.once('connect', () => {
         socket.removeAllListeners('error'); // these get added after callback
         socket.removeAllListeners('timeout');
