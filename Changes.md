@@ -3,9 +3,8 @@
 
 ### Changes
 
+- dep(generic-pool): remove pooling from outbound #3115
 - smtp_client: disable pooling in get_client_plugin, #3113
-- fix(smtp_client): update generic-pool getPoolSize() -> pool.size
-- fix(smtp_client): handle a crashing new generic-pool timeout error
 - fix(smtp_client): add missing `$` char in front of interpolated string
 - config/plugins: update name of uribl plugin
 - uribl: timeout DNS 1 second before plugin, #3077
@@ -20,7 +19,6 @@
 - style(smtp_client): pass args as objects (was positional)
 - style(plugin/\*): transaction guarding #3032
 - dep(iconv): removed, declared in haraka-email-message)
-- dep(generic-pool): 2.5 -> 3.8 (promises) #3033, #3060
 - dep(redis): 3.1 -> 4.1 #3058
 - dep(nopt): 5 -> 6.0.0  #3076
 - dep(haraka-plugin-fcrdns): 1.0.3 -> 1.1.0  #3076

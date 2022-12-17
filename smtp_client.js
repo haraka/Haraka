@@ -236,8 +236,8 @@ class SMTPClient extends events.EventEmitter {
 
     destroy () {
         if (this.state === STATE.DESTROYED) return
-        this.socket.destroy();
         this.state = STATE.DESTROYED;
+        this.socket.destroy();
     }
 
     upgrade (tls_options) {
