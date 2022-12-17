@@ -29,7 +29,7 @@ jobs:
         # node 8, maint. ended 2019-12
         # node 10, maint. ended 2021-04
         # node 12, maint. ended 2022-04
-        node-version: [ 14, 16, 18 ]
+        node-version: [ 16, 18 ]
       fail-fast: false
     steps:
     - uses: actions/checkout@v3

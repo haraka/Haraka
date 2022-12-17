@@ -205,8 +205,6 @@ exports.smtp_client = {
         const server = { notes: { } };
         const cfg = {
             connect_timeout: 2,
-            pool_timeout: 5,
-            max_connections: 3,
         }
 
         const smtp_client   = require('../smtp_client');
