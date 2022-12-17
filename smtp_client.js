@@ -220,7 +220,7 @@ class SMTPClient extends events.EventEmitter {
 
     release () {
         if (this.state === STATE.DESTROYED) return;
-        logger.loginfo(`[smtp_client] ${this.uuid} releasing, state=${this.state}`);
+        logger.logdebug(`[smtp_client] ${this.uuid} releasing, state=${this.state}`);
 
         [
             'auth',   'bad_code', 'capabilities', 'client_protocol', 'connection-error',
