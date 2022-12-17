@@ -231,13 +231,13 @@ class SMTPClient extends events.EventEmitter {
         })
 
         if (this.connected) this.send_command('QUIT');
-        this.state = STATE.DESTROYED;
+        this.destroy()
     }
 
     destroy () {
-        if (this.state !== STATE.DESTROYED) {
-            this.state = STATE.DESTROYED;
-        }
+        if (this.state === STATE.DESTROYED) return
+        this.socket.destroy();
+        this.state = STATE.DESTROYED;
     }
 
     upgrade (tls_options) {
