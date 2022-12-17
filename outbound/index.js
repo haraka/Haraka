@@ -64,7 +64,7 @@ process.on('message', msg => {
 exports.send_email = function () {
 
     if (arguments.length === 2) {
-        logger.loginfo("[outbound] Sending email as a transaction");
+        logger.logdebug("[outbound] Sending email as a transaction");
         return this.send_trans_email(arguments[0], arguments[1]);
     }
 
@@ -238,9 +238,7 @@ exports.send_trans_email = function (transaction, next) {
         transaction.add_leading_header('Received', `(${obc.cfg.received_header}); ${utils.date_to_str(new Date())}`);
     }
 
-    const connection = {
-        transaction,
-    };
+    const connection = { transaction };
 
     logger.add_log_methods(connection);
     if (!transaction.results) {
@@ -288,7 +286,7 @@ exports.send_trans_email = function (transaction, next) {
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     const self = this;
-    logger.loginfo(`[outbound] Processing delivery for domain: ${todo.domain}`);
+    logger.loginfo(`[outbound] Transaction delivery for domain: ${todo.domain}`);
     const fname = _qfile.name();
     const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
     const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });

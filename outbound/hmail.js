@@ -327,21 +327,20 @@ class HMailItem extends events.EventEmitter {
         host   = mx.exchange;
         const family = mx.family;
 
-        this.loginfo(`Looking up ${family} records for: ${host}`);
-
         // we have a host, look up the addresses for the host
         // and try each in order they appear
         // IS: IPv6 compatible
         dns.resolve(host, family, (err, addresses) => {
             if (err) {
-                self.lognotice(`DNS lookup of ${host} failed: ${err}`);
+                self.lognotice(`DNS (${family}) for ${host} failed: ${err}`);
                 return self.try_deliver(); // try next MX
             }
             if (addresses.length === 0) {
                 // NODATA or empty host list
-                self.lognotice(`DNS lookup of ${host} resulted in no data`);
+                self.lognotice(`DNS (${family}) for ${host} resulted in no data`);
                 return self.try_deliver(); // try next MX
             }
+            this.logdebug(`DNS (${family}) for ${host} -> ${addresses.join(',')}`);
             self.hostlist = addresses;
             self.try_deliver_host(mx);
         });
@@ -376,14 +375,14 @@ class HMailItem extends events.EventEmitter {
             host = mx.path;
         }
 
-        this.loginfo(`Attempting to deliver from: ${mx.bind_helo} to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
+        this.logdebug(`delivering from: ${mx.bind_helo} to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`)
         client_pool.get_client(port, host, mx.bind, !!mx.path, (err, socket) => {
             if (err) {
                 if (/connection timed out|connect ECONNREFUSED/.test(err)) {
-                    logger.lognotice(`[outbound] Failed to get pool entry: ${err}`);
+                    logger.lognotice(`[outbound] Failed to get socket: ${err}`);
                 }
                 else {
-                    logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
+                    logger.logerror(`[outbound] Failed to get socket: ${err}`);
                 }
                 // try next host
                 return self.try_deliver_host(mx);
@@ -668,15 +667,7 @@ class HMailItem extends events.EventEmitter {
                 self.discard();
             }
 
-            if (obc.cfg.pool_concurrency_max && success) {
-                client_pool.release_client(socket, port, host, mx.bind, fin_sent);
-            }
-            else if (obc.cfg.pool_concurrency_max && !mx.using_lmtp) {
-                send_command('RSET');
-            }
-            else {
-                send_command('QUIT');
-            }
+            send_command('QUIT');
         }
 
         socket.on('line', line => {
@@ -743,7 +734,7 @@ class HMailItem extends events.EventEmitter {
                     rcpt.dsn_smtp_response = response.join(' ');
                     rcpt.dsn_remote_mta = mx.exchange;
                 });
-                send_command(obc.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
+                send_command('QUIT');
                 processing_mail = false;
                 return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
             }
@@ -781,7 +772,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(obc.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
+                    send_command('QUIT');
                     processing_mail = false;
                     return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
                 }
@@ -832,7 +823,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(obc.cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
+                    send_command('QUIT');
                     processing_mail = false;
                     return self.bounce(reason, { mx });
                 }
@@ -936,13 +927,6 @@ class HMailItem extends events.EventEmitter {
                     }
                     break;
                 case 'quit':
-                    if (obc.cfg.pool_concurrency_max) {
-                        self.logerror("We should NOT have sent QUIT from here...");
-                    }
-                    else {
-                        client_pool.release_client(socket, port, host, mx.bind, fin_sent);
-                    }
-                    break;
                 case 'rset':
                     client_pool.release_client(socket, port, host, mx.bind, fin_sent);
                     break;
@@ -954,9 +938,9 @@ class HMailItem extends events.EventEmitter {
         });
 
         if (socket.__fromPool) {
-            logger.logdebug('[outbound] got pooled socket, trying to deliver');
+            logger.logdebug('[outbound] got socket, trying to deliver');
             secured = socket.isEncrypted();
-            logger.logdebug(`[outbound] got pooled ${secured ? 'TLS ' : '' }socket, trying to deliver`);
+            logger.logdebug(`[outbound] got ${secured ? 'TLS ' : '' }socket, trying to deliver`);
             send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
         }
     }
