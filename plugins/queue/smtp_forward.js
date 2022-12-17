@@ -26,6 +26,10 @@ exports.register = function () {
 
     plugin.register_hook('queue', 'queue_forward');
 
+    if (plugin.cfg.main.enable_outbound) {
+        plugin.register_hook('queue_outbound', 'queue_forward');
+    }
+
     plugin.register_hook('get_mx', 'get_mx'); // for relaying outbound messages
 }
 
@@ -35,7 +39,7 @@ exports.load_smtp_forward_ini = function () {
     plugin.cfg = plugin.config.get('smtp_forward.ini', {
         booleans: [
             '-main.enable_tls',
-            '+main.enable_outbound',
+            '-main.enable_outbound',
             'main.one_message_per_rcpt',
             '-main.check_sender',
             '-main.check_recipient',
@@ -46,10 +50,6 @@ exports.load_smtp_forward_ini = function () {
     () => {
         plugin.load_smtp_forward_ini();
     });
-
-    if (plugin.cfg.main.enable_outbound) {
-        plugin.lognotice('outbound enabled, will default to disabled in Haraka v3 (see #1472)');
-    }
 }
 
 exports.get_config = function (conn) {
