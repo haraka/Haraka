@@ -219,15 +219,8 @@ class SMTPClient extends events.EventEmitter {
     }
 
     release () {
-        if (!this.connected || this.command === 'data' || this.command === 'mailbody') {
-            // Destroy here, we can't reuse a connection that was mid-data.
-            this.destroy();
-            return;
-        }
-
-        logger.logdebug(`[smtp_client] ${this.uuid} resetting, state=${this.state}`);
         if (this.state === STATE.DESTROYED) return;
-        this.state = STATE.RELEASED;
+        logger.loginfo(`[smtp_client] ${this.uuid} releasing, state=${this.state}`);
 
         [
             'auth',   'bad_code', 'capabilities', 'client_protocol', 'connection-error',
@@ -237,26 +230,13 @@ class SMTPClient extends events.EventEmitter {
             this.removeAllListeners(l);
         })
 
-        this.on('bad_code', (code, msg) => {
-            this.destroy();
-        });
-
-        this.on('rset', () => {
-            logger.logdebug(`[smtp_client] ${this.uuid} releasing, state=${this.state}`);
-            if (this.state === STATE.DESTROYED) return;
-
-            this.state = STATE.IDLE;
-            this.removeAllListeners('rset');
-            this.removeAllListeners('bad_code');
-            if (this.pool) this.pool.release(this);
-        });
-
-        this.send_command('RSET');
+        if (this.connected) this.send_command('QUIT');
+        this.state = STATE.DESTROYED;
     }
 
     destroy () {
         if (this.state !== STATE.DESTROYED) {
-            if (this.pool) this.pool.destroy(this);
+            this.state = STATE.DESTROYED;
         }
     }
 
