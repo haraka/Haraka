@@ -39,6 +39,7 @@
 - fix(banner): banner was inserted erroneously into text attachments
 - outbound: remove hardcoded AUTH PLAIN authorization identity
 - outbound: set acquireTimeoutMillis to prevent constant reconnect to unreachable servers
+- `outbound_ip` is deprecated and split into `outbound_ip4` and `outbound_ip6`
 
 ## 2.8.28 - 2021-10-14
 
@@ -58,7 +59,6 @@
 - use address-rfc2821 2.0.0
 - http: use CDN for bootstrap/jquery, drop bower #2891
 - drop support for node 10  #2890
-- `outbound_ip` is deprecated and split into `outbound_ip4` and `outbound_ip6`
 - outbound: disable outbound to localhost by default #2952
 - spamassassin: allow returning DENYSOFT on errors #2967
 
