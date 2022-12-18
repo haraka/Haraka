@@ -9,9 +9,7 @@ const Notes  = require('haraka-notes');
 const utils  = require('haraka-utils');
 
 // Haraka modules
-const Header = require('./mailheader').Header;
-const body   = require('./mailbody');
-const MessageStream = require('./messagestream');
+const message = require('haraka-email-message')
 
 class Transaction {
     constructor (uuid, cfg) {
@@ -31,8 +29,8 @@ class Transaction {
         this.parse_body = false;
         this.notes = new Notes();
         this.notes.skip_plugins = [];
-        this.header = new Header();
-        this.message_stream = new MessageStream(this.cfg, this.uuid, this.header.header_list);
+        this.header = new message.Header();
+        this.message_stream = new message.stream(this.cfg, this.uuid, this.header.header_list);
         this.discard_data = false;
         this.resetting = false;
         this.rcpt_count = {
@@ -51,7 +49,7 @@ class Transaction {
     ensure_body () {
         if (this.body) return;
 
-        this.body = new body.Body(this.header);
+        this.body = new message.Body(this.header);
         this.body.on('mime_boundary', m => this.incr_mime_count());
         this.attachment_start_hooks.forEach(h => {
             this.body.on('attachment_start', h);
@@ -63,7 +61,7 @@ class Transaction {
 
         for (const o of this.body_filters) {
             this.body.add_filter((ct, enc, buf) => {
-                const re_match = (util.isRegExp(o.ct_match) && o.ct_match.test(ct.toLowerCase()));
+                const re_match = (util.types.isRegExp(o.ct_match) && o.ct_match.test(ct.toLowerCase()));
                 const ct_begins = ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0;
                 if (re_match || ct_begins) return o.filter(ct, enc, buf);
             })

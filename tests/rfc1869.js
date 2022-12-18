@@ -55,4 +55,7 @@ exports.basic = {
         _check(test, 'RCPT TO:<user=name@domain.com> foo=bar',
             ['<user=name@domain.com>', 'foo=bar']);
     },
+    'RCPT TO:<postmaster>': test => {
+        _check(test, 'RCPT TO:<postmaster>', ['<postmaster>']);
+    },
 }

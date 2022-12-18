@@ -1,5 +1,6 @@
 const path = require('path');
 const endpoint = require('../endpoint');
+const message = require('haraka-email-message')
 
 function _set_up (done) {
 
@@ -204,12 +205,9 @@ exports.smtp_client = {
         const server = { notes: { } };
         const cfg = {
             connect_timeout: 2,
-            pool_timeout: 5,
-            max_connections: 3,
         }
 
         const smtp_client   = require('../smtp_client');
-        const MessageStream = require('../messagestream');
 
         smtp_client.get_client(server, (client) => {
 
@@ -227,7 +225,7 @@ exports.smtp_client = {
                     client.send_command('DATA');
                 })
                 .on('data', () => {
-                    const message_stream = new MessageStream(
+                    const message_stream = new message.stream(
                         { main : { spool_after : 1024 } }, "theMessageId"
                     );
 
@@ -451,6 +449,9 @@ exports.requireAuthorized_SMTPS = {
                     if (error.message === 'socket hang up') {   // node 6 & 8
                         test.equal(error.message, 'socket hang up');
                     }
+                    else if (/alert certificate required/.test(error.message)) {  // node 18
+                        test.ok(/alert certificate required/.test(error.message))
+                    }
                     else {     // node 10+
                         test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
                     }
@@ -495,7 +496,12 @@ exports.requireAuthorized_STARTTLS = {
             (error, info) => {
                 if (error) {
                     // console.log(error);
-                    test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
+                    if (/alert certificate required/.test(error.message)) {  // node 18
+                        test.ok(/alert certificate required/.test(error.message))
+                    }
+                    else {
+                        test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
+                    }
                 }
                 test.done();
             });
