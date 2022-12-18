@@ -55,17 +55,16 @@ exports.advertise_starttls = function (next, connection) {
     const redis = server.notes.redis;
     const dbkey = `no_tls|${connection.remote.ip}`;
 
-    redis.get(dbkey, (err, dbr) => {
-        if (err) {
+    redis.get(dbkey)
+        .then(dbr => {
+            if (!dbr) return enable_tls();
+            connection.results.add(plugin, { msg: 'no_tls'});
+            next(CONT, 'STARTTLS disabled because previous attempt failed')
+        })
+        .catch(err => {
             connection.results.add(plugin, {err});
-            return enable_tls();
-        }
-
-        if (!dbr) return enable_tls();
-
-        connection.results.add(plugin, { msg: 'no_tls'});
-        return next(CONT, 'STARTTLS disabled because previous attempt failed')
-    });
+            enable_tls();
+        })
 }
 
 exports.set_notls = function (connection) {

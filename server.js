@@ -233,16 +233,6 @@ Server._graceful = shutdown => {
     });
 }
 
-Server.drainPools = () => {
-    if (!Server.cluster) {
-        return outbound.drain_pools();
-    }
-
-    for (const id in cluster.workers) {
-        cluster.workers[id].send({event: 'outbound.drain_pools'});
-    }
-}
-
 Server.sendToMaster = (command, params) => {
     // console.log("Send to master: ", command);
     if (Server.cluster) {

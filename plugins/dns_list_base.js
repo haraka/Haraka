@@ -50,6 +50,12 @@ exports.lookup = function (lookup, zone, cb) {
             return cb(err, null);  // Return a null A record
         }
 
+        // <https://www.spamhaus.org/news/article/807/using-our-public-mirrors-check-your-return-codes-now>
+        if (a && a.includes('127.255.255.')) {
+            self.disable_zone(zone, a);
+            return cb(err, null);  // Return a null A record
+        }
+
         if (err) {
             if (err.code === dns.TIMEOUT) {         // list timed out
                 self.disable_zone(zone, err.code); // disable it
@@ -68,14 +74,13 @@ exports.stats_incr_zone = function (err, zone, start) {
 
     const rkey = `dns-list-stat:${zone}`;
     const elapsed = new Date().getTime() - start;
-    redis_client.hincrby(rkey, 'TOTAL', 1);
+    redis_client.hIncrBy(rkey, 'TOTAL', 1);
     const foo = (err) ? err.code : 'LISTED';
-    redis_client.hincrby(rkey, foo, 1);
-    redis_client.hget(rkey, 'AVG_RT', (err2, rt) => {
-        if (err2) return;
+    redis_client.hIncrBy(rkey, foo, 1);
+    redis_client.hGet(rkey, 'AVG_RT').then(rt => {
         const avg = parseInt(rt) ? (parseInt(elapsed) + parseInt(rt))/2
             : parseInt(elapsed);
-        redis_client.hset(rkey, 'AVG_RT', avg);
+        redis_client.hSet(rkey, 'AVG_RT', avg);
     });
 }
 
@@ -89,12 +94,14 @@ exports.init_redis = function () {
     const port = parseInt(host_port[1], 10) || 6379;
 
     redis_client = redis.createClient(port, host);
-    redis_client.on('error', err => {
-        plugin.logerror(`Redis error: ${err}`);
-        redis_client.quit();
-        redis_client = null; // should force a reconnect
-        // not sure if that's the right thing but better than nothing...
-    });
+    redis_client.connect().then(() => {
+        redis_client.on('error', err => {
+            plugin.logerror(`Redis error: ${err}`);
+            redis_client.quit();
+            redis_client = null; // should force a reconnect
+            // not sure if that's the right thing but better than nothing...
+        })
+    })
 }
 
 exports.multi = function (lookup, zones, cb) {
@@ -110,7 +117,7 @@ exports.multi = function (lookup, zones, cb) {
         // Statistics: check hit overlap
         for (let i=0; i < listed.length; i++) {
             const foo = (listed[i] === zone) ? 'TOTAL' : listed[i];
-            redis_client.hincrby(`dns-list-overlap:${zone}`, foo, 1);
+            redis_client.hIncrBy(`dns-list-overlap:${zone}`, foo, 1);
         }
     }
 
@@ -194,9 +201,7 @@ exports.check_zones = function (interval) {
 
 exports.shutdown = function () {
     clearInterval(this._interval);
-    if (redis_client) {
-        redis_client.quit();
-    }
+    if (redis_client) redis_client.quit();
 }
 
 exports.disable_zone = function (zone, result) {

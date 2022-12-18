@@ -10,6 +10,7 @@ class TODOItem {
         this.message_stream = transaction.message_stream;
         this.notes = transaction.notes;
         this.uuid = transaction.uuid;
+        this.force_tls = false;
     }
 }
 

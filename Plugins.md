@@ -114,7 +114,7 @@ Create a PR adding yours to this list.
 [url-action-mailbox]: https://guides.rubyonrails.org/action_mailbox_basics.html
 [url-aliases]: https://github.com/haraka/Haraka/blob/master/docs/plugins/aliases.md
 [url-asn]: https://github.com/haraka/haraka-plugin-asn
-[url-attach]: https://github.com/haraka/Haraka/blob/master/docs/plugins/attachment.md
+[url-attach]: https://github.com/haraka/haraka-plugin-attachment
 [url-authencflat]: https://github.com/AuspeXeu/haraka-plugin-auth-enc-file
 [url-authflat]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/flat_file.md
 [url-authbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_bridge.md

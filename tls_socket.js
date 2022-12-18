@@ -704,11 +704,10 @@ function getCertFor (host) {
     return certsByHost['*'];  // the default TLS cert
 }
 
-function connect (port, host, cb) {
+function connect (port, host) {
     let conn_options = {};
     if (typeof port === 'object') {
         conn_options = port;
-        cb = host;
     }
     else {
         conn_options.port = port;

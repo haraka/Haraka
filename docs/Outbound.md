@@ -74,34 +74,6 @@ string is attached as a `Received` header to all outbound mail just before it is
 
 Timeout for connecting to remote servers. Default: 30s
 
-* `pool_timeout`
-
-Outbound mail uses "pooled" connections. An unused pool connection will send
-a QUIT after this time. Default: 50s
-
-Pooled connections means that a mail to a particular IP address will hold that
-connection open and use it the next time it is requested. This helps with
-large scale outbound mail. If you don't send lots of mail it is advised to
-lower the `pool_timeout` value since it may upset receiving mail servers.
-
-Setting this value to `0` will effectively disable the use of pools. You may
-wish to set this if you have a `get_mx` hook that picks outbound servers on
-a per-email basis (rather than per-domain).
-
-* `pool_concurrency_max`
-
-Set this to `0` to completely disable the pooling code.
-
-This value determines how many concurrent connections can be made to a single
-IP address (destination) in the pool. Default: 10 connections.
-
-* `pool_waiting_queue_max`
-
-Set this to `0` to disable queue length restrictions.
-
-This value determines max amount of connections waited to be processed in pool
-of connections to single IP address (destination). Default: 20 connections.
-
 * `local_mx_ok`
 
 Default: false. By default, outbound to a local IP is disabled, to avoid creating 
@@ -157,6 +129,8 @@ you may be interested in are:
 ** outbound_helo - the EHLO domain to use (again, do not set manually)
 * queue_time - the epoch milliseconds time when this mail was queued
 * uuid - the original transaction.uuid
+* force_tls - if true, this mail will be sent over TLS or defer
+
 
 Outbound Mail Hooks
 -------------------
