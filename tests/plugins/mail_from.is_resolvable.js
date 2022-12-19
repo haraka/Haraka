@@ -22,13 +22,12 @@ exports.mxErr = {
     setUp : _set_up,
     'any.com, no err code' (test) {
         test.expect(3);
-        const t = this;
-        const txn = t.connection.transaction;
+        const txn = this.connection.transaction;
         const err = new Error('oops');
         err.code = null;
         let called = false;
         function cb () { called = true; }
-        const r  = t.plugin.mxErr(t.connection, 'any.com', 'MX', err, cb);
+        const r  = this.plugin.mxErr(this.connection, 'any.com', 'MX', err, cb);
         test.equal(r, true);
         test.equal(called, true);
         const mf = txn.results.get('mail_from.is_resolvable');
@@ -37,13 +36,12 @@ exports.mxErr = {
     },
     'any.com, bypass err code' (test) {
         test.expect(3);
-        const t = this;
-        const txn = t.connection.transaction;
+        const txn = this.connection.transaction;
         const err = new Error('oops');
         err.code=dns.NOTFOUND;
         let called = false;
         function cb () { called = true; }
-        const r  = t.plugin.mxErr(t.connection, 'any.com', 'MX', err, cb);
+        const r  = this.plugin.mxErr(this.connection, 'any.com', 'MX', err, cb);
         test.equal(r, false);
         test.equal(called, false);
         const mf = txn.results.get('mail_from.is_resolvable');

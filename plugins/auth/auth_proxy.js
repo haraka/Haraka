@@ -4,15 +4,13 @@ const utils = require('haraka-utils');
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
-    const plugin = this;
-    plugin.inherits('auth/auth_base');
-    plugin.load_tls_ini();
+    this.inherits('auth/auth_base');
+    this.load_tls_ini();
 }
 
 exports.load_tls_ini = function () {
-    const plugin = this;
-    plugin.tls_cfg = plugin.config.get('tls.ini', () => {
-        plugin.load_tls_ini();
+    this.tls_cfg = this.config.get('tls.ini', () => {
+        this.load_tls_ini();
     });
 }
 
@@ -28,7 +26,8 @@ exports.hook_capabilities = (next, connection) => {
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     let domain;
-    if ((domain = /@([^@]+)$/.exec(user))) {
+    // FIXME: should this be assigned vs compared?
+    if ((domain =- /@([^@]+)$/.exec(user))) {
         domain = domain[1].toLowerCase();
     }
     else {
@@ -84,13 +83,9 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     socket.on('error', err => {
         connection.logerror(self, `connection failed to host ${host}: ${err}`);
         socket.end();
-        return;
     });
     socket.send_command = function (cmd, data) {
-        let line = cmd + (data ? (` ${data}`) : '');
-        if (cmd === 'dot') {
-            line = '.';
-        }
+        const line = cmd === 'dot' ? '.' : cmd + (data ? (` ${data}`) : '');
         connection.logprotocol(self, `C: ${line}`);
         command = cmd.toLowerCase();
         this.write(`${line}\r\n`);
@@ -116,8 +111,9 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         let cert;
 
         connection.logdebug(self, `command state: ${command}`);
+        const userPass = `\0${user}\0${passwd}`;
         if (command === 'ehlo') {
-            if (code[0] === '5') {
+            if (code.startsWith('5')) {
                 // EHLO command rejected; abort
                 socket.send_command('QUIT');
                 return;
@@ -146,52 +142,49 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     connection.logdebug(self, `found supported AUTH methods: ${methods}`);
                     // Prefer PLAIN as it's easiest
                     if (methods.includes('PLAIN')) {
-                        socket.send_command('AUTH',`PLAIN ${utils.base64(`\0${user}\0${passwd}`)}`);
-                        return;
+                        socket.send_command('AUTH',`PLAIN ${utils.base64(userPass)}`);
                     }
                     else if (methods.includes('LOGIN')) {
                         socket.send_command('AUTH','LOGIN');
-                        return;
                     }
                     else {
                         // No compatible methods; abort...
                         connection.logdebug(self, 'no compatible AUTH methods');
                         socket.send_command('QUIT');
-                        return;
                     }
+                    return;
                 }
             }
         }
         if (command === 'auth') {
             // Handle LOGIN
-            if (code[0] === '3' && response[0] === 'VXNlcm5hbWU6') {
+            if (code.startsWith('3') && response[0] === 'VXNlcm5hbWU6') {
                 // Write to the socket directly to keep the state at 'auth'
                 this.write(`${utils.base64(user)}\r\n`);
                 response = [];
                 return;
             }
-            else if (code[0] === '3' && response[0] === 'UGFzc3dvcmQ6') {
+            else if (code.startsWith('3') && response[0] === 'UGFzc3dvcmQ6') {
                 this.write(`${utils.base64(passwd)}\r\n`);
                 response = [];
                 return;
             }
-            if (code[0] === '5') {
+            if (code.startsWith('5')) {
                 // Initial attempt failed; strip domain and retry.
                 let u;
+                // FIXME: should this be assigned vs compared?
                 if ((u = /^([^@]+)@.+$/.exec(user))) {
                     user = u[1];
                     if (methods.includes('PLAIN')) {
-                        socket.send_command('AUTH', `PLAIN ${utils.base64(`\0${user}\0${passwd}`)}`);
+                        socket.send_command('AUTH', `PLAIN ${utils.base64(userPass)}`);
                     }
                     else if (methods.includes('LOGIN')) {
                         socket.send_command('AUTH', 'LOGIN');
                     }
                     return;
                 }
-                else {
-                    // Don't attempt any other hosts
-                    auth_complete = true;
-                }
+                // Don't attempt any other hosts
+                auth_complete = true;
             }
         }
         if (/^[345]/.test(code)) {

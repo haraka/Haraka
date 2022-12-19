@@ -61,10 +61,9 @@ exports.bounce_3464 = {
                     fs.unlinkSync(curPath);
                 });
                 done();
+                return;
             }
-            else {
-                done();
-            }
+            done();
         });
     },
     'test MAIL FROM responded with 500 5.0.0 triggers send_email() containing bounce msg with codes and message': test => {

@@ -4,7 +4,7 @@ const fs          = require('fs');
 const path        = require('path');
 
 const async       = require('async');
-const Address     = require('address-rfc2821').Address;
+const { Address }     = require('address-rfc2821');
 const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
@@ -22,9 +22,7 @@ const HMailItem   = require('./hmail');
 const TODOItem    = require('./todo');
 const _qfile = exports.qfile = require('./qfile');
 
-const queue_dir = queuelib.queue_dir;
-const temp_fail_queue = queuelib.temp_fail_queue;
-const delivery_queue = queuelib.delivery_queue;
+const { queue_dir, temp_fail_queue, delivery_queue } = queuelib;
 
 exports.temp_fail_queue = temp_fail_queue;
 exports.delivery_queue = delivery_queue;
@@ -53,11 +51,11 @@ process.on('message', msg => {
         exports.flush_queue(msg.domain, process.pid);
         return;
     }
-    if (msg.event === 'outbound.shutdown') {
-        logger.loginfo("[outbound] Shutting down temp fail queue");
-        temp_fail_queue.shutdown();
+    if (msg.event !== 'outbound.shutdown') {
         return;
     }
+    logger.loginfo("[outbound] Shutting down temp fail queue");
+    temp_fail_queue.shutdown();
     // ignores the message
 });
 
@@ -90,18 +88,15 @@ exports.send_email = function () {
     }
 
     // set MAIL FROM address, and parse if it's not an Address object
-    if (from instanceof Address) {
-        transaction.mail_from = from;
-    }
-    else {
+    if (!(from instanceof Address)) {
         try {
             from = new Address(from);
         }
         catch (err) {
             return next(constants.deny, `Malformed from: ${err}`);
         }
-        transaction.mail_from = from;
     }
+    transaction.mail_from = from;
 
     // Make sure to is an array
     if (!(Array.isArray(to))) {
@@ -222,7 +217,6 @@ function get_deliveries (transaction) {
 }
 
 exports.send_trans_email = function (transaction, next) {
-    const self = this;
 
     // add potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
@@ -257,7 +251,7 @@ exports.send_trans_email = function (transaction, next) {
             const todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
             todo.uuid = `${todo.uuid}.${todo_index}`;
             todo_index++;
-            self.process_delivery(ok_paths, todo, hmails, cb);
+            this.process_delivery(ok_paths, todo, hmails, cb);
         },
         (err) => {
             if (err) {
@@ -269,8 +263,7 @@ exports.send_trans_email = function (transaction, next) {
                 return;
             }
 
-            for (let j=0; j<hmails.length; j++) {
-                const hmail = hmails[j];
+            for (const hmail of hmails) {
                 delivery_queue.push(hmail);
             }
 
@@ -285,7 +278,6 @@ exports.send_trans_email = function (transaction, next) {
 }
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
-    const self = this;
     logger.loginfo(`[outbound] Transaction delivery for domain: ${todo.domain}`);
     const fname = _qfile.name();
     const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
@@ -298,12 +290,11 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
                 logger.logerror(`[outbound] Unable to rename tmp file!: ${err}`);
                 fs.unlink(tmp_path, () => {});
                 cb("Queue error");
+                return;
             }
-            else {
-                hmails.push(new HMailItem (fname, dest_path, todo.notes));
-                ok_paths.push(dest_path);
-                cb();
-            }
+            hmails.push(new HMailItem (fname, dest_path, todo.notes));
+            ok_paths.push(dest_path);
+            cb();
         })
     })
 
@@ -314,7 +305,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         cb("Queueing failed");
     })
 
-    self.build_todo(todo, ws, () => {
+    this.build_todo(todo, ws, () => {
         todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
     });
 }
@@ -339,12 +330,7 @@ exports.build_todo = (todo, ws, write_more) => {
 
 // Replacer function to exclude items from the queue file header
 function exclude_from_json (key, value) {
-    switch (key) {
-        case 'message_stream':
-            return undefined;
-        default:
-            return value;
-    }
+    return key === 'message_stream' ? undefined : value;
 }
 
 // exported for testability

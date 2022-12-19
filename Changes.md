@@ -39,6 +39,9 @@
 - fix(banner): banner was inserted erroneously into text attachments
 - outbound: remove hardcoded AUTH PLAIN authorization identity
 - outbound: set acquireTimeoutMillis to prevent constant reconnect to unreachable servers
+- refactoring: safe optimizations via [P42](https://p42.ai/)
+- refactoring: more use of option-chaining (assisted by P42)
+- fix: error-checking via [SonarLint](https://www.sonarsource.com/products/sonarlint/)
 
 ## 2.8.28 - 2021-10-14
 

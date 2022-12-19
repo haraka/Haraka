@@ -33,7 +33,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
             }
             cb(err);
         }
-        else if (addresses && addresses.length) {
+        else if (addresses?.length) {
             for (let i=0,l=addresses.length; i < l; i++) {
                 if (
                     obc.cfg.local_mx_ok ||

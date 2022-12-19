@@ -29,8 +29,7 @@ class OutboundTLS {
         cfg.redis = tls_cfg.redis; // Don't clone - contains methods
 
         for (const opt of inheritable_opts) {
-            if (cfg[opt] !== undefined) continue;          // option set in [outbound]
-            if (tls_cfg.main[opt] === undefined) continue; // opt unset in tls.ini[main]
+            if (cfg[opt] !== undefined || tls_cfg.main[opt] === undefined) continue;          // option set in [outbound]
             cfg[opt] = tls_cfg.main[opt];                  // use value from [main] section
         }
 
@@ -74,33 +73,36 @@ class OutboundTLS {
 
     // Check for if host is prohibited from TLS negotiation
     check_tls_nogo (host, cb_ok, cb_nogo) {
-        const obtls = this;
-        if (!obtls.cfg.redis.disable_for_failed_hosts) return cb_ok();
+        if (!this.cfg.redis.disable_for_failed_hosts) return cb_ok();
 
         const dbkey = `no_tls|${host}`;
-        obtls.db.get(dbkey)
+        this.db.get(dbkey)
             .then(dbr => {
-                dbr ? cb_nogo(dbr) : cb_ok();
+                if (dbr) {
+                    cb_nogo(dbr);
+                }
+                else {
+                    cb_ok();
+                }
             })
             .catch(err => {
-                obtls.logdebug(obtls, `Redis returned error: ${err}`);
+                this.logdebug(this, `Redis returned error: ${err}`);
                 cb_ok();
             })
     }
 
     mark_tls_nogo (host, cb) {
-        const obtls = this;
         const dbkey = `no_tls|${host}`;
-        const expiry = obtls.cfg.redis.disable_expiry || 604800;
+        const expiry = this.cfg.redis.disable_expiry || 604800;
 
-        if (!obtls.cfg.redis.disable_for_failed_hosts) return cb();
+        if (!this.cfg.redis.disable_for_failed_hosts) return cb();
 
-        logger.lognotice(obtls, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
+        logger.lognotice(this, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
 
-        obtls.db.setex(dbkey, expiry, (new Date()).toISOString())
+        this.db.setex(dbkey, expiry, (new Date()).toISOString())
             .then(cb)
             .catch(err => {
-                logger.logerror(obtls, `Redis returned error: ${err}`);
+                logger.logerror(this, `Redis returned error: ${err}`);
             })
     }
 }

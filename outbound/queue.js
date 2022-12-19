@@ -4,7 +4,7 @@ const async       = require('async');
 const fs          = require('fs');
 const path        = require('path');
 
-const Address     = require('address-rfc2821').Address;
+const { Address }     = require('address-rfc2821');
 const config      = require('haraka-config');
 
 const logger      = require('../logger');
@@ -146,14 +146,12 @@ exports._add_file = (file, cb) => {
     cb();
 }
 
-exports.load_queue_files = (pid, input_files, iteratee, callback) => {
+exports.load_queue_files = (pid, input_files, iteratee, callback = function () {}) => {
     const self = exports;
     const searchPid = parseInt(pid);
 
     let stat_renamed = 0;
     let stat_loaded = 0;
-
-    callback = callback || function () {};
 
     if (searchPid) {
         logger.loginfo(`[outbound] Grabbing queue files for pid: ${pid}`);
@@ -194,15 +192,10 @@ exports.load_queue_files = (pid, input_files, iteratee, callback) => {
     });
 }
 
-exports.stats = () => {
-    // TODO: output more data here
-    const results = {
-        queue_dir,
-        queue_count,
-    };
-
-    return results;
-}
+exports.stats = () => ({
+    queue_dir,
+    queue_count,
+})
 
 exports._list_file = (file, cb) => {
     const tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
@@ -218,17 +211,18 @@ exports._list_file = (file, cb) => {
         let todo = '';
         td_reader.on('data', str => {
             todo += str;
-            if (Buffer.byteLength(todo) === todo_len) {
-                // we read everything
-                const todo_struct = JSON.parse(todo);
-                todo_struct.rcpt_to = todo_struct.rcpt_to.map(a => new Address (a));
-                todo_struct.mail_from = new Address (todo_struct.mail_from);
-                todo_struct.file = file;
-                todo_struct.full_path = path.join(queue_dir, file);
-                const parts = _qfile.parts(file);
-                todo_struct.pid = (parts && parts.pid) || null;
-                cb(null, todo_struct);
+            if (Buffer.byteLength(todo) !== todo_len) {
+                return;
             }
+            // we read everything
+            const todo_struct = JSON.parse(todo);
+            todo_struct.rcpt_to = todo_struct.rcpt_to.map(a => new Address (a));
+            todo_struct.mail_from = new Address (todo_struct.mail_from);
+            todo_struct.file = file;
+            todo_struct.full_path = path.join(queue_dir, file);
+            const parts = _qfile.parts(file);
+            todo_struct.pid = (parts?.pid) || null;
+            cb(null, todo_struct);
         });
         td_reader.on('end', () => {
             if (Buffer.byteLength(todo) !== todo_len) {
@@ -244,8 +238,7 @@ exports.flush_queue = (domain, pid) => {
         exports.list_queue((err, qlist) => {
             if (err) return logger.logerror(`[outbound] Failed to load queue: ${err}`);
             qlist.forEach(todo => {
-                if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
-                if (pid && todo.pid != pid) return;
+                if (todo.domain.toLowerCase() != domain.toLowerCase() || pid && todo.pid != pid) return;
                 // console.log("requeue: ", todo);
                 delivery_queue.push(new HMailItem(todo.file, todo.full_path));
             });

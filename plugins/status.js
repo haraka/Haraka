@@ -52,12 +52,10 @@ exports.command_action = function (cmd, cb) {
 }
 
 exports.pool_action = function (params, cb) {
-    switch (params.shift()) {
-        case 'LIST':
-            return this.pool_list(cb);
-        default:
-            cb('unknown POOL command')
+    if (params.shift() === 'LIST') {
+        return this.pool_list(cb);
     }
+    cb('unknown POOL command')
 }
 
 exports.queue_action = function (params, cb) {
@@ -148,7 +146,7 @@ exports.queue_discard = function (file, cb) {
 }
 
 exports.queue_push = function (file, cb) {
-    const queue = this.outbound.temp_fail_queue.queue;
+    const { queue } = this.outbound.temp_fail_queue;
 
     for (let i = 0; i < queue.length; i++) {
         if (queue[i].id !== file) continue;
@@ -214,10 +212,9 @@ exports.call_master = (cmd, cb) => {
 }
 
 exports.call_workers = function (cmd, cb) {
-    const self = this;
 
     async.map(server.cluster.workers, (w, done) => {
-        self.call_worker(w, cmd, done);
+        this.call_worker(w, cmd, done);
     }, cb);
 }
 
@@ -226,8 +223,7 @@ exports.call_worker = (worker, cmd, cb) => {
     let timeout;
 
     function message_handler (sender, msg) {
-        if (sender.id !== worker.id) return;
-        if (msg.event !== 'status.response') return;
+        if (sender.id !== worker.id || msg.event !== 'status.response') return;
 
         clearTimeout(timeout);
         server.cluster.removeListener('message', message_handler);

@@ -1,27 +1,25 @@
 // spf
 
-const SPF = require('./spf').SPF;
+const { SPF } = require('./spf');
 const net_utils = require('haraka-net-utils');
 const DSN = require('haraka-dsn');
 
 exports.register = function () {
-    const plugin = this;
 
     // Override logging in SPF module
-    SPF.prototype.log_debug = str => plugin.logdebug(str);
+    SPF.prototype.log_debug = str => this.logdebug(str);
 
-    plugin.load_spf_ini();
+    this.load_spf_ini();
 
-    plugin.register_hook('helo', 'helo_spf');
-    plugin.register_hook('ehlo', 'helo_spf');
+    this.register_hook('helo', 'helo_spf');
+    this.register_hook('ehlo', 'helo_spf');
 }
 
 exports.load_spf_ini = function () {
-    const plugin = this;
-    plugin.nu = net_utils;   // so tests can set public_ip
-    plugin.SPF = SPF;
+    this.nu = net_utils;   // so tests can set public_ip
+    this.SPF = SPF;
 
-    plugin.cfg = plugin.config.get('spf.ini', {
+    this.cfg = this.config.get('spf.ini', {
         booleans: [
             '-defer.helo_temperror',
             '-defer.mfrom_temperror',
@@ -55,85 +53,84 @@ exports.load_spf_ini = function () {
             '-skip.auth',
         ]
     },
-    () => { plugin.load_spf_ini(); }
+    () => { this.load_spf_ini(); }
     );
 
     // when set, preserve legacy config settings
     ['helo','mail'].forEach(phase => {
-        if (plugin.cfg.main[`${phase}_softfail_reject`]) {
-            plugin.cfg.deny[`${phase}_softfail`] = true;
+        if (this.cfg.main[`${phase}_softfail_reject`]) {
+            this.cfg.deny[`${phase}_softfail`] = true;
         }
-        if (plugin.cfg.main[`${phase}_fail_reject`]) {
-            plugin.cfg.deny[`${phase}_fail`] = true;
+        if (this.cfg.main[`${phase}_fail_reject`]) {
+            this.cfg.deny[`${phase}_fail`] = true;
         }
-        if (plugin.cfg.main[`${phase}_temperror_defer`]) {
-            plugin.cfg.defer[`${phase}_temperror`] = true;
+        if (this.cfg.main[`${phase}_temperror_defer`]) {
+            this.cfg.defer[`${phase}_temperror`] = true;
         }
-        if (plugin.cfg.main[`${phase}_permerror_reject`]) {
-            plugin.cfg.deny[`${phase}_permerror`] = true;
+        if (this.cfg.main[`${phase}_permerror_reject`]) {
+            this.cfg.deny[`${phase}_permerror`] = true;
         }
     });
 
-    if (!plugin.cfg.relay) {
-        plugin.cfg.relay = { context: 'sender' };  // default/legacy
+    if (!this.cfg.relay) {
+        this.cfg.relay = { context: 'sender' };  // default/legacy
     }
 
-    plugin.cfg.lookup_timeout = plugin.cfg.main.lookup_timeout || plugin.timeout - 1;
+    this.cfg.lookup_timeout = this.cfg.main.lookup_timeout || this.timeout - 1;
 }
 
 exports.helo_spf = function (next, connection, helo) {
-    const plugin = this;
 
     // bypass auth'ed or relay'ing hosts if told to
     const skip_reason = exports.skip_hosts(connection);
     if (skip_reason) {
-        connection.results.add(plugin, {skip: `helo(${skip_reason})`});
+        connection.results.add(this, {skip: `helo(${skip_reason})`});
         return next();
     }
 
     // Bypass private IPs
     if (connection.remote.is_private) {
-        connection.results.add(plugin, {skip: 'helo(private_ip)'});
+        connection.results.add(this, {skip: 'helo(private_ip)'});
         return next();
     }
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
     if (net_utils.is_ip_literal(helo)) {
-        connection.results.add(plugin, {skip: 'helo(ip_literal)'});
+        connection.results.add(this, {skip: 'helo(ip_literal)'});
         return next();
     }
 
     // avoid 2nd EHLO evaluation if EHLO host is identical
-    const results = connection.results.get(plugin);
+    const results = connection.results.get(this);
     if (results && results.domain === helo) return next();
 
     let timeout = false;
     const spf = new SPF();
     const timer = setTimeout(() => {
         timeout = true;
-        connection.loginfo(plugin, 'timeout');
+        connection.loginfo(this, 'timeout');
         return next();
-    }, plugin.cfg.lookup_timeout * 1000);
+    }, this.cfg.lookup_timeout * 1000);
 
     spf.check_host(connection.remote.ip, helo, null, (err, result) => {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
-            connection.logerror(plugin, err);
+            connection.logerror(this, err);
             return next();
         }
-        const host = connection.hello.host;
-        plugin.log_result(connection, 'helo', host, `postmaster@${host}`, spf.result(result));
+        const { host } = connection.hello;
+        this.log_result(connection, 'helo', host, `postmaster@${host}`, spf.result(result));
 
         connection.notes.spf_helo = result;  // used between hooks
-        connection.results.add(plugin, {
+        connection.results.add(this, {
             scope: 'helo',
             result: spf.result(result),
             domain: host,
             emit: true,
         });
-        if (spf.result(result) === 'Pass') connection.results.add(plugin, { pass: host });
+        if (spf.result(result) === 'Pass') connection.results.add(this, { pass: host });
         next();
     });
 }
@@ -161,7 +158,7 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     const mfrom = params[0].address();
-    const host = params[0].host;
+    const { host } = params[0];
     let spf = new SPF();
     let auth_result;
 
@@ -215,12 +212,7 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     // typical inbound (!relay)
-    if (!connection.relaying) {
-        return spf.check_host(connection.remote.ip, host, mfrom, ch_cb);
-    }
-
-    // outbound (relaying), context=sender
-    if (plugin.cfg.relay.context === 'sender') {
+    if (!connection.relaying || plugin.cfg.relay.context === 'sender') {
         return spf.check_host(connection.remote.ip, host, mfrom, ch_cb);
     }
 
@@ -259,7 +251,6 @@ exports.log_result = function (connection, scope, host, mfrom, result, ip) {
 }
 
 exports.return_results = function (next, connection, spf, scope, result, sender) {
-    const plugin = this;
     const msgpre = (scope === 'helo') ? `sender ${sender}` : `sender <${sender}>`;
     const deny = connection.relaying ? 'deny_relay' : 'deny';
     const defer = connection.relaying ? 'defer_relay' : 'defer';
@@ -268,8 +259,8 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 
     switch (result) {
         case spf.SPF_NONE:
-            if (plugin.cfg[deny][`${scope}_none`]) {
-                text = plugin.cfg[deny].openspf_text ? text : `${msgpre} SPF record not found`;
+            if (this.cfg[deny][`${scope}_none`]) {
+                text = this.cfg[deny].openspf_text ? text : `${msgpre} SPF record not found`;
                 return next(DENY, text);
             }
             return next();
@@ -277,30 +268,30 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
         case spf.SPF_PASS:
             return next();
         case spf.SPF_SOFTFAIL:
-            if (plugin.cfg[deny][`${scope}_softfail`]) {
-                text = plugin.cfg[deny].openspf_text ? text : `${msgpre} SPF SoftFail`;
+            if (this.cfg[deny][`${scope}_softfail`]) {
+                text = this.cfg[deny].openspf_text ? text : `${msgpre} SPF SoftFail`;
                 return next(DENY, text);
             }
             return next();
         case spf.SPF_FAIL:
-            if (plugin.cfg[deny][`${scope}_fail`]) {
-                text = plugin.cfg[deny].openspf_text ? text : `${msgpre} SPF Fail`;
+            if (this.cfg[deny][`${scope}_fail`]) {
+                text = this.cfg[deny].openspf_text ? text : `${msgpre} SPF Fail`;
                 return next(DENY, text);
             }
             return next();
         case spf.SPF_TEMPERROR:
-            if (plugin.cfg[defer][`${scope}_temperror`]) {
+            if (this.cfg[defer][`${scope}_temperror`]) {
                 return next(DENYSOFT, `${msgpre} SPF Temporary Error`);
             }
             return next();
         case spf.SPF_PERMERROR:
-            if (plugin.cfg[deny][`${scope}_permerror`]) {
+            if (this.cfg[deny][`${scope}_permerror`]) {
                 return next(DENY, `${msgpre} SPF Permanent Error`);
             }
             return next();
         default:
             // Unknown result
-            connection.logerror(plugin, `unknown result code=${result}`);
+            connection.logerror(this, `unknown result code=${result}`);
             return next();
     }
 }
@@ -317,9 +308,8 @@ exports.save_to_header = (connection, spf, result, mfrom, host, id, ip) => {
 }
 
 exports.skip_hosts = function (connection) {
-    const plugin = this;
 
-    const skip = plugin.cfg.skip;
+    const { skip } = this.cfg;
     if (skip) {
         if (skip.relaying && connection.relaying) return 'relay';
         if (skip.auth && connection.notes.auth_user) return 'auth';

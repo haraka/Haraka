@@ -12,7 +12,7 @@ function _set_up (done) {
     const client = {
         remotePort: null,
         remoteAddress: null,
-        destroy: () => { true; },
+        destroy: () => { },
     };
     const server = {
         ip_address: null,
@@ -188,7 +188,7 @@ exports.connectionPrivate = {
             remoteAddress: '172.16.15.1',
             localPort: 25,
             localAddress: '172.16.15.254',
-            destroy: () => { true; },
+            destroy: () => { },
         };
         const server = {
             ip_address: '172.16.15.254',
@@ -216,7 +216,7 @@ exports.connectionLocal = {
             remoteAddress: '127.0.0.2',
             localPort: 25,
             localAddress: '172.0.0.1',
-            destroy: () => { true; },
+            destroy: () => { },
         };
         const server = {
             ip_address: '127.0.0.1',
@@ -285,6 +285,7 @@ exports.relaying = {
     'sets and gets' (test) {
         test.expect(3);
         test.equal(this.connection.relaying, false);
+        // FIXME: should this be assigned vs compared?
         test.ok(this.connection.relaying = 'alligators');
         test.equal(this.connection.relaying, 'alligators');
         test.done();
@@ -293,6 +294,7 @@ exports.relaying = {
         test.expect(4);
         test.equal(this.connection.relaying, false);
         this.connection.transaction = {};
+        // FIXME: should this be assigned vs compared?
         test.ok(this.connection.relaying = 'crocodiles');
         test.equal(this.connection.transaction._relaying, 'crocodiles');
         test.equal(this.connection.relaying, 'crocodiles');

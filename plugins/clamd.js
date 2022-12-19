@@ -4,73 +4,71 @@ const sock = require('./line_socket');
 const utils = require('haraka-utils');
 
 exports.load_excludes = function () {
-    const plugin = this;
 
-    plugin.loginfo('Loading excludes file');
-    const list = plugin.config.get('clamd.excludes','list', () => {
-        plugin.load_excludes();
+    this.loginfo('Loading excludes file');
+    const list = this.config.get('clamd.excludes','list', () => {
+        this.load_excludes();
     });
 
     const new_skip_list_exclude = [];
     const new_skip_list = [];
-    for (let i=0; i < list.length; i++) {
+    for (const element of list) {
         let re;
-        switch (list[i][0]) {
+        switch (element[0]) {
             case '!':
 
-                if (list[i][1] === '/') {
+                if (element[1] === '/') {
                     // Regexp exclude
                     try {
-                        re = new RegExp(list[i].substr(2, list[i].length-2),'i');
+                        re = new RegExp(element.substr(2, element.length-2),'i');
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(`${e.message} (entry: ${list[i]})`);
+                        this.logerror(`${e.message} (entry: ${element})`);
                     }
                 }
                 else {
                     // Wildcard exclude
                     try {
                         re = new RegExp(
-                            utils.wildcard_to_regexp(list[i].substr(1)),'i');
+                            utils.wildcard_to_regexp(element.substr(1)),'i');
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(`${e.message} (entry: ${list[i]})`);
+                        this.logerror(`${e.message} (entry: ${element})`);
                     }
                 }
                 break;
             case '/':
                 // Regexp skip
                 try {
-                    re = new RegExp(list[i].substr(1, list[i].length-2),'i');
+                    re = new RegExp(element.substr(1, element.length-2),'i');
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(`${e.message} (entry: ${list[i]})`);
+                    this.logerror(`${e.message} (entry: ${element})`);
                 }
                 break;
             default:
                 // Wildcard skip
                 try {
-                    re = new RegExp(utils.wildcard_to_regexp(list[i]),'i');
+                    re = new RegExp(utils.wildcard_to_regexp(element),'i');
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(`${e.message} (entry: ${list[i]})`);
+                    this.logerror(`${e.message} (entry: ${element})`);
                 }
         }
     }
 
     // Make the new lists visible
-    plugin.skip_list_exclude = new_skip_list_exclude;
-    plugin.skip_list = new_skip_list;
+    this.skip_list_exclude = new_skip_list_exclude;
+    this.skip_list = new_skip_list;
 }
 
 exports.load_clamd_ini = function () {
-    const plugin = this;
 
-    plugin.cfg = plugin.config.get('clamd.ini', {
+    this.cfg = this.config.get('clamd.ini', {
         booleans: [
             '-main.randomize_host_order',
             '-main.only_with_attachments',
@@ -96,7 +94,7 @@ exports.load_clamd_ini = function () {
             '+check.local_ip'
         ],
     }, () => {
-        plugin.load_clamd_ini();
+        this.load_clamd_ini();
     });
 
     const defaults = {
@@ -107,8 +105,8 @@ exports.load_clamd_ini = function () {
     };
 
     for (const key in defaults) {
-        if (plugin.cfg.main[key] === undefined) {
-            plugin.cfg.main[key] = defaults[key];
+        if (this.cfg.main[key] === undefined) {
+            this.cfg.main[key] = defaults[key];
         }
     }
 
@@ -127,39 +125,35 @@ exports.load_clamd_ini = function () {
     const enabled_reject_opts = [];
     Object.keys(rejectPatterns).forEach(opt => {
         all_reject_opts.push(rejectPatterns[opt]);
-        if (!plugin.cfg.reject[opt]) return;
+        if (!this.cfg.reject[opt]) return;
         enabled_reject_opts.push(rejectPatterns[opt]);
     });
 
     if (enabled_reject_opts.length) {
-        plugin.allRE = new RegExp(all_reject_opts.join('|'));
-        plugin.rejectRE = new RegExp(enabled_reject_opts.join('|'));
+        this.allRE = new RegExp(all_reject_opts.join('|'));
+        this.rejectRE = new RegExp(enabled_reject_opts.join('|'));
     }
 
     // resolve mismatch between docs (...attachment) and code (...attachments)
-    if (plugin.cfg.main.only_with_attachment !== undefined) {
-        plugin.cfg.main.only_with_attachments =
-            !!plugin.cfg.main.only_with_attachment;
+    if (this.cfg.main.only_with_attachment !== undefined) {
+        this.cfg.main.only_with_attachments =
+            !!this.cfg.main.only_with_attachment;
     }
 }
 
 exports.register = function () {
-    const plugin = this;
-    plugin.load_excludes();
-    plugin.load_clamd_ini();
+    this.load_excludes();
+    this.load_clamd_ini();
 }
 
 exports.hook_data = function (next, connection) {
-    const plugin = this;
 
-    if (!plugin.cfg.main.only_with_attachments) return next();
-
-    if (!plugin.should_check(connection)) return next();
+    if (!this.cfg.main.only_with_attachments || !this.should_check(connection)) return next();
 
     const txn = connection.transaction;
     txn.parse_body = true;
     txn.attachment_hooks((ctype, filename, body) => {
-        connection.logdebug(plugin,
+        connection.logdebug(this,
             `found ctype=${ctype}, filename=${filename}`);
         txn.notes.clamd_found_attachment = true;
     });
@@ -172,7 +166,7 @@ exports.hook_data_post = function (next, connection) {
     if (!plugin.should_check(connection)) return next();
 
     const txn = connection.transaction;
-    const cfg = plugin.cfg;
+    const { cfg } = plugin;
     // Do we need to run?
     if (cfg.main.only_with_attachments && !txn.notes.clamd_found_attachment) {
         connection.logdebug(plugin, 'skipping: no attachments found');
@@ -246,9 +240,7 @@ exports.hook_data_post = function (next, connection) {
 
         let result = '';
         socket.on('line', line => {
-            connection.logprotocol(plugin, `C:${line.split('').filter((x) => {
-                return 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)
-            }).join('')}` );
+            connection.logprotocol(plugin, `C:${line.split('').filter((x) => 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)).join('')}` );
             result = line.replace(/\r?\n/, '');
         });
 
@@ -271,22 +263,21 @@ exports.hook_data_post = function (next, connection) {
                 });
 
                 if (virus && plugin.rejectRE &&       // enabled
-                    plugin.allRE.test(virus) &&       // has a reject option
-                    !plugin.rejectRE.test(virus)) {   // reject=false set
+                plugin.allRE.test(virus) &&       // has a reject option
+                !plugin.rejectRE.test(virus) || !plugin.cfg.reject.virus) {   // reject=false set
                     return next();
                 }
-                if (!plugin.cfg.reject.virus) { return next(); }
 
                 // Check skip list exclusions
-                for (let i=0; i < plugin.skip_list_exclude.length; i++) {
-                    if (!plugin.skip_list_exclude[i].test(virus)) continue;
+                for (const element of plugin.skip_list_exclude) {
+                    if (!element.test(virus)) continue;
                     return next(DENY,
                         `Message is infected with ${virus || 'UNKNOWN'}`);
                 }
 
                 // Check skip list
-                for (let j=0; j < plugin.skip_list.length; j++) {
-                    if (!plugin.skip_list[j].test(virus)) continue;
+                for (const element of plugin.skip_list) {
+                    if (!element.test(virus)) continue;
                     connection.logwarn(plugin, `${virus} matches exclusion`);
                     txn.add_header('X-Haraka-Virus', virus);
                     return next();
@@ -324,42 +315,42 @@ exports.hook_data_post = function (next, connection) {
 }
 
 exports.should_check = function (connection) {
-    const plugin = this;
 
     let result = true;  // default
     if (!connection?.transaction) return false
 
-    if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
-        connection.transaction.results.add(plugin, { skip: 'authed'});
+    if (!this.cfg.check.authenticated && connection.notes.auth_user) {
+        connection.transaction.results.add(this, { skip: 'authed'});
         result = false;
     }
 
-    if (plugin.cfg.check.relay == false && connection.relaying) {
-        connection.transaction.results.add(plugin, { skip: 'relay'});
+    if (!this.cfg.check.relay && connection.relaying) {
+        connection.transaction.results.add(this, { skip: 'relay'});
         result = false;
     }
 
-    if (plugin.cfg.check.local_ip == false && connection.remote.is_local) {
-        connection.transaction.results.add(plugin, { skip: 'local_ip'});
+    if (!this.cfg.check.local_ip && connection.remote.is_local) {
+        connection.transaction.results.add(this, { skip: 'local_ip'});
         result = false;
     }
 
-    if (plugin.cfg.check.private_ip == false && connection.remote.is_private) {
-        if (plugin.cfg.check.local_ip == true && connection.remote.is_local) {
+    if (!this.cfg.check.private_ip && connection.remote.is_private) {
+        if (!this.cfg.check.local_ip && connection.remote.is_local) {
             // local IPs are included in private IPs
         }
         else {
-            connection.transaction.results.add(plugin, { skip: 'private_ip'});
-            result = false;
+            connection.transaction.results.add(this, { skip: 'private_ip'});
+            return false;
         }
     }
 
     return result;
 }
 
+const received = 'Received: from Haraka clamd plugin\r\n';
+
 exports.send_clamd_predata = (socket, cb) => {
     socket.write("zINSTREAM\0", () => {
-        const received = 'Received: from Haraka clamd plugin\r\n';
         const buf = Buffer.alloc(received.length + 4);
         buf.writeUInt32BE(received.length, 0);
         buf.write(received, 4);
@@ -372,8 +363,10 @@ function clamd_connect (socket, host) {
     if (host.match(/^\//)) {
         // assume unix socket
         socket.connect(host);
+        return;
     }
-    else if ((match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host))) {
+    // FIXME: should this be assigned vs compared?
+    if ((match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host))) {
         // IPv6 literal
         socket.connect((match[2] || 3310), match[1]);
     }

@@ -84,6 +84,7 @@ class SPF {
             let strip = /(\d+)/.exec(match[2]);
             if (strip) strip = strip[1];
 
+            // FIXME: why does replacing the template literal cause an error?
             const reverse = (((`${match[2]}`).indexOf('r')) !== -1);
             let replace;
             let kind;
@@ -136,8 +137,7 @@ class SPF {
         // Process any other expansions
         str = str.replace(/%%/g, '%');
         str = str.replace(/%_/g, ' ');
-        str = str.replace(/%-/g, '%20');
-        return str;
+        return str.replace(/%-/g, '%20');
     }
 
     log_debug (str) {
@@ -160,20 +160,10 @@ class SPF {
     check_host (ip, domain, mail_from, cb) {
         const self = this;
         domain = domain.toLowerCase();
-        if (mail_from) {
-            mail_from = mail_from.toLowerCase();
-        }
-        else {
-            mail_from = `postmaster@${domain}`;
-        }
+        mail_from = mail_from ? mail_from.toLowerCase() : `postmaster@${domain}`;
         this.ipaddr = ipaddr.parse(ip);
         this.ip_ver = this.ipaddr.kind();
-        if (this.ip_ver === 'ipv6') {
-            this.ip = this.ipaddr.toString();
-        }
-        else {
-            this.ip = ip;
-        }
+        this.ip = this.ip_ver === 'ipv6' ? this.ipaddr.toString() : ip;
         this.domain = domain;
         this.mail_from = mail_from;
 
@@ -195,6 +185,7 @@ class SPF {
             let match;
             for (let txt_rr of txt_rrs) {
                 // Node 0.11.x compatibility
+                // FIXME: remove when 0.11.x is no longer supported
                 if (Array.isArray(txt_rr)) txt_rr = txt_rr.join('');
 
                 match = /^(v=spf1(?:$|\s.+$))/i.exec(txt_rr);
@@ -203,15 +194,13 @@ class SPF {
                     continue;
                 }
 
-                if (!spf_record) {
-                    self.log_debug(`found SPF record for domain ${domain}: ${match[1]}`);
-                    spf_record = match[1].replace(/\s+/, ' ').toLowerCase();
-                }
-                else {
+                if (spf_record) {
                     // already found an MX record
                     self.log_debug(`found additional SPF record for domain ${domain}: ${match[1]}`);
                     return cb(null, self.SPF_PERMERROR);
                 }
+                self.log_debug(`found SPF record for domain ${domain}: ${match[1]}`);
+                spf_record = match[1].replace(/\s+/, ' ').toLowerCase();
             }
 
             if (!spf_record) return cb(null, self.SPF_NONE);   // No SPF record?
@@ -230,6 +219,7 @@ class SPF {
                 // Skip blanks
                 let obj;
                 if (!split[i]) continue;
+                // FIXME: is this a comparison or assignment?
                 if ((match = (mech_regexp1.exec(split[i]) || mech_regexp2.exec(split[i])))) {
                     // match[1] = qualifier
                     // match[2] = mechanism
@@ -256,18 +246,19 @@ class SPF {
                     obj[match[2]] = [ match[1], match[3] ];
                     mech_array.push(obj);
                 }
+                // FIXME: is this a comparison or assignment?
                 else if ((match = mod_regexp.exec(split[i]))) {
                     self.log_debug(`found modifier: ${match}`);
                     // match[1] = modifier
                     // match[2] = name
                     // Make sure we have a method
-                    if (!self[`mod_${match[1]}`]) {
-                        self.log_debug(`skipping unknown modifier: ${match[1]}`);
-                    }
-                    else {
+                    if (self[`mod_${match[1]}`]) {
                         obj = {};
                         obj[match[1]] = match[2];
                         mod_array.push(obj);
+                    }
+                    else {
+                        self.log_debug(`skipping unknown modifier: ${match[1]}`);
                     }
                 }
                 else {
@@ -318,18 +309,13 @@ class SPF {
                 // Return default if no more mechanisms to run
                 if (!mech_array.length) {
                     // Now run any modifiers
-                    if (mod_array.length) {
-                        return mod_chain_caller();
-                    }
-                    else {
-                        return cb(null, self.SPF_NEUTRAL);
-                    }
+                    return mod_array.length ? mod_chain_caller() : cb(null, self.SPF_NEUTRAL);
                 }
                 const next_in_chain = mech_array.shift();
                 const func = Object.keys(next_in_chain);
                 const args = next_in_chain[func];
                 self.log_debug(`running mechanism: ${func} args=${args} domain=${self.domain}`);
-                self[`mech_${func}`](((args && args.length) ? args[0] : null), ((args && args.length) ? args[1] : null), mech_chain_caller);
+                self[`mech_${func}`](((args?.length) ? args[0] : null), ((args?.length) ? args[1] : null), mech_chain_caller);
             }
             // Start the chain
             mech_chain_caller();
@@ -341,56 +327,53 @@ class SPF {
     }
 
     mech_include (qualifier, args, cb) {
-        const self = this;
         const domain = args.substr(1);
         // Avoid circular references
-        if (self.been_there[domain]) {
-            self.log_debug(`circular reference detected: ${domain}`);
-            return cb(null, self.SPF_NONE);
+        if (this.been_there[domain]) {
+            this.log_debug(`circular reference detected: ${domain}`);
+            return cb(null, this.SPF_NONE);
         }
-        self.count++;
-        self.been_there[domain] = true;
+        this.count++;
+        this.been_there[domain] = true;
         // Recurse
-        const recurse = new SPF(self.count, self.been_there);
-        recurse.check_host(self.ip, domain, self.mail_from, (err, result) => {
+        const recurse = new SPF(this.count, this.been_there);
+        recurse.check_host(this.ip, domain, this.mail_from, (err, result) => {
             if (!err) {
-                self.log_debug(`mech_include: domain=${domain} returned=${self.const_translate(result)}`);
+                this.log_debug(`mech_include: domain=${domain} returned=${this.const_translate(result)}`);
                 switch (result) {
-                    case self.SPF_PASS:         return cb(null, self.SPF_PASS);
-                    case self.SPF_FAIL:
-                    case self.SPF_SOFTFAIL:
-                    case self.SPF_NEUTRAL:      return cb(null, self.SPF_NONE);
-                    case self.SPF_TEMPERROR:    return cb(null, self.SPF_TEMPERROR);
-                    default:                    return cb(null, self.SPF_PERMERROR);
+                    case this.SPF_PASS:         return cb(null, this.SPF_PASS);
+                    case this.SPF_FAIL:
+                    case this.SPF_SOFTFAIL:
+                    case this.SPF_NEUTRAL:      return cb(null, this.SPF_NONE);
+                    case this.SPF_TEMPERROR:    return cb(null, this.SPF_TEMPERROR);
+                    default:                    return cb(null, this.SPF_PERMERROR);
                 }
             }
         });
     }
 
     mech_exists (qualifier, args, cb) {
-        const self = this;
-        self.count++;
+        this.count++;
         const exists = args.substr(1);
         dns.resolve(exists, (err, addrs) => {
             if (err) {
-                self.log_debug(`mech_exists: ${err}`);
+                this.log_debug(`mech_exists: ${err}`);
                 switch (err.code) {
                     case dns.NOTFOUND:
                     case dns.NODATA:
                     case dns.NXDOMAIN:
-                        return cb(null, self.SPF_NONE);
+                        return cb(null, this.SPF_NONE);
                     default:
-                        return cb(null, self.SPF_TEMPERROR);
+                        return cb(null, this.SPF_TEMPERROR);
                 }
             }
-            self.log_debug(`mech_exists: ${exists} result=${addrs.join(',')}`);
-            return cb(null, self.return_const(qualifier));
+            this.log_debug(`mech_exists: ${exists} result=${addrs.join(',')}`);
+            return cb(null, this.return_const(qualifier));
         });
     }
 
     mech_a (qualifier, args, cb) {
-        const self = this;
-        self.count++;
+        this.count++;
         // Parse any arguments
         let cm;
         let cidr4;
@@ -400,59 +383,54 @@ class SPF {
             cidr6 = cm[2];
         }
         let dm;
-        let domain = self.domain;
+        let { domain } = this;
         if (args && (dm = /^:([^/ ]+)/.exec(args))) {
             domain = dm[1];
         }
         // Calculate with IP method to use
         let resolve_method;
         let cidr;
-        if (self.ip_ver === 'ipv4') {
+        if (this.ip_ver === 'ipv4') {
             cidr = cidr4;
             resolve_method = 'resolve4';
         }
-        else if (self.ip_ver === 'ipv6') {
+        else if (this.ip_ver === 'ipv6') {
             cidr = cidr6;
             resolve_method = 'resolve6';
         }
         // Use current domain
         dns[resolve_method](domain, (err, addrs) => {
             if (err) {
-                self.log_debug(`mech_a: ${err}`);
+                this.log_debug(`mech_a: ${err}`);
                 switch (err.code) {
                     case dns.NOTFOUND:
                     case dns.NODATA:
-                    case dns.NXDOMAIN:  return cb(null, self.SPF_NONE);
-                    default:            return cb(null, self.SPF_TEMPERROR);
+                    case dns.NXDOMAIN:  return cb(null, this.SPF_NONE);
+                    default:            return cb(null, this.SPF_TEMPERROR);
                 }
             }
-            for (let a=0; a<addrs.length; a++) {
+            for (const resolvedAddr of addrs) {
                 if (cidr) {
                     // CIDR
-                    const range = ipaddr.parse(addrs[a]);
-                    if (self.ipaddr.match(range, cidr)) {
-                        self.log_debug(`mech_a: ${self.ip} => ${addrs[a]}/${cidr}: MATCH!`);
-                        return cb(null, self.return_const(qualifier));
+                    const range = ipaddr.parse(resolvedAddr);
+                    if (this.ipaddr.match(range, cidr)) {
+                        this.log_debug(`mech_a: ${this.ip} => ${resolvedAddr}/${cidr}: MATCH!`);
+                        return cb(null, this.return_const(qualifier));
                     }
-                    else {
-                        self.log_debug(`mech_a: ${self.ip} => ${addrs[a]}/${cidr}: NO MATCH`);
-                    }
+                    this.log_debug(`mech_a: ${this.ip} => ${resolvedAddr}/${cidr}: NO MATCH`);
+                }
+                else if (resolvedAddr === this.ip) {
+                    return cb(null, this.return_const(qualifier));
                 }
                 else {
-                    if (addrs[a] === self.ip) {
-                        return cb(null, self.return_const(qualifier));
-                    }
-                    else {
-                        self.log_debug(`mech_a: ${self.ip} => ${addrs[a]}: NO MATCH`);
-                    }
+                    this.log_debug(`mech_a: ${this.ip} => ${resolvedAddr}: NO MATCH`);
                 }
             }
-            return cb(null, self.SPF_NONE);
+            return cb(null, this.SPF_NONE);
         });
     }
 
     mech_mx (qualifier, args, cb) {
-        const self = this;
         this.count++;
         // Parse any arguments
         let cm;
@@ -463,37 +441,34 @@ class SPF {
             cidr6 = cm[2];
         }
         let dm;
-        let domain = this.domain;
-        if (args && (dm = /^:([^/ ]+)/.exec(args))) {
-            domain = dm[1];
-        }
+        const domain = args && (dm = /^:([^/ ]+)/.exec(args)) ? dm[1] : this.domain;
         // Fetch the MX records for the specified domain
         net_utils.get_mx(domain, (err, mxes) => {
             if (err) {
                 switch (err.code) {
                     case dns.NOTFOUND:
                     case dns.NODATA:
-                    case dns.NXDOMAIN:  return cb(null, self.SPF_NONE);
-                    default:            return cb(null, self.SPF_TEMPERROR);
+                    case dns.NXDOMAIN:  return cb(null, this.SPF_NONE);
+                    default:            return cb(null, this.SPF_TEMPERROR);
                 }
             }
             let pending = 0;
             let addresses = [];
             // RFC 4408 Section 10.1
-            if (mxes.length > self.LIMIT) {
-                return cb(null, self.SPF_PERMERROR);
+            if (mxes.length > this.LIMIT) {
+                return cb(null, this.SPF_PERMERROR);
             }
-            for (let a=0; a<mxes.length; a++) {
+            for (const element of mxes) {
                 pending++;
-                const mx = mxes[a].exchange;
+                const mx = element.exchange;
                 // Calculate which IP method to use
                 let resolve_method;
                 let cidr;
-                if (self.ip_ver === 'ipv4') {
+                if (this.ip_ver === 'ipv4') {
                     cidr = cidr4;
                     resolve_method = 'resolve4';
                 }
-                else if (self.ip_ver === 'ipv6') {
+                else if (this.ip_ver === 'ipv6') {
                     cidr = cidr6;
                     resolve_method = 'resolve6';
                 }
@@ -504,133 +479,124 @@ class SPF {
                             case dns.NOTFOUND:
                             case dns.NODATA:
                             case dns.NXDOMAIN:  break;
-                            default:            return cb(null, self.SPF_TEMPERROR);
+                            default:            return cb(null, this.SPF_TEMPERROR);
                         }
                     }
                     else {
-                        self.log_debug(`mech_mx: mx=${mx} addresses=${addrs.join(',')}`);
+                        this.log_debug(`mech_mx: mx=${mx} addresses=${addrs.join(',')}`);
                         addresses = addrs.concat(addresses);
                     }
                     if (pending === 0) {
-                        if (!addresses.length) return cb(null, self.SPF_NONE);
+                        if (!addresses.length) return cb(null, this.SPF_NONE);
                         // All queries run; see if our IP matches
                         if (cidr) {
                             // CIDR match type
-                            for (let i=0; i<addresses.length; i++) {
-                                const range = ipaddr.parse(addresses[i]);
-                                if (self.ipaddr.match(range, cidr)) {
-                                    self.log_debug(`mech_mx: ${self.ip} => ${addresses[i]}/${cidr}: MATCH!`);
-                                    return cb(null, self.return_const(qualifier));
+                            for (const address_cidr of addresses) {
+                                const range = ipaddr.parse(address_cidr);
+                                if (this.ipaddr.match(range, cidr)) {
+                                    this.log_debug(`mech_mx: ${this.ip} => ${address_cidr}/${cidr}: MATCH!`);
+                                    return cb(null, this.return_const(qualifier));
                                 }
-                                else {
-                                    self.log_debug(`mech_mx: ${self.ip} => ${addresses[i]}/${cidr}: NO MATCH`);
-                                }
+                                this.log_debug(`mech_mx: ${this.ip} => ${address_cidr}/${cidr}: NO MATCH`);
                             }
                             // No matches
-                            return cb(null, self.SPF_NONE);
+                            return cb(null, this.SPF_NONE);
+                        }
+                        else if (addresses.includes(this.ip)) {
+                            this.log_debug(`mech_mx: ${this.ip} => ${addresses.join(',')}: MATCH!`);
+                            return cb(null, this.return_const(qualifier));
                         }
                         else {
-                            if (addresses.includes(self.ip)) {
-                                self.log_debug(`mech_mx: ${self.ip} => ${addresses.join(',')}: MATCH!`);
-                                return cb(null, self.return_const(qualifier));
-                            }
-                            else {
-                                self.log_debug(`mech_mx: ${self.ip} => ${addresses.join(',')}: NO MATCH`);
-                                return cb(null, self.SPF_NONE);
-                            }
+                            this.log_debug(`mech_mx: ${this.ip} => ${addresses.join(',')}: NO MATCH`);
+                            return cb(null, this.SPF_NONE);
                         }
                     }
                 });
                 // In case we didn't run any queries...
                 if (pending === 0) {
-                    return cb(null, self.SPF_NONE);
+                    return cb(null, this.SPF_NONE);
                 }
             }
             if (pending === 0) {
-                return cb(null, self.SPF_NONE);
+                return cb(null, this.SPF_NONE);
             }
         });
     }
 
     mech_ptr (qualifier, args, cb) {
-        const self = this;
         this.count++;
         let dm;
-        let domain = this.domain;
+        let { domain } = this;
         if (args && (dm = /^:([^/ ]+)/.exec(args))) {
             domain = dm[1];
         }
         // First do a PTR lookup for the connecting IP
         dns.reverse(this.ip, (err, ptrs) => {
             if (err) {
-                self.log_debug(`mech_ptr: lookup=${self.ip} => ${err}`);
-                return cb(null, self.SPF_NONE);
+                this.log_debug(`mech_ptr: lookup=${this.ip} => ${err}`);
+                return cb(null, this.SPF_NONE);
             }
-            else {
-                let resolve_method;
-                if (self.ip_ver === 'ipv4') resolve_method = 'resolve4';
-                if (self.ip_ver === 'ipv6') resolve_method = 'resolve6';
-                let pending = 0;
-                const names = [];
-                // RFC 4408 Section 10.1
-                if (ptrs.length > self.LIMIT) {
-                    return cb(null, self.SPF_PERMERROR);
-                }
-                for (let i=0; i<ptrs.length; i++) {
-                    const ptr = ptrs[i];
-                    pending++;
-                    dns[resolve_method](ptr, (err3, addrs) => {
-                        pending--;
-                        if (err3) {
-                            // Skip on error
-                            self.log_debug(`mech_ptr: lookup=${ptr} => ${err3}`);
-                        }
-                        else {
-                            for (let a=0; a<addrs.length; a++) {
-                                if (addrs[a] === self.ip) {
-                                    self.log_debug(`mech_ptr: ${self.ip} => ${ptr} => ${addrs[a]}: MATCH!`);
-                                    names.push(ptr.toLowerCase());
-                                }
-                                else {
-                                    self.log_debug(`mech_ptr: ${self.ip} => ${ptr} => ${addrs[a]}: NO MATCH`);
-                                }
+            let resolve_method;
+            if (this.ip_ver === 'ipv4') resolve_method = 'resolve4';
+            if (this.ip_ver === 'ipv6') resolve_method = 'resolve6';
+            let pending = 0;
+            const names = [];
+            // RFC 4408 Section 10.1
+            if (ptrs.length > this.LIMIT) {
+                return cb(null, this.SPF_PERMERROR);
+            }
+            for (const ptr of ptrs) {
+                pending++;
+                dns[resolve_method](ptr, (err3, addrs) => {
+                    pending--;
+                    if (err3) {
+                        // Skip on error
+                        this.log_debug(`mech_ptr: lookup=${ptr} => ${err3}`);
+                    }
+                    else {
+                        for (const addr_ptr of addrs) {
+                            if (addr_ptr === this.ip) {
+                                this.log_debug(`mech_ptr: ${this.ip} => ${ptr} => ${addr_ptr}: MATCH!`);
+                                names.push(ptr.toLowerCase());
+                            }
+                            else {
+                                this.log_debug(`mech_ptr: ${this.ip} => ${ptr} => ${addr_ptr}: NO MATCH`);
                             }
                         }
-                        // Finished
-                        if (pending === 0) {
-                            let re;
-                            // Catch bogus PTR matches e.g. ptr:*.bahnhof.se (should be ptr:bahnhof.se)
-                            // These will cause a regexp error, so we can catch them.
-                            try {
-                                re = new RegExp(`${domain.replace('.','\\.')}$`, 'i');
+                    }
+                    // Finished
+                    if (pending !== 0) {
+                        return;
+                    }
+                    let re;
+                    // Catch bogus PTR matches e.g. ptr:*.bahnhof.se (should be ptr:bahnhof.se)
+                    // These will cause a regexp error, so we can catch them.
+                    try {
+                        re = new RegExp(`${domain.replace('.','\\.')}$`, 'i');
+                    }
+                    catch (e) {
+                        this.log_debug(
+                            'mech_ptr',
+                            {
+                                domain: this.domain,
+                                err: e.message
                             }
-                            catch (e) {
-                                self.log_debug(
-                                    'mech_ptr',
-                                    {
-                                        domain: self.domain,
-                                        err: e.message
-                                    }
-                                );
-                                return cb(null, self.SPF_PERMERROR);
-                            }
-                            for (let t=0; t<names.length; t++) {
-                                if (re.test(names[t])) {
-                                    self.log_debug(`mech_ptr: ${names[t]} => ${domain}: MATCH!`);
-                                    return cb(null, self.return_const(qualifier));
-                                }
-                                else {
-                                    self.log_debug(`mech_ptr: ${names[t]} => ${domain}: NO MATCH`);
-                                }
-                            }
-                            return cb(null, self.SPF_NONE);
+                        );
+                        return cb(null, this.SPF_PERMERROR);
+                    }
+                    for (const name_ptr of names) {
+                        if (re.test(name_ptr)) {
+                            this.log_debug(`mech_ptr: ${name_ptr} => ${domain}: MATCH!`);
+                            return cb(null, this.return_const(qualifier));
                         }
-                    });
-                }
-                if (pending === 0) {
-                    // No queries run
-                    return cb(null, self.SPF_NONE);
-                }
+                        this.log_debug(`mech_ptr: ${name_ptr} => ${domain}: NO MATCH`);
+                    }
+                    return cb(null, this.SPF_NONE);
+                });
+            }
+            if (pending === 0) {
+                // No queries run
+                return cb(null, this.SPF_NONE);
             }
         });
     }
@@ -658,9 +624,7 @@ class SPF {
                 this.log_debug(`mech_ip: ${this.ip} => ${cidr}: MATCH!`);
                 return cb(null, this.return_const(qualifier));
             }
-            else {
-                this.log_debug(`mech_ip: ${this.ip} => ${cidr}: NO MATCH`);
-            }
+            this.log_debug(`mech_ip: ${this.ip} => ${cidr}: NO MATCH`);
         }
         catch (e) {
             this.log_debug(e.message);

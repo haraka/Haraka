@@ -184,8 +184,8 @@ class Transaction {
             this.header_pos = header_pos;
             if (this.parse_body) {
                 this.ensure_body();
-                for (let j = 0; j < body_lines.length; j++) {
-                    this.body.parse_more(body_lines[j]);
+                for (const element of body_lines) {
+                    this.body.parse_more(element);
                 }
             }
         }
@@ -252,9 +252,7 @@ class Transaction {
 
 exports.Transaction = Transaction;
 
-exports.createTransaction = (uuid, cfg) => {
-    return new Transaction(uuid, cfg);
-}
+exports.createTransaction = (uuid, cfg) => new Transaction(uuid, cfg)
 
 // sunset after test-fixtures createTransaction() is updated to pass in cfg
 function load_smtp_ini () {

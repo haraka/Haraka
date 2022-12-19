@@ -22,7 +22,7 @@ Server.config     = require('haraka-config');
 Server.plugins    = require('./plugins');
 Server.notes      = {};
 
-const logger      = Server.logger;
+const { logger }  = Server;
 
 // Need these here so we can run hooks
 logger.add_log_methods(Server, 'server');
@@ -152,6 +152,11 @@ Server.gracefulShutdown = () => {
     });
 }
 
+// TODO: Make these configurable
+const disconnect_timeout = 30;
+
+const exit_timeout = 30;
+
 Server._graceful = shutdown => {
     if (!Server.cluster && shutdown) {
         ['outbound', 'cfreader', 'plugins'].forEach(module => {
@@ -167,9 +172,6 @@ Server._graceful = shutdown => {
     }
 
     gracefull_in_progress = true;
-    // TODO: Make these configurable
-    const disconnect_timeout = 30;
-    const exit_timeout = 30;
     cluster.removeAllListeners('exit');
     // we reload using eachLimit where limit = num_workers - 1
     // this kills all-but-one workers in parallel, leaving one running
@@ -264,7 +266,7 @@ function messageHandler (worker, msg, handle) {
         worker = undefined;
     }
     // console.log("received cmd: ", msg);
-    if (msg && msg.cmd) {
+    if (msg?.cmd) {
         Server.receiveAsMaster(msg.cmd, msg.params);
     }
 }
@@ -272,7 +274,7 @@ function messageHandler (worker, msg, handle) {
 Server.get_listen_addrs = (cfg, port) => {
     if (!port) port = 25;
     let listeners = [];
-    if (cfg && cfg.listen) {
+    if (cfg?.listen) {
         listeners = cfg.listen.split(/\s*,\s*/);
         if (listeners[0] === '') listeners = [];
         for (let i=0; i < listeners.length; i++) {
@@ -320,13 +322,13 @@ Server.createServer = params => {
     Server.cluster = cluster;
 
     // Cluster Workers
-    if (!cluster.isMaster) {
-        Server.setup_smtp_listeners(Server.plugins, 'child', inactivity_timeout);
-        return;
-    }
-    else {
+    if (cluster.isMaster) {
         // console.log("Setting up message handler");
         cluster.on('message', messageHandler);
+    }
+    else {
+        Server.setup_smtp_listeners(Server.plugins, 'child', inactivity_timeout);
+        return;
     }
 
     // Cluster Master
@@ -383,15 +385,14 @@ Server.get_smtp_server = (ep, inactivity_timeout, done) => {
             Server.listeners.push(server);
             done(server);
         })
+        return;
     }
-    else {
-        server = tls_socket.createServer(onConnect);
-        server.has_tls = false;
-        tls_socket.getSocketOpts('*', opts => {
-            Server.listeners.push(server);
-            done(server);
-        })
-    }
+    server = tls_socket.createServer(onConnect);
+    server.has_tls = false;
+    tls_socket.getSocketOpts('*', opts => {
+        Server.listeners.push(server);
+        done(server);
+    })
 }
 
 Server.setup_smtp_listeners = (plugins2, type, inactivity_timeout) => {
@@ -514,7 +515,8 @@ Server.setup_http_listeners = () => {
 
 Server.init_master_respond = (retval, msg) => {
     if (!(retval === constants.ok || retval === constants.cont)) {
-        Server.logerror(`init_master returned error${((msg) ? `: ${msg}` : '')}`);
+        const errormsg = msg ? `: ${msg}` : ''; // should this indicate a reason if unknown?
+        Server.logerror(`init_master returned error${errormsg}`);
         return logger.dump_and_exit(1);
     }
 
@@ -586,7 +588,8 @@ Server.init_child_respond = (retval, msg) => {
     }
 
     const pid = process.env.CLUSTER_MASTER_PID;
-    Server.logerror(`init_child returned error ${((msg) ? `: ${msg}` : '')}`);
+    const errormsg = msg ? `: ${msg}` : ''; // should this indicate a reason if unknown?
+    Server.logerror(`init_child returned error ${errormsg}`);
     try {
         if (pid) {
             process.kill(pid);

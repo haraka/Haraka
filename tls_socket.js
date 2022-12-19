@@ -7,7 +7,7 @@
 const cluster   = require('cluster');
 const net       = require('net');
 const path      = require('path');
-const spawn     = require('child_process').spawn;
+const { spawn } = require('child_process');
 const stream    = require('stream');
 const tls       = require('tls');
 const util      = require('util');
@@ -53,61 +53,60 @@ class pluggableStream extends stream.Stream {
     }
 
     attach (socket) {
-        const self = this;
-        self.targetsocket = socket;
-        self.targetsocket.on('data', data => {
-            self.emit('data', data);
+        this.targetsocket = socket;
+        this.targetsocket.on('data', data => {
+            this.emit('data', data);
         });
-        self.targetsocket.on('connect', (a, b) => {
-            self.emit('connect', a, b);
+        this.targetsocket.on('connect', (a, b) => {
+            this.emit('connect', a, b);
         });
-        self.targetsocket.on('secureConnect', (a, b) => {
-            self.emit('secureConnect', a, b);
-            self.emit('secure', a, b);
+        this.targetsocket.on('secureConnect', (a, b) => {
+            this.emit('secureConnect', a, b);
+            this.emit('secure', a, b);
         });
-        self.targetsocket.on('secureConnection', (a, b) => {
+        this.targetsocket.on('secureConnection', (a, b) => {
             // investigate this for removal, see #2743
-            self.emit('secureConnection', a, b);
-            self.emit('secure', a, b);
+            this.emit('secureConnection', a, b);
+            this.emit('secure', a, b);
         });
-        self.targetsocket.on('secure', (a, b) => {
-            self.emit('secureConnection', a, b);
-            self.emit('secure', a, b);
+        this.targetsocket.on('secure', (a, b) => {
+            this.emit('secureConnection', a, b);
+            this.emit('secure', a, b);
         });
-        self.targetsocket.on('end', () => {
-            self.writable = self.targetsocket.writable;
-            self.emit('end');
+        this.targetsocket.on('end', () => {
+            this.writable = this.targetsocket.writable;
+            this.emit('end');
         });
-        self.targetsocket.on('close', had_error => {
-            self.writable = self.targetsocket.writable;
-            self.emit('close', had_error);
+        this.targetsocket.on('close', had_error => {
+            this.writable = this.targetsocket.writable;
+            this.emit('close', had_error);
         });
-        self.targetsocket.on('drain', () => {
-            self.emit('drain');
+        this.targetsocket.on('drain', () => {
+            this.emit('drain');
         });
-        self.targetsocket.once('error', exception => {
-            self.writable = self.targetsocket.writable;
+        this.targetsocket.once('error', exception => {
+            this.writable = this.targetsocket.writable;
             exception.source = 'tls';
-            self.emit('error', exception);
+            this.emit('error', exception);
         });
-        self.targetsocket.on('timeout', () => {
-            self.emit('timeout');
+        this.targetsocket.on('timeout', () => {
+            this.emit('timeout');
         });
-        if (self.targetsocket.remotePort) {
-            self.remotePort = self.targetsocket.remotePort;
+        if (this.targetsocket.remotePort) {
+            this.remotePort = this.targetsocket.remotePort;
         }
-        if (self.targetsocket.remoteAddress) {
-            self.remoteAddress = self.targetsocket.remoteAddress;
+        if (this.targetsocket.remoteAddress) {
+            this.remoteAddress = this.targetsocket.remoteAddress;
         }
-        if (self.targetsocket.localPort) {
-            self.localPort = self.targetsocket.localPort;
+        if (this.targetsocket.localPort) {
+            this.localPort = this.targetsocket.localPort;
         }
-        if (self.targetsocket.localAddress) {
-            self.localAddress = self.targetsocket.localAddress;
+        if (this.targetsocket.localAddress) {
+            this.localAddress = this.targetsocket.localAddress;
         }
     }
     clean (data) {
-        if (this.targetsocket && this.targetsocket.removeAllListeners) {
+        if (this.targetsocket?.removeAllListeners) {
             [   'data', 'secure', 'secureConnect', 'secureConnection',
                 'end', 'close', 'error', 'drain'
             ].forEach((name) => {
@@ -177,12 +176,9 @@ exports.parse_x509_names = string => {
     // log.loginfo(string);
 
     let match = /Subject:.*?CN=([^/\s]+)/.exec(string);
-    if (match) {
-        // log.loginfo(match[0]);
-        if (match[1]) {
-            // log.loginfo(match[1]);
-            names_found.push(match[1]);
-        }
+    if (match?.[1]) {
+        // log.loginfo(match[1]);
+        names_found.push(match[1]);
     }
 
     match = /X509v3 Subject Alternative Name:[^]*X509/.exec(string);
@@ -208,6 +204,7 @@ exports.parse_x509_expire = (file, string) => {
     return new Date(dateMatch[1]);
 }
 
+// FIXME: Character classes in regular expressions should not contain only one character (javascript:S6397)
 exports.parse_x509 = string => {
     const res = {};
     if (!string) return res
@@ -224,7 +221,6 @@ exports.parse_x509 = string => {
 }
 
 exports.load_tls_ini = (opts) => {
-    const tlss = this;
 
     log.loginfo(`loading tls.ini`); // from ${this.config.root_path}`);
 
@@ -247,7 +243,7 @@ exports.load_tls_ini = (opts) => {
             '-main.mutual_tls',
         ]
     }, () => {
-        tlss.load_tls_ini();
+        this.load_tls_ini();
     });
 
     if (cfg.no_tls_hosts === undefined) cfg.no_tls_hosts = {};
@@ -279,11 +275,11 @@ exports.load_tls_ini = (opts) => {
 
     if (!Array.isArray(cfg.main.no_starttls_ports)) cfg.main.no_starttls_ports = [];
 
-    tlss.cfg = cfg;
+    this.cfg = cfg;
 
     if (!opts || opts.role === 'server') {
-        tlss.applySocketOpts('*');
-        tlss.load_default_opts();
+        this.applySocketOpts('*');
+        this.load_default_opts();
     }
 
     return cfg;
@@ -295,7 +291,6 @@ exports.saveOpt = (name, opt, val) => {
 }
 
 exports.applySocketOpts = name => {
-    const tlss = this;
 
     if (!certsByHost[name]) certsByHost[name] = {};
 
@@ -318,56 +313,55 @@ exports.applySocketOpts = name => {
 
     for (const opt of allOpts) {
 
-        if (tlss.cfg[name] && tlss.cfg[name][opt] !== undefined) {
+        if (this.cfg[name] && this.cfg[name][opt] !== undefined) {
             // if the setting exists in tls.ini [name]
-            tlss.saveOpt(name, opt, tlss.cfg[name][opt]);
+            this.saveOpt(name, opt, this.cfg[name][opt]);
             continue;
         }
 
-        if (tlss.cfg.main[opt] !== undefined) {
+        if (this.cfg.main[opt] !== undefined) {
             // if the setting exists in tls.ini [main]
             // then save it to the certsByHost options
-            tlss.saveOpt(name, opt, tlss.cfg.main[opt]);
+            this.saveOpt(name, opt, this.cfg.main[opt]);
             continue;
         }
 
         // defaults
         switch (opt) {
             case 'sessionIdContext':
-                tlss.saveOpt(name, opt, 'haraka');
+                this.saveOpt(name, opt, 'haraka');
                 break;
             case 'isServer':
-                tlss.saveOpt(name, opt, true);
+                this.saveOpt(name, opt, true);
                 break;
             case 'key':
-                tlss.saveOpt(name, opt, 'tls_key.pem');
+                this.saveOpt(name, opt, 'tls_key.pem');
                 break;
             case 'cert':
-                tlss.saveOpt(name, opt, 'tls_cert.pem');
+                this.saveOpt(name, opt, 'tls_cert.pem');
                 break;
             case 'dhparam':
-                tlss.saveOpt(name, opt, 'dhparams.pem');
+                this.saveOpt(name, opt, 'dhparams.pem');
                 break;
             case 'SNICallback':
-                tlss.saveOpt(name, opt, SNICallback);
+                this.saveOpt(name, opt, SNICallback);
                 break;
         }
     }
 }
 
 exports.load_default_opts = () => {
-    const tlss = this;
 
     const cfg = certsByHost['*'];
 
     if (cfg.dhparam && typeof cfg.dhparam === 'string') {
         log.logdebug(`loading dhparams from ${cfg.dhparam}`);
-        tlss.saveOpt('*', 'dhparam', tlss.config.get(cfg.dhparam, 'binary'));
+        this.saveOpt('*', 'dhparam', this.config.get(cfg.dhparam, 'binary'));
     }
 
     if (cfg.ca && typeof cfg.ca === 'string') {
         log.loginfo(`loading CA certs from ${cfg.ca}`);
-        tlss.saveOpt('*', 'ca', tlss.config.get(cfg.ca, 'binary'));
+        this.saveOpt('*', 'ca', this.config.get(cfg.ca, 'binary'));
     }
 
     // make non-array key/cert option into Arrays with one entry
@@ -383,32 +377,32 @@ exports.load_default_opts = () => {
         // turn key/cert file names into actual key/cert binary data
         const asArray = cfg.key.map(keyFileName => {
             if (!keyFileName) return;
-            const key = tlss.config.get(keyFileName, 'binary');
+            const key = this.config.get(keyFileName, 'binary');
             if (!key) {
-                log.logerror(`tls key ${path.join(tlss.config.root_path, keyFileName)} could not be loaded.`);
+                log.logerror(`tls key ${path.join(this.config.root_path, keyFileName)} could not be loaded.`);
             }
             return key;
         })
-        tlss.saveOpt('*', 'key', asArray);
+        this.saveOpt('*', 'key', asArray);
     }
 
     if (typeof cfg.cert[0] === 'string') {
         const asArray = cfg.cert.map(certFileName => {
             if (!certFileName) return;
-            const cert = tlss.config.get(certFileName, 'binary');
+            const cert = this.config.get(certFileName, 'binary');
             if (!cert) {
-                log.logerror(`tls cert ${path.join(tlss.config.root_path, certFileName)} could not be loaded.`);
+                log.logerror(`tls cert ${path.join(this.config.root_path, certFileName)} could not be loaded.`);
             }
             return cert;
         })
-        tlss.saveOpt('*', 'cert', asArray);
+        this.saveOpt('*', 'cert', asArray);
     }
 
     if (cfg.cert[0] && cfg.key[0]) {
-        tlss.tls_valid = true;
+        this.tls_valid = true;
 
         // now that all opts are applied, generate TLS context
-        tlss.ensureDhparams(() => {
+        this.ensureDhparams(() => {
             ctxByHost['*'] = tls.createSecureContext(cfg);
         })
     }
@@ -423,9 +417,8 @@ function SNICallback (servername, sniDone) {
 }
 
 exports.get_certs_dir = (tlsDir, done) => {
-    const tlss = this;
 
-    tlss.config.getDir(tlsDir, {}, (iterErr, files) => {
+    this.config.getDir(tlsDir, {}, (iterErr, files) => {
         if (iterErr) return done(iterErr);
 
         async.map(files, (file, iter_done) => {
@@ -452,7 +445,7 @@ exports.get_certs_dir = (tlsDir, done) => {
                     log.logerror(e);
                 }
 
-                const expire = tlss.parse_x509_expire(file, as_str);
+                const expire = this.parse_x509_expire(file, as_str);
                 if (expire && expire < new Date()) {
                     log.logerror(`${file.path} expired on ${expire}`);
                 }
@@ -462,7 +455,7 @@ exports.get_certs_dir = (tlsDir, done) => {
                     file: path.basename(file.path),
                     key: parsed.key,
                     cert: parsed.cert,
-                    names: tlss.parse_x509_names(as_str),
+                    names: this.parse_x509_names(as_str),
                     expires: expire,
                 })
             })
@@ -486,13 +479,13 @@ exports.get_certs_dir = (tlsDir, done) => {
 
                 // log.logdebug(cert);  // DANGER: Also logs private key!
                 cert.names.forEach(name => {
-                    tlss.applySocketOpts(name);
+                    this.applySocketOpts(name);
 
-                    tlss.saveOpt(name, 'cert', cert.cert);
-                    tlss.saveOpt(name, 'key', cert.key);
+                    this.saveOpt(name, 'cert', cert.cert);
+                    this.saveOpt(name, 'key', cert.key);
                     if (certsByHost['*'] !== undefined && certsByHost['*'].dhparam) {
                         // copy in dhparam from default '*' TLS config
-                        tlss.saveOpt(name, 'dhparam', certsByHost['*'].dhparam);
+                        this.saveOpt(name, 'dhparam', certsByHost['*'].dhparam);
                     }
 
                     // now that all opts are applied, generate TLS context
@@ -507,12 +500,11 @@ exports.get_certs_dir = (tlsDir, done) => {
 }
 
 exports.getSocketOpts = (name, done) => {
-    const tlss = this;
 
     // startup time, load the config/tls dir
-    if (!certsByHost['*']) tlss.load_tls_ini();
+    if (!certsByHost['*']) this.load_tls_ini();
 
-    tlss.get_certs_dir('tls', () => {
+    this.get_certs_dir('tls', () => {
         if (certsByHost[name]) {
             // log.logdebug(certsByHost[name]);
             return done(certsByHost[name]);
@@ -538,7 +530,6 @@ function pipe (cleartext, socket) {
 }
 
 exports.ensureDhparams = done => {
-    const tlss = this;
 
     // empty/missing dhparams file
     if (certsByHost['*'].dhparam) {
@@ -547,7 +538,7 @@ exports.ensureDhparams = done => {
 
     if (cluster.isWorker) return; // only once, on the master process
 
-    const filePath = tlss.cfg.main.dhparam || 'dhparams.pem';
+    const filePath = this.cfg.main.dhparam || 'dhparams.pem';
     const fpResolved = path.resolve(exports.config.root_path, filePath);
 
     log.loginfo(`Generating a 2048 bit dhparams file at ${fpResolved}`);
@@ -568,9 +559,9 @@ exports.ensureDhparams = done => {
         }
 
         log.loginfo(`Saved to ${fpResolved}`);
-        const content = tlss.config.get(filePath, 'binary');
+        const content = this.config.get(filePath, 'binary');
 
-        tlss.saveOpt('*', 'dhparam', content);
+        this.saveOpt('*', 'dhparam', content);
         done(null, certsByHost['*'].dhparam);
     });
 }
@@ -636,9 +627,7 @@ exports.get_rejectUnauthorized = (rejectUnauthorized, port, port_list) => {
 
     if (rejectUnauthorized) return true;
 
-    if (port_list.includes(port)) return true;
-
-    return false;
+    return !!(port_list.includes(port));
 }
 
 function createServer (cb) {

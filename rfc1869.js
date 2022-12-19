@@ -24,13 +24,8 @@ const chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9-]*(?:=[^= \x00-\x1f]+)?)$/;
 
 exports.parse = (type, line, strict) => {
     let params = [];
-    line = (new String(line)).replace(/\s*$/, '');
-    if (type === 'mail') {
-        line = line.replace(strict ? /from:/i : /from:\s*/i, '');
-    }
-    else {
-        line = line.replace(strict ? /to:/i : /to:\s*/i, '');
-    }
+    line = (String(line)).replace(/\s*$/, '');
+    line = type === 'mail' ? line.replace(strict ? /from:/i : /from:\s*/i, '') : line.replace(strict ? /to:/i : /to:\s*/i, '');
 
     while (1) {
         const old_length = line.length;
@@ -60,10 +55,8 @@ exports.parse = (type, line, strict) => {
     }
 
     line = params.shift() || '';
-    if (strict) {
-        if (!line.match(/^<.*>$/)) {
-            throw new Error(`Invalid format of ${type} command: ${line}`);
-        }
+    if (strict && !line.match(/^<.*>$/)) {
+        throw new Error(`Invalid format of ${type} command: ${line}`);
     }
 
     if (type === 'mail') {
@@ -79,16 +72,14 @@ exports.parse = (type, line, strict) => {
         if (line.match(/@.*\s/)) {
             throw new Error('Syntax error in parameters');
         }
-        else {
-            if (line.match(/\s/)) {
-                throw new Error('Syntax error in parameters');
-            }
-            else if (line.match(/@/)) {
-                if (!line.match(/^<.*>$/)) line = `<${line}>`;
-            }
-            else if (!line.match(/^<(postmaster|abuse)>$/i)) {
-                throw new Error(`Syntax error in address: ${line}`);
-            }
+        else if (line.match(/\s/)) {
+            throw new Error('Syntax error in parameters');
+        }
+        else if (line.match(/@/)) {
+            if (!line.match(/^<.*>$/)) line = `<${line}>`;
+        }
+        else if (!line.match(/^<(postmaster|abuse)>$/i)) {
+            throw new Error(`Syntax error in address: ${line}`);
         }
     }
 

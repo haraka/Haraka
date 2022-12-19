@@ -9,7 +9,7 @@
     "server",
     "email"
   ],
-  "version": "2.8.28",
+  "version": "2.8.29",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -74,9 +74,9 @@
     "nodeunit-x"            : "^0.15.0",
     "haraka-test-fixtures"  : "^1.2.1",
     "mock-require"          : "^3.0.3",
-    "eslint"                : "^8.27.0",
+    "eslint"                : "^8.30.0",
     "eslint-plugin-haraka"  : "^1.0.15",
-    "nodemailer"            : "^6.7.7"
+    "nodemailer"            : "^6.8.0"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",

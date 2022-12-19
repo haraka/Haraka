@@ -1,4 +1,4 @@
-const SPF = require('../spf').SPF;
+const { SPF } = require('../spf');
 SPF.prototype.log_debug = () => {};  // noop, hush debug output
 
 function _set_up (done) {

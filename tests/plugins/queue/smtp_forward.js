@@ -1,9 +1,9 @@
 'use strict';
 
-const path         = require('path');
+const path  = require('path');
 
-const Address      = require('address-rfc2821').Address;
-const fixtures     = require('haraka-test-fixtures');
+const { Address }   = require('address-rfc2821');
+const fixtures      = require('haraka-test-fixtures');
 
 const OK = 906;
 

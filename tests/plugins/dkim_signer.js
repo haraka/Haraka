@@ -3,7 +3,7 @@
 const fixtures     = require('haraka-test-fixtures');
 const message      = require('haraka-email-message')
 
-const DKIMSignStream = require('../../plugins/dkim_sign').DKIMSignStream;
+const { DKIMSignStream } = require('../../plugins/dkim_sign');
 
 const privateKey = `-----BEGIN RSA PRIVATE KEY-----
 MIICXwIBAAKBgQDwIRP/UC3SBsEmGqZ9ZJW3/DkMoGeLnQg1fWn7/zYtIxN2SnFC
@@ -38,10 +38,16 @@ function getValueFromDKIM (dkim_header, key) {
             return arr[2];
         }
     }
-    throw `Key ${key} not found at ${dkim_header}`;
+    throw new Error(`Key ${key} not found at ${dkim_header}`);
 }
 
 const props = { selector: 'selector', domain: 'haraka.top', private_key: privateKey };
+
+const email = 'Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. Are you hungry yet?\r\n\r\nJoe.\r\n';
+
+const ignoredHeader = 'Ignored: header\r\n\r\n';
+
+const ignoredHeaderGame = 'Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. Are you hungry yet?\r\n\r\nJoe.\r\n\r\n\r\n';
 
 exports.sign = {
     setUp (done) {
@@ -53,7 +59,6 @@ exports.sign = {
     'body hash simple' (test) {
         // took from RFC
         test.expect(1);
-        const email = 'Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. Are you hungry yet?\r\n\r\nJoe.\r\n';
 
         const header = new message.Header();
         header.parse(['Ignored: header']);
@@ -67,15 +72,13 @@ exports.sign = {
     'empty body hash simple' (test) {
         test.expect(1);
 
-        const email = 'Ignored: header\r\n\r\n';
-
         const header = new message.Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream(props, header, (n, dkim) => {
             test.equal(getValueFromDKIM(dkim, 'bh'), 'frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=');
             test.done();
         });
-        signer.write(Buffer.from(email));
+        signer.write(Buffer.from(ignoredHeader));
         signer.end();
     },
     'body hash simple, two writes' (test) {
@@ -94,15 +97,13 @@ exports.sign = {
     'body hash simple, empty lines': test => {
         test.expect(1);
 
-        const email = 'Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. Are you hungry yet?\r\n\r\nJoe.\r\n\r\n\r\n';
-
         const header = new message.Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream(props, header, (n, dkim) => {
             test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
             test.done();
         });
-        signer.write(Buffer.from(email));
+        signer.write(Buffer.from(ignoredHeaderGame));
         signer.end();
     },
 }

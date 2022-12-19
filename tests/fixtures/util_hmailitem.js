@@ -1,6 +1,6 @@
 'use strict';
 
-const Address         = require('address-rfc2821').Address;
+const { Address }     = require('address-rfc2821');
 const fixtures        = require('haraka-test-fixtures');
 const stub_connection = fixtures.connection;
 // var transaction     = fixtures.transaction;  // not yet sufficient
@@ -26,13 +26,13 @@ exports.newMockHMailItem = (outbound_context, test, options, callback) => {
                 test.done();
                 return;
             }
-            if (!hmail.todo) {
+            if (hmail.todo) {
+                callback(hmail);
+            }
+            else {
                 hmail.once('ready', () => {
                     setImmediate(() => {callback(hmail);});
                 });
-            }
-            else {
-                callback(hmail);
             }
         }
     );
@@ -91,10 +91,9 @@ exports.createHMailItem = (outbound_context, options, callback) => {
             callback('No hmail producted');
             return;
         }
-        for (let j=0; j<hmails.length; j++) {
-            const hmail = hmails[j];
-            hmail.hostlist = [ delivery_domain ];
-            callback(null, hmail);
+        for (const element of hmails) {
+            element.hostlist = [ delivery_domain ];
+            callback(null, element);
         }
     });
 
@@ -120,6 +119,7 @@ exports.playTestSmtpConversation = (hmail, socket, test, playbook, callback) => 
             test.done();
             return;
         }
+        // FIXME: this was causing some confusion in testing
         let expected;
         while (false != (expected = getNextEntryFromPlaybook('haraka', playbook))) {
             if (typeof expected.test === 'function') {
@@ -136,6 +136,7 @@ exports.playTestSmtpConversation = (hmail, socket, test, playbook, callback) => 
             }
         }
         setTimeout(() => {
+            // FIXME: this was causing some confusion in testing
             let nextMessageFromServer;
             while (false != (nextMessageFromServer = getNextEntryFromPlaybook('remote', playbook))) {
                 socket.emit('line', `${nextMessageFromServer.line}\r\n`);
@@ -153,9 +154,7 @@ function getNextEntryFromPlaybook (ofType, playbook) {
         return false;
     }
     if (playbook[0].from == ofType) {
-        const entry = playbook.shift();
-        return entry;
+        return playbook.shift();
     }
     return false;
 }
-

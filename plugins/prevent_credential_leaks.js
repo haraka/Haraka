@@ -14,6 +14,8 @@ exports.hook_data = (next, connection) => {
     next();
 }
 
+const bound_regexp  = "(?:\\b|\\B)";
+
 exports.hook_data_post = (next, connection) => {
     if (!(connection.notes.auth_user && connection.notes.auth_passwd)) {
         return next();
@@ -22,6 +24,7 @@ exports.hook_data_post = (next, connection) => {
     let user = connection.notes.auth_user;
     let domain;
     let idx;
+    // FIXME: should this be assigned vs compared?
     if ((idx = user.indexOf('@'))) {
         // If the username is qualified (e.g. user@domain.com)
         // then we make the @domain.com part optional in the regexp.
@@ -29,7 +32,6 @@ exports.hook_data_post = (next, connection) => {
         user = user.substr(0, idx);
     }
     const passwd        = connection.notes.auth_passwd;
-    const bound_regexp  = "(?:\\b|\\B)";
     const passwd_regexp = new RegExp(bound_regexp + escapeRegExp(passwd) + bound_regexp, 'm');
     const user_regexp   = new RegExp(bound_regexp +
                                    escapeRegExp(user) +

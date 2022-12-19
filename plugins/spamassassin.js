@@ -5,13 +5,11 @@ const sock  = require('./line_socket');
 const utils = require('haraka-utils');
 
 exports.register = function () {
-    const plugin = this;
-    plugin.load_spamassassin_ini();
+    this.load_spamassassin_ini();
 }
 
 exports.load_spamassassin_ini = function () {
-    const plugin = this;
-    plugin.cfg = plugin.config.get('spamassassin.ini', {
+    this.cfg = this.config.get('spamassassin.ini', {
         booleans: [
             '+add_headers',
             '+check.authenticated',
@@ -24,7 +22,7 @@ exports.load_spamassassin_ini = function () {
             '-defer.scan_timeout',
         ],
     }, () => {
-        plugin.load_spamassassin_ini();
+        this.load_spamassassin_ini();
     });
 
     const defaults = {
@@ -36,31 +34,29 @@ exports.load_spamassassin_ini = function () {
     };
 
     for (const key in defaults) {
-        if (plugin.cfg.main[key]) continue;
-        plugin.cfg.main[key] = defaults[key];
+        if (this.cfg.main[key]) continue;
+        this.cfg.main[key] = defaults[key];
     }
 
     [
         'reject_threshold', 'relay_reject_threshold',
         'munge_subject_threshold', 'max_size'
     ].forEach(item => {
-        if (!plugin.cfg.main[item]) return;
-        plugin.cfg.main[item] = Number(plugin.cfg.main[item]);
+        if (!this.cfg.main[item]) return;
+        this.cfg.main[item] = Number(this.cfg.main[item]);
     });
 }
 
 exports.hook_data_post = function (next, connection) {
-    const plugin = this;
-    const conn = connection;
 
-    if (plugin.should_skip(conn)) return next();
+    if (this.should_skip(connection)) return next();
 
     const txn  = connection.transaction;
-    txn.remove_header(plugin.cfg.main.spamc_auth_header); // just to be safe
+    txn.remove_header(this.cfg.main.spamc_auth_header); // just to be safe
 
-    const username        = plugin.get_spamd_username(conn);
-    const headers         = plugin.get_spamd_headers(conn, username);
-    const socket          = plugin.get_spamd_socket(next, conn, headers);
+    const username        = this.get_spamd_username(connection);
+    const headers         = this.get_spamd_headers(connection, username);
+    const socket          = this.get_spamd_socket(next, connection, headers);
 
     const spamd_response = { headers: {} };
     let state = 'line0';
@@ -68,7 +64,7 @@ exports.hook_data_post = function (next, connection) {
     const start = Date.now();
 
     socket.on('line', line => {
-        conn.logprotocol(plugin, `Spamd C: ${line} state=${state}`);
+        connection.logprotocol(this, `Spamd C: ${line} state=${state}`);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
             spamd_response.line0 = line;
@@ -92,7 +88,7 @@ exports.hook_data_post = function (next, connection) {
         else if (state === 'headers') {
             const m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s*(.*)/);
             if (m) {
-                conn.logdebug(plugin, `header: ${line}`);
+                connection.logdebug(this, `header: ${line}`);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
                 return;
@@ -107,49 +103,45 @@ exports.hook_data_post = function (next, connection) {
     });
 
     socket.once('end', () => {
-        if (!conn.transaction) return next() // client gone
+        if (!connection.transaction) return next() // client gone
 
-        if (spamd_response.headers && spamd_response.headers.Tests) {
+        if (spamd_response.headers?.Tests) {
             spamd_response.tests = spamd_response.headers.Tests.replace(/\s/g, '');
         }
-        if (spamd_response.tests === undefined) {
-            // strip the 'tests' from the X-Spam-Status header
-            if (spamd_response.headers && spamd_response.headers.Status) {
-                // SpamAssassin appears to have a bug that causes a space not to
-                // be added before autolearn= when the header line has been folded.
-                // So we modify the regexp here not to match autolearn onwards.
-                const tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
-                    spamd_response.headers.Status.replace(/\r?\n\t/g,'')
-                );
-                if (tests) spamd_response.tests = tests[1];
-            }
+        if (spamd_response.tests === undefined && (spamd_response.headers?.Status)) {
+            // SpamAssassin appears to have a bug that causes a space not to
+            // be added before autolearn= when the header line has been folded.
+            // So we modify the regexp here not to match autolearn onwards.
+            const tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
+                spamd_response.headers.Status.replace(/\r?\n\t/g,'')
+            );
+            if (tests) spamd_response.tests = tests[1];
         }
 
         // do stuff with the results...
         txn.notes.spamassassin = spamd_response;
-        conn.results.add(plugin, {
+        connection.results.add(this, {
             time: (Date.now() - start)/1000,
             hits: spamd_response.hits,
             flag: spamd_response.flag,
         });
 
-        plugin.fixup_old_headers(txn);
-        plugin.do_header_updates(conn, spamd_response);
-        plugin.log_results(conn, spamd_response);
+        this.fixup_old_headers(txn);
+        this.do_header_updates(connection, spamd_response);
+        this.log_results(connection, spamd_response);
 
-        const exceeds_err = plugin.score_too_high(conn, spamd_response);
+        const exceeds_err = this.score_too_high(connection, spamd_response);
         if (exceeds_err) return next(DENY, exceeds_err);
 
-        plugin.munge_subject(conn, spamd_response.score);
+        this.munge_subject(connection, spamd_response.score);
 
         next();
     });
 }
 
 exports.fixup_old_headers = function (txn) {
-    const plugin = this;
-    const action = plugin.cfg.main.old_headers_action;
-    const headers = txn.notes.spamassassin.headers;
+    const action = this.cfg.main.old_headers_action;
+    const { headers } = txn.notes.spamassassin;
 
     let key;
     switch (action) {
@@ -165,6 +157,7 @@ exports.fixup_old_headers = function (txn) {
         default:
             for (key in headers) {
                 if (!key) continue;
+                // FIXME: should this be assigned vs compared?
                 key = `X-Spam-${key}`;
                 const old_val = txn.header.get(key);
                 txn.remove_header(key);
@@ -178,29 +171,26 @@ exports.fixup_old_headers = function (txn) {
 }
 
 exports.munge_subject = function (conn, score) {
-    const plugin = this;
-    const munge = plugin.cfg.main.munge_subject_threshold;
-    if (!munge) return;
-    if (parseFloat(score) < parseFloat(munge)) return;
+    const munge = this.cfg.main.munge_subject_threshold;
+    if (!munge || parseFloat(score) < parseFloat(munge)) return;
 
     const subj = conn.transaction.header.get('Subject');
-    const subject_re = new RegExp(`^${utils.regexp_escape(plugin.cfg.main.subject_prefix)}`);
+    const subject_re = new RegExp(`^${utils.regexp_escape(this.cfg.main.subject_prefix)}`);
     if (subject_re.test(subj)) return;    // prevent double munge
 
     conn.transaction.remove_header('Subject');
-    conn.transaction.add_header('Subject', `${plugin.cfg.main.subject_prefix} ${subj}`);
+    conn.transaction.add_header('Subject', `${this.cfg.main.subject_prefix} ${subj}`);
 }
 
 exports.do_header_updates = function (conn, spamd_response) {
-    const plugin = this;
     if (spamd_response.flag === 'Yes') {
         // X-Spam-Flag is added by SpamAssassin
         conn.transaction.remove_header('precedence');
         conn.transaction.add_header('Precedence', 'junk');
     }
 
-    const modern = plugin.cfg.main.modern_status_syntax;
-    if ( !plugin.cfg.main.add_headers ) return;
+    const modern = this.cfg.main.modern_status_syntax;
+    if ( !this.cfg.main.add_headers ) return;
 
     for (const key in spamd_response.headers) {
         if (!key || key === '' || key === undefined) continue;
@@ -218,16 +208,15 @@ exports.do_header_updates = function (conn, spamd_response) {
 }
 
 exports.score_too_high = function (conn, spamd_response) {
-    const plugin = this;
-    const score = spamd_response.score;
+    const { score } = spamd_response;
     if (conn.relaying) {
-        const rmax = plugin.cfg.main.relay_reject_threshold;
+        const rmax = this.cfg.main.relay_reject_threshold;
         if (rmax && (score >= rmax)) {
             return "spam score exceeded relay threshold";
         }
     }
 
-    const max = plugin.cfg.main.reject_threshold;
+    const max = this.cfg.main.reject_threshold;
     if (max && (score >= max)) {
         return "spam score exceeded threshold";
     }
@@ -236,20 +225,19 @@ exports.score_too_high = function (conn, spamd_response) {
 }
 
 exports.get_spamd_username = function (conn) {
-    const plugin = this;
 
     let user = conn.transaction.notes.spamd_user;  // 1st priority
     if (user && user !== undefined) return user;
 
-    if (!plugin.cfg.main.spamd_user) return 'default';   // when not defined
-    user = plugin.cfg.main.spamd_user;
+    if (!this.cfg.main.spamd_user) return 'default';   // when not defined
+    user = this.cfg.main.spamd_user;
 
     // Enable per-user SA prefs
     if (user === 'first-recipient') {                // special cases
         return conn.transaction.rcpt_to[0].address();
     }
     if (user === 'all-recipients') {
-        throw "Unimplemented";
+        throw new Error("Unimplemented");
         // TODO: pass the message through SA for each recipient. Then apply
         // the least strict result to the connection. That is useful when
         // one user blacklists a sender that another user wants to get mail
@@ -259,7 +247,6 @@ exports.get_spamd_username = function (conn) {
 }
 
 exports.get_spamd_headers = function (conn, username) {
-    const plugin = this;
     // http://svn.apache.org/repos/asf/spamassassin/trunk/spamd/PROTOCOL
     const headers = [
         'HEADERS SPAMC/1.4',
@@ -269,7 +256,7 @@ exports.get_spamd_headers = function (conn, username) {
         `X-Haraka-UUID: ${conn.transaction.uuid}`,
     ];
     if (conn.relaying) {
-        headers.push(`${plugin.cfg.main.spamc_auth_header}: true`);
+        headers.push(`${this.cfg.main.spamc_auth_header}: true`);
     }
 
     return headers;
@@ -309,13 +296,13 @@ exports.get_spamd_socket = function (next, conn, headers) {
 
     socket.on('timeout', function () {
         socket.destroy();
-        if (!this.is_connected) {
-            if (txn) txn.results.add(plugin, {err: `socket connect timeout` });
-            if (plugin.cfg.defer.connect_timeout) return next(DENYSOFT, 'spamd connect timeout');
-        }
-        else {
+        if (this.is_connected) {
             if (txn) txn.results.add(plugin, {err: `timeout waiting for results` });
             if (plugin.cfg.defer.scan_timeout) return next(DENYSOFT, 'spamd scan timeout');
+        }
+        else {
+            if (txn) txn.results.add(plugin, {err: `socket connect timeout` });
+            if (plugin.cfg.defer.connect_timeout) return next(DENYSOFT, 'spamd connect timeout');
         }
         return next();
     });
@@ -335,8 +322,7 @@ exports.get_spamd_socket = function (next, conn, headers) {
 }
 
 exports.log_results = function (conn, spamd_response) {
-    const plugin = this;
-    const cfg = plugin.cfg.main;
+    const cfg = this.cfg.main;
     const reject_threshold = (conn.relaying) ? (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold;
 
     const human_text = `status=${spamd_response.flag}` +
@@ -345,7 +331,7 @@ exports.log_results = function (conn, spamd_response) {
               `, reject=${reject_threshold}` +
               `, tests="${spamd_response.tests}"`;
 
-    conn.transaction.results.add(plugin, {
+    conn.transaction.results.add(this, {
         human: human_text,
         status: spamd_response.flag, score: parseFloat(spamd_response.score),
         required: parseFloat(spamd_response.reqd), reject: reject_threshold, tests: spamd_response.tests,
@@ -368,28 +354,28 @@ exports.should_skip = function (connection = {}) {
         }
     }
 
-    if (this.cfg.check.authenticated == false && connection.notes.auth_user) {
+    if (!this.cfg.check.authenticated && connection.notes.auth_user) {
         connection.transaction.results.add(this, { skip: 'authed'});
         result = true;
     }
 
-    if (this.cfg.check.relay == false && connection.relaying) {
+    if (!this.cfg.check.relay && connection.relaying) {
         connection.transaction.results.add(this, { skip: 'relay'});
         result = true;
     }
 
-    if (this.cfg.check.local_ip == false && connection.remote.is_local) {
+    if (!this.cfg.check.local_ip && connection.remote.is_local) {
         connection.transaction.results.add(this, { skip: 'local_ip'});
         result = true;
     }
 
-    if (this.cfg.check.private_ip == false && connection.remote.is_private) {
-        if (this.cfg.check.local_ip == true && connection.remote.is_local) {
+    if (!this.cfg.check.private_ip && connection.remote.is_private) {
+        if (this.cfg.check.local_ip && connection.remote.is_local) {
             // local IPs are included in private IPs
         }
         else {
             connection.transaction.results.add(this, { skip: 'private_ip'});
-            result = true;
+            return true;
         }
     }
 

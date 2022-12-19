@@ -28,20 +28,19 @@ class Endpoint {
         if (addr.path) {
             this.path = addr.path;
             if (addr.mode) this.mode = addr.mode;
+            return;
         }
-        else {
-            // Handle server.address() return as well as parsed host/port
-            const host = addr.address || addr.host || '::0';
-            // Normalize '::' to '::0'
-            this.host = ('::' === host) ? '::0' : host ;
-            this.port = parseInt(addr.port, 10);
-        }
+        // Handle server.address() return as well as parsed host/port
+        const host = addr.address || addr.host || '::0';
+        // Normalize '::' to '::0'
+        this.host = ('::' === host) ? '::0' : host ;
+        this.port = parseInt(addr.port, 10);
     }
 
     toString () {
         if (this.mode) return `${this.path}:${this.mode}`;
         if (this.path) return this.path;
-        if (this.host.indexOf(':') >= 0) return `[${this.host}]:${this.port}`;
+        if (this.host.includes(':')) return `[${this.host}]:${this.port}`;
         return `${this.host}:${this.port}`;
     }
 

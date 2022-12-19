@@ -3,7 +3,18 @@
 const path         = require('path');
 const fixtures     = require('haraka-test-fixtures');
 
-const stub         = fixtures.stub.stub;
+const { stub }         = fixtures.stub;
+
+// Test domains
+const test_helo_classa = '[10.0.1.1]';
+const test_helo_comcast = 'c-76-121-96-159.hsd1.wa.comcast.net';
+const test_helo_google = 'www.google.com';
+const test_helo_great = 'great.domain.com';
+const test_helo_level3 = 'b.resolvers.level3.net';
+const test_helo_matt = 'matt.simerson.tld';
+const test_helo_not_re = 'not_in_re_list.net';
+const test_helo_yahoo = 'yahoo.com';
+const test_helo_ylmf = 'ylmf-pc';
 
 const _set_up = function (done) {
 
@@ -222,48 +233,45 @@ exports.dynamic = {
     'pass' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'matt.simerson.tld';
         const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
         };
         this.connection.remote.ip='208.75.177.99';
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_matt);
         this.plugin.cfg.check.dynamic=true;
         this.plugin.cfg.reject.dynamic=true;
-        this.plugin.dynamic(cb, this.connection, test_helo);
+        this.plugin.dynamic(cb, this.connection, test_helo_matt);
         test.done();
     },
     'fail' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'c-76-121-96-159.hsd1.wa.comcast.net';
         const cb = function () {
             test.equal(undefined, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
         };
         this.connection.remote.ip='76.121.96.159';
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_comcast);
         this.plugin.cfg.check.dynamic=true;
         this.plugin.cfg.reject.dynamic=false;
-        this.plugin.dynamic(cb, this.connection, test_helo);
+        this.plugin.dynamic(cb, this.connection, test_helo_comcast);
         test.done();
     },
     'fail, reject' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'c-76-121-96-159.hsd1.wa.comcast.net';
         const cb = function () {
             test.equal(DENY, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
         };
         this.connection.remote.ip='76.121.96.159';
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_comcast);
         this.plugin.cfg.check.dynamic=true;
         this.plugin.cfg.reject.dynamic=true;
-        this.plugin.dynamic(cb, this.connection, test_helo);
+        this.plugin.dynamic(cb, this.connection, test_helo_comcast);
         test.done();
     },
 }
@@ -273,22 +281,20 @@ exports.big_company = {
     'pass, reject=false' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'yahoo.com';
         const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
             test.done();
         };
         this.connection.remote.host='yahoo.com';
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_yahoo);
         this.plugin.cfg.check.big_company=true;
         this.plugin.cfg.reject.big_company=true;
-        this.plugin.big_company(cb, this.connection, test_helo);
+        this.plugin.big_company(cb, this.connection, test_helo_yahoo);
     },
     'fail, reject=false' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'yahoo.com';
         const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -296,25 +302,24 @@ exports.big_company = {
         };
         this.connection.remote.host='anything-else.com';
         this.connection.remote.is_private=false;
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_yahoo);
         this.plugin.cfg.check.big_company=true;
         this.plugin.cfg.reject.big_company=false;
-        this.plugin.big_company(cb, this.connection, test_helo);
+        this.plugin.big_company(cb, this.connection, test_helo_yahoo);
     },
     'fail, reject=true' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'yahoo.com';
         const cb = function () {
             test.equal(DENY, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
             test.done();
         };
         this.connection.remote.host='anything-else.com';
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_yahoo);
         this.plugin.cfg.check.big_company=true;
         this.plugin.cfg.reject.big_company=true;
-        this.plugin.big_company(cb, this.connection, test_helo);
+        this.plugin.big_company(cb, this.connection, test_helo_yahoo);
     },
 }
 
@@ -323,7 +328,6 @@ exports.literal_mismatch = {
     'pass' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = '[10.0.1.1]';
         const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
@@ -332,15 +336,14 @@ exports.literal_mismatch = {
         };
         this.connection.remote.ip='10.0.1.1';
         this.connection.remote.is_private=true;
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_classa);
         this.plugin.cfg.check.literal_mismatch=1;
         this.plugin.cfg.reject.literal_mismatch=true;
-        this.plugin.literal_mismatch(cb, this.connection, test_helo);
+        this.plugin.literal_mismatch(cb, this.connection, test_helo_classa);
     },
     'pass, network' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = '[10.0.1.1]';
         const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
@@ -349,15 +352,14 @@ exports.literal_mismatch = {
         };
         this.connection.remote.ip='10.0.1.2';
         this.connection.remote.is_private=true;
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_classa);
         this.plugin.cfg.check.literal_mismatch=2;
         this.plugin.cfg.reject.literal_mismatch=true;
-        this.plugin.literal_mismatch(cb, this.connection, test_helo);
+        this.plugin.literal_mismatch(cb, this.connection, test_helo_classa);
     },
     'fail, reject=false' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = '[10.0.1.1]';
         const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
@@ -365,15 +367,14 @@ exports.literal_mismatch = {
         };
         this.connection.remote.ip='10.0.1.2';
         this.connection.remote.is_private=true;
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_classa);
         this.plugin.cfg.check.literal_mismatch=0;
         this.plugin.cfg.reject.literal_mismatch=false;
-        this.plugin.literal_mismatch(cb, this.connection, test_helo);
+        this.plugin.literal_mismatch(cb, this.connection, test_helo_classa);
     },
     'fail, reject=true' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = '[10.0.1.1]';
         const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
@@ -381,10 +382,10 @@ exports.literal_mismatch = {
         };
         this.connection.remote.ip='10.0.1.2';
         this.connection.remote.is_private=true;
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_classa);
         this.plugin.cfg.check.literal_mismatch=0;
         this.plugin.cfg.reject.literal_mismatch=true;
-        this.plugin.literal_mismatch(cb, this.connection, test_helo);
+        this.plugin.literal_mismatch(cb, this.connection, test_helo_classa);
     },
 }
 
@@ -392,7 +393,6 @@ exports.valid_hostname = {
     setUp : _set_up,
     'pass' (test) {
         test.expect(2);
-        const test_helo = 'great.domain.com';
         const outer = this;
         const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
@@ -400,14 +400,13 @@ exports.valid_hostname = {
             test.ok(outer.connection.results.get('helo.checks').pass.length);
             test.done();
         };
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_great);
         this.plugin.cfg.check.valid_hostname=true;
         this.plugin.cfg.reject.valid_hostname=true;
-        this.plugin.valid_hostname(cb, this.connection, test_helo);
+        this.plugin.valid_hostname(cb, this.connection, test_helo_great);
     },
     'fail, reject=false' (test) {
         test.expect(2);
-        const test_helo = 'great.domain.non-existent-tld';
         const outer = this;
         const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
@@ -415,14 +414,13 @@ exports.valid_hostname = {
             test.ok(outer.connection.results.get('helo.checks').fail.length);
             test.done();
         };
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_great);
         this.plugin.cfg.check.valid_hostname=true;
         this.plugin.cfg.reject.valid_hostname=false;
-        this.plugin.valid_hostname(cb, this.connection, test_helo);
+        this.plugin.valid_hostname(cb, this.connection, test_helo_great);
     },
     'fail, reject=true' (test) {
         test.expect(2);
-        const test_helo = 'great.domain.non-existent-tld';
         const outer = this;
         const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
@@ -430,10 +428,10 @@ exports.valid_hostname = {
             test.ok(outer.connection.results.get('helo.checks').fail.length);
             test.done();
         };
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_great);
         this.plugin.cfg.check.valid_hostname=true;
         this.plugin.cfg.reject.valid_hostname=true;
-        this.plugin.valid_hostname(cb, this.connection, test_helo);
+        this.plugin.valid_hostname(cb, this.connection, test_helo_great);
     },
 }
 
@@ -442,7 +440,6 @@ exports.forward_dns = {
     'pass' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'b.resolvers.level3.net';
         const cb = function () {
             // console.log(arguments);
             // console.log(outer.connection.results.get('helo.checks'));
@@ -451,16 +448,15 @@ exports.forward_dns = {
             test.done();
         };
         this.connection.remote.ip='4.2.2.2';
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_level3);
         this.plugin.cfg.check.forward_dns=true;
         this.plugin.cfg.reject.forward_dns=true;
         this.connection.results.add(this.plugin, {pass: 'valid_hostname'});
-        this.plugin.forward_dns(cb, this.connection, test_helo);
+        this.plugin.forward_dns(cb, this.connection, test_helo_level3);
     },
     'fail, reject=false' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'www.google.com';
         const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
@@ -468,15 +464,14 @@ exports.forward_dns = {
             test.done();
         };
         this.connection.remote.ip='66.128.51.163';
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_google);
         this.plugin.cfg.check.forward_dns=true;
         this.plugin.cfg.reject.forward_dns=false;
-        this.plugin.forward_dns(cb, this.connection, test_helo);
+        this.plugin.forward_dns(cb, this.connection, test_helo_google);
     },
     'fail, reject=true' (test) {
         test.expect(2);
         const outer = this;
-        const test_helo = 'www.google.com';
         const cb = function () {
             // console.log(arguments);
             // console.log(outer.connection.results.get('helo.checks'));
@@ -485,10 +480,10 @@ exports.forward_dns = {
             test.done();
         };
         this.connection.remote.ip='66.128.51.163';
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_google);
         this.plugin.cfg.check.forward_dns=true;
         this.plugin.cfg.reject.forward_dns=true;
-        this.plugin.forward_dns(cb, this.connection, test_helo);
+        this.plugin.forward_dns(cb, this.connection, test_helo_google);
     },
 }
 
@@ -496,57 +491,53 @@ exports.match_re = {
     setUp : _set_up,
     'miss' (test) {
         test.expect(3);
-        const test_helo = 'not_in_re_list.net';
         const cb = function (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.ok(this.connection.results.get('helo.checks').pass.length);
             test.done();
         }.bind(this);
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_not_re);
         this.plugin.cfg.list_re = new RegExp(`^(${['bad.tld'].join('|')})$`, 'i');
-        this.plugin.match_re(cb, this.connection, test_helo);
+        this.plugin.match_re(cb, this.connection, test_helo_not_re);
     },
     'hit, reject=no' (test) {
         test.expect(3);
-        const test_helo = 'ylmf-pc';
         const cb = function (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.ok(this.connection.results.get('helo.checks').fail.length);
             test.done();
         }.bind(this);
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_ylmf);
         this.plugin.cfg.reject = { match_re: false };
         this.plugin.cfg.list_re = new RegExp(`^(${['ylmf-pc'].join('|')})$`, 'i');
-        this.plugin.match_re(cb, this.connection, test_helo);
+        this.plugin.match_re(cb, this.connection, test_helo_ylmf);
     },
     'hit, reject=yes, exact' (test) {
         test.expect(3);
-        const test_helo = 'ylmf-pc';
         const cb = function (rc, msg) {
             test.equal(DENY, rc);
             test.equal('That HELO not allowed here', msg);
             test.ok(this.connection.results.get('helo.checks').fail.length);
             test.done();
         }.bind(this);
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_ylmf);
         this.plugin.cfg.reject = { match_re: true };
         this.plugin.cfg.list_re = new RegExp(`^(${['ylmf-pc'].join('|')})$`, 'i');
-        this.plugin.match_re(cb, this.connection, test_helo);
+        this.plugin.match_re(cb, this.connection, test_helo_ylmf);
     },
     'hit, reject=yes, pattern' (test) {
         test.expect(3);
-        const test_helo = 'ylmf-pc';
         const cb = function (rc, msg) {
             test.equal(DENY, rc);
             test.equal('That HELO not allowed here', msg);
             test.ok(this.connection.results.get('helo.checks').fail.length);
             test.done();
         }.bind(this);
-        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.init(stub, this.connection, test_helo_ylmf);
         this.plugin.cfg.reject = { match_re: true };
         this.plugin.cfg.list_re = new RegExp(`^(${['ylm.*'].join('|')})$`, 'i');
-        this.plugin.match_re(cb, this.connection, test_helo);
+        this.plugin.match_re(cb, this.connection, test_helo_ylmf);
     },
 }

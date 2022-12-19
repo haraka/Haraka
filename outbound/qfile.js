@@ -5,6 +5,12 @@ const platform_dot = `${(['win32','win64'].includes(process.platform)) ? '' : '_
 
 let QFILECOUNTER = 0;
 
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+const PARTS_EXPECTED_OLD = 4;
+
+const PARTS_EXPECTED_CURRENT = 7;
+
 const _qfile = module.exports = {
     // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquetag_$counter_$host
     hostname : hostname => {
@@ -37,7 +43,6 @@ const _qfile = module.exports = {
     },
 
     rnd_unique: (len = 6) => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         const result = [];
         for (let i = len; i > 0; --i) {
             result.push(chars[Math.floor(Math.random() * chars.length)]);
@@ -48,8 +53,6 @@ const _qfile = module.exports = {
     parts : filename => {
         if (!filename) throw new Error("No filename provided");
 
-        const PARTS_EXPECTED_OLD = 4;
-        const PARTS_EXPECTED_CURRENT = 7;
         let p = filename.split('_');
 
         // bail on unknown split lengths

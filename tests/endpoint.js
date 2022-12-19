@@ -60,11 +60,11 @@ module.exports = {
                 },
                 unlinkSync (path, ...args) {
                     log.push(['unlinkSync', path, ...args]);
-                    if ('undefined' !== typeof modes[path]) {
-                        delete modes[path];
+                    if ('undefined' === typeof modes[path]) {
+                        log.push(['unlink without existing socket']);
                     }
                     else {
-                        log.push(['unlink without existing socket']);
+                        delete modes[path];
                     }
                 },
             };

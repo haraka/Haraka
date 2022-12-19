@@ -9,30 +9,28 @@ const url = require('url');
 const smtp_client_mod = require('./smtp_client');
 
 exports.register = function () {
-    const plugin = this;
-    plugin.load_errs = [];
+    this.load_errs = [];
 
-    plugin.load_smtp_forward_ini();
+    this.load_smtp_forward_ini();
 
-    if (plugin.load_errs.length > 0) return;
+    if (this.load_errs.length > 0) return;
 
-    if (plugin.cfg.main.check_sender) {
-        plugin.register_hook('mail', 'check_sender');
+    if (this.cfg.main.check_sender) {
+        this.register_hook('mail', 'check_sender');
     }
 
-    if (plugin.cfg.main.check_recipient) {
-        plugin.register_hook('rcpt', 'check_recipient');
+    if (this.cfg.main.check_recipient) {
+        this.register_hook('rcpt', 'check_recipient');
     }
 
-    plugin.register_hook('queue', 'queue_forward');
+    this.register_hook('queue', 'queue_forward');
 
-    plugin.register_hook('get_mx', 'get_mx'); // for relaying outbound messages
+    this.register_hook('get_mx', 'get_mx'); // for relaying outbound messages
 }
 
 exports.load_smtp_forward_ini = function () {
-    const plugin = this;
 
-    plugin.cfg = plugin.config.get('smtp_forward.ini', {
+    this.cfg = this.config.get('smtp_forward.ini', {
         booleans: [
             '-main.enable_tls',
             '+main.enable_outbound',
@@ -44,81 +42,75 @@ exports.load_smtp_forward_ini = function () {
         ],
     },
     () => {
-        plugin.load_smtp_forward_ini();
+        this.load_smtp_forward_ini();
     });
 
-    if (plugin.cfg.main.enable_outbound) {
-        plugin.lognotice('outbound enabled, will default to disabled in Haraka v3 (see #1472)');
+    if (this.cfg.main.enable_outbound) {
+        this.lognotice('outbound enabled, will default to disabled in Haraka v3 (see #1472)');
     }
 }
 
 exports.get_config = function (conn) {
-    const plugin = this;
 
-    if (!conn.transaction) return plugin.cfg.main;
+    if (!conn.transaction) return this.cfg.main;
 
     let dom;
-    if (plugin.cfg.main.domain_selector === 'mail_from') {
-        if (!conn.transaction.mail_from) return plugin.cfg.main;
+    if (this.cfg.main.domain_selector === 'mail_from') {
+        if (!conn.transaction.mail_from) return this.cfg.main;
         dom = conn.transaction.mail_from.host;
     }
     else {
-        if (!conn.transaction.rcpt_to[0]) return plugin.cfg.main;
+        if (!conn.transaction.rcpt_to[0]) return this.cfg.main;
         dom = conn.transaction.rcpt_to[0].host;
     }
 
-    if (!dom)             return plugin.cfg.main;
-    if (!plugin.cfg[dom]) return plugin.cfg.main;  // no specific route
+    if (!dom || !this.cfg[dom])             return this.cfg.main;
 
-    return plugin.cfg[dom];
+    return this.cfg[dom];
 }
 
 exports.is_outbound_enabled = function (dom_cfg) {
-    const plugin = this;
 
     if ('enable_outbound' in dom_cfg) return dom_cfg.enable_outbound; // per-domain flag
 
-    return plugin.cfg.main.enable_outbound; // follow the global configuration
+    return this.cfg.main.enable_outbound; // follow the global configuration
 };
 
 exports.check_sender = function (next, connection, params) {
     const txn = connection?.transaction;
     if (!txn) return;
 
-    const plugin = this;
-
     const email = params[0].address();
     if (!email) {
-        txn.results.add(plugin, {skip: 'mail_from.null', emit: true});
+        txn.results.add(this, {skip: 'mail_from.null', emit: true});
         return next();
     }
 
     const domain = params[0].host.toLowerCase();
-    if (!plugin.cfg[domain]) return next();
+    if (!this.cfg[domain]) return next();
 
     // domain is defined in smtp_forward.ini
     txn.notes.local_sender = true;
 
     if (!connection.relaying) {
-        txn.results.add(plugin, {fail: 'mail_from!spoof'});
+        txn.results.add(this, {fail: 'mail_from!spoof'});
         return next(DENY, "Spoofed MAIL FROM");
     }
 
-    txn.results.add(plugin, {pass: 'mail_from'});
+    txn.results.add(this, {pass: 'mail_from'});
     return next();
 }
 
 exports.set_queue = function (connection, queue_wanted, domain) {
-    const plugin = this;
 
-    let dom_cfg = plugin.cfg[domain];
+    let dom_cfg = this.cfg[domain];
     if (dom_cfg === undefined) dom_cfg = {};
 
-    if (!queue_wanted) queue_wanted = dom_cfg.queue || plugin.cfg.main.queue;
+    if (!queue_wanted) queue_wanted = dom_cfg.queue || this.cfg.main.queue;
     if (!queue_wanted) return true;
 
 
-    let dst_host = dom_cfg.host || plugin.cfg.main.host;
+    let dst_host = dom_cfg.host || this.cfg.main.host;
     if (dst_host) dst_host = `smtp://${dst_host}`;
 
     const notes = connection?.transaction?.notes;
@@ -134,8 +126,7 @@ exports.set_queue = function (connection, queue_wanted, domain) {
         if (!dst_host) return true;
 
         const next_hop = notes.get('queue.next_hop');
-        if (!next_hop) return true;
-        if (next_hop === dst_host) return true;
+        if (!next_hop || next_hop === dst_host) return true;
     }
 
     // multiple recipients with different forward host, soft deny
@@ -143,49 +134,47 @@ exports.set_queue = function (connection, queue_wanted, domain) {
 }
 
 exports.check_recipient = function (next, connection, params) {
-    const plugin = this;
     const txn = connection?.transaction;
     if (!txn) return;
 
     const rcpt = params[0];
     if (!rcpt.host) {
-        txn.results.add(plugin, {skip: 'rcpt!domain'});
+        txn.results.add(this, {skip: 'rcpt!domain'});
         return next();
     }
 
     if (connection.relaying && txn.notes.local_sender) {
-        plugin.set_queue(connection, 'outbound');
-        txn.results.add(plugin, {pass: 'relaying local_sender'});
+        this.set_queue(connection, 'outbound');
+        txn.results.add(this, {pass: 'relaying local_sender'});
         return next(OK);
     }
 
     const domain = rcpt.host.toLowerCase();
-    if (plugin.cfg[domain] !== undefined) {
-        if (plugin.set_queue(connection, 'smtp_forward', domain)) {
-            txn.results.add(plugin, {pass: 'rcpt_to'});
+    if (this.cfg[domain] !== undefined) {
+        if (this.set_queue(connection, 'smtp_forward', domain)) {
+            txn.results.add(this, {pass: 'rcpt_to'});
             return next(OK);
         }
-        txn.results.add(plugin, {pass: 'rcpt_to.split'});
+        txn.results.add(this, {pass: 'rcpt_to.split'});
         return next(DENYSOFT, "Split transaction, retry soon");
     }
 
     // the MAIL FROM domain is not local and neither is the RCPT TO
     // Another RCPT plugin may vouch for this recipient.
-    txn.results.add(plugin, {msg: 'rcpt!local'});
+    txn.results.add(this, {msg: 'rcpt!local'});
     return next();
 }
 
 exports.auth = function (cfg, connection, smtp_client) {
-    const plugin = this;
 
-    connection.loginfo(plugin, `Configuring authentication for SMTP server ${cfg.host}:${cfg.port}`);
+    connection.loginfo(this, `Configuring authentication for SMTP server ${cfg.host}:${cfg.port}`);
     smtp_client.on('capabilities', () => {
-        connection.loginfo(plugin, 'capabilities received');
+        connection.loginfo(this, 'capabilities received');
 
         if ('secured' in smtp_client) {
-            connection.loginfo(plugin, 'secured is pending');
+            connection.loginfo(this, 'secured is pending');
             if (smtp_client.secured === false) {
-                connection.loginfo(plugin, "Waiting for STARTTLS to complete. AUTH postponed");
+                connection.loginfo(this, "Waiting for STARTTLS to complete. AUTH postponed");
                 return;
             }
         }
@@ -196,40 +185,42 @@ exports.auth = function (cfg, connection, smtp_client) {
         }
 
         if (cfg.auth_type === 'plain') {
-            connection.loginfo(plugin, `Authenticating with AUTH PLAIN ${cfg.auth_user}`);
-            smtp_client.send_command('AUTH', `PLAIN ${base64(`\0${cfg.auth_user}\0${cfg.auth_pass}`)}`);
+            connection.loginfo(this, `Authenticating with AUTH PLAIN ${cfg.auth_user}`);
+            const userPass = `\0${cfg.auth_user}\0${cfg.auth_pass}`;
+            smtp_client.send_command('AUTH', `PLAIN ${base64(userPass)}`);
+            return;
         }
-        else if (cfg.auth_type === 'login') {
-            smtp_client.authenticating = true;
-            smtp_client.authenticated = false;
-
-            connection.loginfo(plugin, `Authenticating with AUTH LOGIN ${cfg.auth_user}`);
-            smtp_client.send_command('AUTH', 'LOGIN');
-            smtp_client.on('auth', () => {
-                //TODO: nothing?
-
-            });
-            smtp_client.on('auth_username', () => {
-                smtp_client.send_command(base64(cfg.auth_user));
-            });
-            smtp_client.on('auth_password', () => {
-                smtp_client.send_command(base64(cfg.auth_pass));
-            });
+        if (cfg.auth_type !== 'login') {
+            return;
         }
+        smtp_client.authenticating = true;
+        smtp_client.authenticated = false;
+
+        connection.loginfo(this, `Authenticating with AUTH LOGIN ${cfg.auth_user}`);
+        smtp_client.send_command('AUTH', 'LOGIN');
+        smtp_client.on('auth', () => {
+            //TODO: nothing?
+
+        });
+        smtp_client.on('auth_username', () => {
+            smtp_client.send_command(base64(cfg.auth_user));
+        });
+        smtp_client.on('auth_password', () => {
+            smtp_client.send_command(base64(cfg.auth_pass));
+        });
     });
 }
 
 exports.forward_enabled = function (conn, dom_cfg) {
-    const plugin = this;
 
     const q_wants = conn.transaction.notes.get('queue.wants');
     if (q_wants && q_wants !== 'smtp_forward') {
-        conn.logdebug(plugin, `skipping, unwanted (${q_wants})`);
+        conn.logdebug(this, `skipping, unwanted (${q_wants})`);
         return false;
     }
 
-    if (conn.relaying && !plugin.is_outbound_enabled(dom_cfg)) {
-        conn.logdebug(plugin, 'skipping, outbound disabled');
+    if (conn.relaying && !this.is_outbound_enabled(dom_cfg)) {
+        conn.logdebug(this, 'skipping, outbound disabled');
         return false;
     }
 
@@ -238,30 +229,31 @@ exports.forward_enabled = function (conn, dom_cfg) {
 
 exports.queue_forward = function (next, connection) {
     const plugin = this;
-    const conn = connection;
     const txn = connection?.transaction;
 
-    const cfg = plugin.get_config(conn);
-    if (!plugin.forward_enabled(conn, cfg)) return next();
+    const cfg = plugin.get_config(connection);
+    if (!plugin.forward_enabled(connection, cfg)) return next();
 
     smtp_client_mod.get_client_plugin(plugin, connection, cfg, (err, smtp_client) => {
         smtp_client.next = next;
 
         let rcpt = 0;
 
-        if (cfg.auth_user) plugin.auth(cfg, conn, smtp_client);
+        if (cfg.auth_user) plugin.auth(cfg, connection, smtp_client);
 
-        conn.loginfo(plugin, `forwarding to ${
-            cfg.forwarding_host_pool ? 'host_pool' : `${cfg.host}:${cfg.port}`}`
+        const hostPort = `${cfg.host}:${cfg.port}`;
+        connection.loginfo(plugin, `forwarding to ${
+
+            cfg.forwarding_host_pool ? 'host_pool' : hostPort}`
         );
 
         function get_rs () {
             if (txn) return txn.results;
-            return conn.results;
+            return connection.results;
         }
 
         function dead_sender () {
-            if (smtp_client.is_dead_sender(plugin, conn)) {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
                 get_rs().add(plugin, { err: 'dead sender' });
                 return true;
             }
@@ -336,18 +328,17 @@ exports.get_mx_next_hop = next_hop => {
 }
 
 exports.get_mx = function (next, hmail, domain) {
-    const plugin = this;
 
     // hmail.todo not defined in tests.
     if (hmail.todo.notes.next_hop) {
-        return next(OK, plugin.get_mx_next_hop(hmail.todo.notes.next_hop));
+        return next(OK, this.get_mx_next_hop(hmail.todo.notes.next_hop));
     }
 
-    const dom = plugin.cfg.main.domain_selector === 'mail_from' ? hmail.todo.mail_from.host.toLowerCase() : domain.toLowerCase();
-    const cfg = plugin.cfg[dom];
+    const dom = this.cfg.main.domain_selector === 'mail_from' ? hmail.todo.mail_from.host.toLowerCase() : domain.toLowerCase();
+    const cfg = this.cfg[dom];
 
     if (cfg === undefined) {
-        plugin.logdebug(`using DNS MX for: ${domain}`);
+        this.logdebug(`using DNS MX for: ${domain}`);
         return next();
     }
 
@@ -358,14 +349,14 @@ exports.get_mx = function (next, hmail, domain) {
 
     const mx = {
         priority: 0,
-        exchange: cfg.host || plugin.cfg.main.host,
-        port: cfg.port || plugin.cfg.main.port || 25,
+        exchange: cfg.host || this.cfg.main.host,
+        port: cfg.port || this.cfg.main.port || 25,
     }
 
     // apply auth/mx options
     mx_opts.forEach(o => {
         if (cfg[o] === undefined) return;
-        mx[o] = plugin.cfg[dom][o];
+        mx[o] = this.cfg[dom][o];
     })
 
     return next(OK, mx);

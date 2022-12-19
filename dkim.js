@@ -1,9 +1,9 @@
 'use strict';
 
-const crypto = require('crypto');
-const dns    = require('dns');
-const Stream = require('stream').Stream;
-const utils  = require('haraka-utils');
+const crypto        = require('crypto');
+const dns           = require('dns');
+const { Stream }    = require('stream');
+const utils         = require('haraka-utils');
 
 //////////////////////
 // Common functions //
@@ -23,10 +23,10 @@ class Buf {
 
     pop (buf) {
         if (!this.bar.length) {
-            if (!buf) buf = Buffer.from('');
+            if (!buf) return Buffer.from('');
             return buf;
         }
-        if (buf && buf.length) {
+        if (buf?.length) {
             this.bar.push(buf);
             this.blen += buf.length;
         }
@@ -73,8 +73,8 @@ class DKIMObject {
         const [ , , dkim_signature] = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
         const sig = dkim_signature.trim().replace(/\s+/g,'');
         const keys = sig.split(';');
-        for (let k=0; k<keys.length; k++) {
-            const key = keys[k].trim();
+        for (const element of keys) {
+            const key = element.trim();
             if (!key) continue;  // skip empty keys
             const [ , key_name, key_value] = /^([^= ]+)=((?:.|[\r\n])+)$/.exec(key) || [];
             if (key_name) {
@@ -133,8 +133,8 @@ class DKIMObject {
 
         if (this.fields.h) {
             const headers = this.fields.h.split(':');
-            for (let h=0; h<headers.length; h++) {
-                this.signed_headers.push(headers[h].trim().toLowerCase());
+            for (const element of headers) {
+                this.signed_headers.push(element.trim().toLowerCase());
             }
             if (!this.signed_headers.includes('from')) {
                 return this.result('from field not signed', 'invalid');
@@ -161,10 +161,8 @@ class DKIMObject {
         }
 
         const now = new Date().getTime()/1000;
-        if (this.fields.t) {
-            if (this.fields.t > (this.allowed_time_skew ? (now + parseInt(this.allowed_time_skew)) : now)) {
-                return this.result('creation date is invalid or in the future', 'invalid')
-            }
+        if (this.fields.t && this.fields.t > (this.allowed_time_skew ? (now + parseInt(this.allowed_time_skew)) : now)) {
+            return this.result('creation date is invalid or in the future', 'invalid')
         }
 
         if (this.fields.x) {
@@ -196,8 +194,7 @@ class DKIMObject {
         let hc = `${header_name.toLowerCase()}:${header_value}`;
         hc = hc.replace(/\r\n([\t ]+)/g, "$1");
         hc = hc.replace(/[\t ]+/g, ' ');
-        hc = hc.replace(/[\t ]+(\r?\n)$/, "$1");
-        return hc;
+        return hc.replace(/[\t ]+(\r?\n)$/, "$1");
     }
 
     add_body_line (line) {
@@ -247,15 +244,14 @@ class DKIMObject {
         }
 
         // Now we canonicalize the specified headers
-        for (let h=0; h<this.signed_headers.length; h++) {
-            const header = this.signed_headers[h];
-            this.debug(`${this.identity}: canonicalize header: ${header}`);
-            if (this.header_idx[header]) {
+        for (const element of this.signed_headers) {
+            this.debug(`${this.identity}: canonicalize header: ${element}`);
+            if (this.header_idx[element]) {
                 // RFC 6376 section 5.4.2, read headers from bottom to top
-                const this_header = this.header_idx[header].pop();
+                const this_header = this.header_idx[element].pop();
                 if (this_header) {
                     // Skip this signature if dkim-signature is specified
-                    if (header === 'dkim-signature') {
+                    if (element === 'dkim-signature') {
                         const h_md5 = md5(this_header);
                         if (h_md5 === this.sig_md5) {
                             this.debug(`${this.identity}: skipped our own DKIM-Signature`);
@@ -281,12 +277,10 @@ class DKIMObject {
         our_sig = our_sig.replace(/\r\n$/,'');
         this.verifier.update(our_sig);
 
-        // Do the DNS lookup to retrieve the public key
-        const self = this;
         let timeout = false;
         const timer = setTimeout(() => {
             timeout = true;
-            return self.result('DNS timeout', 'tempfail');
+            return this.result('DNS timeout', 'tempfail');
         }, this.timeout * 1000);
         const lookup = `${this.fields.s}._domainkey.${this.fields.d}`;
         this.debug(`${this.identity}: DNS lookup ${lookup} (timeout= ${this.timeout}s)`);
@@ -298,104 +292,103 @@ class DKIMObject {
                     case dns.NOTFOUND:
                     case dns.NODATA:
                     case dns.NXDOMAIN:
-                        return self.result('no key for signature', 'invalid');
+                        return this.result('no key for signature', 'invalid');
                     default:
-                        self.debug(`${self.identity}: DNS lookup error: ${err.code}`);
-                        return self.result('key unavailable', 'tempfail');
+                        this.debug(`${this.identity}: DNS lookup error: ${err.code}`);
+                        return this.result('key unavailable', 'tempfail');
                 }
             }
-            if (!res) return self.result('no key for signature', 'invalid');
-            for (let r=0; r<res.length; r++) {
-                let record = res[r];
+            if (!res) return this.result('no key for signature', 'invalid');
+            for (const element of res) {
+                let record = element;
                 // Node 0.11.x compatibility
                 if (Array.isArray(record)) {
                     record = record.join('');
                 }
                 if (!record.includes('p=')) {
-                    self.debug(`${self.identity}: ignoring TXT record: ${record}`);
+                    this.debug(`${this.identity}: ignoring TXT record: ${record}`);
                     continue;
                 }
-                self.debug(`${self.identity}: got DNS record: ${record}`);
+                this.debug(`${this.identity}: got DNS record: ${record}`);
                 const rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
                 const split = rec.split(';');
-                for (let j=0; j<split.length; j++) {
-                    const split2 = split[j].split('=');
-                    if (split2[0]) self.dns_fields[split2[0]] = split2[1];
+                for (const j of split) {
+                    const split2 = j.split('=');
+                    if (split2[0]) this.dns_fields[split2[0]] = split2[1];
                 }
 
                 // Validate
-                if (!self.dns_fields.v || self.dns_fields.v !== 'DKIM1') {
-                    return self.result('invalid version', 'invalid');
+                if (!this.dns_fields.v || this.dns_fields.v !== 'DKIM1') {
+                    return this.result('invalid version', 'invalid');
                 }
-                if (self.dns_fields.g) {
-                    if (self.dns_fields.g !== '*') {
-                        let s = self.dns_fields.g;
+                if (this.dns_fields.g) {
+                    if (this.dns_fields.g !== '*') {
+                        let s = this.dns_fields.g;
                         // Escape any special regexp characters
                         s = s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
                         // Make * a non-greedy match against anything except @
                         s = s.replace('\\*','[^@]*?');
                         const reg = new RegExp(`^${s}@`);
-                        self.debug(`${self.identity}: matching ${self.dns_fields.g} against i=${self.fields.i} regexp=${reg.toString()}`);
-                        if (!reg.test(self.fields.i)) {
-                            return self.result('inapplicable key', 'invalid');
+                        this.debug(`${this.identity}: matching ${this.dns_fields.g} against i=${this.fields.i} regexp=${reg.toString()}`);
+                        if (!reg.test(this.fields.i)) {
+                            return this.result('inapplicable key', 'invalid');
                         }
                     }
                 }
                 else {
-                    return self.result('inapplicable key', 'invalid');
+                    return this.result('inapplicable key', 'invalid');
                 }
-                if (self.dns_fields.h) {
-                    const hashes = self.dns_fields.h.split(':');
-                    for (let k=0; k<hashes.length; k++) {
-                        const hash = hashes[k].trim();
-                        if (!self.fields.a.includes(hash)) {
-                            return self.result('inappropriate hash algorithm', 'invalid');
+                if (this.dns_fields.h) {
+                    const hashes = this.dns_fields.h.split(':');
+                    hashes.forEach((e) => {
+                        const hash = e.trim();
+                        if (!this.fields.a.includes(hash)) {
+                            return this.result('inappropriate hash algorithm', 'invalid');
                         }
-                    }
+                    });
                 }
-                if (self.dns_fields.k) {
-                    if (!self.fields.a.includes(self.dns_fields.k)) {
-                        return self.result('inappropriate key type', 'invalid');
-                    }
+                if (this.dns_fields.k && !this.fields.a.includes(this.dns_fields.k)) {
+                    return this.result('inappropriate key type', 'invalid');
                 }
-                if (self.dns_fields.t) {
-                    const flags = self.dns_fields.t.split(':');
-                    for (let f=0; f<flags.length; f++) {
-                        const flag = flags[f].trim();
+                if (this.dns_fields.t) {
+                    const flags = this.dns_fields.t.split(':');
+                    flags.forEach((e) => {
+                        const flag = e.trim();
                         if (flag === 'y') {
                             // Test mode
-                            self.test_mode = true;
+                            this.test_mode = true;
                         }
                         else if (flag === 's') {
                             // 'i' and 'd' domain much match exactly
-                            let i = self.fields.i
+                            let i = this.fields.i
                             i = i.substr(i.indexOf('@')+1, i.length)
                             if (i.toLowerCase() !== this.fields.d.toLowerCase()) {
                                 return this.result('i/d selector domain mismatch (t=s)', 'invalid')
                             }
                         }
-                    }
+                    });
                 }
-                if (!self.dns_fields.p) return self.result('key revoked', 'invalid');
+                if (!this.dns_fields.p) return this.result('key revoked', 'invalid');
 
                 // crypto.verifier requires the key in PEM format
-                self.public_key = `-----BEGIN PUBLIC KEY-----\r\n${
-                    self.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n')
+                this.public_key = `-----BEGIN PUBLIC KEY-----\r\n${
+
+                    this.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n')
                 }-----END PUBLIC KEY-----\r\n`;
 
                 let verified;
                 try {
-                    verified = self.verifier.verify(self.public_key, self.fields.b, 'base64');
-                    self.debug(`${self.identity}: verified=${verified}`);
+                    verified = this.verifier.verify(this.public_key, this.fields.b, 'base64');
+                    this.debug(`${this.identity}: verified=${verified}`);
                 }
                 catch (e) {
-                    self.debug(`${self.identity}: verification error: ${e.message}`);
-                    return self.result('verification error', 'invalid');
+                    this.debug(`${this.identity}: verification error: ${e.message}`);
+                    return this.result('verification error', 'invalid');
                 }
-                return self.result(null, ((verified) ? 'pass' : 'fail'));
+                return this.result(null, ((verified) ? 'pass' : 'fail'));
             }
             // We didn't find a valid DKIM record for this signature
-            self.result('no key for signature', 'invalid');
+            this.result('no key for signature', 'invalid');
         });
     }
 
@@ -508,9 +501,9 @@ class DKIMVerifyStream extends Stream {
 
                 // Set the overall result based on this precedence order
                 const rr = ['pass','tempfail','fail','invalid','none'];
-                for (let r=0; r<rr.length; r++) {
-                    if (!self.result || (self.result && self.result !== rr[r] && result.result === rr[r])) {
-                        self.result = rr[r];
+                for (const element of rr) {
+                    if (!self.result || (self.result && self.result !== element && result.result === element)) {
+                        self.result = element;
                     }
                 }
             }
@@ -538,58 +531,53 @@ class DKIMVerifyStream extends Stream {
             }
 
             // Look for CRLF
-            if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
-                // Look for end of headers marker
-                if (!this._in_body) {
-                    this._in_body = true;
-                    // Parse the headers
-                    for (let h=0; h<this.headers.length; h++) {
-                        const match = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(this.headers[h]);
-                        if (!match) continue;
-                        const header_name = match[1];
-                        if (!header_name) continue;
-                        const hn = header_name.toLowerCase();
-                        if (!this.header_idx[hn]) this.header_idx[hn] = [];
-                        this.header_idx[hn].push(this.headers[h]);
+            if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a && !this._in_body) {
+                this._in_body = true;
+                // Parse the headers
+                for (const element of this.headers) {
+                    const match = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(element);
+                    if (!match) continue;
+                    const header_name = match[1];
+                    if (!header_name) continue;
+                    const hn = header_name.toLowerCase();
+                    if (!this.header_idx[hn]) this.header_idx[hn] = [];
+                    this.header_idx[hn].push(element);
+                }
+                if (this.header_idx['dkim-signature']) {
+                    // Create new DKIM objects for each header
+                    const dkim_headers = this.header_idx['dkim-signature'];
+                    this.debug(`Found ${dkim_headers.length} DKIM signatures`);
+                    this.pending = dkim_headers.length;
+                    for (const element of dkim_headers) {
+                        this.dkim_objects.push(new DKIMObject(element, this.header_idx, callback, this.opts));
                     }
-                    if (!this.header_idx['dkim-signature']) {
-                        this._no_signatures_found = true;
-                        return process.nextTick(() => {
-                            self.cb(null, self.result, self.results);
+                    if (this.pending === 0) {
+                        process.nextTick(() => {
+                            if (self.cb) self.cb(new Error('no signatures found'));
                         });
                     }
-                    else {
-                        // Create new DKIM objects for each header
-                        const dkim_headers = this.header_idx['dkim-signature'];
-                        this.debug(`Found ${dkim_headers.length} DKIM signatures`);
-                        this.pending = dkim_headers.length;
-                        for (let d=0; d<dkim_headers.length; d++) {
-                            this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.opts));
-                        }
-                        if (this.pending === 0) {
-                            process.nextTick(() => {
-                                if (self.cb) self.cb(new Error('no signatures found'));
-                            });
-                        }
-                    }
-                    continue;  // while()
-                }
-            }
-
-            if (!this._in_body) {
-                // Parse headers
-                if (line[0] === 0x20 || line[0] === 0x09) {
-                    // Header continuation
-                    this.headers[this.headers.length-1] += line.toString('utf-8');
                 }
                 else {
-                    this.headers.push(line.toString('utf-8'));
+                    this._no_signatures_found = true;
+                    return process.nextTick(() => {
+                        self.cb(null, self.result, self.results);
+                    });
+                }
+                continue;  // while()
+            }
+
+            if (this._in_body) {
+                for (const element of this.dkim_objects) {
+                    element.add_body_line(line);
                 }
             }
+            else // Parse headers
+            if (line[0] === 0x20 || line[0] === 0x09) {
+                // Header continuation
+                this.headers[this.headers.length-1] += line.toString('utf-8');
+            }
             else {
-                for (let e=0; e<this.dkim_objects.length; e++) {
-                    this.dkim_objects[e].add_body_line(line);
-                }
+                this.headers.push(line.toString('utf-8'));
             }
             if (once) {
                 break;
@@ -606,13 +594,12 @@ class DKIMVerifyStream extends Stream {
 
     end (buf) {
         this.handle_buf(((buf) ? buf : null));
-        for (let d=0; d<this.dkim_objects.length; d++) {
-            this.dkim_objects[d].end();
+        for (const element of this.dkim_objects) {
+            element.end();
         }
         if (this.pending === 0 && this._no_signatures_found === false) {
-            const self = this;
             process.nextTick(() => {
-                self.cb(null, self.result, self.results);
+                this.cb(null, this.result, this.results);
             });
         }
     }

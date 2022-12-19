@@ -13,7 +13,6 @@ exports.register = function () {
 }
 
 exports.hook_connect = function (next, connection) {
-    const self = this;
     const cfg = this.config.get('messagesniffer.ini');
     // Skip any private IP ranges
     // Skip connection.transaction undefined
@@ -22,18 +21,19 @@ exports.hook_connect = function (next, connection) {
     // Retrieve GBUdb information for the connecting IP
     SNFClient(`<snf><xci><gbudb><test ip='${connection.remote.ip}'/></gbudb></xci></snf>`, (err, result) => {
         if (err) {
-            connection.logerror(self, err.message);
+            connection.logerror(this, err.message);
             return next();
         }
         let match;
+        // FIXME: should this be assigned vs compared?
         if ((match = /<result ((?:(?!\/>)[^])+)\/>/.exec(result))) {
             // Log result
-            connection.loginfo(self, match[1]);
+            connection.loginfo(this, match[1]);
             // Populate result
             const gbudb = {};
             const split = match[1].toString().split(/\s+/);
-            for (let i=0; i<split.length; i++) {
-                const split2 = split[i].split(/=/);
+            for (const element of split) {
+                const split2 = element.split(/=/);
                 gbudb[split2[0]] = split2[1].replace(/(?:^'|'$)/g,'');
             }
             // Set notes for other plugins
@@ -52,8 +52,8 @@ exports.hook_connect = function (next, connection) {
                 case 'caution':
                 case 'black':
                 case 'truncate':
-                    if (cfg.gbudb && cfg.gbudb[gbudb.range]) {
-                        connection.loginfo(self, `range=${gbudb.range} action=${cfg.gbudb[gbudb.range]}`);
+                    if (cfg.gbudb?.[gbudb.range]) {
+                        connection.loginfo(this, `range=${gbudb.range} action=${cfg.gbudb[gbudb.range]}`);
                         switch (cfg.gbudb[gbudb.range]) {
                             case 'accept':
                                 // Whitelist
@@ -89,18 +89,15 @@ exports.hook_connect = function (next, connection) {
                     return next();
                 default:
                     // Unknown
-                    connection.logerror(self, `Unknown GBUdb range: ${gbudb.range}`);
+                    connection.logerror(this, `Unknown GBUdb range: ${gbudb.range}`);
                     return next();
             }
         }
-        else {
-            return next();
-        }
+        return next();
     });
 }
 
 exports.hook_data_post = function (next, connection) {
-    const self = this;
     const cfg = this.config.get('messagesniffer.ini');
     const txn = connection?.transaction;
     if (!txn) return next();
@@ -120,7 +117,7 @@ exports.hook_data_post = function (next, connection) {
     }
 
     // Check GBUdb results
-    if (connection.notes.gbudb && connection.notes.gbudb.action) {
+    if (connection.notes.gbudb?.action) {
         switch (connection.notes.gbudb.action) {
             case 'accept':
             case 'quarantine':
@@ -137,7 +134,7 @@ exports.hook_data_post = function (next, connection) {
     const ws = fs.createWriteStream(tmpfile);
 
     ws.once('error', err => {
-        connection.logerror(self, `Error writing temporary file: ${err.message}`);
+        connection.logerror(this, `Error writing temporary file: ${err.message}`);
         return next();
     });
 
@@ -150,6 +147,7 @@ exports.hook_data_post = function (next, connection) {
             fs.unlink(tmpfile, () => {});
             let match;
             // Make sure we actually got a result
+            // FIXME: should this be assigned vs compared?
             if ((match = /<result code='(\d+)'/.exec(result))) {
                 const code = parseInt(match[1]);
                 let group;
@@ -158,12 +156,12 @@ exports.hook_data_post = function (next, connection) {
                 // Make a note that we actually ran
                 connection.notes.snf_run = true;
                 // Get the returned headers
+                // FIXME: should this be assigned vs compared?
                 if ((match = /<xhdr>((?:(?!<\/xhdr>)[^])+)/.exec(result,'m'))) {
                     // Parse the returned headers and add them to the message
                     const xhdr = match[1].split('\r\n');
                     const headers = [];
-                    for (let i=0; i < xhdr.length; i++) {
-                        const line = xhdr[i];
+                    for (const line of xhdr) {
                         // Check for continuation
                         if (/^\s/.test(line)) {
                             // Continuation; add to previous header value
@@ -180,8 +178,7 @@ exports.hook_data_post = function (next, connection) {
                         }
                     }
                     // Add headers to message
-                    for (let h=0; h < headers.length; h++) {
-                        const header = headers[h];
+                    for (const header of headers) {
                         // If present save the group for logging purposes
                         if (header.header === 'X-MessageSniffer-SNF-Group') {
                             group = header.value.replace(/\r?\n/gm, '');
@@ -191,11 +188,11 @@ exports.hook_data_post = function (next, connection) {
                             // Retrieve IP address determined by GBUdb
                             const gbudb_split = header.value.split(/,\s*/);
                             gbudb_ip = gbudb_split[1];
-                            connection.logdebug(self, `GBUdb: ${header.value.replace(/\r?\n/gm, '')}`);
+                            connection.logdebug(this, `GBUdb: ${header.value.replace(/\r?\n/gm, '')}`);
                         }
                         if (header.header === 'X-MessageSniffer-Rules') {
                             rules = header.value.replace(/\r?\n/gm, '').replace(/\s+/g,' ').trim();
-                            connection.logdebug(self, `rules: ${rules}`);
+                            connection.logdebug(this, `rules: ${rules}`);
                         }
                         // Remove any existing headers
                         txn.remove_header(header.header);
@@ -203,11 +200,12 @@ exports.hook_data_post = function (next, connection) {
                     }
                 }
                 // Summary log
-                connection.loginfo(self, `result: time=${elapsed}ms code=${code
+                const rulesStr = ` rules="${rules}"`;
+                connection.loginfo(this, `result: time=${elapsed}ms code=${code
                 }${gbudb_ip ? ` ip="${gbudb_ip}"` : ''
                 }${group ? ` group="${group}"` : ''
                 }${rules ? ` rule_count=${rules.split(/\s+/).length}` : ''
-                }${rules ? ` rules="${rules}"` : ''}`);
+                }${rules ? rulesStr : ''}`);
                 // Result code MUST in the 0-63 range otherwise we got an error
                 // http://www.armresearch.com/support/articles/software/snfServer/errors.jsp
                 if (code === 0 || (code && code <= 63)) {
@@ -239,30 +237,21 @@ exports.hook_data_post = function (next, connection) {
                         else if (code === 63 && cfg.message.black) {
                             action = cfg.message.black;
                         }
-                        else {
-                            if (cfg.message[`code_${code}`]) {
-                                action = cfg.message[`code_${code}`];
+                        else if (cfg.message[`code_${code}`]) {
+                            action = cfg.message[`code_${code}`];
+                        }
+                        else if (code > 1 && code !== 40) {
+                            if (cfg.message.nonzero) {
+                                action = cfg.message.nonzero;
                             }
                             else {
-                                if (code > 1 && code !== 40) {
-                                    if (cfg.message.nonzero) {
-                                        action = cfg.message.nonzero;
-                                    }
-                                    else {
-                                        return next(DENY, `${'Spam detected by MessageSniffer (code='}${code} group=${group})`);
-                                    }
-                                }
+                                return next(DENY, `Spam detected by MessageSniffer (code=${code} group=${group})`);
                             }
                         }
                     }
                     else {
                         // Default with no configuration
-                        if (code > 1 && code !== 40) {
-                            return next(DENY, `${'Spam detected by MessageSniffer (code='}${code} group=${group})`);
-                        }
-                        else {
-                            return next();
-                        }
+                        return code > 1 && code !== 40 ? next(DENY, `Spam detected by MessageSniffer (code=${code} group=${group})`) : next();
                     }
                     switch (action) {
                         case 'accept':
@@ -318,7 +307,7 @@ exports.hook_data_post = function (next, connection) {
             }
             else {
                 // Something must have gone wrong
-                connection.logwarn(self, `unexpected response: ${result}`);
+                connection.logwarn(this, `unexpected response: ${result}`);
             }
             return next();
         });
@@ -329,7 +318,6 @@ exports.hook_data_post = function (next, connection) {
 }
 
 exports.hook_disconnect = function (next, connection) {
-    const self = this;
     const cfg = this.config.get('messagesniffer.ini');
 
     // Train GBUdb on rejected messages and recipients
@@ -338,10 +326,10 @@ exports.hook_disconnect = function (next, connection) {
         const snfreq = `<snf><xci><gbudb><bad ip='${connection.remote.ip}'/></gbudb></xci></snf>`;
         SNFClient(snfreq, (err, result) => {
             if (err) {
-                connection.logerror(self, err.message);
+                connection.logerror(this, err.message);
             }
             else {
-                connection.logdebug(self, `GBUdb bad encounter added for ${connection.remote.ip}`);
+                connection.logdebug(this, `GBUdb bad encounter added for ${connection.remote.ip}`);
             }
             return next();
         });
@@ -368,6 +356,7 @@ function SNFClient (req, cb) {
     sock.on('data', data => {
         plugin.logprotocol(`< ${data}`);
         // Buffer all the received lines
+        // FIXME: should this be assigned vs compared?
         (result ? result += data : result = data);
     });
     sock.once('end', () => {

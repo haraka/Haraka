@@ -193,33 +193,7 @@ exports.load_tls_ini2 = {
     },
 }
 
-exports.parse_x509 = {
-    setUp: _setup,
-    'returns empty object on empty input' (test) {
-        const res = this.socket.parse_x509();
-        test.deepEqual(res, {});
-        test.done();
-    },
-    'returns key from BEGIN PRIVATE KEY block' (test) {
-        const res = this.socket.parse_x509('-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n-its me-\n');
-        test.deepEqual(
-            res.key.toString(),
-            '-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--'
-        );
-        test.deepEqual(res.cert, undefined);
-        test.done();
-    },
-    'returns key from BEGIN RSA PRIVATE KEY block' (test) {
-        const res = this.socket.parse_x509('-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n-its me-\n');
-        test.deepEqual(
-            res.key.toString(),
-            '-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--'
-        );
-        test.deepEqual(res.cert, undefined);
-        test.done();
-    },
-    'returns a key and certificate chain' (test) {
-        const str = `-----BEGIN RSA PRIVATE KEY-----
+const str = `-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEAoDGOlvw6lQptaNwqxYsW4aJCPIgvjYw3qA9Y0qykp8I8PapT
 ercA8BsInrZg5+3wt2PT1+REprBvv6xfHyQ08o/udsSCBRf4Awadp0fxzUulENNi
 3wWuuPy0WgaE4jam7tWItDBeEhXkEfcMTr9XkFxenuTcNw9O1+E8TtNP9KMmJDAe
@@ -256,6 +230,33 @@ WCLKTVXkcGdtwlfFRjlBz4pYg1htmf5X6DYO8A4jqv2Il9DjXA6USbW1FzXSLr9O
 he8Y4IWS6wY7bCkjCWDcRQJMEhg76fsO3txE+FiYruq9RUWhiF1myv4Q6W+CyBFC
 Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 -----END CERTIFICATE-----`
+
+exports.parse_x509 = {
+    setUp: _setup,
+    'returns empty object on empty input' (test) {
+        const res = this.socket.parse_x509();
+        test.deepEqual(res, {});
+        test.done();
+    },
+    'returns key from BEGIN PRIVATE KEY block' (test) {
+        const res = this.socket.parse_x509('-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n-its me-\n');
+        test.deepEqual(
+            res.key.toString(),
+            '-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--'
+        );
+        test.deepEqual(res.cert, undefined);
+        test.done();
+    },
+    'returns key from BEGIN RSA PRIVATE KEY block' (test) {
+        const res = this.socket.parse_x509('-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n-its me-\n');
+        test.deepEqual(
+            res.key.toString(),
+            '-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--'
+        );
+        test.deepEqual(res.cert, undefined);
+        test.done();
+    },
+    'returns a key and certificate chain' (test) {
         const res = this.socket.parse_x509(str);
         test.deepEqual(res.key.length, 446);
         test.deepEqual(res.cert.length, 1195);

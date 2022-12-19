@@ -111,10 +111,8 @@ class SMTPClient extends events.EventEmitter {
                 }
             }
 
-            if (/^441/.test(code)) {
-                if (/Connection timed out/i.test(msg)) {
-                    client.destroy();
-                }
+            if (/^441/.test(code) && /Connection timed out/i.test(msg)) {
+                client.destroy();
             }
 
             switch (client.command) {
@@ -241,17 +239,16 @@ class SMTPClient extends events.EventEmitter {
     }
 
     upgrade (tls_options) {
-        const this_logger = logger;
 
         this.socket.upgrade(tls_options, (verified, verifyError, cert, cipher) => {
-            this_logger.loginfo(`secured:${
+            logger.loginfo(`secured:${
                 (cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : ''
             } verified=${verified}${
                 (verifyError) ? ` error="${verifyError}"` : ''
-            }${(cert && cert.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : ''
-            }${(cert && cert.issuer) ? ` issuer="${cert.issuer.O}"` : ''
-            }${(cert && cert.valid_to) ? ` expires="${cert.valid_to}"` : ''
-            }${(cert && cert.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''}`);
+            }${(cert?.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : ''
+            }${(cert?.issuer) ? ` issuer="${cert.issuer.O}"` : ''
+            }${(cert?.valid_to) ? ` expires="${cert.valid_to}"` : ''
+            }${(cert?.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''}`);
         });
     }
 
@@ -277,11 +274,9 @@ exports.get_client = (server, callback, opts = {}) => {
 
 exports.onCapabilitiesOutbound = (smtp_client, secured, connection, config, on_secured) => {
     for (const line in smtp_client.response) {
-        if (/^XCLIENT/.test(smtp_client.response[line])) {
-            if (!smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT', `ADDR=${connection.remote.ip}`);
-                return;
-            }
+        if (/^XCLIENT/.test(smtp_client.response[line]) && !smtp_client.xclient) {
+            smtp_client.send_command('XCLIENT', `ADDR=${connection.remote.ip}`);
+            return;
         }
 
         if (/^SMTPUTF8/.test(smtp_client.response[line])) {
@@ -312,8 +307,8 @@ exports.onCapabilitiesOutbound = (smtp_client, secured, connection, config, on_s
         if (auth_matches) {
             smtp_client.auth_capabilities = [];
             auth_matches = auth_matches[1].split(' ');
-            for (let i = 0; i < auth_matches.length; i++) {
-                smtp_client.auth_capabilities.push(auth_matches[i].toLowerCase());
+            for (const element of auth_matches) {
+                smtp_client.auth_capabilities.push(element.toLowerCase());
             }
         }
     }
@@ -345,11 +340,12 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
     smtp_client.load_tls_config(plugin.tls_options);
 
     smtp_client.call_next = function (retval, msg) {
-        if (this.next) {
-            const next = this.next;
-            delete this.next;
-            next(retval, msg);
+        if (!this.next) {
+            return;
         }
+        const { next } = this;
+        delete this.next;
+        next(retval, msg);
     }
 
     smtp_client.on('client_protocol', (line) => {
@@ -412,9 +408,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
 
     smtp_client.on('auth', () => {
         // if authentication has been handled by plugin(s)
-        if (smtp_client.authenticating) return;
-
-        if (smtp_client.is_dead_sender(plugin, connection)) return;
+        if (smtp_client.authenticating || smtp_client.is_dead_sender(plugin, connection)) return;
 
         smtp_client.authenticated = true;
         smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
@@ -430,7 +424,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
     smtp_client.on('connection-error', (error) => {
         // error contains e.g. "Error: connect ECONNREFUSE"
         logger.logerror(`backend failure: ${smtp_client.host}:${smtp_client.port} - ${error}`);
-        const host_pool = connection.server.notes.host_pool;
+        const { host_pool } = connection.server.notes;
         // only exists for if forwarding_host_pool is set in the config
         if (host_pool) {
             host_pool.failed(smtp_client.host, smtp_client.port);

@@ -78,6 +78,11 @@ exports.outbound = {
     }
 }
 
+const repeats = 1000;
+
+// $nextattempt_$attempts_$pid_$uniq.$host
+const name = "1111_0_2222_3333.foo.example.com"
+
 exports.qfile = {
     setUp (done) {
         this.qfile = require('../../outbound').qfile;
@@ -85,8 +90,8 @@ exports.qfile = {
     },
     'name() basic functions' (test){
         test.expect(3);
-        const name = this.qfile.name();
-        const split = name.split('_');
+        const name2 = this.qfile.name();
+        const split = name2.split('_');
         test.equal(split.length, 7);
         test.equal(split[2], 0);
         test.equal(split[3], process.pid);
@@ -102,8 +107,8 @@ exports.qfile = {
             uid : 'XXYYZZ',
             host : os.hostname(),
         };
-        const name = this.qfile.name(overrides);
-        const split = name.split('_');
+        const name3 = this.qfile.name(overrides);
+        const split = name3.split('_');
         test.equal(split.length, 7);
         test.equal(split[0], overrides.arrival);
         test.equal(split[1], overrides.next_attempt);
@@ -114,7 +119,6 @@ exports.qfile = {
         test.done();
     },
     'rnd_unique() is unique-ish' (test){
-        const repeats = 1000;
         test.expect(repeats);
         const u = this.qfile.rnd_unique();
         for (let i = 0; i < repeats; i++){
@@ -124,8 +128,6 @@ exports.qfile = {
     },
     'parts() updates previous queue filenames' (test){
         test.expect(4);
-        // $nextattempt_$attempts_$pid_$uniq.$host
-        const name = "1111_0_2222_3333.foo.example.com"
         const parts = this.qfile.parts(name);
         test.equal(parts.next_attempt, 1111);
         test.equal(parts.attempts, 0);
@@ -143,8 +145,8 @@ exports.qfile = {
             uid : 'XXYYZZ',
             host : os.hostname(),
         };
-        const name = this.qfile.name(overrides);
-        const parts = this.qfile.parts(name);
+        const name4 = this.qfile.name(overrides);
+        const parts = this.qfile.parts(name4);
         test.equal(parts.arrival, overrides.arrival);
         test.equal(parts.next_attempt, overrides.next_attempt);
         test.equal(parts.attempts, overrides.attempts);

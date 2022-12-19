@@ -1,11 +1,11 @@
 'use strict';
 
-const Address      = require('address-rfc2821').Address;
-const fixtures     = require('haraka-test-fixtures');
-const constants    = require('haraka-constants');
+const { Address }   = require('address-rfc2821');
+const fixtures      = require('haraka-test-fixtures');
+const constants     = require('haraka-constants');
 
-const SPF          = require('../../spf').SPF;
-const spf          = new SPF();
+const { SPF }   = require('../../spf');
+const spf       = new SPF();
 
 const _set_up = function (done) {
 

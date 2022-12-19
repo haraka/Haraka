@@ -103,13 +103,12 @@ exports.multi = {
                 test.ok(zone);
                 test.ok((Array.isArray(a) && a.length > 0));
                 test.equal(true, pending);
+                return;
             }
-            else {
-                test.equal(null, zone);
-                test.equal(null, a);
-                test.equal(false, pending);
-                test.done();
-            }
+            test.equal(null, zone);
+            test.equal(null, a);
+            test.equal(false, pending);
+            test.done();
         }
         const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('127.0.0.2', dnsbls, cb);
@@ -122,12 +121,11 @@ exports.multi = {
             if (pending) {
                 test.equal(true, pending);
                 test.ok(zone);
+                return;
             }
-            else {
-                test.equal(false, pending);
-                test.equal(null, zone);
-                test.done();
-            }
+            test.equal(false, pending);
+            test.equal(null, zone);
+            test.done();
         }
         const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('127.0.0.1', dnsbls, cb);
@@ -140,13 +138,12 @@ exports.multi = {
                 test.deepEqual(null, err);
                 test.equal(true, pending);
                 test.ok(zone);
+                return;
             }
-            else {
-                test.equal(null, err);
-                test.equal(false, pending);
-                test.equal(null, zone);
-                test.done();
-            }
+            test.equal(null, err);
+            test.equal(false, pending);
+            test.equal(null, zone);
+            test.done();
         }
         const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('::1', dnsbls, cb);
@@ -211,8 +208,7 @@ function zone_disable_test_func (zones, test, cb) {
     const again = () => {
         i++;
         setTimeout(() => {
-            if (this.plugin.zones.length === zones.length) return fin_check();
-            if (i > 4) return fin_check();
+            if (this.plugin.zones.length === zones.length || i > 4) return fin_check();
             again();
         }, 1000);
     };

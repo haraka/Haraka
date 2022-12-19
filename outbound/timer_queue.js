@@ -18,11 +18,9 @@ class TQTimer {
 
 class TimerQueue {
 
-    constructor (interval) {
-        const self = this;
-        interval = interval || 1000;
+    constructor (interval = 1000) {
         this.queue = [];
-        this.interval_timer = setInterval(() => { self.fire(); }, interval);
+        this.interval_timer = setInterval(() => { this.fire(); }, interval);
     }
 
     add (id, ms, cb) {
@@ -43,7 +41,7 @@ class TimerQueue {
             }
         }
 
-        throw "Should never get here";
+        throw new Error("Should never get here");
     }
 
     discard (id) {
@@ -54,7 +52,7 @@ class TimerQueue {
             }
         }
 
-        throw `${id} not found`;
+        throw new Error(`${id} not found`);
     }
 
     fire () {

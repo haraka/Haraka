@@ -11,28 +11,25 @@ exports.register = function () {
 }
 
 exports.load_ini = function () {
-    const plugin = this;
-    plugin.cfg = plugin.config.get('mail_from.is_resolvable.ini', {
+    this.cfg = this.config.get('mail_from.is_resolvable.ini', {
         booleans: [
             '-main.allow_mx_ip',
             '+main.reject_no_mx',
         ],
     }, () => {
-        plugin.load_ini();
+        this.load_ini();
     });
 
-    if (isNaN(plugin.cfg.main.timeout)) {
-        plugin.cfg.main.timeout = 29;
+    if (isNaN(this.cfg.main.timeout)) {
+        this.cfg.main.timeout = 29;
     }
 
-    if (plugin.timeout) {
-        if (plugin.timeout <= plugin.cfg.main.timeout) {
-            plugin.cfg.main.timeout = plugin.timeout - 1;
-            plugin.logwarn(`reducing plugin timeout to ${plugin.cfg.main.timeout}s`);
-        }
+    if (this.timeout && this.timeout <= this.cfg.main.timeout) {
+        this.cfg.main.timeout = this.timeout - 1;
+        this.logwarn(`reducing plugin timeout to ${this.cfg.main.timeout}s`);
     }
 
-    plugin.re_bogus_ip = new RegExp(plugin.cfg.main.re_bogus_ip ||
+    this.re_bogus_ip = new RegExp(this.cfg.main.re_bogus_ip ||
             '^(?:0\\.0\\.0\\.0|255\\.255\\.255\\.255|127\\.)' );
 }
 
@@ -41,7 +38,7 @@ exports.hook_mail = function (next, connection, params) {
     const mail_from = params[0];
     const txn       = connection?.transaction;
     if (!txn) return next();
-    const results   = txn.results;
+    const { results } = txn;
 
     // Check for MAIL FROM without an @ first - ignore those here
     if (!mail_from.host) {
@@ -84,7 +81,7 @@ exports.hook_mail = function (next, connection, params) {
             if (pending_queries !== 0) return;
 
             records = Object.keys(records);
-            if (records && records.length) {
+            if (records?.length) {
                 connection.logdebug(plugin, `${domain}: ${records}`);
                 results.add(plugin, {pass: 'has_fwd_dns'});
                 return mxDone();
@@ -115,21 +112,17 @@ exports.hook_mail = function (next, connection, params) {
                     return;
                 }
                 connection.logdebug(plugin, `${domain}: MX ${addr.priority} ${addr.exchange} => ${addresses2}`);
-                for (let i=0; i < addresses2.length; i++) {
+                for (const element of addresses2) {
                     // Ignore anything obviously bogus
-                    if (net.isIPv4(addresses2[i])){
-                        if (plugin.re_bogus_ip.test(addresses2[i])) {
-                            connection.logdebug(plugin, `${addr.exchange}: discarding ${addresses2[i]}`);
-                            continue;
-                        }
+                    if (net.isIPv4(element) && plugin.re_bogus_ip.test(element)){
+                        connection.logdebug(plugin, `${addr.exchange}: discarding ${element}`);
+                        continue;
                     }
-                    if (net.isIPv6(addresses2[i])){
-                        if (net_utils.ipv6_bogus(addresses2[i])) {
-                            connection.logdebug(plugin, `${addr.exchange}: discarding ${addresses2[i]}`);
-                            continue;
-                        }
+                    if (net.isIPv6(element) && net_utils.ipv6_bogus(element)){
+                        connection.logdebug(plugin, `${addr.exchange}: discarding ${element}`);
+                        continue;
                     }
-                    records[addresses2[i]] = 1;
+                    records[element] = 1;
                 }
                 check_results();
             });
@@ -140,13 +133,12 @@ exports.hook_mail = function (next, connection, params) {
 }
 
 exports.mxErr = function (connection, domain, type, err, mxDone) {
-    const plugin = this;
 
     const txn = connection?.transaction;
     if (!txn) return;
 
-    txn.results.add(plugin, {msg: `${domain}:${type}:${err.message}`});
-    connection.logdebug(plugin, `${domain}:${type} => ${err.message}`);
+    txn.results.add(this, {msg: `${domain}:${type}:${err.message}`});
+    connection.logdebug(this, `${domain}:${type} => ${err.message}`);
     switch (err.code) {
         case dns.NXDOMAIN:
         case dns.NOTFOUND:
@@ -162,45 +154,39 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
 
 // IS: IPv6 compatible
 exports.implicit_mx = function (connection, domain, mxDone) {
-    const plugin = this;
     const txn = connection?.transaction;
     if (!txn) return;
 
     net_utils.get_ips_by_host(domain, (err, addresses) => {
         if (!txn) return;
         if (!addresses || !addresses.length) {
-            txn.results.add(plugin, {fail: 'has_fwd_dns'});
-            return mxDone(((plugin.cfg.main.reject_no_mx) ? DENY : DENYSOFT),
+            txn.results.add(this, {fail: 'has_fwd_dns'});
+            return mxDone(((this.cfg.main.reject_no_mx) ? DENY : DENYSOFT),
                 'No MX for your FROM address');
         }
 
-        connection.logdebug(plugin, `${domain}: A/AAAA => ${addresses}`);
+        connection.logdebug(this, `${domain}: A/AAAA => ${addresses}`);
         let records = {};
-        for (let i=0; i < addresses.length; i++) {
-            const addr = addresses[i];
+        for (const addr of addresses) {
             // Ignore anything obviously bogus
-            if (net.isIPv4(addr)) {
-                if (plugin.re_bogus_ip.test(addr)) {
-                    connection.logdebug(plugin, `${domain}: discarding ${addr}`);
-                    continue;
-                }
+            if (net.isIPv4(addr) && this.re_bogus_ip.test(addr)) {
+                connection.logdebug(this, `${domain}: discarding ${addr}`);
+                continue;
             }
-            if (net.isIPv6(addr)) {
-                if (net_utils.ipv6_bogus(addr)) {
-                    connection.logdebug(plugin, `${domain}: discarding ${addr}`);
-                    continue;
-                }
+            if (net.isIPv6(addr) && net_utils.ipv6_bogus(addr)) {
+                connection.logdebug(this, `${domain}: discarding ${addr}`);
+                continue;
             }
             records[addr] = true;
         }
 
         records = Object.keys(records);
-        if (records && records.length) {
-            txn.results.add(plugin, {pass: 'implicit_mx'});
+        if (records?.length) {
+            txn.results.add(this, {pass: 'implicit_mx'});
             return mxDone();
         }
 
-        txn.results.add(plugin, {fail: `implicit_mx(${domain})`});
+        txn.results.add(this, {fail: `implicit_mx(${domain})`});
         return mxDone();
     });
 }

@@ -18,15 +18,14 @@ exports.register = function () {
 }
 
 exports.load_qmail_queue_ini = function () {
-    const plugin = this;
 
-    plugin.cfg = plugin.config.get('qmail-queue.ini', {
+    this.cfg = this.config.get('qmail-queue.ini', {
         booleans: [
             '+main.enable_outbound',
         ],
     },
     () => {
-        plugin.load_qmail_queue_ini();
+        this.load_qmail_queue_ini();
     });
 }
 
@@ -46,12 +45,12 @@ exports.hook_queue = function (next, connection) {
     );
 
     qmail_queue.on('exit', function finished (code) {
-        if (code !== 0) {
-            connection.logerror(plugin, `Unable to queue message to qmail-queue: ${code}`);
-            next();
+        if (code === 0) {
+            next(OK, "Queued!");
         }
         else {
-            next(OK, "Queued!");
+            connection.logerror(plugin, `Unable to queue message to qmail-queue: ${code}`);
+            next();
         }
     });
 

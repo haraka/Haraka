@@ -56,10 +56,9 @@ exports.bounce_3464 = {
                     fs.unlinkSync(curPath);
                 });
                 done();
+                return;
             }
-            else {
-                done();
-            }
+            done();
         });
     },
     'test get-mx-deny triggers bounce(...)': test => {

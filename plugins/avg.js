@@ -10,27 +10,24 @@ const sock = require('./line_socket');
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
-    const plugin = this;
 
-    plugin.load_avg_ini();
+    this.load_avg_ini();
 }
 
 exports.load_avg_ini = function () {
-    const plugin = this;
 
-    plugin.cfg = plugin.config.get('avg.ini', {
+    this.cfg = this.config.get('avg.ini', {
         booleans: [
             '+defer.timeout',
             '+defer.error',
         ],
     }, () => {
-        plugin.load_avg_ini();
+        this.load_avg_ini();
     });
 }
 
 exports.get_tmp_file = function (transaction) {
-    const plugin = this;
-    const tmpdir  = plugin.cfg.main.tmpdir || '/tmp';
+    const tmpdir  = this.cfg.main.tmpdir || '/tmp';
     return path.join(tmpdir, `${transaction.uuid}.tmp`);
 }
 
@@ -107,16 +104,16 @@ exports.hook_data_post = function (next, connection) {
 
             switch (command) {
                 case 'connect':
-                    if (code !== '220') {
+                    if (code === '220') {
+                        socket.send_command('SCAN', tmpfile);
+                    }
+                    else {
                         // Error
                         connection.results.add(plugin, {
                             err: `Unrecognized response: ${line}`,
                         });
                         if (!plugin.cfg.defer.timeout) return do_next();
                         return do_next(DENYSOFT, 'Virus scanner error (AVG)');
-                    }
-                    else {
-                        socket.send_command('SCAN', tmpfile);
                     }
                     break;
                 case 'scan': {

@@ -2,6 +2,8 @@
 
 const HostPool = require('../host_pool');
 
+const retry_secs = 0.001; // 1ms
+
 exports.HostPool = {
     "get a host": test => {
         test.expect(2);
@@ -53,9 +55,8 @@ exports.HostPool = {
 
         pool.failed('1.1.1.1', '1111');
 
-        let host;
+        let host = pool.get_host();
 
-        host = pool.get_host();
         test.equal(host.host, '2.2.2.2', 'dead host is not returned');
         host = pool.get_host();
         test.equal(host.host, '2.2.2.2', 'dead host is not returned');
@@ -105,34 +106,33 @@ exports.HostPool = {
 
         let num_reqs = 0;
         const MockSocket = function MockSocket (pool) {
-            const self = this;
 
             // these are the methods called from probe_dead_host
 
             // setTimeout on the socket
-            self.pretendTimeout = () => {};
-            self.setTimeout = (ms, cb) => {
-                self.pretendTimeout = cb;
+            this.pretendTimeout = () => {};
+            this.setTimeout = (ms, cb) => {
+                this.pretendTimeout = cb;
             };
             // handle socket.on('error', ....
-            self.listeners = {};
-            self.on = (eventname, cb) => {
-                self.listeners[eventname] = cb;
+            this.listeners = {};
+            this.on = (eventname, cb) => {
+                this.listeners[eventname] = cb;
             };
-            self.emit = eventname => {
-                self.listeners[eventname]();
+            this.emit = eventname => {
+                this.listeners[eventname]();
             };
             // handle socket.connect(...
-            self.connected = () => {};
-            self.connect = (port, host, cb) => {
+            this.connected = () => {};
+            this.connect = (port, host, cb) => {
                 switch (++num_reqs) {
                     case 1:
                         // the first time through we pretend it timed out
-                        self.pretendTimeout();
+                        this.pretendTimeout();
                         break;
                     case 2:
                         // the second time through, pretend socket error
-                        self.emit('error');
+                        this.emit('error');
                         break;
                     case 3:
                         // the third time around, the socket connected
@@ -144,11 +144,10 @@ exports.HostPool = {
                         process.exit(1);
                 }
             };
-            self.destroy = () => {};
+            this.destroy = () => {};
 
         };
 
-        const retry_secs = 0.001; // 1ms
         const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222', retry_secs);
 
         // override the pool's get_socket method to return our mock
@@ -168,12 +167,13 @@ exports.HostPool = {
         }, 10 * 1000);
 
         const interval = setInterval(() => {
-            if (!pool.dead_hosts["1.1.1.1:1111"]) {
-                clearTimeout(timer);
-                clearInterval(interval);
-                test.ok(true, 'timer un-deaded it');
-                test.done();
+            if (pool.dead_hosts["1.1.1.1:1111"]) {
+                return;
             }
+            clearTimeout(timer);
+            clearInterval(interval);
+            test.ok(true, 'timer un-deaded it');
+            test.done();
         }, retry_secs * 1000 * 3 );
 
     }

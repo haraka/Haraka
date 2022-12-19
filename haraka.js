@@ -51,16 +51,8 @@ signals.forEach((sig) => {
         shutting_down = true;
         const [, filename] = process.argv;
         process.title = path.basename(filename, '.js');
-
         logger.lognotice(`${sig} received`);
-        logger.dump_and_exit(() => {
-            if (server.cluster && server.cluster.isMaster) {
-                server.performShutdown();
-            }
-            else if (!server.cluster) {
-                server.performShutdown();
-            }
-        });
+        logger.dump_and_exit(() => server.performShutdown());
     });
 });
 

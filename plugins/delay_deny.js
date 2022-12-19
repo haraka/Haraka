@@ -17,8 +17,7 @@ exports.hook_deny = function (next, connection, params) {
     // var pi_params   = params[4];
     const pi_hook     = params[5];
 
-    const plugin = this;
-    const transaction = connection.transaction;
+    const { transaction } = connection;
 
     // Don't delay ourselves...
     if (pi_name == 'delay_deny') return next();
@@ -35,27 +34,27 @@ exports.hook_deny = function (next, connection, params) {
     }
 
     // 'included' mode: only delay deny plugins in the included list
-    if (included && included.length) {
+    if (included?.length) {
         if (!included.includes(pi_name) &&
             !included.includes(`${pi_name}:${pi_hook}`) &&
             !included.includes(`${pi_name}:${pi_hook}:${pi_function}`)) {
             return next();
         }
     }
-    else if (skip && skip.length) { // 'excluded' mode: delay deny everything except in skip list
+    else if (skip?.length) { // 'excluded' mode: delay deny everything except in skip list
         // Skip by <plugin name>
         if (skip.includes(pi_name)) {
-            connection.logdebug(plugin, `not delaying excluded plugin: ${pi_name}`);
+            connection.logdebug(this, `not delaying excluded plugin: ${pi_name}`);
             return next();
         }
         // Skip by <plugin name>:<hook>
         if (skip.includes(`${pi_name}:${pi_hook}`)) {
-            connection.logdebug(plugin, `not delaying excluded hook: ${pi_hook} in plugin: ${pi_name}`);
+            connection.logdebug(this, `not delaying excluded hook: ${pi_hook} in plugin: ${pi_name}`);
             return next();
         }
         // Skip by <plugin name>:<hook>:<function name>
         if (skip.includes(`${pi_name}:${pi_hook}:${pi_function}`)) {
-            connection.logdebug(plugin, `not delaying excluded function: ${pi_function} on hook: ${pi_hook} in plugin: ${pi_name}`);
+            connection.logdebug(this, `not delaying excluded function: ${pi_function} on hook: ${pi_hook} in plugin: ${pi_name}`);
             return next();
         }
     }
@@ -99,29 +98,26 @@ exports.hook_deny = function (next, connection, params) {
 }
 
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
-    const plugin = this;
     const transaction = connection?.transaction;
     if  (!transaction) return next();
 
     // Bypass all pre-DATA deny for AUTH/RELAY
     if (connection.relaying) {
-        connection.loginfo(plugin, 'bypassing all pre-DATA deny: AUTH/RELAY');
+        connection.loginfo(this, 'bypassing all pre-DATA deny: AUTH/RELAY');
         return next();
     }
 
     // Apply any delayed rejections
     // Check connection level pre-DATA rejections first
     if (connection.notes?.delay_deny_pre) {
-        for (let i=0; i<connection.notes.delay_deny_pre.length; i++) {
-            const params = connection.notes.delay_deny_pre[i];
+        for (const params of connection.notes.delay_deny_pre) {
             return next(params[0], params[1]);
         }
     }
 
     // Then check transaction level pre-DATA
     if (transaction.notes?.delay_deny_pre) {
-        for (let i=0; i<transaction.notes.delay_deny_pre.length; i++) {
-            const params = transaction.notes.delay_deny_pre[i];
+        transaction.notes.delay_deny_pre.forEach((params, i) => {
 
             // Remove rejection from the array if it was on the rcpt hooks
             if (params[5] === 'rcpt' || params[5] === 'rcpt_ok') {
@@ -129,7 +125,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
             }
 
             return next(params[0], params[1]);
-        }
+        });
     }
     return next();
 }

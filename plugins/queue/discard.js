@@ -18,10 +18,11 @@ exports.discard = (next, connection) => {
         return next(OK);
     }
 
-    if (connection.notes.discard)          return discard();
-    if (txn.notes.discard)                 return discard();
-    if (q_wants === 'discard')             return discard();
-    if (process.env.YES_REALLY_DO_DISCARD) return discard();
+    if (connection.notes.discard ||
+        txn.notes.discard ||
+        q_wants === 'discard' ||
+        process.env.YES_REALLY_DO_DISCARD)
+        return discard();
 
     // Allow other queue plugins to deliver
     next();

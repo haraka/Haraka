@@ -11,9 +11,8 @@ exports.register = function () {
 }
 
 exports.load_xclient_hosts = function () {
-    const self = this;
     const cfg = this.config.get('xclient.hosts', 'list', () => {
-        self.load_xclient_hosts();
+        this.load_xclient_hosts();
     });
     const ah = {};
     for (const i in cfg) {
@@ -23,10 +22,7 @@ exports.load_xclient_hosts = function () {
 }
 
 function xclient_allowed (ip) {
-    if (ip === '127.0.0.1' || ip === '::1' || allowed_hosts[ip]) {
-        return true;
-    }
-    return false;
+    return !!(ip === '127.0.0.1' || ip === '::1' || allowed_hosts[ip]);
 }
 
 exports.hook_capabilities = (next, connection) => {
@@ -50,10 +46,10 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     // If we get here - the client is allowed to use XCLIENT
     // Process arguments
-    const args = (new String(params[1])).toLowerCase().split(/ /);
+    const args = (String(params[1])).toLowerCase().split(/ /);
     const xclient = {};
-    for (let a=0; a < args.length; a++) {
-        const match = /^([^=]+)=([^ ]+)/.exec(args[a]);
+    for (const arg of args) {
+        const match = /^([^=]+)=([^ ]+)/.exec(arg);
         if (match) {
             connection.logdebug(this, `found key=${match[1]} value=${match[2]}`);
             switch (match[1]) {
@@ -61,17 +57,15 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                 case 'addr': {
                     // IPv6 is prefixed in the XCLIENT protocol
                     let ipv6;
+                    // FIXME: should this be assigned vs compared?
                     if ((ipv6 = /^IPV6:(.+)$/i.exec(match[2]))) {
                         // Validate
                         if (net.isIPv6(ipv6[1])) {
                             xclient[match[1]] = ipv6[1];
                         }
                     }
-                    else if (!/\[UNAVAILABLE\]/i.test(match[2])) {
-                        // IPv4
-                        if (net.isIPv4(match[2])) {
-                            xclient[match[1]] = match[2];
-                        }
+                    else if (!/\[UNAVAILABLE\]/i.test(match[2]) && net.isIPv4(match[2])) {
+                        xclient[match[1]] = match[2];
                     }
                     break;
                 }
@@ -91,11 +85,11 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                     }
                     break;
                 default:
-                    connection.logwarn(this, `unknown argument: ${args[a]}`);
+                    connection.logwarn(this, `unknown argument: ${arg}`);
             }
         }
         else {
-            connection.logwarn(this, `unknown argument: ${args[a]}`);
+            connection.logwarn(this, `unknown argument: ${arg}`);
         }
     }
 
