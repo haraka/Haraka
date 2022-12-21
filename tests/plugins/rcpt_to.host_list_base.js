@@ -1,6 +1,6 @@
 'use strict';
 
-const { Address }      = require('address-rfc2821');
+const { Address }  = require('address-rfc2821');
 const fixtures     = require('haraka-test-fixtures');
 
 function _set_up (done) {

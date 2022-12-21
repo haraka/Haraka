@@ -2,7 +2,7 @@
 
 const path         = require('path');
 
-const { Address }      = require('address-rfc2821');
+const { Address }  = require('address-rfc2821');
 const fixtures     = require('haraka-test-fixtures');
 
 const OK = 906;

@@ -3,7 +3,7 @@
 const path         = require('path');
 const fixtures     = require('haraka-test-fixtures');
 
-const { stub }         = fixtures.stub;
+const { stub }     = fixtures.stub;
 
 const _set_up = function (done) {
 

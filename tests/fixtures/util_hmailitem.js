@@ -1,10 +1,10 @@
 'use strict';
 
-const { Address }         = require('address-rfc2821');
+const { Address }     = require('address-rfc2821');
 const fixtures        = require('haraka-test-fixtures');
 const stub_connection = fixtures.connection;
-// var transaction     = fixtures.transaction;  // not yet sufficient
-const transaction = require('../../transaction');
+// const transaction     = fixtures.transaction;  // not yet sufficient
+const transaction     = require('../../transaction');
 
 
 /**

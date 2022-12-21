@@ -2,7 +2,7 @@
 
 const events   = require('events');
 const fixtures = require('haraka-test-fixtures');
-const { stub }     = fixtures.stub;
+const { stub } = fixtures.stub;
 
 class Socket extends events.EventEmitter {
     constructor (port, host) {
