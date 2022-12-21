@@ -42,7 +42,7 @@ Create a PR adding yours to this list.
 | [clamd][url-clamd]          | Anti-Virus scanning with ClamAV |
 | [connect.p0f][url-p0f]      | TCP Fingerprinting |
 | [data.signatures][url-sigs] | Block emails whose bodies match signatures |
-| [data.uribl][url-uribl]     | Block based on URI blacklists |
+| [uribl][url-uribl]          | Block based on URI blacklists |
 | [dcc][url-dcc]              | Distributed Checksum Clearinghouse |
 | [delay_deny][url-delay]     | Delays all pre-DATA 'deny' results |
 | [dkim_sign][url-sign]       | DKIM sign outbound messages |
@@ -132,7 +132,7 @@ Create a PR adding yours to this list.
 [url-p0f]: https://github.com/haraka/haraka-plugin-p0f
 [url-headers]: https://github.com/haraka/haraka-plugin-headers
 [url-sigs]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.signatures.md
-[url-uribl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.uribl.md
+[url-uribl]: https://github.com/haraka/haraka-plugin-uribl
 [url-dcc]: https://github.com/haraka/haraka-plugin-dcc
 [url-delay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md
 [url-sign]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
@@ -180,7 +180,7 @@ Create a PR adding yours to this list.
 [url-rng]: https://github.com/haraka/Haraka/blob/master/docs/plugins/reseed_rng.md
 [url-rspamd]: https://github.com/haraka/haraka-plugin-rspamd
 [url-spamass]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spamassassin.md
-[url-spf]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spf.md
+[url-spf]: https://github.com/haraka/haraka-plugin-spf
 [url-srs]: https://github.com/swerter/haraka-plugins/blob/master/plugins/srs.js
 [url-tarpit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tarpit.md
 [url-tls]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md
