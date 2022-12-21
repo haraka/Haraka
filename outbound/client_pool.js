@@ -36,9 +36,9 @@ function _create_socket (name, port, host, local_addr, is_unix_socket, callback)
 
 // Get a socket for the given attributes.
 exports.get_client = (port = 25, host = 'localhost', local_addr, is_unix_socket, callback) => {
-const name = `outbound::${port}:${host}:${local_addr}`;
+    const name = `outbound::${port}:${host}:${local_addr}`;
 
-    return _create_socket(name, port, host, local_addr, is_unix_socket, callback)
+    _create_socket(name, port, host, local_addr, is_unix_socket, callback)
 }
 
 exports.release_client = (socket, port, host, local_addr, error) => {
