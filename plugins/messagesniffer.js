@@ -245,7 +245,7 @@ exports.hook_data_post = function (next, connection) {
                                         action = cfg.message.nonzero;
                                     }
                                     else {
-                                        return next(DENY, `${'Spam detected by MessageSniffer (code='}${code} group=${group})`);
+                                        return next(DENY, `Spam detected by MessageSniffer (code=${code} group=${group})`);
                                     }
                                 }
                             }
@@ -254,7 +254,7 @@ exports.hook_data_post = function (next, connection) {
                     else {
                         // Default with no configuration
                         if (code > 1 && code !== 40) {
-                            return next(DENY, `${'Spam detected by MessageSniffer (code='}${code} group=${group})`);
+                            return next(DENY, `Spam detected by MessageSniffer (code=${code} group=${group})`);
                         }
                         else {
                             return next();
