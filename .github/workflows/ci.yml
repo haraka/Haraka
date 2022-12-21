@@ -4,14 +4,13 @@ on: [ pull_request, push ]
 
 env:
   CI: true
-  node-version: 16
 
 jobs:
   lint:
     uses: haraka/.github/.github/workflows/lint.yml@master
 
   test:
-    needs: lint
+    needs: [ lint, get-lts ]
     runs-on: ${{ matrix.os }}
     services:
       redis:
@@ -21,29 +20,16 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        # node 0.6, no longer supported by async
-        # node 0.8, no longer supported by iconv
-        # node 0.10, maintenance ended 2016-10-31
-        # node 4, maint. ended 2016-12
-        # node 6, maint. ended 2018-04
-        # node 8, maint. ended 2019-12
-        # node 10, maint. ended 2021-04
-        # node 12, maint. ended 2022-04
-        node-version: [ 16, 18 ]
+        node-version: ${{ fromJson(needs.get-lts.outputs.active) }}
       fail-fast: false
     steps:
     - uses: actions/checkout@v3
-
     - uses: actions/setup-node@v3
       name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
       with:
         node-version: ${{ matrix.node-version }}
-
     - name: Install bsdtar
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libarchive-tools
-
+      run: sudo apt-get update; sudo apt-get install -y libarchive-tools
     - run: npm install
     - run: npm run test
 
@@ -55,3 +41,13 @@ jobs:
   windows:
     needs: [ lint ]
     uses: haraka/.github/.github/workflows/windows.yml@master
+
+  get-lts:
+     runs-on: ubuntu-latest
+     steps:
+       - id: get
+         uses: msimerson/node-lts-versions@v1
+     outputs:
+       active: ${{ steps.get.outputs.active }}
+       lts:    ${{ steps.get.outputs.lts }}
+       min:    ${{ steps.get.outputs.min }}

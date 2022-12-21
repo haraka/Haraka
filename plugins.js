@@ -351,6 +351,7 @@ plugins.deprecated = {
     'connect.asn'         : 'asn',
     'connect.fcrdns'      : 'fcrdns',
     'connect.geoip'       : 'geoip',
+    'connect.p0f'         : 'p0f',
     'connect.rdns_access' : 'access',
     'data.nomsgid'        : 'headers',
     'data.noreceived'     : 'headers',

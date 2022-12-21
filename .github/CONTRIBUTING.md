@@ -36,7 +36,6 @@ Change all but the first "pick" lines to "s" and save your changes. Your $EDITOR
 * Use whitespace between operators - we prefer `if (foo > bar)` over `if(foo>bar)`
 * Don't comment out lines of code, remove them. They will be in the revision history.
 * Use boolean true/false instead of numeric 0/1
-* Use one `var` for each declared variable
 * See [Editor Settings](https://github.com/haraka/Haraka/wiki/Editor-Settings)
 
 ## Tests
