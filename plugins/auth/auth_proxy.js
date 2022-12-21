@@ -117,7 +117,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
 
         connection.logdebug(self, `command state: ${command}`);
         if (command === 'ehlo') {
-            if (code[0] === '5') {
+            if (code.startsWith('5')) {
                 // EHLO command rejected; abort
                 socket.send_command('QUIT');
                 return;
@@ -164,18 +164,18 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         }
         if (command === 'auth') {
             // Handle LOGIN
-            if (code[0] === '3' && response[0] === 'VXNlcm5hbWU6') {
+            if (code.startsWith('3') && response[0] === 'VXNlcm5hbWU6') {
                 // Write to the socket directly to keep the state at 'auth'
                 this.write(`${utils.base64(user)}\r\n`);
                 response = [];
                 return;
             }
-            else if (code[0] === '3' && response[0] === 'UGFzc3dvcmQ6') {
+            else if (code.startsWith('3') && response[0] === 'UGFzc3dvcmQ6') {
                 this.write(`${utils.base64(passwd)}\r\n`);
                 response = [];
                 return;
             }
-            if (code[0] === '5') {
+            if (code.startsWith('5')) {
                 // Initial attempt failed; strip domain and retry.
                 let u;
                 if ((u = /^([^@]+)@.+$/.exec(user))) {
