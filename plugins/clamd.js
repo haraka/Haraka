@@ -269,8 +269,8 @@ exports.hook_data_post = function (next, connection) {
                 }
 
                 // Check skip list exclusions
-                for (const element of plugin.skip_list_exclude) {
-                    if (!element.test(virus)) continue;
+                for (const skip_list_element of plugin.skip_list_exclude) {
+                    if (!skip_list_element.test(virus)) continue;
                     return next(DENY,
                         `Message is infected with ${virus || 'UNKNOWN'}`);
                 }
@@ -314,28 +314,28 @@ exports.hook_data_post = function (next, connection) {
     try_next_host();
 }
 
+// FIXME: SonarLint's worried about the "== false &&" comparisons; how do we fix this?
 exports.should_check = function (connection) {
-
     let result = true;  // default
     if (!connection?.transaction) return false
 
-    if (!this.cfg.check.authenticated && connection.notes.auth_user) {
+    if (this.cfg.check.authenticated == false && connection.notes.auth_user) {
         connection.transaction.results.add(this, { skip: 'authed'});
         result = false;
     }
 
-    if (!this.cfg.check.relay && connection.relaying) {
+    if (this.cfg.check.relay == false && connection.relaying) {
         connection.transaction.results.add(this, { skip: 'relay'});
         result = false;
     }
 
-    if (!this.cfg.check.local_ip && connection.remote.is_local) {
+    if (this.cfg.check.local_ip == false && connection.remote.is_local) {
         connection.transaction.results.add(this, { skip: 'local_ip'});
         result = false;
     }
 
-    if (!this.cfg.check.private_ip && connection.remote.is_private) {
-        if (!this.cfg.check.local_ip && connection.remote.is_local) {
+    if (this.cfg.check.private_ip == false && connection.remote.is_private) {
+        if (this.cfg.check.local_ip == true && connection.remote.is_local) {
             // local IPs are included in private IPs
         }
         else {
@@ -347,10 +347,9 @@ exports.should_check = function (connection) {
     return result;
 }
 
-const received = 'Received: from Haraka clamd plugin\r\n';
-
 exports.send_clamd_predata = (socket, cb) => {
     socket.write("zINSTREAM\0", () => {
+        const received = 'Received: from Haraka clamd plugin\r\n';
         const buf = Buffer.alloc(received.length + 4);
         buf.writeUInt32BE(received.length, 0);
         buf.write(received, 4);
@@ -363,10 +362,9 @@ function clamd_connect (socket, host) {
     if (host.match(/^\//)) {
         // assume unix socket
         socket.connect(host);
-        return;
     }
-    // FIXME: should this be assigned vs compared?
-    if ((match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host))) {
+    // FIXME: should this be a test or assignment?
+    else if ((match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host))) {
         // IPv6 literal
         socket.connect((match[2] || 3310), match[1]);
     }
