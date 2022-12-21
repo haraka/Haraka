@@ -264,7 +264,7 @@ exports.get_sign_properties = function (connection, done) {
 }
 
 exports.get_key_dir = function (connection, props, done) {
-    
+
     if (!props.domain) return done();
 
     // split the domain name into labels
@@ -291,7 +291,7 @@ exports.get_key_dir = function (connection, props, done) {
 }
 
 exports.has_key_data = function (conn, props) {
-    
+
     let missing = undefined;
 
     // Make sure we have all the relevant configuration
@@ -320,7 +320,7 @@ exports.has_key_data = function (conn, props) {
 }
 
 exports.get_headers_to_sign = function (cfg) {
-    
+
     if (!cfg) cfg = this.cfg;
     if (!cfg.main.headers_to_sign) return [ 'from' ];
 
@@ -336,7 +336,7 @@ exports.get_headers_to_sign = function (cfg) {
 }
 
 exports.get_sender_domain = function (connection) {
-    
+
     const txn = connection?.transaction;
     if (!txn) return;
 

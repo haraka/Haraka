@@ -17,7 +17,7 @@ exports.transaction = {
     tearDown : _tear_down,
 
     'add_body_filter' (test) {
-        
+
         test.expect(3);
 
         this.transaction.add_body_filter('text/plain', (ct, enc, buf) => {
@@ -50,7 +50,7 @@ exports.transaction = {
     },
 
     'regression: attachment_hooks before set_banner/add_body_filter' (test) {
-        
+
         test.expect(2);
 
         this.transaction.attachment_hooks(() => {});
@@ -101,7 +101,7 @@ exports.transaction = {
     },
 
     'no munging of bytes if not parsing body' (test) {
-        
+
         // Czech panagram "Příliš žluťoučký kůň úpěl ďábelské ódy.\n" in ISO-8859-2 encoding
         const message = Buffer.from([0x50, 0xF8, 0xED, 0x6C, 0x69, 0xB9, 0x20, 0xBE, 0x6C, 0x75, 0xBB, 0x6F, 0x76, 0xE8, 0x6B, 0xFD, 0x20, 0x6B, 0xF9, 0xF2, 0xFA, 0xEC, 0x6C, 0x20, 0xEF, 0xE2, 0x62, 0x65, 0x6C, 0x73, 0x6b, 0xE9, 0x20, 0xF3, 0x64, 0x79, 0x2E, 0x0A]);
         const payload = [
@@ -183,7 +183,7 @@ exports.base64_handling = {
     tearDown: _tear_down,
 
     'varied-base64-fold-lengths-preserve-data' (test) {
-        
+
         const parsed_attachments = {};
         this.transaction.parse_body = true;
         //accumulate attachment buffers.
@@ -215,7 +215,7 @@ exports.base64_handling = {
     },
 
     'base64-root-html-decodes-correct-number-of-bytes' (test) {
-        
+
         this.transaction.parse_body = true;
         const specimen_path = path.join(__dirname, 'mail_specimen', 'base64-root-part.txt');
         write_file_data_to_transaction(this.transaction, specimen_path);

@@ -18,7 +18,7 @@ exports.register = function () {
 }
 
 exports.load_config = function () {
-    
+
     this.cfg = this.config.get('dnsbl.ini', {
         booleans: ['+main.reject', '-main.enable_stats'],
     }, () => {
@@ -66,7 +66,7 @@ exports.get_uniq_zones = function () {
 }
 
 exports.should_skip = function (connection) {
-    
+
     if (!connection) { return true; }
 
     if (connection.remote.is_private) {

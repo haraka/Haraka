@@ -48,7 +48,7 @@ exports.load_spamassassin_ini = function () {
 }
 
 exports.hook_data_post = function (next, connection) {
-    
+
     if (this.should_skip(connection)) return next();
 
     const txn  = connection.transaction;
@@ -228,7 +228,7 @@ exports.score_too_high = function (conn, spamd_response) {
 }
 
 exports.get_spamd_username = function (conn) {
-    
+
     let user = conn.transaction.notes.spamd_user;  // 1st priority
     if (user && user !== undefined) return user;
 

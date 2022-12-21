@@ -18,7 +18,7 @@ exports.register = function () {
 }
 
 exports.load_bounce_bad_rcpt = function () {
-    
+
     const new_list = this.config.get('bounce_bad_rcpt', 'list', () => {
         this.load_bounce_bad_rcpt();
     });

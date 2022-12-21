@@ -10,12 +10,12 @@ const sock = require('./line_socket');
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
-    
+
     this.load_avg_ini();
 }
 
 exports.load_avg_ini = function () {
-    
+
     this.cfg = this.config.get('avg.ini', {
         booleans: [
             '+defer.timeout',

@@ -105,7 +105,7 @@ exports.HostPool = {
 
         let num_reqs = 0;
         const MockSocket = function MockSocket (pool) {
-            
+
             // these are the methods called from probe_dead_host
 
             // setTimeout on the socket

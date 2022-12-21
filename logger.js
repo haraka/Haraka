@@ -206,7 +206,7 @@ logger.set_format = function (format) {
 }
 
 logger._init_loglevel = function () {
-    
+
     const _loglevel = config.get('loglevel', 'value', () => {
         this._init_loglevel();
     });
@@ -224,7 +224,7 @@ logger.set_timestamps = value => {
 }
 
 logger._init_timestamps = function () {
-    
+
     const _timestamps = config.get('log_timestamps', 'value', () => {
         this._init_timestamps();
     });

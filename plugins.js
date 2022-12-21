@@ -180,7 +180,7 @@ class Plugin {
     }
 
     _get_code (pp) {
-        
+
         if (this.hasPackageJson) {
             let packageDir = path.dirname(pp);
             if (/^win(32|64)/.test(process.platform)) {
@@ -203,7 +203,7 @@ class Plugin {
     }
 
     _compile () {
-        
+
         const pp = this.plugin_path;
         const code = this._get_code(pp);
         if (!code) return;

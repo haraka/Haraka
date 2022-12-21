@@ -195,7 +195,7 @@ exports.load_queue_files = (pid, input_files, iteratee, callback) => {
 }
 
 exports.stats = () => {
-    
+
     return {
         queue_dir,
         queue_count,

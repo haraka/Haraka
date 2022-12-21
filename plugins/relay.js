@@ -6,7 +6,7 @@ const ipaddr = require('ipaddr.js');
 const net    = require('net');
 
 exports.register = function () {
-    
+
     this.load_relay_ini();             // plugin.cfg = { }
 
     if (this.cfg.relay.acl) {
@@ -200,7 +200,7 @@ exports.force_routing = function (next, hmail, domain) {
 }
 
 exports.all = function (next, connection, params) {
-if (!this.cfg.relay.all) { return next(); }
+    if (!this.cfg.relay.all) { return next(); }
 
     connection.loginfo(this, `confirming recipient ${params[0]}`);
     connection.relaying = true;

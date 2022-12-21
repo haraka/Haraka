@@ -139,7 +139,7 @@ exports.hook_mail = function (next, connection, params) {
 }
 
 exports.mxErr = function (connection, domain, type, err, mxDone) {
-    
+
     const txn = connection?.transaction;
     if (!txn) return;
 

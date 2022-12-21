@@ -288,7 +288,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     try_deliver () {
-        
+
         // check if there are any MXs left
         if (this.mxlist.length === 0) {
             this.todo.rcpt_to.forEach(rcpt => {
@@ -337,7 +337,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     try_deliver_host (mx) {
-        
+
         if (this.hostlist.length === 0) {
             return this.try_deliver(); // try next MX
         }
@@ -947,7 +947,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     populate_bounce_message (from, to, reason, cb) {
-        
+
         let buf = '';
         const original_header_lines = [];
         let headers_done = false;

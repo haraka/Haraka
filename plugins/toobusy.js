@@ -4,7 +4,7 @@ let toobusy;
 let was_busy = false;
 
 exports.register = function () {
-    
+
     try {
         toobusy = require('toobusy-js');
     }

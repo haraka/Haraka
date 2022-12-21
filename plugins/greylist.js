@@ -30,7 +30,7 @@ exports.register = function (next) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.load_config = function () {
-    
+
     this.cfg = this.config.get('greylist.ini', {
         booleans : [
             '+skip.dnswlorg',
@@ -140,7 +140,7 @@ exports.hook_mail = function (next, connection, params) {
 
 //
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
-    
+
     if (this.should_skip_check(connection)) return next();
     if (this.was_whitelisted_in_session(connection)) {
         this.logdebug(connection, 'host already whitelisted in this session');
@@ -220,7 +220,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 
 // Main GL engine that accepts tuple and returns matched record or a rejection.
 exports.process_tuple = function (connection, sender, rcpt, cb) {
-    
+
     const key = this.craft_grey_key(connection, sender, rcpt);
     if (!key) return;
 
@@ -253,7 +253,7 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
 
 // Checks if host is _white_. Updates stats if so.
 exports.check_and_update_white = function (connection, cb) {
-    
+
     const key = this.craft_white_key(connection);
 
     return this.db_lookup(key, (err, record) => {
@@ -276,7 +276,7 @@ exports.check_and_update_white = function (connection, cb) {
 
 // invokes next() depending on outcome param
 exports.invoke_outcome_cb = function (next, is_whitelisted) {
-    
+
     if (is_whitelisted) return next();
 
     const text = this.cfg.main.text || '';
@@ -351,7 +351,7 @@ exports.process_skip_rules = function (connection) {
 // When _to_ is false, we craft +sender+ key
 // When _to_ is String, we craft +rcpt+ key
 exports.craft_grey_key = function (connection, from, to) {
-    
+
     const crafted_host_id = this.craft_hostid(connection)
     if (!crafted_host_id) return null;
 
@@ -500,7 +500,7 @@ exports.update_grey = function (key, create, cb) {
 
 // Promote _grey_ record to _white_.
 exports.promote_to_white = function (connection, grey_rec, cb) {
-    
+
     const ts_now = Math.round(Date.now() / 1000);
     const white_ttl = this.cfg.period.white;
 
@@ -534,7 +534,7 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
 
 // Update _white_ record
 exports.update_white_record = function (key, record, cb) {
-    
+
     const multi = this.db.multi();
     const ts_now = Math.round(Date.now() / 1000);
 
@@ -558,7 +558,7 @@ exports.update_white_record = function (key, record, cb) {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 exports.db_lookup = function (key, cb) {
-    
+
     this.db.hgetall(key, (err, result) => {
         if (err) {
             this.lognotice(`DB error: ${util.inspect(err)}`, key);
@@ -577,7 +577,7 @@ exports.db_lookup = function (key, cb) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.addr_in_list = function (type, address) {
-    
+
     if (!this.whitelist[type]) {
         this.logwarn(`List not defined: ${type}`);
         return false;
@@ -633,7 +633,7 @@ exports.domain_in_list = function (list_name, domain) {
 // Check for special rDNS cases
 // @return {type: 'dynamic'} if rnds is dynamic (hostid should be IP)
 exports.check_rdns_for_special_cases = function (domain, label) {
-    
+
     // ptr for these is in fact dynamic
     if (this.domain_in_list('dyndom', domain))
         return {

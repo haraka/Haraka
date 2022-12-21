@@ -376,7 +376,7 @@ class DKIMObject {
 
                 // crypto.verifier requires the key in PEM format
                 this.public_key = `-----BEGIN PUBLIC KEY-----\r\n${
-                    
+
                     this.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n')
                 }-----END PUBLIC KEY-----\r\n`;
 

@@ -307,7 +307,7 @@ class Connection {
         return this._relaying;
     }
     process_line (line) {
-        
+
         if (this.state >= states.DISCONNECTING) {
             if (logger.would_log(logger.LOGPROTOCOL)) {
                 this.logprotocol(`C: (after-disconnect): ${this.current_line}`, {'state': this.state});
@@ -635,7 +635,7 @@ class Connection {
         this.client.end();
     }
     get_capabilities () {
-        
+
         return [];
     }
     tran_uuid () {
@@ -866,7 +866,7 @@ class Connection {
         }
     }
     ehlo_respond (retval, msg) {
-        
+
         switch (retval) {
             case constants.deny:
                 this.respond(550, msg || "EHLO denied", () => {
@@ -1165,7 +1165,7 @@ class Connection {
     // HAProxy support
 
     cmd_proxy (line) {
-        
+
         if (!this.proxy.allowed) {
             this.respond(421, `PROXY not allowed from ${this.remote.ip}`);
             return this.disconnect();
@@ -1551,7 +1551,7 @@ class Connection {
         });
     }
     accumulate_data (line) {
-        
+
         this.transaction.data_bytes += line.length;
 
         // Look for .\r\n

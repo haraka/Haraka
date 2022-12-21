@@ -4,7 +4,7 @@ const sock = require('./line_socket');
 const utils = require('haraka-utils');
 
 exports.load_excludes = function () {
-    
+
     this.loginfo('Loading excludes file');
     const list = this.config.get('clamd.excludes','list', () => {
         this.load_excludes();
@@ -67,7 +67,7 @@ exports.load_excludes = function () {
 }
 
 exports.load_clamd_ini = function () {
-    
+
     this.cfg = this.config.get('clamd.ini', {
         booleans: [
             '-main.randomize_host_order',
@@ -147,7 +147,7 @@ exports.register = function () {
 }
 
 exports.hook_data = function (next, connection) {
-    
+
     if (!this.cfg.main.only_with_attachments) return next();
 
     if (!this.should_check(connection)) return next();
@@ -320,7 +320,7 @@ exports.hook_data_post = function (next, connection) {
 }
 
 exports.should_check = function (connection) {
-    
+
     let result = true;  // default
     if (!connection?.transaction) return false
 

@@ -214,7 +214,7 @@ exports.call_master = (cmd, cb) => {
 }
 
 exports.call_workers = function (cmd, cb) {
-    
+
     async.map(server.cluster.workers, (w, done) => {
         this.call_worker(w, cmd, done);
     }, cb);

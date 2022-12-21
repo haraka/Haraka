@@ -10,7 +10,7 @@ exports.redis_host = '127.0.0.1:6379';
 let redis_client;
 
 exports.lookup = function (lookup, zone, cb) {
-    
+
     if (!lookup || !zone) {
         return setImmediate(() => cb(new Error('missing data')));
     }

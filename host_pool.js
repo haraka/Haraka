@@ -90,7 +90,7 @@ class HostPool {
     probe_dead_host (
         host, port, cb_if_still_dead, cb_if_alive
     ){
-logger.loginfo(`probing dead host ${host}:${port}`);
+        logger.loginfo(`probing dead host ${host}:${port}`);
 
         const connect_timeout_ms = 200; // keep it snappy
         let s;

@@ -241,7 +241,7 @@ class SMTPClient extends events.EventEmitter {
     }
 
     upgrade (tls_options) {
-        
+
         this.socket.upgrade(tls_options, (verified, verifyError, cert, cipher) => {
             logger.loginfo(`secured:${
                 (cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : ''

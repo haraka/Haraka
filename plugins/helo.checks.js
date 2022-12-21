@@ -52,7 +52,7 @@ exports.register = function () {
 }
 
 exports.load_helo_checks_ini = function () {
-    
+
     const booleans = [
         '+skip.private_ip',
         '+skip.whitelist',

@@ -10,7 +10,7 @@ exports.register = function () {
 }
 
 exports.load_config = function () {
-    
+
     this.cfg = this.config.get('early_talker.ini', {
         booleans: [
             '+main.reject'
@@ -71,7 +71,7 @@ exports.early_talker = function (next, connection) {
  * @return {Boolean}         True if is whitelisted
  */
 exports.ip_in_list = function (ip) {
-    
+
     if (!this.whitelist) return false;
 
     const ipobj = ipaddr.parse(ip);

@@ -2,7 +2,7 @@
 // Base class for plugins that use config/host_list
 
 exports.load_host_list = function () {
-    
+
     const lowered_list = {};  // assemble
     const raw_list = this.config.get('host_list', 'list', () => {
         this.load_host_list();
@@ -16,7 +16,7 @@ exports.load_host_list = function () {
 }
 
 exports.load_host_list_regex = function () {
-    
+
     this.host_list_regex = this.config.get(
         'host_list_regex',
         'list',
@@ -24,7 +24,7 @@ exports.load_host_list_regex = function () {
     );
 
     this.hl_re = new RegExp (`^(?:${
-        
+
         this.host_list_regex.join('|')})$`, 'i');
 }
 

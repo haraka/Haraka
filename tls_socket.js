@@ -223,7 +223,7 @@ exports.parse_x509 = string => {
 }
 
 exports.load_tls_ini = (opts) => {
-    
+
     log.loginfo(`loading tls.ini`); // from ${this.config.root_path}`);
 
     const cfg = exports.config.get('tls.ini', {
@@ -293,7 +293,7 @@ exports.saveOpt = (name, opt, val) => {
 }
 
 exports.applySocketOpts = name => {
-    
+
     if (!certsByHost[name]) certsByHost[name] = {};
 
     // https://nodejs.org/api/tls.html#tls_new_tls_tlssocket_socket_options
@@ -353,7 +353,7 @@ exports.applySocketOpts = name => {
 }
 
 exports.load_default_opts = () => {
-    
+
     const cfg = certsByHost['*'];
 
     if (cfg.dhparam && typeof cfg.dhparam === 'string') {
@@ -419,7 +419,7 @@ function SNICallback (servername, sniDone) {
 }
 
 exports.get_certs_dir = (tlsDir, done) => {
-    
+
     this.config.getDir(tlsDir, {}, (iterErr, files) => {
         if (iterErr) return done(iterErr);
 
@@ -502,7 +502,7 @@ exports.get_certs_dir = (tlsDir, done) => {
 }
 
 exports.getSocketOpts = (name, done) => {
-    
+
     // startup time, load the config/tls dir
     if (!certsByHost['*']) this.load_tls_ini();
 
@@ -532,7 +532,7 @@ function pipe (cleartext, socket) {
 }
 
 exports.ensureDhparams = done => {
-    
+
     // empty/missing dhparams file
     if (certsByHost['*'].dhparam) {
         return done(null, certsByHost['*'].dhparam);

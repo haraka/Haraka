@@ -21,7 +21,7 @@ exports.shutdown = () => {
 }
 
 exports.advertise_starttls = function (next, connection) {
-    
+
     // if no TLS setup incomplete/invalid, don't advertise
     if (!tls_socket.tls_valid) {
         this.logerror('no valid TLS config');
