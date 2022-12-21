@@ -346,7 +346,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
 
     smtp_client.call_next = function (retval, msg) {
         if (this.next) {
-            const next = this.next;
+            const { next } = this;
             delete this.next;
             next(retval, msg);
         }
@@ -430,7 +430,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
     smtp_client.on('connection-error', (error) => {
         // error contains e.g. "Error: connect ECONNREFUSE"
         logger.logerror(`backend failure: ${smtp_client.host}:${smtp_client.port} - ${error}`);
-        const host_pool = connection.server.notes.host_pool;
+        const { host_pool } = connection.server.notes;
         // only exists for if forwarding_host_pool is set in the config
         if (host_pool) {
             host_pool.failed(smtp_client.host, smtp_client.port);

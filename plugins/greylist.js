@@ -10,7 +10,7 @@ const util   = require('util');
 const DSN       = require('haraka-dsn');
 const tlds      = require('haraka-tld');
 const net_utils = require('haraka-net-utils');
-const Address   = require('address-rfc2821').Address;
+const { Address }   = require('address-rfc2821');
 
 // External NPM modules
 const ipaddr    = require('ipaddr.js');
@@ -151,10 +151,10 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         return next();
     }
 
-    const transaction = connection.transaction
+    const { transaction } = connection
 
     const ctr = transaction.results;
-    const mail_from = transaction.mail_from;
+    const { mail_from } = transaction;
 
     // check rcpt in whitelist (email & domain)
     if (plugin.addr_in_list('rcpt', rcpt.address().toLowerCase())) {

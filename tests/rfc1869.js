@@ -1,4 +1,4 @@
-const parse = require('../rfc1869').parse;
+const { parse } = require('../rfc1869');
 
 function _check (test, line, expected) {
     test.expect(1 + expected.length);

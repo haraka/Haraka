@@ -41,7 +41,7 @@ exports.hook_mail = function (next, connection, params) {
     const mail_from = params[0];
     const txn       = connection?.transaction;
     if (!txn) return next();
-    const results   = txn.results;
+    const { results }   = txn;
 
     // Check for MAIL FROM without an @ first - ignore those here
     if (!mail_from.host) {

@@ -1,7 +1,7 @@
 
 const dkim = require('./dkim');
 
-const DKIMVerifyStream = dkim.DKIMVerifyStream;
+const { DKIMVerifyStream } = dkim;
 
 const plugin = exports;
 

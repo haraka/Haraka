@@ -7,7 +7,7 @@
 const cluster   = require('cluster');
 const net       = require('net');
 const path      = require('path');
-const spawn     = require('child_process').spawn;
+const { spawn }     = require('child_process');
 const stream    = require('stream');
 const tls       = require('tls');
 const util      = require('util');

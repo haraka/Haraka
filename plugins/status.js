@@ -148,7 +148,7 @@ exports.queue_discard = function (file, cb) {
 }
 
 exports.queue_push = function (file, cb) {
-    const queue = this.outbound.temp_fail_queue.queue;
+    const { queue } = this.outbound.temp_fail_queue;
 
     for (let i = 0; i < queue.length; i++) {
         if (queue[i].id !== file) continue;

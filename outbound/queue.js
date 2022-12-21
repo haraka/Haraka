@@ -4,7 +4,7 @@ const async       = require('async');
 const fs          = require('fs');
 const path        = require('path');
 
-const Address     = require('address-rfc2821').Address;
+const { Address }     = require('address-rfc2821');
 const config      = require('haraka-config');
 
 const logger      = require('../logger');
