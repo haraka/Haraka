@@ -1,11 +1,8 @@
 // bounce tests
 const tlds = require('haraka-tld');
+const SPF  = require('haraka-plugin-spf').SPF;
 
 const net_utils = require('haraka-net-utils');
-const SPF = require('./spf').SPF;
-
-// Override logging in SPF module
-SPF.prototype.log_debug = str => exports.logdebug(str)
 
 exports.register = function () {
     const plugin = this;

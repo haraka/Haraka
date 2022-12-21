@@ -27,6 +27,10 @@
 - doc(queue.js) spelling & grammar improvement #3051
 - doc(rails): add haraka-plugin-queue-rails #2995
 - doc(smtp.ini): correct spelling of SMTPUTF8 #2993
+- style(es6): use optional chaining when accessing transactions #2732
+- style(smtp_client): pass args as objects (was positional)
+- style(plugin/\*): transaction guarding #3032
+- dep(spf): remove to separate plugin #3078
 - dep(iconv): removed, declared in haraka-email-message)
 - dep(haraka-plugin-redis)!: 1.0 -> 2.0  #3038
 - dep(redis)!: 3.1 -> 4.1 #3058

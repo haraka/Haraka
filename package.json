@@ -38,6 +38,7 @@
     "haraka-net-utils"      : "^1.4.1",
     "haraka-notes"          : "^1.0.6",
     "haraka-plugin-attachment": "^1.0.7",
+    "haraka-plugin-spf"     : "1.0.0",
     "haraka-plugin-redis"   : "^2.0.5",
     "haraka-results"        : "^2.2.2",
     "haraka-tld"            : "^1.1.0",
@@ -85,14 +86,13 @@
   },
   "bin": {
     "haraka": "./bin/haraka",
-    "spf": "./bin/spf",
     "dkimverify": "./bin/dkimverify",
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
     "test": "node run_tests",
-    "lint": "npx eslint *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "lintfix": "npx eslint --fix *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
+    "lint": "npx eslint *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka bin/dkimverify",
+    "lintfix": "npx eslint --fix *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka bin/dkimverify",
     "versions": "npx dependency-version-checker check"
   }
 }
