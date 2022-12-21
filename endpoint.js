@@ -41,7 +41,7 @@ class Endpoint {
     toString () {
         if (this.mode) return `${this.path}:${this.mode}`;
         if (this.path) return this.path;
-        if (this.host.indexOf(':') >= 0) return `[${this.host}]:${this.port}`;
+        if (this.host.includes(':')) return `[${this.host}]:${this.port}`;
         return `${this.host}:${this.port}`;
     }
 
