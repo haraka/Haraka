@@ -364,7 +364,7 @@ class DKIMObject {
                         }
                         else if (flag === 's') {
                             // 'i' and 'd' domain much match exactly
-                            let { i } = self.fields
+                            let { i } = this.fields
                             i = i.substr(i.indexOf('@')+1, i.length)
                             if (i.toLowerCase() !== this.fields.d.toLowerCase()) {
                                 return this.result('i/d selector domain mismatch (t=s)', 'invalid')
