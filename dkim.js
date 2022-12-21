@@ -2,7 +2,7 @@
 
 const crypto = require('crypto');
 const dns    = require('dns');
-const Stream = require('stream').Stream;
+const { Stream } = require('stream');
 const utils  = require('haraka-utils');
 
 //////////////////////
@@ -133,8 +133,8 @@ class DKIMObject {
 
         if (this.fields.h) {
             const headers = this.fields.h.split(':');
-            for (const headerElement of headers) {
-                this.signed_headers.push(headerElement.trim().toLowerCase());
+            for (const h of headers) {
+                this.signed_headers.push(h.trim().toLowerCase());
             }
             if (!this.signed_headers.includes('from')) {
                 return this.result('from field not signed', 'invalid');
@@ -366,7 +366,7 @@ class DKIMObject {
                         }
                         else if (flag === 's') {
                             // 'i' and 'd' domain much match exactly
-                            let i = self.fields.i
+                            let { i } = self.fields
                             i = i.substr(i.indexOf('@')+1, i.length)
                             if (i.toLowerCase() !== this.fields.d.toLowerCase()) {
                                 return this.result('i/d selector domain mismatch (t=s)', 'invalid')

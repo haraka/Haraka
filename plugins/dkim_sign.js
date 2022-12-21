@@ -6,7 +6,7 @@ const async      = require('async');
 const crypto     = require('crypto');
 const fs         = require('fs');
 const path       = require('path');
-const Stream     = require('stream').Stream;
+const { Stream }     = require('stream');
 
 const utils      = require('haraka-utils');
 

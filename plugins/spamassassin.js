@@ -149,7 +149,7 @@ exports.hook_data_post = function (next, connection) {
 exports.fixup_old_headers = function (txn) {
     const plugin = this;
     const action = plugin.cfg.main.old_headers_action;
-    const headers = txn.notes.spamassassin.headers;
+    const { headers } = txn.notes.spamassassin;
 
     let key;
     switch (action) {
@@ -219,7 +219,7 @@ exports.do_header_updates = function (conn, spamd_response) {
 
 exports.score_too_high = function (conn, spamd_response) {
     const plugin = this;
-    const score = spamd_response.score;
+    const { score } = spamd_response;
     if (conn.relaying) {
         const rmax = plugin.cfg.main.relay_reject_threshold;
         if (rmax && (score >= rmax)) {

@@ -3,7 +3,7 @@
 const fixtures     = require('haraka-test-fixtures');
 const message      = require('haraka-email-message')
 
-const DKIMSignStream = require('../../plugins/dkim_sign').DKIMSignStream;
+const { DKIMSignStream } = require('../../plugins/dkim_sign');
 
 const privateKey = `-----BEGIN RSA PRIVATE KEY-----
 MIICXwIBAAKBgQDwIRP/UC3SBsEmGqZ9ZJW3/DkMoGeLnQg1fWn7/zYtIxN2SnFC

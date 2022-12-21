@@ -4,7 +4,7 @@ const fs          = require('fs');
 const path        = require('path');
 
 const async       = require('async');
-const Address     = require('address-rfc2821').Address;
+const { Address }     = require('address-rfc2821');
 const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
@@ -22,9 +22,9 @@ const HMailItem   = require('./hmail');
 const TODOItem    = require('./todo');
 const _qfile = exports.qfile = require('./qfile');
 
-const queue_dir = queuelib.queue_dir;
-const temp_fail_queue = queuelib.temp_fail_queue;
-const delivery_queue = queuelib.delivery_queue;
+const { queue_dir } = queuelib;
+const { temp_fail_queue } = queuelib;
+const { delivery_queue } = queuelib;
 
 exports.temp_fail_queue = temp_fail_queue;
 exports.delivery_queue = delivery_queue;

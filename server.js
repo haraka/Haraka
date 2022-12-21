@@ -22,7 +22,7 @@ Server.config     = require('haraka-config');
 Server.plugins    = require('./plugins');
 Server.notes      = {};
 
-const logger      = Server.logger;
+const { logger }      = Server;
 
 // Need these here so we can run hooks
 logger.add_log_methods(Server, 'server');

@@ -18,7 +18,7 @@ exports.hook_deny = function (next, connection, params) {
     const pi_hook     = params[5];
 
     const plugin = this;
-    const transaction = connection.transaction;
+    const { transaction } = connection;
 
     // Don't delay ourselves...
     if (pi_name == 'delay_deny') return next();

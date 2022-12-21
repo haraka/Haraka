@@ -52,7 +52,7 @@ exports.advertise_starttls = function (next, connection) {
         return enable_tls();
     }
 
-    const redis = server.notes.redis;
+    const { redis } = server.notes;
     const dbkey = `no_tls|${connection.remote.ip}`;
 
     redis.get(dbkey)

@@ -106,7 +106,7 @@ exports.is_acl_allowed = function (connection) {
     if (!plugin.acl_allow) { return false; }
     if (!plugin.acl_allow.length) { return false; }
 
-    const ip = connection.remote.ip;
+    const { ip } = connection.remote;
 
     for (const item of plugin.acl_allow) {
         connection.logdebug(plugin, `checking if ${ip} is in ${item}`);
@@ -157,7 +157,7 @@ exports.dest_domains = function (next, connection, params) {
         return next(DENY, "You are not allowed to relay");
     }
 
-    const action = JSON.parse(dst_cfg).action;
+    const { action } = JSON.parse(dst_cfg);
     connection.logdebug(plugin, `found config for ${dest_domain}: ${action}`);
 
     switch (action) {
@@ -197,7 +197,7 @@ exports.force_routing = function (next, hmail, domain) {
         }
     }
 
-    const nexthop = JSON.parse(route).nexthop;
+    const { nexthop } = JSON.parse(route);
     if (!nexthop) {
         plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
         return next();
