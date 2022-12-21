@@ -396,7 +396,7 @@ class HMailItem extends events.EventEmitter {
             processing_mail = false;
             client_pool.release_client(socket, port, host, mx.bind, true);
             if (err.source === 'tls') // exception thrown from tls_socket during tls upgrade
-                return obtls.mark_tls_nogo(host, () => { return self.try_deliver_host(mx); });
+                return obtls.mark_tls_nogo(host, () => self.try_deliver_host(mx));
             // try the next MX
             self.try_deliver_host(mx);
         })
@@ -1057,9 +1057,7 @@ class HMailItem extends events.EventEmitter {
         const escape_pattern = new RegExp(`[${Object.keys(escaped_chars).join()}]`, 'g');
 
         bounce_msg_html_.forEach(line => {
-            line = line.replace(/\{(\w+)\}/g, (i, word) => {
-                return word in values ? String(values[word]).replace(escape_pattern, m => `&${escaped_chars[m]};`) : '?';
-            });
+            line = line.replace(/\{(\w+)\}/g, (i, word) => word in values ? String(values[word]).replace(escape_pattern, m => `&${escaped_chars[m]};`) : '?');
 
             bounce_html_lines.push(line);
         });

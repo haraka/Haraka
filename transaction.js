@@ -252,9 +252,7 @@ class Transaction {
 
 exports.Transaction = Transaction;
 
-exports.createTransaction = (uuid, cfg) => {
-    return new Transaction(uuid, cfg);
-}
+exports.createTransaction = (uuid, cfg) => new Transaction(uuid, cfg)
 
 // sunset after test-fixtures createTransaction() is updated to pass in cfg
 function load_smtp_ini () {

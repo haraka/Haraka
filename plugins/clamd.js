@@ -242,9 +242,7 @@ exports.hook_data_post = function (next, connection) {
 
         let result = '';
         socket.on('line', line => {
-            connection.logprotocol(plugin, `C:${line.split('').filter((x) => {
-                return 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)
-            }).join('')}` );
+            connection.logprotocol(plugin, `C:${line.split('').filter((x) => 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)).join('')}` );
             result = line.replace(/\r?\n/, '');
         });
 

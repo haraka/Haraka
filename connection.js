@@ -205,9 +205,7 @@ class Connection {
 
         const ha_list = net.isIPv6(self.remote.ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4;
 
-        if (ha_list.some((element, index, array) => {
-            return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
-        })) {
+        if (ha_list.some((element, index, array) => ipaddr.parse(self.remote.ip).match(element[0], element[1]))) {
             self.proxy.allowed = true;
             // Wait for PROXY command
             self.proxy.timer = setTimeout(() => {
@@ -290,9 +288,7 @@ class Connection {
         // /sunset
     }
     get (prop_str) {
-        return prop_str.split('.').reduce((prev, curr) => {
-            return prev ? prev[curr] : undefined
-        }, this)
+        return prop_str.split('.').reduce((prev, curr) => prev ? prev[curr] : undefined, this)
     }
     set relaying (val) {
         if (this.transaction) {
@@ -534,9 +530,7 @@ class Connection {
             msg = msg.reply;
         }
         messages = Array.isArray(msg) ? msg.slice() : msg.toString().split(/\n/);
-        messages = messages.filter((msg2) => {
-            return /\S/.test(msg2);
-        });
+        messages = messages.filter((msg2) => /\S/.test(msg2));
 
         // Multiline AUTH PLAIN as in RFC-4954 page 8.
         if (code === 334 && !messages.length) {
@@ -1862,9 +1856,7 @@ class Connection {
 
 exports.Connection = Connection;
 
-exports.createConnection = (client, server, cfg) => {
-    return new Connection(client, server, cfg);
-}
+exports.createConnection = (client, server, cfg) => new Connection(client, server, cfg)
 
 // add logger methods to Connection:
 for (const key in logger) {

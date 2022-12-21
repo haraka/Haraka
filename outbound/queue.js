@@ -192,13 +192,10 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
     });
 }
 
-exports.stats = () => {
-
-    return {
-        queue_dir,
-        queue_count,
-    };
-}
+exports.stats = () => ({
+    queue_dir,
+    queue_count,
+})
 
 exports._list_file = (file, cb) => {
     const tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
