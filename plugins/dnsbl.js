@@ -53,14 +53,14 @@ exports.get_uniq_zones = function () {
 
     // Compatibility with old plugin
     const legacy_zones = plugin.config.get('dnsbl.zones', 'list');
-    for (let i=0; i < legacy_zones.length; i++) {
-        unique_zones[legacy_zones[i]] = true;
+    for (const legacyZone of legacy_zones) {
+        unique_zones[legacyZone] = true;
     }
 
     if (plugin.cfg.main.zones) {
         const new_zones = plugin.cfg.main.zones.split(/[\s,;]+/);
-        for (let h=0; h < new_zones.length; h++) {
-            unique_zones[new_zones[h]] = true;
+        for (const newZone of new_zones) {
+            unique_zones[newZone] = true;
         }
     }
 

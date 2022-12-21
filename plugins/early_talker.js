@@ -79,9 +79,9 @@ exports.ip_in_list = function (ip) {
 
     const ipobj = ipaddr.parse(ip);
 
-    for (let i = 0; i < plugin.whitelist.length; i++) {
+    for (const element of plugin.whitelist) {
         try {
-            if (ipobj.match(plugin.whitelist[i])) {
+            if (ipobj.match(element)) {
                 return true;
             }
         }
@@ -101,9 +101,9 @@ exports.ip_in_list = function (ip) {
 exports.load_ip_list = list => {
     const whitelist = [];
 
-    for (let i = 0; i < list.length; i++) {
+    for (const element of list) {
         try {
-            let addr = list[i];
+            let addr = element;
             if (addr.match(/\/\d+$/)) {
                 addr = ipaddr.parseCIDR(addr);
             }

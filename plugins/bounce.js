@@ -26,8 +26,8 @@ exports.load_bounce_bad_rcpt = function () {
     });
 
     const invalids = {};
-    for (let i=0; i < new_list.length; i++) {
-        invalids[new_list[i]] = true;
+    for (const element of new_list) {
+        invalids[element] = true;
     }
 
     plugin.cfg.invalid_addrs = invalids;
@@ -155,8 +155,8 @@ exports.bad_rcpt = function (next, connection) {
     if (!plugin.cfg.invalid_addrs) return next();
 
     const transaction = connection.transaction;
-    for (let i=0; i < transaction.rcpt_to.length; i++) {
-        const rcpt = transaction.rcpt_to[i].address();
+    for (const element of transaction.rcpt_to) {
+        const rcpt = element.address();
         if (!plugin.cfg.invalid_addrs[rcpt]) continue;
         transaction.results.add(plugin, {fail: 'bad_rcpt', emit: true });
         return next(DENY, 'That recipient does not accept bounces');
@@ -236,8 +236,8 @@ exports.non_local_msgid = function (next, connection) {
     }
 
     const domains=[];
-    for (let i=0; i < matches.length; i++) {
-        const res = matches[i].match(/@([^>]*)>?/i);
+    for (const match of matches) {
+        const res = match.match(/@([^>]*)>?/i);
         if (!res) continue;
         domains.push(res[1]);
     }
@@ -252,8 +252,8 @@ exports.non_local_msgid = function (next, connection) {
     connection.logdebug(plugin, domains);
 
     const valid_domains=[];
-    for (let j=0; j < domains.length; j++) {
-        const org_dom = tlds.get_organizational_domain(domains[j]);
+    for (const domain of domains) {
+        const org_dom = tlds.get_organizational_domain(domain);
         if (!org_dom) { continue; }
         valid_domains.push(org_dom);
     }

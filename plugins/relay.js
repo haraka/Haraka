@@ -108,10 +108,9 @@ exports.is_acl_allowed = function (connection) {
 
     const ip = connection.remote.ip;
 
-    for (let i=0; i < plugin.acl_allow.length; i++) {
-        const item = plugin.acl_allow[i];
+    for (const item of plugin.acl_allow) {
         connection.logdebug(plugin, `checking if ${ip} is in ${item}`);
-        const cidr = plugin.acl_allow[i].split('/');
+        const cidr = item.split('/');
         const c_net  = cidr[0];
         const c_mask = cidr[1] || 32;
 

@@ -312,8 +312,8 @@ exports.onCapabilitiesOutbound = (smtp_client, secured, connection, config, on_s
         if (auth_matches) {
             smtp_client.auth_capabilities = [];
             auth_matches = auth_matches[1].split(' ');
-            for (let i = 0; i < auth_matches.length; i++) {
-                smtp_client.auth_capabilities.push(auth_matches[i].toLowerCase());
+            for (const authMatch of auth_matches) {
+                smtp_client.auth_capabilities.push(authMatch.toLowerCase());
             }
         }
     }

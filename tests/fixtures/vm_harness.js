@@ -53,7 +53,7 @@ function make_test (module_path, test_path, additional_sandbox) {
 exports.add_tests = (module_path, tests_path, test_exports, add_to_sandbox) => {
     const additional_sandbox = add_to_sandbox || {};
     const tests = fs.readdirSync(tests_path).filter(dot_files);
-    for (let x = 0; x < tests.length; x++) {
-        test_exports[tests[x]] = make_test(module_path, tests_path + tests[x], additional_sandbox);
+    for (const test of tests) {
+        test_exports[test] = make_test(module_path, tests_path + test, additional_sandbox);
     }
 }

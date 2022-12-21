@@ -331,8 +331,7 @@ plugins.load_plugins = override => {
 
     // Sort registered_hooks by priority
     const hooks = Object.keys(plugins.registered_hooks);
-    for (let h=0; h<hooks.length; h++) {
-        const hook = hooks[h];
+    for (const hook of hooks) {
         plugins.registered_hooks[hook].sort((a, b) => {
             if (a.priority < b.priority) return -1;
             if (a.priority > b.priority) return 1;
@@ -440,8 +439,7 @@ plugins.run_hooks = (hook, object, params) => {
     object.hooks_to_run = [];
 
     if (plugins.registered_hooks[hook]) {
-        for (let i=0; i<plugins.registered_hooks[hook].length; i++) {
-            const item = plugins.registered_hooks[hook][i];
+        for (const item of plugins.registered_hooks[hook]) {
             const plugin = plugins.registered_plugins[item.plugin];
             object.hooks_to_run.push([plugin, item.method]);
         }

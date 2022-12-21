@@ -91,8 +91,7 @@ exports.createHMailItem = (outbound_context, options, callback) => {
             callback('No hmail producted');
             return;
         }
-        for (let j=0; j<hmails.length; j++) {
-            const hmail = hmails[j];
+        for (const hmail of hmails) {
             hmail.hostlist = [ delivery_domain ];
             callback(null, hmail);
         }

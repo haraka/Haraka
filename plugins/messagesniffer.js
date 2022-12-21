@@ -32,8 +32,8 @@ exports.hook_connect = function (next, connection) {
             // Populate result
             const gbudb = {};
             const split = match[1].toString().split(/\s+/);
-            for (let i=0; i<split.length; i++) {
-                const split2 = split[i].split(/=/);
+            for (const element of split) {
+                const split2 = element.split(/=/);
                 gbudb[split2[0]] = split2[1].replace(/(?:^'|'$)/g,'');
             }
             // Set notes for other plugins
@@ -162,8 +162,7 @@ exports.hook_data_post = function (next, connection) {
                     // Parse the returned headers and add them to the message
                     const xhdr = match[1].split('\r\n');
                     const headers = [];
-                    for (let i=0; i < xhdr.length; i++) {
-                        const line = xhdr[i];
+                    for (const line of xhdr) {
                         // Check for continuation
                         if (/^\s/.test(line)) {
                             // Continuation; add to previous header value
@@ -180,8 +179,7 @@ exports.hook_data_post = function (next, connection) {
                         }
                     }
                     // Add headers to message
-                    for (let h=0; h < headers.length; h++) {
-                        const header = headers[h];
+                    for (const header of headers) {
                         // If present save the group for logging purposes
                         if (header.header === 'X-MessageSniffer-SNF-Group') {
                             group = header.value.replace(/\r?\n/gm, '');

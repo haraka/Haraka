@@ -115,21 +115,21 @@ exports.hook_mail = function (next, connection, params) {
                     return;
                 }
                 connection.logdebug(plugin, `${domain}: MX ${addr.priority} ${addr.exchange} => ${addresses2}`);
-                for (let i=0; i < addresses2.length; i++) {
+                for (const element of addresses2) {
                     // Ignore anything obviously bogus
-                    if (net.isIPv4(addresses2[i])){
-                        if (plugin.re_bogus_ip.test(addresses2[i])) {
-                            connection.logdebug(plugin, `${addr.exchange}: discarding ${addresses2[i]}`);
+                    if (net.isIPv4(element)){
+                        if (plugin.re_bogus_ip.test(element)) {
+                            connection.logdebug(plugin, `${addr.exchange}: discarding ${element}`);
                             continue;
                         }
                     }
-                    if (net.isIPv6(addresses2[i])){
-                        if (net_utils.ipv6_bogus(addresses2[i])) {
-                            connection.logdebug(plugin, `${addr.exchange}: discarding ${addresses2[i]}`);
+                    if (net.isIPv6(element)){
+                        if (net_utils.ipv6_bogus(element)) {
+                            connection.logdebug(plugin, `${addr.exchange}: discarding ${element}`);
                             continue;
                         }
                     }
-                    records[addresses2[i]] = 1;
+                    records[element] = 1;
                 }
                 check_results();
             });
@@ -176,8 +176,7 @@ exports.implicit_mx = function (connection, domain, mxDone) {
 
         connection.logdebug(plugin, `${domain}: A/AAAA => ${addresses}`);
         let records = {};
-        for (let i=0; i < addresses.length; i++) {
-            const addr = addresses[i];
+        for (const addr of addresses) {
             // Ignore anything obviously bogus
             if (net.isIPv4(addr)) {
                 if (plugin.re_bogus_ip.test(addr)) {

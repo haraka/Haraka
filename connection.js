@@ -1510,8 +1510,8 @@ class Connection {
         const ars = this.transaction.header.get_all('Authentication-Results');
         if (ars.length === 0) return;
 
-        for (let i=0; i < ars.length; i++) {
-            this.transaction.add_header('Original-Authentication-Results', ars[i]);
+        for (const element of ars) {
+            this.transaction.add_header('Original-Authentication-Results', element);
         }
         this.transaction.remove_header('Authentication-Results');
         this.logdebug("Authentication-Results moved to Original-Authentication-Results");

@@ -247,8 +247,7 @@ logger.log_if_level = (level, key, plugin) => function () {
         origin: (plugin || 'core'),
         message: ''
     };
-    for (let i=0; i < arguments.length; i++) {
-        const data = arguments[i];
+    for (const data of arguments) {
         if (typeof data !== 'object') {
             logobj.message += (data);
             continue;

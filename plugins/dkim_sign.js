@@ -106,14 +106,14 @@ class DKIMSignStream extends Stream {
         */
 
         const headers = [];
-        for (let i=0; i < this.headers_to_sign.length; i++) {
-            let head = this.header.get(this.headers_to_sign[i]);
+        for (const element of this.headers_to_sign) {
+            let head = this.header.get(element);
             if (head) {
                 head = head.replace(/\r?\n/gm, '');
                 head = head.replace(/\s+/gm, ' ');
                 head = head.replace(/\s+$/gm, '');
-                this.signer.update(`${this.headers_to_sign[i]}:${head}\r\n`);
-                headers.push(this.headers_to_sign[i]);
+                this.signer.update(`${element}:${head}\r\n`);
+                headers.push(element);
             }
         }
 
