@@ -22,9 +22,7 @@ const HMailItem   = require('./hmail');
 const TODOItem    = require('./todo');
 const _qfile = exports.qfile = require('./qfile');
 
-const { queue_dir } = queuelib;
-const { temp_fail_queue } = queuelib;
-const { delivery_queue } = queuelib;
+const { queue_dir, temp_fail_queue, delivery_queue } = queuelib;
 
 exports.temp_fail_queue = temp_fail_queue;
 exports.delivery_queue = delivery_queue;
