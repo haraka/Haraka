@@ -90,18 +90,15 @@ exports.send_email = function () {
     }
 
     // set MAIL FROM address, and parse if it's not an Address object
-    if (from instanceof Address) {
-        transaction.mail_from = from;
-    }
-    else {
+    if (!(from instanceof Address)) {
         try {
             from = new Address(from);
         }
         catch (err) {
             return next(constants.deny, `Malformed from: ${err}`);
         }
-        transaction.mail_from = from;
     }
+    transaction.mail_from = from;
 
     // Make sure to is an array
     if (!(Array.isArray(to))) {

@@ -55,11 +55,8 @@ exports.bounce_3464 = {
                     const curPath = path.resolve(queue_dir, file);
                     fs.unlinkSync(curPath);
                 });
-                done();
             }
-            else {
-                done();
-            }
+            done();
         });
     },
     'test get-mx-deny triggers bounce(...)': test => {

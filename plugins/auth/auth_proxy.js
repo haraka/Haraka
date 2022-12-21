@@ -145,18 +145,18 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     // Prefer PLAIN as it's easiest
                     if (methods.includes('PLAIN')) {
                         socket.send_command('AUTH',`PLAIN ${utils.base64(`\0${user}\0${passwd}`)}`);
-                        return;
-                    }
-                    else if (methods.includes('LOGIN')) {
-                        socket.send_command('AUTH','LOGIN');
-                        return;
                     }
                     else {
-                        // No compatible methods; abort...
-                        connection.logdebug(self, 'no compatible AUTH methods');
-                        socket.send_command('QUIT');
-                        return;
+                        if (methods.includes('LOGIN')) {
+                            socket.send_command('AUTH','LOGIN');
+                        }
+                        else {
+                            // No compatible methods; abort...
+                            connection.logdebug(self, 'no compatible AUTH methods');
+                            socket.send_command('QUIT');
+                        }
                     }
+                    return;
                 }
             }
         }
