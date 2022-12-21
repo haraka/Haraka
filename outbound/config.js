@@ -58,7 +58,7 @@ exports.set_temp_fail_intervals = function () {
     function set_old_defaults () {
         cfg.temp_fail_intervals = [];
         for (let i=1; i<cfg.maxTempFailures; i++) {
-            cfg.temp_fail_intervals.push(Math.pow(2, (i + 5)));
+            cfg.temp_fail_intervals.push(2 ** (i + 5));
         }
     }
 
