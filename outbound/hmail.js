@@ -43,6 +43,8 @@ const obc = require('./config');
 
 function dummy_func () {}
 
+const CRLF = '\r\n';
+
 class HMailItem extends events.EventEmitter {
     constructor (filename, filePath, notes) {
         super();
@@ -205,7 +207,7 @@ class HMailItem extends events.EventEmitter {
                     // assume string
                     const matches = /^(.*?)(:(\d+))?$/.exec(mx);
                     if (!matches) {
-                        throw ("get_mx returned something that doesn't match hostname or hostname:port");
+                        throw (new Error("get_mx returned something that doesn't match hostname or hostname:port"));
                     }
                     mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
                 }
@@ -1008,8 +1010,6 @@ class HMailItem extends events.EventEmitter {
      * @param cb - a callback for fn(err, message_body_lines)
      */
     populate_bounce_message_with_headers (from, to, reason, header, cb) {
-        const CRLF = '\r\n';
-
         const originalMessageId = header.get('Message-Id');
 
         const bounce_msg_ = config.get('outbound.bounce_message', 'data');
@@ -1042,14 +1042,14 @@ class HMailItem extends events.EventEmitter {
         bounce_msg_.forEach(line => {
             line = line.replace(/\{(\w+)\}/g, (i, word) => values[word] || '?');
 
-            if (bounce_headers_done == false && line == '') {
+            if (!bounce_headers_done && line == '') {
                 bounce_headers_done = true;
             }
-            else if (bounce_headers_done == false) {
-                bounce_header_lines.push(line);
-            }
-            else if (bounce_headers_done == true) {
+            else if (bounce_headers_done) {
                 bounce_body_lines.push(line);
+            }
+            else {
+                bounce_header_lines.push(line);
             }
         });
 

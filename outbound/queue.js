@@ -97,6 +97,7 @@ exports._load_cur_queue = (pid, iteratee, cb) => {
     });
 }
 
+// TODO: check this against https://rules.sonarsource.com/javascript/RSPEC-3800
 exports.read_parts = file => {
     if (file.indexOf(_qfile.platformDOT) === 0) {
         logger.logwarn(`[outbound] 'Skipping' dot-file in queue folder: ${file}`);

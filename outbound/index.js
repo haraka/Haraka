@@ -43,18 +43,17 @@ exports.stats = queuelib.stats;
 process.on('message', msg => {
     if (!msg.event) return
 
-    if (msg.event === 'outbound.load_pid_queue') {
-        exports.load_pid_queue(msg.data);
-        return;
-    }
-    if (msg.event === 'outbound.flush_queue') {
-        exports.flush_queue(msg.domain, process.pid);
-        return;
-    }
-    if (msg.event === 'outbound.shutdown') {
-        logger.loginfo("[outbound] Shutting down temp fail queue");
-        temp_fail_queue.shutdown();
-        return;
+    switch (msg.event) {
+        case 'outbound.load_pid_queue':
+            exports.load_pid_queue(msg.data);
+            return;
+        case 'outbound.flush_queue':
+            exports.flush_queue(msg.domain, process.pid);
+            return;
+        case 'outbound.shutdown':
+            logger.loginfo("[outbound] Shutting down temp fail queue");
+            temp_fail_queue.shutdown();
+            break;
     }
     // ignores the message
 });

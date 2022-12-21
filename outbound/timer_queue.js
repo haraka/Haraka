@@ -41,7 +41,7 @@ class TimerQueue {
             }
         }
 
-        throw "Should never get here";
+        throw new Error("Should never get here");
     }
 
     discard (id) {
@@ -52,7 +52,7 @@ class TimerQueue {
             }
         }
 
-        throw `${id} not found`;
+        throw new Error(`${id} not found`);
     }
 
     fire () {
