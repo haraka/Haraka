@@ -133,8 +133,8 @@ class DKIMObject {
 
         if (this.fields.h) {
             const headers = this.fields.h.split(':');
-            for (const headerElement of headers) {
-                this.signed_headers.push(headerElement.trim().toLowerCase());
+            for (const h of headers) {
+                this.signed_headers.push(h.trim().toLowerCase());
             }
             if (!this.signed_headers.includes('from')) {
                 return this.result('from field not signed', 'invalid');
