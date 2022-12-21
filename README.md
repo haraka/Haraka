@@ -27,7 +27,6 @@ queued for outbound delivery.
 ### Getting Help
 
 * [Join the mailing list][8] (implemented as a Haraka plugin)
-* [Join us on Slack][14]
 * [GitHub Issues][15]
 
 
@@ -146,7 +145,6 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [11]: https://haraka.github.io/manual/plugins/dnsbl.html
 [12]: https://github.com/haraka/Haraka/tree/master/plugins
 [13]: https://github.com/smtpd/qpsmtpd/
-[14]: https://communityinviter.com/apps/harakaserver/public-inviter
 [15]: https://github.com/haraka/Haraka/issues
 [16]: https://github.com/haraka/Haraka/blob/master/LICENSE
 [17]: https://github.com/baudehlo
