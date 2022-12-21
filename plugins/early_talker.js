@@ -101,12 +101,7 @@ exports.load_ip_list = list => {
     for (const element of list) {
         try {
             let addr = element;
-            if (addr.match(/\/\d+$/)) {
-                addr = ipaddr.parseCIDR(addr);
-            }
-            else {
-                addr = ipaddr.parseCIDR(addr + ((isIPv6(addr)) ? '/128' : '/32'));
-            }
+            addr = addr.match(/\/\d+$/) ? ipaddr.parseCIDR(addr) : ipaddr.parseCIDR(addr + ((isIPv6(addr)) ? '/128' : '/32'));
 
             whitelist.push(addr);
         }

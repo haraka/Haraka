@@ -19,10 +19,7 @@ exports.hook_capabilities = function (next, connection) {
         return next();
     }
 
-    let methods = null;
-    if (this.cfg.core?.methods ) {
-        methods = this.cfg.core.methods.split(',');
-    }
+    const methods = this.cfg.core?.methods ? this.cfg.core.methods.split(',') : null;
     if (methods && methods.length > 0) {
         connection.capabilities.push(`AUTH ${methods.join(' ')}`);
         connection.notes.allowed_auth_methods = methods;

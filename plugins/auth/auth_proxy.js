@@ -85,10 +85,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         return;
     });
     socket.send_command = function (cmd, data) {
-        let line = cmd + (data ? (` ${data}`) : '');
-        if (cmd === 'dot') {
-            line = '.';
-        }
+        const line = cmd === 'dot' ? '.' : cmd + (data ? (` ${data}`) : '');
         connection.logprotocol(self, `C: ${line}`);
         command = cmd.toLowerCase();
         this.write(`${line}\r\n`);

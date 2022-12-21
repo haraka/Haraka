@@ -80,12 +80,7 @@ exports.quarantine = function (next, connection) {
     const yyyymmdd = d.getFullYear() + zeroPad(d.getMonth()+1, 2)
         + this.zeroPad(d.getDate(), 2);
 
-    let subdir = yyyymmdd;
-    // Allow either boolean or a sub-directory to be specified
-
-    if (typeof quarantine !== 'boolean' && quarantine !== 1) {
-        subdir = path.join(quarantine, yyyymmdd);
-    }
+    const subdir = typeof quarantine !== 'boolean' && quarantine !== 1 ? path.join(quarantine, yyyymmdd) : yyyymmdd;
 
     const txn = connection?.transaction;
     if (!txn) return next();

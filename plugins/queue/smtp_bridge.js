@@ -22,18 +22,9 @@ exports.hook_data_post = (next, connection) => {
 }
 
 exports.hook_get_mx = function (next, hmail, domain) {
-    let priority = 10;
-    if (this.cfg.main.priority) {
-        priority = this.cfg.main.priority;
-    }
-    let authType = null;
-    if (this.cfg.main.auth_type) {
-        authType = this.cfg.main.auth_type;
-    }
-    let port = null;
-    if (this.cfg.main.port) {
-        port = this.cfg.main.port;
-    }
+    const priority = this.cfg.main.priority ? this.cfg.main.priority : 10;
+    const authType = this.cfg.main.auth_type ? this.cfg.main.auth_type : null;
+    const port = this.cfg.main.port ? this.cfg.main.port : null;
     return next(OK, {
         priority,
         exchange: this.cfg.main.host,

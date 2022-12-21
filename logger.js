@@ -24,12 +24,7 @@ function stringify (obj) {
             continue;
         }
         v = v.toString();
-        if (regex.test(v)) {
-            str += `${key}="${v.replace(escape_replace_regex, '\\$&')}" `;
-        }
-        else {
-            str += `${key}=${v} `;
-        }
+        str += regex.test(v) ? `${key}="${v.replace(escape_replace_regex, '\\$&')}" ` : `${key}=${v} `;
     }
     return str.trim();
 }
@@ -159,10 +154,7 @@ logger.log = (level, data, logobj) => {
 logger.log_respond = (retval, msg, data) => {
     // any other return code is irrelevant
     if (retval !== constants.cont) { return false; }
-    let timestamp_string = '';
-    if (logger.timestamps) {
-        timestamp_string = `${new Date().toISOString()} `;
-    }
+    const timestamp_string = logger.timestamps ? `${new Date().toISOString()} ` : '';
     const color = logger.colors[data.level];
     if (color && stdout_is_tty) {
         process.stdout.write(`${timestamp_string}${logger.colorize(color,data.data)}\n`);

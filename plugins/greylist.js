@@ -72,12 +72,7 @@ exports.load_config_lists = function () {
         for (const element of list) {
             try {
                 let addr = element;
-                if (addr.match(/\/\d+$/)) {
-                    addr = ipaddr.parseCIDR(addr);
-                }
-                else {
-                    addr = ipaddr.parseCIDR(`${addr}${((net.isIPv6(addr)) ? '/128' : '/32')}`);
-                }
+                addr = addr.match(/\/\d+$/) ? ipaddr.parseCIDR(addr) : ipaddr.parseCIDR(`${addr}${((net.isIPv6(addr)) ? '/128' : '/32')}`);
 
                 plugin.whitelist[type].push(addr);
             }

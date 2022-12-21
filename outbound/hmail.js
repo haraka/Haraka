@@ -349,12 +349,7 @@ class HMailItem extends events.EventEmitter {
 
         // Allow transaction notes to set outbound IP helo
         if (!mx.bind_helo){
-            if (this.todo.notes.outbound_helo) {
-                mx.bind_helo = this.todo.notes.outbound_helo;
-            }
-            else {
-                mx.bind_helo = net_utils.get_primary_host_name();
-            }
+            mx.bind_helo = this.todo.notes.outbound_helo ? this.todo.notes.outbound_helo : net_utils.get_primary_host_name();
         }
 
         let host = this.hostlist.shift();
@@ -463,10 +458,7 @@ class HMailItem extends events.EventEmitter {
                 return;
             }
 
-            let line = `${cmd}${data ? ` ${data}` : ''}`;
-            if (cmd === 'dot' || cmd === 'dot_lmtp') {
-                line = '.';
-            }
+            const line = cmd === 'dot' || cmd === 'dot_lmtp' ? '.' : `${cmd}${data ? ` ${data}` : ''}`;
             if (authenticating) cmd = 'auth';
             self.logprotocol(`C: ${line}`);
             socket.write(`${line}\r\n`, "utf8", err => {
@@ -1066,12 +1058,7 @@ class HMailItem extends events.EventEmitter {
 
         bounce_msg_html_.forEach(line => {
             line = line.replace(/\{(\w+)\}/g, (i, word) => {
-                if (word in values) {
-                    return String(values[word]).replace(escape_pattern, m => `&${escaped_chars[m]};`);
-                }
-                else {
-                    return '?';
-                }
+                return word in values ? String(values[word]).replace(escape_pattern, m => `&${escaped_chars[m]};`) : '?';
             });
 
             bounce_html_lines.push(line);
@@ -1353,11 +1340,7 @@ class HMailItem extends events.EventEmitter {
             return this.discard(); // calls next_cb
         }
 
-        let delay = params.delay * 1000;
-
-        if (retval === constants.denysoft) {
-            delay = parseInt(msg, 10) * 1000;
-        }
+        const delay = retval === constants.denysoft ? parseInt(msg, 10) * 1000 : params.delay * 1000;
 
         this.loginfo(`Temp failing ${this.filename} for ${delay/1000} seconds: ${params.err}`);
         const parts = _qfile.parts(this.filename);

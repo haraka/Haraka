@@ -65,10 +65,7 @@ exports.get_sock_opts = function (user) {
     };
 
     const domain = (user.split('@'))[1];
-    let sect = this.cfg.main;
-    if (domain && this.cfg[domain]) {
-        sect = this.cfg[domain];
-    }
+    const sect = domain && this.cfg[domain] ? this.cfg[domain] : this.cfg.main;
 
     if (sect.port)     { this.sock_opts.port     = sect.port;     }
     if (sect.host)     { this.sock_opts.host     = sect.host;     }

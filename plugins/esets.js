@@ -53,12 +53,7 @@ exports.hook_data_post = function (next, connection) {
 
         // esets_cli returns non-zero exit on virus/error
         if (exit_code) {
-            if (exit_code > 1 && exit_code < 4) {
-                return next(DENY, `Message is infected with ${virus || 'UNKNOWN'}`);
-            }
-            else {
-                return next(DENYSOFT, 'Virus scanner error');
-            }
+            return exit_code > 1 && exit_code < 4 ? next(DENY, `Message is infected with ${virus || 'UNKNOWN'}`) : next(DENYSOFT, 'Virus scanner error');
         }
         return next();
     }

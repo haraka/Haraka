@@ -420,13 +420,8 @@ class Connection {
         // connection is dropped; we'll end up in the function forever.
         if (this.state >= states.DISCONNECTING) return;
 
-        let maxlength;
-        if (this.state === states.PAUSE_DATA || this.state === states.DATA) {
-            maxlength = this.max_data_line_length;
-        }
-        else {
-            maxlength = this.max_line_length;
-        }
+        const maxlength = this.state === states.PAUSE_DATA ||
+                          this.state === states.DATA ? this.max_data_line_length : this.max_line_length;
 
         let offset;
         while (this.current_data && ((offset = utils.indexOfLF(this.current_data, maxlength)) !== -1)) {
@@ -538,12 +533,7 @@ class Connection {
             code = msg.code;
             msg = msg.reply;
         }
-        if (!Array.isArray(msg)) {
-            messages = msg.toString().split(/\n/);
-        }
-        else {
-            messages = msg.slice();
-        }
+        messages = !Array.isArray(msg) ? msg.toString().split(/\n/) : msg.slice();
         messages = messages.filter((msg2) => {
             return /\S/.test(msg2);
         });
@@ -1339,12 +1329,7 @@ class Connection {
                 this.logerror(err);
             }
             // Explicitly handle out-of-disk space errors
-            if (err.code === 'ENOSPC') {
-                return this.respond(452, 'Internal Server Error');
-            }
-            else {
-                return this.respond(501, ["Command parsing failed", err]);
-            }
+            return err.code === 'ENOSPC' ? this.respond(452, 'Internal Server Error') : this.respond(501, ["Command parsing failed", err]);
         }
         // Get rest of key=value pairs
         const params = {};
@@ -1394,12 +1379,7 @@ class Connection {
                 this.logerror(err);
             }
             // Explicitly handle out-of-disk space errors
-            if (err.code === 'ENOSPC') {
-                return this.respond(452, 'Internal Server Error');
-            }
-            else {
-                return this.respond(501, ["Command parsing failed", err]);
-            }
+            return err.code === 'ENOSPC' ? this.respond(452, 'Internal Server Error') : this.respond(501, ["Command parsing failed", err]);
         }
         // Get rest of key=value pairs
         const params = {};
