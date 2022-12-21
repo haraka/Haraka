@@ -33,7 +33,7 @@ exports.lookup = function (lookup, zone, cb) {
 
     // Build the query, adding the root dot if missing
     let query = [lookup, zone].join('.');
-    if (query[query.length - 1] !== '.') {
+    if (!query.endsWith('.')) {
         query += '.';
     }
     this.logdebug(`looking up: ${query}`);
