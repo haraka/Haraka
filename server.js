@@ -264,7 +264,7 @@ function messageHandler (worker, msg, handle) {
         worker = undefined;
     }
     // console.log("received cmd: ", msg);
-    if (msg && msg.cmd) {
+    if (msg?.cmd) {
         Server.receiveAsMaster(msg.cmd, msg.params);
     }
 }
@@ -272,7 +272,7 @@ function messageHandler (worker, msg, handle) {
 Server.get_listen_addrs = (cfg, port) => {
     if (!port) port = 25;
     let listeners = [];
-    if (cfg && cfg.listen) {
+    if (cfg?.listen) {
         listeners = cfg.listen.split(/\s*,\s*/);
         if (listeners[0] === '') listeners = [];
         for (let i=0; i < listeners.length; i++) {

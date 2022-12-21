@@ -52,7 +52,7 @@ exports.hook_connect = function (next, connection) {
                 case 'caution':
                 case 'black':
                 case 'truncate':
-                    if (cfg.gbudb && cfg.gbudb[gbudb.range]) {
+                    if (cfg.gbudb?.[gbudb.range]) {
                         connection.loginfo(self, `range=${gbudb.range} action=${cfg.gbudb[gbudb.range]}`);
                         switch (cfg.gbudb[gbudb.range]) {
                             case 'accept':
@@ -120,7 +120,7 @@ exports.hook_data_post = function (next, connection) {
     }
 
     // Check GBUdb results
-    if (connection.notes.gbudb && connection.notes.gbudb.action) {
+    if (connection.notes.gbudb?.action) {
         switch (connection.notes.gbudb.action) {
             case 'accept':
             case 'quarantine':

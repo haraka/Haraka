@@ -54,7 +54,7 @@ signals.forEach((sig) => {
 
         logger.lognotice(`${sig} received`);
         logger.dump_and_exit(() => {
-            if (server.cluster && server.cluster.isMaster) {
+            if (server.cluster?.isMaster) {
                 server.performShutdown();
             }
             else if (!server.cluster) {

@@ -107,7 +107,7 @@ class pluggableStream extends stream.Stream {
         }
     }
     clean (data) {
-        if (this.targetsocket && this.targetsocket.removeAllListeners) {
+        if (this.targetsocket?.removeAllListeners) {
             [   'data', 'secure', 'secureConnect', 'secureConnection',
                 'end', 'close', 'error', 'drain'
             ].forEach((name) => {

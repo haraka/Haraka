@@ -23,7 +23,7 @@ exports.hook_capabilities = function (next, connection) {
     }
 
     let methods = null;
-    if (plugin.cfg.core && plugin.cfg.core.methods ) {
+    if (plugin.cfg.core?.methods ) {
         methods = plugin.cfg.core.methods.split(',');
     }
     if (methods && methods.length > 0) {

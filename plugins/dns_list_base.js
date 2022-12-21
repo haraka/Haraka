@@ -51,7 +51,7 @@ exports.lookup = function (lookup, zone, cb) {
         }
 
         // <https://www.spamhaus.org/news/article/807/using-our-public-mirrors-check-your-return-codes-now>
-        if (a && a.includes('127.255.255.')) {
+        if (a?.includes('127.255.255.')) {
             self.disable_zone(zone, a);
             return cb(err, null);  // Return a null A record
         }
@@ -159,11 +159,11 @@ exports.check_zones = function (interval) {
     const self = this;
     this.disable_allowed = true;
     if (interval) interval = parseInt(interval);
-    if ((this.zones && this.zones.length) ||
-        (this.disabled_zones && this.disabled_zones.length)) {
+    if ((this.zones?.length) ||
+        (this.disabled_zones?.length)) {
         let zones = [];
-        if (this.zones && this.zones.length) zones = zones.concat(this.zones);
-        if (this.disabled_zones && this.disabled_zones.length) {
+        if (this.zones?.length) zones = zones.concat(this.zones);
+        if (this.disabled_zones?.length) {
             zones = zones.concat(this.disabled_zones);
         }
 
@@ -214,7 +214,7 @@ exports.disable_zone = function (zone, result) {
     if (idx === -1) return false;  // not enabled
 
     this.zones.splice(idx, 1);
-    if (!(this.disabled_zones && this.disabled_zones.length)) {
+    if (!(this.disabled_zones?.length)) {
         this.disabled_zones = [];
     }
     if (!this.disabled_zones.includes(zone)) {

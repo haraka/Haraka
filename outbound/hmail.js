@@ -850,13 +850,13 @@ class HMailItem extends events.EventEmitter {
                             loginfo.version = cipher.version;
                         }
                         if (verifyError) loginfo.error = verifyError;
-                        if (cert && cert.subject) {
+                        if (cert?.subject) {
                             loginfo.cn = cert.subject.CN;
                             loginfo.organization = cert.subject.O;
                         }
-                        if (cert && cert.issuer)   loginfo.issuer = cert.issuer.O;
-                        if (cert && cert.valid_to) loginfo.expires = cert.valid_to;
-                        if (cert && cert.fingerprint) loginfo.fingerprint = cert.fingerprint;
+                        if (cert?.issuer)   loginfo.issuer = cert.issuer.O;
+                        if (cert?.valid_to) loginfo.expires = cert.valid_to;
+                        if (cert?.fingerprint) loginfo.fingerprint = cert.fingerprint;
                         self.loginfo('secured', loginfo);
 
                         if (self.force_tls && !authorized) {
