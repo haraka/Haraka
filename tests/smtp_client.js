@@ -45,7 +45,7 @@ exports.testUpgradeIsCalledOnSTARTTLS = test => {
     client.command = 'starttls';
     cmds.line('250 Hello client.example.com\r\n');
 
-    const StringDecoder = require('string_decoder').StringDecoder;
+    const { StringDecoder } = require('string_decoder');
     const decoder = new StringDecoder('utf8');
 
     const cent = Buffer.from(upgradeArgs.key);

@@ -1,6 +1,6 @@
 // bounce tests
 const tlds = require('haraka-tld');
-const SPF  = require('haraka-plugin-spf').SPF;
+const { SPF }  = require('haraka-plugin-spf');
 
 const net_utils = require('haraka-net-utils');
 
@@ -112,7 +112,7 @@ exports.empty_return_path = function (next, connection) {
     if (!this.cfg.check.empty_return_path) return next();
     if (!this.has_null_sender(connection)) return next();
 
-    const transaction = connection.transaction;
+    const { transaction } = connection;
     // Bounce messages generally do not have a Return-Path set. This checks
     // for that. But whether it should is worth questioning...
 
@@ -147,7 +147,7 @@ exports.bad_rcpt = function (next, connection) {
     if (!this.has_null_sender(connection)) return next();
     if (!this.cfg.invalid_addrs) return next();
 
-    const transaction = connection.transaction;
+    const { transaction } = connection;
     for (const element of transaction.rcpt_to) {
         const rcpt = element.address();
         if (!this.cfg.invalid_addrs[rcpt]) continue;

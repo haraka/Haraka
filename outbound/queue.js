@@ -4,7 +4,7 @@ const async       = require('async');
 const fs          = require('fs');
 const path        = require('path');
 
-const Address     = require('address-rfc2821').Address;
+const { Address }     = require('address-rfc2821');
 const config      = require('haraka-config');
 
 const logger      = require('../logger');
@@ -146,14 +146,12 @@ exports._add_file = (file, cb) => {
     cb();
 }
 
-exports.load_queue_files = (pid, input_files, iteratee, callback) => {
+exports.load_queue_files = (pid, input_files, iteratee, callback = function () {}) => {
     const self = exports;
     const searchPid = parseInt(pid);
 
     let stat_renamed = 0;
     let stat_loaded = 0;
-
-    callback = callback || function () {};
 
     if (searchPid) {
         logger.loginfo(`[outbound] Grabbing queue files for pid: ${pid}`);

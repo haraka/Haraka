@@ -1,7 +1,7 @@
 // This plugin checks for clients that talk before we sent a response
 
 const ipaddr = require('ipaddr.js');
-const isIPv6 = require('net').isIPv6;
+const { isIPv6 } = require('net');
 
 exports.register = function () {
     this.load_config();
@@ -50,7 +50,7 @@ exports.early_talker = function (next, connection) {
         return next(DENYDISCONNECT, "You talk too soon");
     }
 
-    let pause = plugin.pause;
+    let { pause } = plugin;
     if (plugin.hook === 'connect_init') {
         const elapsed = (Date.now() - connection.start_time);
         if (elapsed > plugin.pause) {

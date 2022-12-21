@@ -6,7 +6,7 @@ const dns          = require('dns');
 const path         = require('path');
 const net          = require('net');
 
-const Address     = require('address-rfc2821').Address;
+const { Address }     = require('address-rfc2821');
 const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const DSN         = require('haraka-dsn');
@@ -187,7 +187,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     get_mx () {
-        const domain = this.todo.domain;
+        const { domain } = this.todo;
         plugins.run_hooks('get_mx', this, domain);
     }
 
@@ -1183,7 +1183,7 @@ class HMailItem extends events.EventEmitter {
                 bounce_body.push(`Action: ${dsn_action}${CRLF}`);
             }
             if (rcpt_to.dsn_status) {
-                let dsn_status = rcpt_to.dsn_status;
+                let { dsn_status } = rcpt_to;
                 if (rcpt_to.dsn_code || rcpt_to.dsn_msg) {
                     dsn_status += " (";
                     if (rcpt_to.dsn_code) {

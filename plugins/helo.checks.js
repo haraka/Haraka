@@ -301,8 +301,8 @@ exports.big_company = function (next, connection, helo) {
     }
 
     const allowed_rdns = this.cfg.bigco[helo].split(/,/);
-    for (const allowedRdn of allowed_rdns) {
-        const re = new RegExp(`${allowedRdn.replace(/\./g, '\\.')}$`);
+    for (const allow of allowed_rdns) {
+        const re = new RegExp(`${allow.replace(/\./g, '\\.')}$`);
         if (re.test(rdns)) {
             connection.results.add(this, {pass: 'big_co'});
             return next();

@@ -52,7 +52,7 @@ exports.set_temp_fail_intervals = function () {
     //      it with the equivalent times of maxTempFailures using the original 2^N formula
     //   3) the word "none" can be specified if you do not want to retry a temp failure,
     //      equivalent behavior of specifying maxTempFailures=1
-    const cfg = this.cfg;
+    const { cfg } = this;
 
     // Fallback function to create an array of the original retry times
     function set_old_defaults () {

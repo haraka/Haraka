@@ -18,8 +18,8 @@ class TQTimer {
 
 class TimerQueue {
 
-    constructor (interval) {
-        interval = interval || 1000;
+    constructor (interval = 1000) {
+        const self = this;
         this.queue = [];
         this.interval_timer = setInterval(() => { this.fire(); }, interval);
     }
