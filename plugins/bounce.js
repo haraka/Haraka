@@ -5,24 +5,22 @@ const SPF  = require('haraka-plugin-spf').SPF;
 const net_utils = require('haraka-net-utils');
 
 exports.register = function () {
-    const plugin = this;
-    plugin.load_bounce_ini();
-    plugin.load_bounce_bad_rcpt();
+    this.load_bounce_ini();
+    this.load_bounce_bad_rcpt();
 
-    plugin.register_hook('mail',      'reject_all');
-    plugin.register_hook('data',      'single_recipient');
-    plugin.register_hook('data',      'bad_rcpt');
-    plugin.register_hook('data_post', 'empty_return_path');
-    plugin.register_hook('data',      'bounce_spf_enable');
-    plugin.register_hook('data_post', 'bounce_spf');
-    plugin.register_hook('data_post', 'non_local_msgid');
+    this.register_hook('mail',      'reject_all');
+    this.register_hook('data',      'single_recipient');
+    this.register_hook('data',      'bad_rcpt');
+    this.register_hook('data_post', 'empty_return_path');
+    this.register_hook('data',      'bounce_spf_enable');
+    this.register_hook('data_post', 'bounce_spf');
+    this.register_hook('data_post', 'non_local_msgid');
 }
 
 exports.load_bounce_bad_rcpt = function () {
-    const plugin = this;
-
-    const new_list = plugin.config.get('bounce_bad_rcpt', 'list', () => {
-        plugin.load_bounce_bad_rcpt();
+    
+    const new_list = this.config.get('bounce_bad_rcpt', 'list', () => {
+        this.load_bounce_bad_rcpt();
     });
 
     const invalids = {};
@@ -30,12 +28,11 @@ exports.load_bounce_bad_rcpt = function () {
         invalids[element] = true;
     }
 
-    plugin.cfg.invalid_addrs = invalids;
+    this.cfg.invalid_addrs = invalids;
 }
 
 exports.load_bounce_ini = function () {
-    const plugin = this;
-    plugin.cfg = plugin.config.get('bounce.ini', {
+    this.cfg = this.config.get('bounce.ini', {
         booleans: [
             '-check.reject_all',
             '+check.single_recipient',
@@ -50,43 +47,41 @@ exports.load_bounce_ini = function () {
             '-reject.non_local_msgid',
         ],
     }, () => {
-        plugin.load_bounce_ini();
+        this.load_bounce_ini();
     });
 
     // Legacy config handling
-    if (plugin.cfg.main.reject_invalid) {
-        plugin.logerror('bounce.ini is out of date, please update!');
-        plugin.cfg.check.single_recipient=true;
-        plugin.cfg.reject.single_recipient=true;
+    if (this.cfg.main.reject_invalid) {
+        this.logerror('bounce.ini is out of date, please update!');
+        this.cfg.check.single_recipient=true;
+        this.cfg.reject.single_recipient=true;
     }
 
-    if (plugin.cfg.main.reject_all) {
-        plugin.logerror('bounce.ini is out of date, please update!');
-        plugin.cfg.check.reject_all=true;
+    if (this.cfg.main.reject_all) {
+        this.logerror('bounce.ini is out of date, please update!');
+        this.cfg.check.reject_all=true;
     }
 }
 
 exports.reject_all = function (next, connection, params) {
-    const plugin = this;
-    if (!plugin.cfg.check.reject_all) return next();
+    if (!this.cfg.check.reject_all) return next();
 
     const mail_from = params[0];
     // bounce messages are from null senders
-    if (!plugin.has_null_sender(connection, mail_from)) return next();
+    if (!this.has_null_sender(connection, mail_from)) return next();
 
-    connection.transaction.results.add(plugin, {fail: 'bounces_accepted', emit: true });
+    connection.transaction.results.add(this, {fail: 'bounces_accepted', emit: true });
     return next(DENY, 'No bounces accepted here');
 }
 
 exports.single_recipient = function (next, connection) {
-    const plugin = this;
-    if (!plugin?.cfg?.check?.single_recipient) return next();
-    if (!plugin?.has_null_sender(connection)) return next();
+    if (!this?.cfg?.check?.single_recipient) return next();
+    if (!this?.has_null_sender(connection)) return next();
     const { transaction, relaying, remote } = connection;
 
     // Valid bounces have a single recipient
     if (transaction.rcpt_to.length === 1) {
-        transaction.results.add(plugin, {pass: 'single_recipient', emit: true });
+        transaction.results.add(this, {pass: 'single_recipient', emit: true });
         return next();
     }
 
@@ -96,27 +91,26 @@ exports.single_recipient = function (next, connection) {
     // the option 'Do not send delivery reports' is
     // checked (not sure if this is default or not)
     if (relaying) {
-        transaction.results.add(plugin, {skip: 'single_recipient(relay)', emit: true });
+        transaction.results.add(this, {skip: 'single_recipient(relay)', emit: true });
         return next();
     }
     if (remote.is_private) {
-        transaction.results.add(plugin, {skip: 'single_recipient(private_ip)', emit: true });
+        transaction.results.add(this, {skip: 'single_recipient(private_ip)', emit: true });
         return next();
     }
 
-    connection.loginfo(plugin, `bounce with too many recipients to: ${transaction.rcpt_to.join(',')}`);
+    connection.loginfo(this, `bounce with too many recipients to: ${transaction.rcpt_to.join(',')}`);
 
-    transaction.results.add(plugin, {fail: 'single_recipient', emit: true });
+    transaction.results.add(this, {fail: 'single_recipient', emit: true });
 
-    if (!plugin.cfg.reject.single_recipient) return next();
+    if (!this.cfg.reject.single_recipient) return next();
 
     return next(DENY, 'this bounce message does not have 1 recipient');
 }
 
 exports.empty_return_path = function (next, connection) {
-    const plugin = this;
-    if (!plugin.cfg.check.empty_return_path) return next();
-    if (!plugin.has_null_sender(connection)) return next();
+    if (!this.cfg.check.empty_return_path) return next();
+    if (!this.has_null_sender(connection)) return next();
 
     const transaction = connection.transaction;
     // Bounce messages generally do not have a Return-Path set. This checks
@@ -135,33 +129,32 @@ exports.empty_return_path = function (next, connection) {
 
     const rp = transaction.header.get('Return-Path');
     if (!rp) {
-        transaction.results.add(plugin, {pass: 'empty_return_path' });
+        transaction.results.add(this, {pass: 'empty_return_path' });
         return next();
     }
 
     if (rp === '<>') {
-        transaction.results.add(plugin, {pass: 'empty_return_path' });
+        transaction.results.add(this, {pass: 'empty_return_path' });
         return next();
     }
 
-    transaction.results.add(plugin, {fail: 'empty_return_path', emit: true });
+    transaction.results.add(this, {fail: 'empty_return_path', emit: true });
     return next(DENY, 'bounce with non-empty Return-Path (RFC 3834)');
 }
 
 exports.bad_rcpt = function (next, connection) {
-    const plugin = this;
-    if (!plugin.cfg.check.bad_rcpt) return next();
-    if (!plugin.has_null_sender(connection)) return next();
-    if (!plugin.cfg.invalid_addrs) return next();
+    if (!this.cfg.check.bad_rcpt) return next();
+    if (!this.has_null_sender(connection)) return next();
+    if (!this.cfg.invalid_addrs) return next();
 
     const transaction = connection.transaction;
     for (const element of transaction.rcpt_to) {
         const rcpt = element.address();
-        if (!plugin.cfg.invalid_addrs[rcpt]) continue;
-        transaction.results.add(plugin, {fail: 'bad_rcpt', emit: true });
+        if (!this.cfg.invalid_addrs[rcpt]) continue;
+        transaction.results.add(this, {fail: 'bad_rcpt', emit: true });
         return next(DENY, 'That recipient does not accept bounces');
     }
-    transaction.results.add(plugin, {pass: 'bad_rcpt'});
+    transaction.results.add(this, {pass: 'bad_rcpt'});
 
     return next();
 }
@@ -203,9 +196,8 @@ function find_message_id_headers (headers, body, connection, self) {
 }
 
 exports.non_local_msgid = function (next, connection) {
-    const plugin = this;
-    if (!plugin.cfg.check.non_local_msgid) return next();
-    if (!plugin.has_null_sender(connection)) return next();
+    if (!this.cfg.check.non_local_msgid) return next();
+    if (!this.has_null_sender(connection)) return next();
 
     const transaction = connection?.transaction;
     if (!transaction) return next();
@@ -224,14 +216,14 @@ exports.non_local_msgid = function (next, connection) {
     //     http://lamsonproject.org/docs/bounce_detection.html
 
     let matches = {}
-    find_message_id_headers(matches, transaction.body, connection, plugin);
+    find_message_id_headers(matches, transaction.body, connection, this);
     matches = Object.keys(matches);
-    connection.logdebug(plugin, `found Message-IDs: ${matches.join(', ')}`);
+    connection.logdebug(this, `found Message-IDs: ${matches.join(', ')}`);
 
     if (!matches.length) {
-        connection.loginfo(plugin, 'no Message-ID matches');
-        transaction.results.add(plugin, { fail: 'Message-ID' });
-        if (!plugin.cfg.reject.non_local_msgid) return next();
+        connection.loginfo(this, 'no Message-ID matches');
+        transaction.results.add(this, { fail: 'Message-ID' });
+        if (!this.cfg.reject.non_local_msgid) return next();
         return next(DENY, `bounce without Message-ID in headers, unable to verify that I sent it`);
     }
 
@@ -243,13 +235,13 @@ exports.non_local_msgid = function (next, connection) {
     }
 
     if (domains.length === 0) {
-        connection.loginfo(plugin, 'no domain(s) parsed from Message-ID headers');
-        transaction.results.add(plugin, { fail: 'Message-ID parseable' });
-        if (!plugin.cfg.reject.non_local_msgid) return next();
+        connection.loginfo(this, 'no domain(s) parsed from Message-ID headers');
+        transaction.results.add(this, { fail: 'Message-ID parseable' });
+        if (!this.cfg.reject.non_local_msgid) return next();
         return next(DENY, `bounce with invalid Message-ID, I didn't send it.`);
     }
 
-    connection.logdebug(plugin, domains);
+    connection.logdebug(this, domains);
 
     const valid_domains=[];
     for (const domain of domains) {
@@ -259,8 +251,8 @@ exports.non_local_msgid = function (next, connection) {
     }
 
     if (valid_domains.length === 0) {
-        transaction.results.add(plugin, { fail: 'Message-ID valid domain' });
-        if (!plugin.cfg.reject.non_local_msgid) return next();
+        transaction.results.add(this, { fail: 'Message-ID valid domain' });
+        if (!this.cfg.reject.non_local_msgid) return next();
         return next(DENY, `bounce Message-ID without valid domain, I didn't send it.`);
     }
 
@@ -297,17 +289,15 @@ function find_received_headers (ips, body, connection, self) {
 
 exports.bounce_spf_enable = function (next, connection) {
     if (!connection.transaction) return next();
-    const plugin = this;
-    if (plugin.cfg.check.bounce_spf) {
+    if (this.cfg.check.bounce_spf) {
         connection.transaction.parse_body = true;
     }
     return next();
 }
 
 exports.bounce_spf = function (next, connection) {
-    const plugin = this;
-    if (!plugin.cfg.check.bounce_spf) return next();
-    if (!plugin.has_null_sender(connection)) return next();
+    if (!this.cfg.check.bounce_spf) return next();
+    if (!this.has_null_sender(connection)) return next();
 
     const txn = connection?.transaction;
     if (!txn) return next();
@@ -315,14 +305,14 @@ exports.bounce_spf = function (next, connection) {
     // Recurse through all textual parts and store all parsed IPs
     // in an object to remove any duplicates which might appear.
     let ips = {};
-    find_received_headers(ips, txn.body, connection, plugin);
+    find_received_headers(ips, txn.body, connection, this);
     ips = Object.keys(ips);
     if (!ips.length) {
-        connection.loginfo(plugin, 'No received headers found in message');
+        connection.loginfo(this, 'No received headers found in message');
         return next();
     }
 
-    connection.logdebug(plugin, `found IPs to check: ${ips.join(', ')}`);
+    connection.logdebug(this, `found IPs to check: ${ips.join(', ')}`);
 
     let pending = 0;
     let aborted = false;
@@ -340,10 +330,10 @@ exports.bounce_spf = function (next, connection) {
     }
 
     timer = setTimeout(() => {
-        connection.logerror(plugin, 'Timed out');
-        txn.results.add(plugin, { skip: 'bounce_spf(timeout)' });
+        connection.logerror(this, 'Timed out');
+        txn.results.add(this, { skip: 'bounce_spf(timeout)' });
         return run_cb(true);
-    }, (plugin.timeout - 1) * 1000);
+    }, (this.timeout - 1) * 1000);
 
     ips.forEach(ip => {
         if (aborted) return;
@@ -354,30 +344,30 @@ exports.bounce_spf = function (next, connection) {
                 if (aborted) return;
                 pending--;
                 if (err) {
-                    connection.logerror(plugin, err.message);
+                    connection.logerror(this, err.message);
                     return run_cb();
                 }
-                connection.logdebug(plugin, `ip=${ip} spf_result=${spf.result(result)}`);
+                connection.logdebug(this, `ip=${ip} spf_result=${spf.result(result)}`);
                 switch (result) {
                     case (spf.SPF_NONE):
                         // falls through, domain doesn't publish an SPF record
                     case (spf.SPF_TEMPERROR):
                     case (spf.SPF_PERMERROR):
                         // Abort as all subsequent lookups will return this
-                        connection.logdebug(plugin, `Aborted: SPF returned ${spf.result(result)}`);
-                        txn.results.add(plugin, { skip: 'bounce_spf' });
+                        connection.logdebug(this, `Aborted: SPF returned ${spf.result(result)}`);
+                        txn.results.add(this, { skip: 'bounce_spf' });
                         return run_cb(true);
                     case (spf.SPF_PASS):
                         // Presume this is a valid bounce
                         // TODO: this could be spoofed; could weight each IP to combat
-                        connection.loginfo(plugin, `Valid bounce originated from ${ip}`);
-                        txn.results.add(plugin, { pass: 'bounce_spf' });
+                        connection.loginfo(this, `Valid bounce originated from ${ip}`);
+                        txn.results.add(this, { pass: 'bounce_spf' });
                         return run_cb(true);
                 }
                 if (pending === 0 && !aborted) {
                     // We've checked all the IPs and none of them returned Pass
-                    txn.results.add(plugin, {fail: 'bounce_spf', emit: true });
-                    if (!plugin.cfg.reject.bounce_spf) return run_cb();
+                    txn.results.add(this, {fail: 'bounce_spf', emit: true });
+                    if (!this.cfg.reject.bounce_spf) return run_cb();
                     return run_cb(false, DENY, 'Invalid bounce (spoofed sender)');
                 }
             }

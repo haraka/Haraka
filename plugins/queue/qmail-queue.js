@@ -18,15 +18,14 @@ exports.register = function () {
 }
 
 exports.load_qmail_queue_ini = function () {
-    const plugin = this;
-
-    plugin.cfg = plugin.config.get('qmail-queue.ini', {
+    
+    this.cfg = this.config.get('qmail-queue.ini', {
         booleans: [
             '+main.enable_outbound',
         ],
     },
     () => {
-        plugin.load_qmail_queue_ini();
+        this.load_qmail_queue_ini();
     });
 }
 

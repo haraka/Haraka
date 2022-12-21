@@ -13,20 +13,18 @@ exports.register = function () {
 exports.rabbitmq_queue = function (next, connection) {
     if (!connection?.transaction) return next();
 
-    const plugin = this;
     connection.transaction.message_stream.get_data(str => {
         if (channel && channel.sendToQueue(queue, str, {deliveryMode})) {
             return next(OK);
         }
         else {
-            plugin.logerror("Failed to queue to rabbitmq");
+            this.logerror("Failed to queue to rabbitmq");
             return next();
         }
     });
 }
 
 exports.init_amqp_connection = function () {
-    const plugin = this;
     const cfg = this.config.get("rabbitmq.ini").rabbitmq;
 
     const protocol = cfg.protocol || "amqp";
@@ -45,30 +43,30 @@ exports.init_amqp_connection = function () {
 
     amqp.connect(`${protocol}://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}${vhost}`, (err, conn) => {
         if (err) {
-            plugin.logerror(`Connection to rabbitmq failed: ${err}`);
+            this.logerror(`Connection to rabbitmq failed: ${err}`);
             return;
         }
         // TODO: if !confirm conn.createChannel...
         conn.createConfirmChannel((err2, ch) => {
             if (err2) {
-                plugin.logerror(`Error creating rabbitmq channel: ${err2}`);
+                this.logerror(`Error creating rabbitmq channel: ${err2}`);
                 return conn.close();
             }
             ch.assertExchange(exchangeName, exchangeType, {durable}, (err3, ok) => {
                 if (err3) {
-                    plugin.logerror(`Error asserting rabbitmq exchange: ${err3}`);
+                    this.logerror(`Error asserting rabbitmq exchange: ${err3}`);
                     return conn.close();
                 }
                 ch.assertQueue(queueName,
                     {durable, autoDelete},
                     (err4, ok2) => {
                         if (err4) {
-                            plugin.logerror(`Error asserting rabbitmq queue: ${err4}`);
+                            this.logerror(`Error asserting rabbitmq queue: ${err4}`);
                             return conn.close();
                         }
                         queue = ok2.queue;
                         channel = ch;
-                        plugin.register_hook('queue', 'rabbitmq_queue');
+                        this.register_hook('queue', 'rabbitmq_queue');
                     }
                 );
             });

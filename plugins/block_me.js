@@ -18,8 +18,6 @@ exports.hook_data_post = function (next, connection) {
     const recip = (this.config.get('block_me.recipient') || '').toLowerCase();
     const senders = this.config.get('block_me.senders', 'list');
 
-    const self = this;
-
     // Make sure only 1 recipient
     if (connection.transaction.rcpt_to.length != 1) {
         return next();
@@ -50,7 +48,7 @@ exports.hook_data_post = function (next, connection) {
     // add to mail_from.blocklist
     fs.open('./config/mail_from.blocklist', 'a', (err, fd) => {
         if (err) {
-            connection.logerror(self, `Unable to append to mail_from.blocklist: ${err}`);
+            connection.logerror(this, `Unable to append to mail_from.blocklist: ${err}`);
             return;
         }
         fs.write(fd, `${to_block}\n`, null, 'UTF-8', (err2, written) => {

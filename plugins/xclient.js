@@ -11,9 +11,8 @@ exports.register = function () {
 }
 
 exports.load_xclient_hosts = function () {
-    const self = this;
     const cfg = this.config.get('xclient.hosts', 'list', () => {
-        self.load_xclient_hosts();
+        this.load_xclient_hosts();
     });
     const ah = {};
     for (const i in cfg) {

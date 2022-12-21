@@ -4,11 +4,10 @@ const sock = require('./line_socket');
 const utils = require('haraka-utils');
 
 exports.load_excludes = function () {
-    const plugin = this;
-
-    plugin.loginfo('Loading excludes file');
-    const list = plugin.config.get('clamd.excludes','list', () => {
-        plugin.load_excludes();
+    
+    this.loginfo('Loading excludes file');
+    const list = this.config.get('clamd.excludes','list', () => {
+        this.load_excludes();
     });
 
     const new_skip_list_exclude = [];
@@ -25,7 +24,7 @@ exports.load_excludes = function () {
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(`${e.message} (entry: ${element})`);
+                        this.logerror(`${e.message} (entry: ${element})`);
                     }
                 }
                 else {
@@ -36,7 +35,7 @@ exports.load_excludes = function () {
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(`${e.message} (entry: ${element})`);
+                        this.logerror(`${e.message} (entry: ${element})`);
                     }
                 }
                 break;
@@ -47,7 +46,7 @@ exports.load_excludes = function () {
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(`${e.message} (entry: ${element})`);
+                    this.logerror(`${e.message} (entry: ${element})`);
                 }
                 break;
             default:
@@ -57,20 +56,19 @@ exports.load_excludes = function () {
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(`${e.message} (entry: ${element})`);
+                    this.logerror(`${e.message} (entry: ${element})`);
                 }
         }
     }
 
     // Make the new lists visible
-    plugin.skip_list_exclude = new_skip_list_exclude;
-    plugin.skip_list = new_skip_list;
+    this.skip_list_exclude = new_skip_list_exclude;
+    this.skip_list = new_skip_list;
 }
 
 exports.load_clamd_ini = function () {
-    const plugin = this;
-
-    plugin.cfg = plugin.config.get('clamd.ini', {
+    
+    this.cfg = this.config.get('clamd.ini', {
         booleans: [
             '-main.randomize_host_order',
             '-main.only_with_attachments',
@@ -96,7 +94,7 @@ exports.load_clamd_ini = function () {
             '+check.local_ip'
         ],
     }, () => {
-        plugin.load_clamd_ini();
+        this.load_clamd_ini();
     });
 
     const defaults = {
@@ -107,8 +105,8 @@ exports.load_clamd_ini = function () {
     };
 
     for (const key in defaults) {
-        if (plugin.cfg.main[key] === undefined) {
-            plugin.cfg.main[key] = defaults[key];
+        if (this.cfg.main[key] === undefined) {
+            this.cfg.main[key] = defaults[key];
         }
     }
 
@@ -127,39 +125,37 @@ exports.load_clamd_ini = function () {
     const enabled_reject_opts = [];
     Object.keys(rejectPatterns).forEach(opt => {
         all_reject_opts.push(rejectPatterns[opt]);
-        if (!plugin.cfg.reject[opt]) return;
+        if (!this.cfg.reject[opt]) return;
         enabled_reject_opts.push(rejectPatterns[opt]);
     });
 
     if (enabled_reject_opts.length) {
-        plugin.allRE = new RegExp(all_reject_opts.join('|'));
-        plugin.rejectRE = new RegExp(enabled_reject_opts.join('|'));
+        this.allRE = new RegExp(all_reject_opts.join('|'));
+        this.rejectRE = new RegExp(enabled_reject_opts.join('|'));
     }
 
     // resolve mismatch between docs (...attachment) and code (...attachments)
-    if (plugin.cfg.main.only_with_attachment !== undefined) {
-        plugin.cfg.main.only_with_attachments =
-            !!plugin.cfg.main.only_with_attachment;
+    if (this.cfg.main.only_with_attachment !== undefined) {
+        this.cfg.main.only_with_attachments =
+            !!this.cfg.main.only_with_attachment;
     }
 }
 
 exports.register = function () {
-    const plugin = this;
-    plugin.load_excludes();
-    plugin.load_clamd_ini();
+    this.load_excludes();
+    this.load_clamd_ini();
 }
 
 exports.hook_data = function (next, connection) {
-    const plugin = this;
+    
+    if (!this.cfg.main.only_with_attachments) return next();
 
-    if (!plugin.cfg.main.only_with_attachments) return next();
-
-    if (!plugin.should_check(connection)) return next();
+    if (!this.should_check(connection)) return next();
 
     const txn = connection.transaction;
     txn.parse_body = true;
     txn.attachment_hooks((ctype, filename, body) => {
-        connection.logdebug(plugin,
+        connection.logdebug(this,
             `found ctype=${ctype}, filename=${filename}`);
         txn.notes.clamd_found_attachment = true;
     });
@@ -324,32 +320,31 @@ exports.hook_data_post = function (next, connection) {
 }
 
 exports.should_check = function (connection) {
-    const plugin = this;
-
+    
     let result = true;  // default
     if (!connection?.transaction) return false
 
-    if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
-        connection.transaction.results.add(plugin, { skip: 'authed'});
+    if (this.cfg.check.authenticated == false && connection.notes.auth_user) {
+        connection.transaction.results.add(this, { skip: 'authed'});
         result = false;
     }
 
-    if (plugin.cfg.check.relay == false && connection.relaying) {
-        connection.transaction.results.add(plugin, { skip: 'relay'});
+    if (this.cfg.check.relay == false && connection.relaying) {
+        connection.transaction.results.add(this, { skip: 'relay'});
         result = false;
     }
 
-    if (plugin.cfg.check.local_ip == false && connection.remote.is_local) {
-        connection.transaction.results.add(plugin, { skip: 'local_ip'});
+    if (this.cfg.check.local_ip == false && connection.remote.is_local) {
+        connection.transaction.results.add(this, { skip: 'local_ip'});
         result = false;
     }
 
-    if (plugin.cfg.check.private_ip == false && connection.remote.is_private) {
-        if (plugin.cfg.check.local_ip == true && connection.remote.is_local) {
+    if (this.cfg.check.private_ip == false && connection.remote.is_private) {
+        if (this.cfg.check.local_ip == true && connection.remote.is_local) {
             // local IPs are included in private IPs
         }
         else {
-            connection.transaction.results.add(plugin, { skip: 'private_ip'});
+            connection.transaction.results.add(this, { skip: 'private_ip'});
             result = false;
         }
     }

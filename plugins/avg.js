@@ -10,27 +10,24 @@ const sock = require('./line_socket');
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
-    const plugin = this;
-
-    plugin.load_avg_ini();
+    
+    this.load_avg_ini();
 }
 
 exports.load_avg_ini = function () {
-    const plugin = this;
-
-    plugin.cfg = plugin.config.get('avg.ini', {
+    
+    this.cfg = this.config.get('avg.ini', {
         booleans: [
             '+defer.timeout',
             '+defer.error',
         ],
     }, () => {
-        plugin.load_avg_ini();
+        this.load_avg_ini();
     });
 }
 
 exports.get_tmp_file = function (transaction) {
-    const plugin = this;
-    const tmpdir  = plugin.cfg.main.tmpdir || '/tmp';
+    const tmpdir  = this.cfg.main.tmpdir || '/tmp';
     return path.join(tmpdir, `${transaction.uuid}.tmp`);
 }
 
