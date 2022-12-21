@@ -533,7 +533,7 @@ class Connection {
             code = msg.code;
             msg = msg.reply;
         }
-        messages = !Array.isArray(msg) ? msg.toString().split(/\n/) : msg.slice();
+        messages = Array.isArray(msg) ? msg.slice() : msg.toString().split(/\n/);
         messages = messages.filter((msg2) => {
             return /\S/.test(msg2);
         });

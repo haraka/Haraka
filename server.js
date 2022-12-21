@@ -320,13 +320,13 @@ Server.createServer = params => {
     Server.cluster = cluster;
 
     // Cluster Workers
-    if (!cluster.isMaster) {
-        Server.setup_smtp_listeners(Server.plugins, 'child', inactivity_timeout);
-        return;
-    }
-    else {
+    if (cluster.isMaster) {
         // console.log("Setting up message handler");
         cluster.on('message', messageHandler);
+    }
+    else {
+        Server.setup_smtp_listeners(Server.plugins, 'child', inactivity_timeout);
+        return;
     }
 
     // Cluster Master

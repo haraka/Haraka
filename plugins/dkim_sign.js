@@ -54,14 +54,14 @@ class DKIMSignStream extends Stream {
             // Look for CRLF
             if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
                 // Look for end of headers marker
-                if (!this.found_eoh) {
-                    this.found_eoh = true;
-                }
-                else {
+                if (this.found_eoh) {
                     // Store any empty lines so that we can discard
                     // any trailing CRLFs at the end of the message
                     this.line_buffer.ar.push(line);
                     this.line_buffer.len += line.length;
+                }
+                else {
+                    this.found_eoh = true;
                 }
             }
             else {

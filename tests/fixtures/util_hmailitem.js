@@ -26,13 +26,13 @@ exports.newMockHMailItem = (outbound_context, test, options, callback) => {
                 test.done();
                 return;
             }
-            if (!hmail.todo) {
+            if (hmail.todo) {
+                callback(hmail);
+            }
+            else {
                 hmail.once('ready', () => {
                     setImmediate(() => {callback(hmail);});
                 });
-            }
-            else {
-                callback(hmail);
             }
         }
     );

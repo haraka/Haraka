@@ -161,11 +161,11 @@ class HMailItem extends events.EventEmitter {
             return;
         }
 
-        if (!this.todo) {
-            this.once('ready', () => { this._send(); });
+        if (this.todo) {
+            this._send();
         }
         else {
-            this._send();
+            this.once('ready', () => { this._send(); });
         }
     }
 

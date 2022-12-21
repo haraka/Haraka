@@ -296,13 +296,13 @@ exports.get_spamd_socket = function (next, conn, headers) {
 
     socket.on('timeout', function () {
         socket.destroy();
-        if (!this.is_connected) {
-            if (txn) txn.results.add(plugin, {err: `socket connect timeout` });
-            if (plugin.cfg.defer.connect_timeout) return next(DENYSOFT, 'spamd connect timeout');
-        }
-        else {
+        if (this.is_connected) {
             if (txn) txn.results.add(plugin, {err: `timeout waiting for results` });
             if (plugin.cfg.defer.scan_timeout) return next(DENYSOFT, 'spamd scan timeout');
+        }
+        else {
+            if (txn) txn.results.add(plugin, {err: `socket connect timeout` });
+            if (plugin.cfg.defer.connect_timeout) return next(DENYSOFT, 'spamd connect timeout');
         }
         return next();
     });

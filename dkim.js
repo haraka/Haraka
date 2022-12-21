@@ -543,13 +543,7 @@ class DKIMVerifyStream extends Stream {
                     if (!this.header_idx[hn]) this.header_idx[hn] = [];
                     this.header_idx[hn].push(header);
                 }
-                if (!this.header_idx['dkim-signature']) {
-                    this._no_signatures_found = true;
-                    return process.nextTick(() => {
-                        self.cb(null, self.result, self.results);
-                    });
-                }
-                else {
+                if (this.header_idx['dkim-signature']) {
                     // Create new DKIM objects for each header
                     const dkim_headers = this.header_idx['dkim-signature'];
                     this.debug(`Found ${dkim_headers.length} DKIM signatures`);
@@ -563,23 +557,27 @@ class DKIMVerifyStream extends Stream {
                         });
                     }
                 }
+                else {
+                    this._no_signatures_found = true;
+                    return process.nextTick(() => {
+                        self.cb(null, self.result, self.results);
+                    });
+                }
                 continue;  // while()
             }
 
-            if (!this._in_body) {
-                // Parse headers
-                if (line[0] === 0x20 || line[0] === 0x09) {
-                    // Header continuation
-                    this.headers[this.headers.length-1] += line.toString('utf-8');
-                }
-                else {
-                    this.headers.push(line.toString('utf-8'));
-                }
-            }
-            else {
+            if (this._in_body) {
                 for (const dkimObject of this.dkim_objects) {
                     dkimObject.add_body_line(line);
                 }
+            }
+            else // Parse headers
+            if (line[0] === 0x20 || line[0] === 0x09) {
+                // Header continuation
+                this.headers[this.headers.length-1] += line.toString('utf-8');
+            }
+            else {
+                this.headers.push(line.toString('utf-8'));
             }
             if (once) {
                 break;

@@ -188,14 +188,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
                 throw err2;
             }
 
-            if (!white_promo_rec) {
-                ctr.add(this, {
-                    fail : 'greylisted',
-                    stage : 'rcpt'
-                });
-                return this.invoke_outcome_cb(next, false);
-            }
-            else {
+            if (white_promo_rec) {
                 this.loginfo(connection, 'host has been promoted to WHITE zone');
                 ctr.add(this, {
                     pass : 'whitelisted',
@@ -206,6 +199,13 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
                     pass : 'whitelisted'
                 });
                 return this.invoke_outcome_cb(next, true);
+            }
+            else {
+                ctr.add(this, {
+                    fail : 'greylisted',
+                    stage : 'rcpt'
+                });
+                return this.invoke_outcome_cb(next, false);
             }
         })
     })

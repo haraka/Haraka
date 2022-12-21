@@ -45,12 +45,12 @@ exports.hook_queue = function (next, connection) {
     );
 
     qmail_queue.on('exit', function finished (code) {
-        if (code !== 0) {
-            connection.logerror(plugin, `Unable to queue message to qmail-queue: ${code}`);
-            next();
+        if (code === 0) {
+            next(OK, "Queued!");
         }
         else {
-            next(OK, "Queued!");
+            connection.logerror(plugin, `Unable to queue message to qmail-queue: ${code}`);
+            next();
         }
     });
 
