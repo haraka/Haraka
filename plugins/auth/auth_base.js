@@ -27,21 +27,20 @@ exports.hook_capabilities = (next, connection) => {
 exports.get_plain_passwd = (user, connection, cb) => cb()
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    const plugin = this;
     if (params[0].toUpperCase() === AUTH_COMMAND && params[1]) {
-        return plugin.select_auth_method(next, connection, params.slice(1).join(' '));
+        return this.select_auth_method(next, connection, params.slice(1).join(' '));
     }
     if (!connection.notes.authenticating) return next();
 
     const am = connection.notes.auth_method;
     if (am === AUTH_METHOD_CRAM_MD5 && connection.notes.auth_ticket) {
-        return plugin.auth_cram_md5(next, connection, params);
+        return this.auth_cram_md5(next, connection, params);
     }
     if (am === AUTH_METHOD_LOGIN) {
-        return plugin.auth_login(next, connection, params);
+        return this.auth_login(next, connection, params);
     }
     if (am === AUTH_METHOD_PLAIN) {
-        return plugin.auth_plain(next, connection, params);
+        return this.auth_plain(next, connection, params);
     }
     next();
 }
@@ -169,7 +168,6 @@ exports.select_auth_method = function (next, connection, method) {
 }
 
 exports.auth_plain = function (next, connection, params) {
-    const plugin = this;
     // one parameter given on line, either:
     //    AUTH PLAIN <param> or
     //    AUTH PLAIN\n
@@ -178,7 +176,7 @@ exports.auth_plain = function (next, connection, params) {
     if (params[0]) {
         const credentials = utils.unbase64(params[0]).split(/\0/);
         credentials.shift();  // Discard authid
-        plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
+        this.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
         return
     }
 
@@ -193,7 +191,6 @@ exports.auth_plain = function (next, connection, params) {
 }
 
 exports.auth_login = function (next, connection, params) {
-    const plugin = this;
     if ((!connection.notes.auth_login_asked_login && params[0]) ||
         ( connection.notes.auth_login_asked_login &&
          !connection.notes.auth_login_userlogin)) {
@@ -218,7 +215,7 @@ exports.auth_login = function (next, connection, params) {
         connection.notes.auth_login_userlogin = null;
         connection.notes.auth_login_asked_login = false;
 
-        return plugin.check_user(next, connection, credentials, AUTH_METHOD_LOGIN);
+        return this.check_user(next, connection, credentials, AUTH_METHOD_LOGIN);
     }
 
     connection.respond(334, LOGIN_STRING1, () => {
@@ -228,15 +225,14 @@ exports.auth_login = function (next, connection, params) {
 }
 
 exports.auth_cram_md5 = function (next, connection, params) {
-    const plugin = this;
     if (params) {
         const credentials = utils.unbase64(params[0]).split(' ');
-        return plugin.check_user(next, connection, credentials, AUTH_METHOD_CRAM_MD5);
+        return this.check_user(next, connection, credentials, AUTH_METHOD_CRAM_MD5);
     }
 
-    const ticket = `<${plugin.hexi(Math.floor(Math.random() * 1000000))}. ${plugin.hexi(Date.now())}@${connection.local.host}>`;
+    const ticket = `<${this.hexi(Math.floor(Math.random() * 1000000))}. ${this.hexi(Date.now())}@${connection.local.host}>`;
 
-    connection.loginfo(plugin, `ticket: ${ticket}`);
+    connection.loginfo(this, `ticket: ${ticket}`);
     connection.respond(334, utils.base64(ticket), () => {
         connection.notes.auth_ticket = ticket;
         next(OK);

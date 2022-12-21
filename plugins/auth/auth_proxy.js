@@ -4,15 +4,13 @@ const utils = require('haraka-utils');
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
-    const plugin = this;
-    plugin.inherits('auth/auth_base');
-    plugin.load_tls_ini();
+    this.inherits('auth/auth_base');
+    this.load_tls_ini();
 }
 
 exports.load_tls_ini = function () {
-    const plugin = this;
-    plugin.tls_cfg = plugin.config.get('tls.ini', () => {
-        plugin.load_tls_ini();
+    this.tls_cfg = this.config.get('tls.ini', () => {
+        this.load_tls_ini();
     });
 }
 

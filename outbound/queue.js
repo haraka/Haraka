@@ -193,13 +193,11 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
 }
 
 exports.stats = () => {
-    // TODO: output more data here
-    const results = {
+
+    return {
         queue_dir,
         queue_count,
     };
-
-    return results;
 }
 
 exports._list_file = (file, cb) => {

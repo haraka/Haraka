@@ -87,14 +87,13 @@ logger._init = function () {
 }
 
 logger.load_log_ini = function () {
-    const self = this;
-    self.cfg = config.get('log.ini', {
+    this.cfg = config.get('log.ini', {
         booleans: [
             '+main.timestamps',
         ]
     },
     () => {
-        self.load_log_ini();
+        this.load_log_ini();
     });
 
     this.set_loglevel(this.cfg.main.level);
@@ -207,13 +206,12 @@ logger.set_format = function (format) {
 }
 
 logger._init_loglevel = function () {
-    const self = this;
 
     const _loglevel = config.get('loglevel', 'value', () => {
-        self._init_loglevel();
+        this._init_loglevel();
     });
 
-    self.set_loglevel(_loglevel);
+    this.set_loglevel(_loglevel);
 }
 
 logger.would_log = level => {
@@ -226,15 +224,14 @@ logger.set_timestamps = value => {
 }
 
 logger._init_timestamps = function () {
-    const self = this;
 
     const _timestamps = config.get('log_timestamps', 'value', () => {
-        self._init_timestamps();
+        this._init_timestamps();
     });
 
     // If we've already been toggled to true by the cfg, we should respect
     // this.
-    self.set_timestamps(logger.timestamps || _timestamps);
+    this.set_timestamps(logger.timestamps || _timestamps);
 }
 
 logger._init();

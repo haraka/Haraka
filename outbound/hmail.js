@@ -157,14 +157,12 @@ class HMailItem extends events.EventEmitter {
         if (obc.cfg.disabled) {
             // try again in 1 second if delivery is disabled
             this.logdebug("delivery disabled temporarily. Retrying in 1s.");
-            const hmail = this;
-            setTimeout(() => { hmail.send(); }, 1000);
+            setTimeout(() => { this.send(); }, 1000);
             return;
         }
 
         if (!this.todo) {
-            const self = this;
-            this.once('ready', () => { self._send(); });
+            this.once('ready', () => { this._send(); });
         }
         else {
             this._send();
@@ -179,9 +177,8 @@ class HMailItem extends events.EventEmitter {
         if (retval === constants.delay) {
             // Try again in 'delay' seconds.
             this.logdebug(`Delivery of this email delayed for ${delay_seconds} seconds`);
-            const hmail = this;
-            hmail.next_cb();
-            temp_fail_queue.add(hmail.filename, delay_seconds * 1000, () => { delivery_queue.push(hmail); });
+            this.next_cb();
+            temp_fail_queue.add(this.filename, delay_seconds * 1000, () => { delivery_queue.push(this); });
         }
         else {
             this.logdebug(`Sending mail: ${this.filename}`);
@@ -195,7 +192,6 @@ class HMailItem extends events.EventEmitter {
     }
 
     get_mx_respond (retval, mx) {
-        const hmail = this;
         switch (retval) {
             case constants.ok: {
                 let mx_list;
@@ -213,49 +209,48 @@ class HMailItem extends events.EventEmitter {
                     }
                     mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
                 }
-                hmail.logdebug(`Got a MX from Plugin: ${hmail.todo.domain} => 0 ${JSON.stringify(mx)}`);
-                return hmail.found_mx(null, mx_list);
+                this.logdebug(`Got a MX from Plugin: ${this.todo.domain} => 0 ${JSON.stringify(mx)}`);
+                return this.found_mx(null, mx_list);
             }
             case constants.deny:
-                hmail.logwarn(`get_mx plugin returned DENY: ${mx}`);
-                hmail.todo.rcpt_to.forEach(rcpt => {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No MX for ${hmail.todo.domain}`));
+                this.logwarn(`get_mx plugin returned DENY: ${mx}`);
+                this.todo.rcpt_to.forEach(rcpt => {
+                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No MX for ${this.todo.domain}`));
                 });
-                return hmail.bounce(`No MX for ${hmail.todo.domain}`);
+                return this.bounce(`No MX for ${this.todo.domain}`);
             case constants.denysoft:
-                hmail.logwarn(`get_mx plugin returned DENYSOFT: ${mx}`);
-                hmail.todo.rcpt_to.forEach(rcpt => {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Temporary MX lookup error for ${hmail.todo.domain}`, 450));
+                this.logwarn(`get_mx plugin returned DENYSOFT: ${mx}`);
+                this.todo.rcpt_to.forEach(rcpt => {
+                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Temporary MX lookup error for ${this.todo.domain}`, 450));
                 });
-                return hmail.temp_fail(`Temporary MX lookup error for ${hmail.todo.domain}`);
+                return this.temp_fail(`Temporary MX lookup error for ${this.todo.domain}`);
         }
 
         // if none of the above return codes, drop through to this...
         mx_lookup.lookup_mx(this.todo.domain, (err, mxs) => {
-            hmail.found_mx(err, mxs);
+            this.found_mx(err, mxs);
         });
     }
 
     found_mx (err, mxs) {
-        const hmail = this;
         if (err) {
             this.lognotice(`MX Lookup for ${this.todo.domain} failed: ${err}`);
             if (err.code === dns.NXDOMAIN || err.code === dns.NOTFOUND) {
                 this.todo.rcpt_to.forEach(rcpt => {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No Such Domain: ${hmail.todo.domain}`));
+                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No Such Domain: ${this.todo.domain}`));
                 });
                 this.bounce(`No Such Domain: ${this.todo.domain}`);
             }
             else if (err.code === 'NOMX') {
                 this.todo.rcpt_to.forEach(rcpt => {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Nowhere to deliver mail to for domain: ${hmail.todo.domain}`));
+                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Nowhere to deliver mail to for domain: ${this.todo.domain}`));
                 });
-                this.bounce(`Nowhere to deliver mail to for domain: ${hmail.todo.domain}`);
+                this.bounce(`Nowhere to deliver mail to for domain: ${this.todo.domain}`);
             }
             else {
                 // every other error is transient
                 this.todo.rcpt_to.forEach(rcpt => {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_unspecified(`DNS lookup failure: ${hmail.todo.domain}`));
+                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_unspecified(`DNS lookup failure: ${this.todo.domain}`));
                 });
                 this.temp_fail(`DNS lookup failure: ${err}`);
             }
@@ -266,7 +261,7 @@ class HMailItem extends events.EventEmitter {
             // support draft-delany-nullmx-02
             if (mxlist.length === 1 && mxlist[0].priority === 0 && mxlist[0].exchange === '') {
                 this.todo.rcpt_to.forEach(rcpt => {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Domain ${hmail.todo.domain} sends and receives no email (NULL MX)`));
+                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`));
                 });
                 return this.bounce(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`);
             }
@@ -293,12 +288,11 @@ class HMailItem extends events.EventEmitter {
     }
 
     try_deliver () {
-        const self = this;
 
         // check if there are any MXs left
         if (this.mxlist.length === 0) {
             this.todo.rcpt_to.forEach(rcpt => {
-                self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs ${self.todo.domain}`));
+                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs ${this.todo.domain}`));
             });
             return this.temp_fail("Tried all MXs");
         }
@@ -306,21 +300,21 @@ class HMailItem extends events.EventEmitter {
         const mx = this.mxlist.shift();
         const host = mx.exchange;
 
-        self.force_tls = this.todo.force_tls;
-        if (!self.force_tls) {
+        this.force_tls = this.todo.force_tls;
+        if (!this.force_tls) {
             if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, host)) {
                 this.logdebug(`Forcing TLS for host ${host}`);
-                self.force_tls = true;
+                this.force_tls = true;
             }
-            if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, self.todo.domain)) {
-                this.logdebug(`Forcing TLS for domain ${self.todo.domain}`);
-                self.force_tls = true;
+            if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, this.todo.domain)) {
+                this.logdebug(`Forcing TLS for domain ${this.todo.domain}`);
+                this.force_tls = true;
             }
 
             // IP or IP:port
             if (net.isIP(host)) {
-                self.hostlist = [ host ];
-                return self.try_deliver_host(mx);
+                this.hostlist = [ host ];
+                return this.try_deliver_host(mx);
             }
         }
 
@@ -328,43 +322,42 @@ class HMailItem extends events.EventEmitter {
         // and try each in order they appear
         dns.resolve(host, mx.family, (err, addresses) => {
             if (err) {
-                self.lognotice(`DNS (${mx.family}) for ${host} failed: ${err}`);
-                return self.try_deliver(); // try next MX
+                this.lognotice(`DNS (${mx.family}) for ${host} failed: ${err}`);
+                return this.try_deliver(); // try next MX
             }
             if (addresses.length === 0) {
                 // NODATA or empty host list
-                self.lognotice(`DNS (${mx.family}) for ${host} resulted in no data`);
-                return self.try_deliver(); // try next MX
+                this.lognotice(`DNS (${mx.family}) for ${host} resulted in no data`);
+                return this.try_deliver(); // try next MX
             }
             this.logdebug(`DNS (${mx.family}) for ${host} -> ${addresses.join(',')}`);
-            self.hostlist = addresses;
-            self.try_deliver_host(mx);
+            this.hostlist = addresses;
+            this.try_deliver_host(mx);
         });
     }
 
     try_deliver_host (mx) {
-        const self = this;
 
-        if (self.hostlist.length === 0) {
-            return self.try_deliver(); // try next MX
+        if (this.hostlist.length === 0) {
+            return this.try_deliver(); // try next MX
         }
 
         // Allow transaction notes to set outbound IP
-        if (!mx.bind && self.todo.notes.outbound_ip) {
-            mx.bind = self.todo.notes.outbound_ip;
+        if (!mx.bind && this.todo.notes.outbound_ip) {
+            mx.bind = this.todo.notes.outbound_ip;
         }
 
         // Allow transaction notes to set outbound IP helo
         if (!mx.bind_helo){
-            if (self.todo.notes.outbound_helo) {
-                mx.bind_helo = self.todo.notes.outbound_helo;
+            if (this.todo.notes.outbound_helo) {
+                mx.bind_helo = this.todo.notes.outbound_helo;
             }
             else {
                 mx.bind_helo = net_utils.get_primary_host_name();
             }
         }
 
-        let host = self.hostlist.shift();
+        let host = this.hostlist.shift();
         const port = mx.port || 25;
 
         if (mx.path) {
@@ -381,9 +374,9 @@ class HMailItem extends events.EventEmitter {
                     logger.logerror(`[outbound] Failed to get socket: ${err}`);
                 }
                 // try next host
-                return self.try_deliver_host(mx);
+                return this.try_deliver_host(mx);
             }
-            self.try_deliver_host_on_socket(mx, host, port, socket);
+            this.try_deliver_host_on_socket(mx, host, port, socket);
         });
     }
 
@@ -954,7 +947,6 @@ class HMailItem extends events.EventEmitter {
     }
 
     populate_bounce_message (from, to, reason, cb) {
-        const self = this;
 
         let buf = '';
         const original_header_lines = [];
@@ -982,14 +974,14 @@ class HMailItem extends events.EventEmitter {
                 if (original_header_lines.length > 0) {
                     header.parse(original_header_lines);
                 }
-                self.populate_bounce_message_with_headers(from, to, reason, header, cb);
+                this.populate_bounce_message_with_headers(from, to, reason, header, cb);
             });
             data_stream.on('error', err => {
                 cb(err);
             });
         }
         catch (err) {
-            self.populate_bounce_message_with_headers(from, to, reason, header, cb);
+            this.populate_bounce_message_with_headers(from, to, reason, header, cb);
         }
     }
 
@@ -1016,7 +1008,6 @@ class HMailItem extends events.EventEmitter {
      * @param cb - a callback for fn(err, message_body_lines)
      */
     populate_bounce_message_with_headers (from, to, reason, header, cb) {
-        const self = this;
         const CRLF = '\r\n';
 
         const originalMessageId = header.get('Message-Id');
@@ -1156,10 +1147,10 @@ class HMailItem extends events.EventEmitter {
             bounce_body.push(`Original-Envelope-Id: ${originalMessageId.replace(/(\r?\n)*$/, '')}${CRLF}`);
         }
         bounce_body.push(`Reporting-MTA: dns;${net_utils.get_primary_host_name()}${CRLF}`);
-        if (self.todo.queue_time) {
-            bounce_body.push(`Arrival-Date: ${utils.date_to_str(new Date(self.todo.queue_time))}${CRLF}`);
+        if (this.todo.queue_time) {
+            bounce_body.push(`Arrival-Date: ${utils.date_to_str(new Date(this.todo.queue_time))}${CRLF}`);
         }
-        self.todo.rcpt_to.forEach(rcpt_to => {
+        this.todo.rcpt_to.forEach(rcpt_to => {
             bounce_body.push(CRLF);
             bounce_body.push(`Final-Recipient: rfc822;${rcpt_to.address()}${CRLF}`);
             let dsn_action = null;
@@ -1247,9 +1238,7 @@ class HMailItem extends events.EventEmitter {
     bounce (err, opts) {
         this.loginfo(`bouncing mail: ${err}`);
         if (!this.todo) {
-            // haven't finished reading the todo, delay here...
-            const self = this;
-            self.once('ready', () => { self._bounce(err, opts); });
+            this.once('ready', () => { this._bounce(err, opts); });
             return;
         }
         this._bounce(err, opts);
@@ -1375,20 +1364,18 @@ class HMailItem extends events.EventEmitter {
         parts.next_attempt = Date.now() + delay;
         parts.attempts = this.num_failures;
         const new_filename = _qfile.name(parts);
-        // const new_filename = this`.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
 
-        const hmail = this;
         fs.rename(this.path, path.join(queue_dir, new_filename), err => {
             if (err) {
-                return hmail.bounce(`Error re-queueing email: ${err}`);
+                return this.bounce(`Error re-queueing email: ${err}`);
             }
 
-            hmail.path = path.join(queue_dir, new_filename);
-            hmail.filename = new_filename;
+            this.path = path.join(queue_dir, new_filename);
+            this.filename = new_filename;
 
-            hmail.next_cb();
+            this.next_cb();
 
-            temp_fail_queue.add(hmail.filename, delay, () => { delivery_queue.push(hmail); });
+            temp_fail_queue.add(this.filename, delay, () => { delivery_queue.push(this); });
         });
     }
 

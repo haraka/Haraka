@@ -53,11 +53,10 @@ exports.hook_queue = (next, connection) => {
 
 //This initializes the connection to rabbitmq server, It reads values from rabbitmq.ini file in config directory.
 exports.init_rabbitmq_server = function () {
-    const plugin = this;
     // this is called during init of rabbitmq
 
     //Read the config file rabbitmq
-    const config     = plugin.config.get('rabbitmq.ini');
+    const config     = this.config.get('rabbitmq.ini');
     //Just putting the defaults
     const options = {};
     let confirm = true;

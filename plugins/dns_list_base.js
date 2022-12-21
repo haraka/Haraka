@@ -10,7 +10,6 @@ exports.redis_host = '127.0.0.1:6379';
 let redis_client;
 
 exports.lookup = function (lookup, zone, cb) {
-    const self = this;
 
     if (!lookup || !zone) {
         return setImmediate(() => cb(new Error('missing data')));
@@ -39,26 +38,26 @@ exports.lookup = function (lookup, zone, cb) {
     this.logdebug(`looking up: ${query}`);
     // IS: IPv6 compatible (maybe; only if BL return IPv4 answers)
     dns.resolve(query, 'A', (err, a) => {
-        self.stats_incr_zone(err, zone, start);  // Statistics
+        this.stats_incr_zone(err, zone, start);  // Statistics
 
         // Check for a result of 127.0.0.1 or outside 127/8
         // This should *never* happen on a proper DNS list
-        if (a && ((!self.lookback_is_rejected && a.includes('127.0.0.1')) ||
+        if (a && ((!this.lookback_is_rejected && a.includes('127.0.0.1')) ||
                 a.find((rec) => { return rec.split('.')[0] !== '127' }))
         ) {
-            self.disable_zone(zone, a);
+            this.disable_zone(zone, a);
             return cb(err, null);  // Return a null A record
         }
 
         // <https://www.spamhaus.org/news/article/807/using-our-public-mirrors-check-your-return-codes-now>
         if (a?.includes('127.255.255.')) {
-            self.disable_zone(zone, a);
+            this.disable_zone(zone, a);
             return cb(err, null);  // Return a null A record
         }
 
         if (err) {
             if (err.code === dns.TIMEOUT) {         // list timed out
-                self.disable_zone(zone, err.code); // disable it
+                this.disable_zone(zone, err.code); // disable it
             }
             if (err.code === dns.NOTFOUND) {  // unlisted
                 return cb(null, a);          // not an error for a DNSBL
@@ -69,8 +68,7 @@ exports.lookup = function (lookup, zone, cb) {
 }
 
 exports.stats_incr_zone = function (err, zone, start) {
-    const plugin = this;
-    if (!plugin.enable_stats) return;
+    if (!this.enable_stats) return;
 
     const rkey = `dns-list-stat:${zone}`;
     const elapsed = new Date().getTime() - start;
@@ -85,18 +83,17 @@ exports.stats_incr_zone = function (err, zone, start) {
 }
 
 exports.init_redis = function () {
-    const plugin = this;
     if (redis_client) { return; }
 
     const redis = require('redis');
-    const host_port = plugin.redis_host.split(':');
+    const host_port = this.redis_host.split(':');
     const host = host_port[0] || '127.0.0.1';
     const port = parseInt(host_port[1], 10) || 6379;
 
     redis_client = redis.createClient(port, host);
     redis_client.connect().then(() => {
         redis_client.on('error', err => {
-            plugin.logerror(`Redis error: ${err}`);
+            this.logerror(`Redis error: ${err}`);
             redis_client.quit();
             redis_client = null; // should force a reconnect
             // not sure if that's the right thing but better than nothing...
@@ -156,7 +153,6 @@ exports.first = function (lookup, zones, cb, cb_each) {
 }
 
 exports.check_zones = function (interval) {
-    const self = this;
     this.disable_allowed = true;
     if (interval) interval = parseInt(interval);
     if ((this.zones?.length) ||
@@ -172,20 +168,20 @@ exports.check_zones = function (interval) {
         this.multi('127.0.0.1', zones, (err, zone, a, pending) => {
             if (!zone) return;
 
-            if ((!self.lookback_is_rejected && a) || (err && err.code === 'ETIMEOUT')) {
-                return self.disable_zone(zone, ((a) ? a : err.code));
+            if ((!this.lookback_is_rejected && a) || (err && err.code === 'ETIMEOUT')) {
+                return this.disable_zone(zone, ((a) ? a : err.code));
             }
 
             // Try the test point
-            self.lookup('127.0.0.2', zone, (err2, a2) => {
+            this.lookup('127.0.0.2', zone, (err2, a2) => {
                 if (!a2) {
-                    self.logwarn(`zone '${zone}' did not respond to test point (${err2})`);
-                    return self.disable_zone(zone, a2);
+                    this.logwarn(`zone '${zone}' did not respond to test point (${err2})`);
+                    return this.disable_zone(zone, a2);
                 }
                 // Was this zone previously disabled?
-                if (!self.zones.includes(zone)) {
-                    self.loginfo(`re-enabling zone ${zone}`);
-                    self.zones.push(zone);
+                if (!this.zones.includes(zone)) {
+                    this.loginfo(`re-enabling zone ${zone}`);
+                    this.zones.push(zone);
                 }
             });
         });
@@ -194,7 +190,7 @@ exports.check_zones = function (interval) {
     if (interval && interval >= 5 && !this._interval) {
         this.logdebug(`will re-test list zones every ${interval} minutes`);
         this._interval = setInterval(() => {
-            self.check_zones();
+            this.check_zones();
         }, (interval * 60) * 1000);
     }
 }

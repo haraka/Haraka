@@ -105,34 +105,33 @@ exports.HostPool = {
 
         let num_reqs = 0;
         const MockSocket = function MockSocket (pool) {
-            const self = this;
 
             // these are the methods called from probe_dead_host
 
             // setTimeout on the socket
-            self.pretendTimeout = () => {};
-            self.setTimeout = (ms, cb) => {
-                self.pretendTimeout = cb;
+            this.pretendTimeout = () => {};
+            this.setTimeout = (ms, cb) => {
+                this.pretendTimeout = cb;
             };
             // handle socket.on('error', ....
-            self.listeners = {};
-            self.on = (eventname, cb) => {
-                self.listeners[eventname] = cb;
+            this.listeners = {};
+            this.on = (eventname, cb) => {
+                this.listeners[eventname] = cb;
             };
-            self.emit = eventname => {
-                self.listeners[eventname]();
+            this.emit = eventname => {
+                this.listeners[eventname]();
             };
             // handle socket.connect(...
-            self.connected = () => {};
-            self.connect = (port, host, cb) => {
+            this.connected = () => {};
+            this.connect = (port, host, cb) => {
                 switch (++num_reqs) {
                     case 1:
                         // the first time through we pretend it timed out
-                        self.pretendTimeout();
+                        this.pretendTimeout();
                         break;
                     case 2:
                         // the second time through, pretend socket error
-                        self.emit('error');
+                        this.emit('error');
                         break;
                     case 3:
                         // the third time around, the socket connected
@@ -144,7 +143,7 @@ exports.HostPool = {
                         process.exit(1);
                 }
             };
-            self.destroy = () => {};
+            this.destroy = () => {};
 
         };
 

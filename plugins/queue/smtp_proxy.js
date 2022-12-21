@@ -7,40 +7,37 @@
 const smtp_client_mod = require('./smtp_client');
 
 exports.register = function () {
-    const plugin = this;
 
-    plugin.load_smtp_proxy_ini();
+    this.load_smtp_proxy_ini();
 
-    if (plugin.cfg.main.enable_outbound) {
-        plugin.register_hook('queue_outbound', 'hook_queue');
+    if (this.cfg.main.enable_outbound) {
+        this.register_hook('queue_outbound', 'hook_queue');
     }
 }
 
 exports.load_smtp_proxy_ini = function () {
-    const plugin = this;
 
-    plugin.cfg = plugin.config.get('smtp_proxy.ini', {
+    this.cfg = this.config.get('smtp_proxy.ini', {
         booleans: [
             '-main.enable_tls',
             '+main.enable_outbound',
         ],
     },
     () => {
-        plugin.load_smtp_proxy_ini();
+        this.load_smtp_proxy_ini();
     });
 
-    if (plugin.cfg.main.enable_outbound) {
-        plugin.lognotice('outbound enabled, will default to disabled in Haraka v3 (see #1472)');
+    if (this.cfg.main.enable_outbound) {
+        this.lognotice('outbound enabled, will default to disabled in Haraka v3 (see #1472)');
     }
 }
 
 exports.hook_mail = function (next, connection, params) {
-    const plugin = this;
-    const c = plugin.cfg.main;
-    connection.loginfo(plugin, `forwarding to ${
+    const c = this.cfg.main;
+    connection.loginfo(this, `forwarding to ${
         c.forwarding_host_pool ? "configured forwarding_host_pool" : `${c.host}:${c.port}`}`
     );
-    smtp_client_mod.get_client_plugin(plugin, connection, c, (err, smtp_client) => {
+    smtp_client_mod.get_client_plugin(this, connection, c, (err, smtp_client) => {
         connection.notes.smtp_client = smtp_client;
         smtp_client.next = next;
 
@@ -49,7 +46,7 @@ exports.hook_mail = function (next, connection, params) {
         smtp_client.on('data', smtp_client.call_next);
 
         smtp_client.on('dot', () => {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
+            if (smtp_client.is_dead_sender(this, connection)) {
                 delete connection.notes.smtp_client;
                 return;
             }
@@ -71,7 +68,7 @@ exports.hook_mail = function (next, connection, params) {
                 // errors are OK for rcpt, but nothing else
                 // this can also happen if the destination server
                 // times out, but that is okay.
-                connection.loginfo(plugin, "message denied, proxying failed");
+                connection.loginfo(this, "message denied, proxying failed");
                 smtp_client.release();
                 delete connection.notes.smtp_client;
             }
@@ -94,14 +91,13 @@ exports.hook_data = (next, connection) => {
 }
 
 exports.hook_queue = function (next, connection) {
-    const plugin = this;
     if (!connection?.transaction || !connection?.notes) return next();
 
     const { smtp_client } = connection.notes;
     if (!smtp_client) return next();
 
     smtp_client.next = next;
-    if (smtp_client.is_dead_sender(plugin, connection)) {
+    if (smtp_client.is_dead_sender(this, connection)) {
         delete connection.notes.smtp_client;
         return;
     }
