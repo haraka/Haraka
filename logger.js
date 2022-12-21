@@ -130,6 +130,7 @@ logger.dump_and_exit = function (code) {
     });
 }
 
+// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-3516
 logger.log = (level, data, logobj) => {
     if (level === 'PROTOCOL') {
         data = data.replace(/\n/g, '\\n');
@@ -174,7 +175,7 @@ logger.log_respond = (retval, msg, data) => {
 }
 
 logger.set_loglevel = function (level) {
-    if (level === undefined || level === null) return;
+    if (level == null) return;
 
     const loglevel_num = parseInt(level);
     if (typeof level === 'string') {
@@ -214,10 +215,7 @@ logger._init_loglevel = function () {
     this.set_loglevel(_loglevel);
 }
 
-logger.would_log = level => {
-    if (logger.loglevel < level) { return false; }
-    return true;
-}
+logger.would_log = level => !(logger.loglevel < level)
 
 logger.set_timestamps = value => {
     logger.timestamps = !!value;

@@ -198,7 +198,7 @@ class Plugin {
                 logger.logcrit(`Loading plugin ${this.name} failed: ${err}`);
                 return;
             }
-            throw `Loading plugin ${this.name} failed: ${err}`;
+            throw new Error(`Loading plugin ${this.name} failed: ${err}`);
         }
     }
 

@@ -273,6 +273,7 @@ class DKIMObject {
         }
 
         // Now add in our original DKIM-Signature header without the b= and trailing CRLF
+        // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-5869
         let our_sig = this.sig.replace(/([:;\s\t]|^)b=([^;]+)/, '$1b=');
         if (this.headercanon === 'relaxed') {
             our_sig = this.header_canon_relaxed(our_sig);
@@ -304,6 +305,7 @@ class DKIMObject {
             if (!res) return this.result('no key for signature', 'invalid');
             for (let record of res) {
                 // Node 0.11.x compatibility
+                // TODO: remove this when we drop support for Node 0.11.x
                 if (Array.isArray(record)) {
                     record = record.join('');
                 }

@@ -24,7 +24,7 @@ const chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9-]*(?:=[^= \x00-\x1f]+)?)$/;
 
 exports.parse = (type, line, strict) => {
     let params = [];
-    line = (new String(line)).replace(/\s*$/, '');
+    line = (String(line)).replace(/\s*$/, '');
     if (type === 'mail') {
         line = line.replace(strict ? /from:/i : /from:\s*/i, '');
     }
