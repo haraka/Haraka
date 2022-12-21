@@ -269,8 +269,7 @@ exports.send_trans_email = function (transaction, next) {
                 return;
             }
 
-            for (let j=0; j<hmails.length; j++) {
-                const hmail = hmails[j];
+            for (const hmail of hmails) {
                 delivery_queue.push(hmail);
             }
 
