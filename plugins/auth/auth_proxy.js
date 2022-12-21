@@ -1,6 +1,8 @@
 // Proxy AUTH requests selectively by domain
 const sock  = require('./line_socket');
 const utils = require('haraka-utils');
+
+//TODO: check against https://rules.sonarsource.com/javascript/RSPEC-6353
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
@@ -26,6 +28,7 @@ exports.hook_capabilities = (next, connection) => {
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     let domain;
+    // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
     if ((domain = /@([^@]+)$/.exec(user))) {
         domain = domain[1].toLowerCase();
     }
@@ -82,7 +85,6 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     socket.on('error', err => {
         connection.logerror(self, `connection failed to host ${host}: ${err}`);
         socket.end();
-        return;
     });
     socket.send_command = function (cmd, data) {
         let line = cmd + (data ? (` ${data}`) : '');
@@ -176,6 +178,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
             if (code.startsWith('5')) {
                 // Initial attempt failed; strip domain and retry.
                 let u;
+                // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
                 if ((u = /^([^@]+)@.+$/.exec(user))) {
                     user = u[1];
                     if (methods.includes('PLAIN')) {

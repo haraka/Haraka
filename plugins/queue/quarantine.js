@@ -51,9 +51,7 @@ function wants_quarantine (connection) {
 
     if (transaction.notes.quarantine) return transaction.notes.quarantine;
 
-    if (transaction.notes.get('queue.wants') === 'quarantine') return true;
-
-    return false;
+    return transaction.notes.get('queue.wants') === 'quarantine';
 }
 
 exports.get_base_dir = function () {

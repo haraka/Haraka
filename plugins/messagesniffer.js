@@ -12,6 +12,7 @@ exports.register = function () {
     if (cfg.main.port) port = parseInt(cfg.main.port);
 }
 
+// TODO: validate "if var =" against https://rules.sonarsource.com/javascript/RSPEC-1121
 exports.hook_connect = function (next, connection) {
     const cfg = this.config.get('messagesniffer.ini');
     // Skip any private IP ranges

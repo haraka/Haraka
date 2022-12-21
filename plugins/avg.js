@@ -5,8 +5,9 @@
 
 const fs   = require('fs');
 const path = require('path');
-
 const sock = require('./line_socket');
+
+// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-6353
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {

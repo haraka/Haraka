@@ -134,9 +134,8 @@ exports.hook_init_child = function (next, server) {
     server.notes.pt_messages = 0;
     server.notes.pt_mps_diff = 0;
     server.notes.pt_mps_max = 0;
-    const title = 'Haraka (worker)';
-    process.title = title;
-    this._interval = setupInterval(title, server);
+    process.title = 'Haraka (worker)';
+    this._interval = setupInterval(process.title, server);
     return next();
 }
 

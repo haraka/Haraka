@@ -117,16 +117,13 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 
     // Then check transaction level pre-DATA
     if (transaction.notes?.delay_deny_pre) {
-        for (let i=0; i<transaction.notes.delay_deny_pre.length; i++) {
-            const params = transaction.notes.delay_deny_pre[i];
-
+        transaction.notes.delay_deny_pre.forEach((params, i) => {
             // Remove rejection from the array if it was on the rcpt hooks
             if (params[5] === 'rcpt' || params[5] === 'rcpt_ok') {
                 transaction.notes.delay_deny_pre.splice(i, 1);
             }
-
             return next(params[0], params[1]);
-        }
+        });
     }
     return next();
 }

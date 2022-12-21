@@ -58,7 +58,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         this.get_plain_passwd(user, connection, callback);
     }
     else {
-        throw 'Invalid number of arguments for get_plain_passwd';
+        throw new Error('Invalid number of arguments for get_plain_passwd');
     }
 }
 
@@ -80,7 +80,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
         this.get_plain_passwd(user, connection, callback);
     }
     else {
-        throw 'Invalid number of arguments for get_plain_passwd';
+        throw new Error('Invalid number of arguments for get_plain_passwd');
     }
 }
 

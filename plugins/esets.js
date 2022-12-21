@@ -1,7 +1,7 @@
 // esets
 const fs = require('fs');
 const child_process = require('child_process');
-const virus_re = new RegExp('virus="([^"]+)"');
+const virus_re = /virus="([^"]+)"/;
 
 exports.hook_data_post = function (next, connection) {
     const plugin = this;
@@ -40,6 +40,7 @@ exports.hook_data_post = function (next, connection) {
 
         // Get virus name
         let virus;
+        // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
         if ((virus = virus_re.exec(stdout))) {
             virus = virus[1];
         }

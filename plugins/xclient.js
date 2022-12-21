@@ -22,10 +22,7 @@ exports.load_xclient_hosts = function () {
 }
 
 function xclient_allowed (ip) {
-    if (ip === '127.0.0.1' || ip === '::1' || allowed_hosts[ip]) {
-        return true;
-    }
-    return false;
+    return !!(ip === '127.0.0.1' || ip === '::1' || allowed_hosts[ip]);
 }
 
 exports.hook_capabilities = (next, connection) => {
@@ -49,7 +46,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     // If we get here - the client is allowed to use XCLIENT
     // Process arguments
-    const args = (new String(params[1])).toLowerCase().split(/ /);
+    const args = (String(params[1])).toLowerCase().split(/ /);
     const xclient = {};
     for (const arg of args) {
         const match = /^([^=]+)=([^ ]+)/.exec(arg);
@@ -60,6 +57,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                 case 'addr': {
                     // IPv6 is prefixed in the XCLIENT protocol
                     let ipv6;
+                    // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
                     if ((ipv6 = /^IPV6:(.+)$/i.exec(match[2]))) {
                         // Validate
                         if (net.isIPv6(ipv6[1])) {

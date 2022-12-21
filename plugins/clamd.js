@@ -368,6 +368,7 @@ function clamd_connect (socket, host) {
         // assume unix socket
         socket.connect(host);
     }
+    // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
     else if ((match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host))) {
         // IPv6 literal
         socket.connect((match[2] || 3310), match[1]);

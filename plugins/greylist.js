@@ -328,6 +328,7 @@ exports.was_whitelisted_in_session = function (connection) {
     return connection.transaction.results.has(this, 'pass', 'whitelisted');
 }
 
+// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-3800
 exports.process_skip_rules = function (connection) {
     const cr = connection.results;
 
@@ -389,10 +390,12 @@ exports.craft_hostid = function (connection) {
 
         value = value || remote.ip;
 
+        // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
         return ((transaction.notes.greylist = transaction.notes.greylist || {}).hostid = value);
     }
 
-    // no rDNS . FIXME: use fcrdns results
+    // no rDNS
+    // FIXME: use fcrdns results; check against https://rules.sonarsource.com/javascript/RSPEC-1529
     if (!remote.host || [ 'Unknown' | 'DNSERROR' ].includes(remote.host))
         return chsit(null, 'no rDNS info for this host');
 
@@ -632,6 +635,7 @@ exports.domain_in_list = function (list_name, domain) {
 
 // Check for special rDNS cases
 // @return {type: 'dynamic'} if rnds is dynamic (hostid should be IP)
+// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-3800
 exports.check_rdns_for_special_cases = function (domain, label) {
 
     // ptr for these is in fact dynamic

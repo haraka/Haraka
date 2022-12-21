@@ -158,6 +158,7 @@ exports.fixup_old_headers = function (txn) {
             break;
         // case 'rename':
         default:
+            // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-2310
             for (key in headers) {
                 if (!key) continue;
                 key = `X-Spam-${key}`;
@@ -210,6 +211,7 @@ exports.do_header_updates = function (conn, spamd_response) {
     }
 }
 
+// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-3800
 exports.score_too_high = function (conn, spamd_response) {
     const { score } = spamd_response;
     if (conn.relaying) {
@@ -240,7 +242,7 @@ exports.get_spamd_username = function (conn) {
         return conn.transaction.rcpt_to[0].address();
     }
     if (user === 'all-recipients') {
-        throw "Unimplemented";
+        throw new Error("Unimplemented");
         // TODO: pass the message through SA for each recipient. Then apply
         // the least strict result to the connection. That is useful when
         // one user blacklists a sender that another user wants to get mail
@@ -357,6 +359,7 @@ exports.should_skip = function (connection = {}) {
         }
     }
 
+    // TODO: check these boolean tests against https://rules.sonarsource.com/javascript/RSPEC-1125
     if (this.cfg.check.authenticated == false && connection.notes.auth_user) {
         connection.transaction.results.add(this, { skip: 'authed'});
         result = true;

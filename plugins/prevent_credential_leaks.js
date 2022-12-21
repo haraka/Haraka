@@ -22,6 +22,7 @@ exports.hook_data_post = (next, connection) => {
     let user = connection.notes.auth_user;
     let domain;
     let idx;
+    // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
     if ((idx = user.indexOf('@'))) {
         // If the username is qualified (e.g. user@domain.com)
         // then we make the @domain.com part optional in the regexp.
