@@ -60,8 +60,8 @@ exports.load_config_lists = function () {
 
         // toLower when loading spends a fraction of a second at load time
         // to save millions of seconds during run time.
-        for (let i = 0; i < list.length; i++) {
-            plugin.whitelist[type][list[i].toLowerCase()] = true;
+        for (const element of list) {
+            plugin.whitelist[type][element.toLowerCase()] = true;
         }
         plugin.logdebug(`whitelist {${type}} loaded from ${file_name} with ${list.length} entries`);
     }
@@ -71,9 +71,9 @@ exports.load_config_lists = function () {
 
         const list = Object.keys(plugin.cfg[file_name]);
 
-        for (let i = 0; i < list.length; i++) {
+        for (const element of list) {
             try {
-                let addr = list[i];
+                let addr = element;
                 if (addr.match(/\/\d+$/)) {
                     addr = ipaddr.parseCIDR(addr);
                 }
@@ -620,9 +620,9 @@ exports.ip_in_list = function (ip) {
 
     const list = plugin.whitelist.ip;
 
-    for (let i = 0; i < list.length; i++) {
+    for (const element of list) {
         try {
-            if (ipobj.match(list[i])) {
+            if (ipobj.match(element)) {
                 return true;
             }
         }
@@ -642,8 +642,8 @@ exports.domain_in_list = function (list_name, domain) {
         return false;
     }
 
-    for (let i = 0; i < list.length; i++) {
-        if (domain.length - domain.lastIndexOf(list[i]) == list[i].length)
+    for (const element of list) {
+        if (domain.length - domain.lastIndexOf(element) == element.length)
             return true;
     }
 

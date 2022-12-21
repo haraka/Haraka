@@ -184,8 +184,8 @@ class Transaction {
             this.header_pos = header_pos;
             if (this.parse_body) {
                 this.ensure_body();
-                for (let j = 0; j < body_lines.length; j++) {
-                    this.body.parse_more(body_lines[j]);
+                for (const bodyLine of body_lines) {
+                    this.body.parse_more(bodyLine);
                 }
             }
         }

@@ -14,8 +14,7 @@ exports.register = function () {
         hooks_to_delay = cfg.main.hooks_to_delay.split(/[\s,;]+/);
     }
 
-    for (let i=0; i < hooks_to_delay.length; i++) {
-        const hook = hooks_to_delay[i];
+    for (const hook of hooks_to_delay) {
         this.register_hook(hook, 'tarpit');
     }
 }

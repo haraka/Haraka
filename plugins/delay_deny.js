@@ -112,8 +112,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     // Apply any delayed rejections
     // Check connection level pre-DATA rejections first
     if (connection.notes?.delay_deny_pre) {
-        for (let i=0; i<connection.notes.delay_deny_pre.length; i++) {
-            const params = connection.notes.delay_deny_pre[i];
+        for (const params of connection.notes.delay_deny_pre) {
             return next(params[0], params[1]);
         }
     }

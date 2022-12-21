@@ -43,8 +43,8 @@ exports.clean_tmp_directory = function (next) {
     if (fs.existsSync(tmp_dir)) {
         const dirent = fs.readdirSync(tmp_dir);
         plugin.loginfo(`Removing temporary files from: ${tmp_dir}`);
-        for (let i=0; i<dirent.length; i++) {
-            fs.unlinkSync(path.join(tmp_dir, dirent[i]));
+        for (const element of dirent) {
+            fs.unlinkSync(path.join(tmp_dir, element));
         }
     }
     next();

@@ -73,8 +73,8 @@ class DKIMObject {
         const [ , , dkim_signature] = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
         const sig = dkim_signature.trim().replace(/\s+/g,'');
         const keys = sig.split(';');
-        for (let k=0; k<keys.length; k++) {
-            const key = keys[k].trim();
+        for (const keyElement of keys) {
+            const key = keyElement.trim();
             if (!key) continue;  // skip empty keys
             const [ , key_name, key_value] = /^([^= ]+)=((?:.|[\r\n])+)$/.exec(key) || [];
             if (key_name) {
@@ -133,8 +133,8 @@ class DKIMObject {
 
         if (this.fields.h) {
             const headers = this.fields.h.split(':');
-            for (let h=0; h<headers.length; h++) {
-                this.signed_headers.push(headers[h].trim().toLowerCase());
+            for (const headerElement of headers) {
+                this.signed_headers.push(headerElement.trim().toLowerCase());
             }
             if (!this.signed_headers.includes('from')) {
                 return this.result('from field not signed', 'invalid');
@@ -247,8 +247,7 @@ class DKIMObject {
         }
 
         // Now we canonicalize the specified headers
-        for (let h=0; h<this.signed_headers.length; h++) {
-            const header = this.signed_headers[h];
+        for (const header of this.signed_headers) {
             this.debug(`${this.identity}: canonicalize header: ${header}`);
             if (this.header_idx[header]) {
                 // RFC 6376 section 5.4.2, read headers from bottom to top
@@ -305,8 +304,7 @@ class DKIMObject {
                 }
             }
             if (!res) return self.result('no key for signature', 'invalid');
-            for (let r=0; r<res.length; r++) {
-                let record = res[r];
+            for (let record of res) {
                 // Node 0.11.x compatibility
                 if (Array.isArray(record)) {
                     record = record.join('');
@@ -318,8 +316,8 @@ class DKIMObject {
                 self.debug(`${self.identity}: got DNS record: ${record}`);
                 const rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
                 const split = rec.split(';');
-                for (let j=0; j<split.length; j++) {
-                    const split2 = split[j].split('=');
+                for (const element of split) {
+                    const split2 = element.split('=');
                     if (split2[0]) self.dns_fields[split2[0]] = split2[1];
                 }
 
@@ -346,8 +344,8 @@ class DKIMObject {
                 }
                 if (self.dns_fields.h) {
                     const hashes = self.dns_fields.h.split(':');
-                    for (let k=0; k<hashes.length; k++) {
-                        const hash = hashes[k].trim();
+                    for (const hashElement of hashes) {
+                        const hash = hashElement.trim();
                         if (!self.fields.a.includes(hash)) {
                             return self.result('inappropriate hash algorithm', 'invalid');
                         }
@@ -360,8 +358,8 @@ class DKIMObject {
                 }
                 if (self.dns_fields.t) {
                     const flags = self.dns_fields.t.split(':');
-                    for (let f=0; f<flags.length; f++) {
-                        const flag = flags[f].trim();
+                    for (const flagElement of flags) {
+                        const flag = flagElement.trim();
                         if (flag === 'y') {
                             // Test mode
                             self.test_mode = true;
@@ -508,9 +506,9 @@ class DKIMVerifyStream extends Stream {
 
                 // Set the overall result based on this precedence order
                 const rr = ['pass','tempfail','fail','invalid','none'];
-                for (let r=0; r<rr.length; r++) {
-                    if (!self.result || (self.result && self.result !== rr[r] && result.result === rr[r])) {
-                        self.result = rr[r];
+                for (const element of rr) {
+                    if (!self.result || (self.result && self.result !== element && result.result === element)) {
+                        self.result = element;
                     }
                 }
             }
@@ -543,14 +541,14 @@ class DKIMVerifyStream extends Stream {
                 if (!this._in_body) {
                     this._in_body = true;
                     // Parse the headers
-                    for (let h=0; h<this.headers.length; h++) {
-                        const match = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(this.headers[h]);
+                    for (const header of this.headers) {
+                        const match = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(header);
                         if (!match) continue;
                         const header_name = match[1];
                         if (!header_name) continue;
                         const hn = header_name.toLowerCase();
                         if (!this.header_idx[hn]) this.header_idx[hn] = [];
-                        this.header_idx[hn].push(this.headers[h]);
+                        this.header_idx[hn].push(header);
                     }
                     if (!this.header_idx['dkim-signature']) {
                         this._no_signatures_found = true;
@@ -563,8 +561,8 @@ class DKIMVerifyStream extends Stream {
                         const dkim_headers = this.header_idx['dkim-signature'];
                         this.debug(`Found ${dkim_headers.length} DKIM signatures`);
                         this.pending = dkim_headers.length;
-                        for (let d=0; d<dkim_headers.length; d++) {
-                            this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.opts));
+                        for (const dkimHeader of dkim_headers) {
+                            this.dkim_objects.push(new DKIMObject(dkimHeader, this.header_idx, callback, this.opts));
                         }
                         if (this.pending === 0) {
                             process.nextTick(() => {
@@ -587,8 +585,8 @@ class DKIMVerifyStream extends Stream {
                 }
             }
             else {
-                for (let e=0; e<this.dkim_objects.length; e++) {
-                    this.dkim_objects[e].add_body_line(line);
+                for (const dkimObject of this.dkim_objects) {
+                    dkimObject.add_body_line(line);
                 }
             }
             if (once) {
@@ -606,8 +604,8 @@ class DKIMVerifyStream extends Stream {
 
     end (buf) {
         this.handle_buf(((buf) ? buf : null));
-        for (let d=0; d<this.dkim_objects.length; d++) {
-            this.dkim_objects[d].end();
+        for (const dkimObject of this.dkim_objects) {
+            dkimObject.end();
         }
         if (this.pending === 0 && this._no_signatures_found === false) {
             const self = this;

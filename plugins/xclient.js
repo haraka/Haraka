@@ -52,8 +52,8 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     // Process arguments
     const args = (new String(params[1])).toLowerCase().split(/ /);
     const xclient = {};
-    for (let a=0; a < args.length; a++) {
-        const match = /^([^=]+)=([^ ]+)/.exec(args[a]);
+    for (const arg of args) {
+        const match = /^([^=]+)=([^ ]+)/.exec(arg);
         if (match) {
             connection.logdebug(this, `found key=${match[1]} value=${match[2]}`);
             switch (match[1]) {
@@ -91,11 +91,11 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                     }
                     break;
                 default:
-                    connection.logwarn(this, `unknown argument: ${args[a]}`);
+                    connection.logwarn(this, `unknown argument: ${arg}`);
             }
         }
         else {
-            connection.logwarn(this, `unknown argument: ${args[a]}`);
+            connection.logwarn(this, `unknown argument: ${arg}`);
         }
     }
 

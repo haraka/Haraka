@@ -115,8 +115,8 @@ exports.multi = function (lookup, zones, cb) {
         if (!self.enable_stats) return;
 
         // Statistics: check hit overlap
-        for (let i=0; i < listed.length; i++) {
-            const foo = (listed[i] === zone) ? 'TOTAL' : listed[i];
+        for (const element of listed) {
+            const foo = (element === zone) ? 'TOTAL' : element;
             redis_client.hIncrBy(`dns-list-overlap:${zone}`, foo, 1);
         }
     }

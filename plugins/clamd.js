@@ -13,51 +13,51 @@ exports.load_excludes = function () {
 
     const new_skip_list_exclude = [];
     const new_skip_list = [];
-    for (let i=0; i < list.length; i++) {
+    for (const element of list) {
         let re;
-        switch (list[i][0]) {
+        switch (element[0]) {
             case '!':
 
-                if (list[i][1] === '/') {
+                if (element[1] === '/') {
                     // Regexp exclude
                     try {
-                        re = new RegExp(list[i].substr(2, list[i].length-2),'i');
+                        re = new RegExp(element.substr(2, element.length-2),'i');
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(`${e.message} (entry: ${list[i]})`);
+                        plugin.logerror(`${e.message} (entry: ${element})`);
                     }
                 }
                 else {
                     // Wildcard exclude
                     try {
                         re = new RegExp(
-                            utils.wildcard_to_regexp(list[i].substr(1)),'i');
+                            utils.wildcard_to_regexp(element.substr(1)),'i');
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(`${e.message} (entry: ${list[i]})`);
+                        plugin.logerror(`${e.message} (entry: ${element})`);
                     }
                 }
                 break;
             case '/':
                 // Regexp skip
                 try {
-                    re = new RegExp(list[i].substr(1, list[i].length-2),'i');
+                    re = new RegExp(element.substr(1, element.length-2),'i');
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(`${e.message} (entry: ${list[i]})`);
+                    plugin.logerror(`${e.message} (entry: ${element})`);
                 }
                 break;
             default:
                 // Wildcard skip
                 try {
-                    re = new RegExp(utils.wildcard_to_regexp(list[i]),'i');
+                    re = new RegExp(utils.wildcard_to_regexp(element),'i');
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(`${e.message} (entry: ${list[i]})`);
+                    plugin.logerror(`${e.message} (entry: ${element})`);
                 }
         }
     }
@@ -278,15 +278,15 @@ exports.hook_data_post = function (next, connection) {
                 if (!plugin.cfg.reject.virus) { return next(); }
 
                 // Check skip list exclusions
-                for (let i=0; i < plugin.skip_list_exclude.length; i++) {
-                    if (!plugin.skip_list_exclude[i].test(virus)) continue;
+                for (const element of plugin.skip_list_exclude) {
+                    if (!element.test(virus)) continue;
                     return next(DENY,
                         `Message is infected with ${virus || 'UNKNOWN'}`);
                 }
 
                 // Check skip list
-                for (let j=0; j < plugin.skip_list.length; j++) {
-                    if (!plugin.skip_list[j].test(virus)) continue;
+                for (const element of plugin.skip_list) {
+                    if (!element.test(virus)) continue;
                     connection.logwarn(plugin, `${virus} matches exclusion`);
                     txn.add_header('X-Haraka-Virus', virus);
                     return next();
