@@ -60,10 +60,8 @@ exports.parse = (type, line, strict) => {
     }
 
     line = params.shift() || '';
-    if (strict) {
-        if (!line.match(/^<.*>$/)) {
-            throw new Error(`Invalid format of ${type} command: ${line}`);
-        }
+    if (strict && !line.match(/^<.*>$/)) {
+        throw new Error(`Invalid format of ${type} command: ${line}`);
     }
 
     if (type === 'mail') {

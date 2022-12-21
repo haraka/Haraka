@@ -1360,10 +1360,8 @@ class Connection {
         }
 
         // Handle SIZE extension
-        if (params?.SIZE && params.SIZE > 0) {
-            if (this.max_bytes > 0 && params.SIZE > this.max_bytes) {
-                return this.respond(550, 'Message too big!');
-            }
+        if (params?.SIZE && params.SIZE > 0 && (this.max_bytes > 0 && params.SIZE > this.max_bytes)) {
+            return this.respond(550, 'Message too big!');
         }
 
         this.init_transaction(() => {

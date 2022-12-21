@@ -66,11 +66,8 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                             xclient[match[1]] = ipv6[1];
                         }
                     }
-                    else if (!/\[UNAVAILABLE\]/i.test(match[2])) {
-                        // IPv4
-                        if (net.isIPv4(match[2])) {
-                            xclient[match[1]] = match[2];
-                        }
+                    else if (!/\[UNAVAILABLE\]/i.test(match[2]) && net.isIPv4(match[2])) {
+                        xclient[match[1]] = match[2];
                     }
                     break;
                 }

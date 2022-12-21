@@ -176,12 +176,9 @@ exports.parse_x509_names = string => {
     // log.loginfo(string);
 
     let match = /Subject:.*?CN=([^/\s]+)/.exec(string);
-    if (match) {
-        // log.loginfo(match[0]);
-        if (match[1]) {
-            // log.loginfo(match[1]);
-            names_found.push(match[1]);
-        }
+    if (match && match[1]) {
+        // log.loginfo(match[1]);
+        names_found.push(match[1]);
     }
 
     match = /X509v3 Subject Alternative Name:[^]*X509/.exec(string);

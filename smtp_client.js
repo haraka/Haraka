@@ -111,10 +111,8 @@ class SMTPClient extends events.EventEmitter {
                 }
             }
 
-            if (/^441/.test(code)) {
-                if (/Connection timed out/i.test(msg)) {
-                    client.destroy();
-                }
+            if (/^441/.test(code) && /Connection timed out/i.test(msg)) {
+                client.destroy();
             }
 
             switch (client.command) {
@@ -277,11 +275,9 @@ exports.get_client = (server, callback, opts = {}) => {
 
 exports.onCapabilitiesOutbound = (smtp_client, secured, connection, config, on_secured) => {
     for (const line in smtp_client.response) {
-        if (/^XCLIENT/.test(smtp_client.response[line])) {
-            if (!smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT', `ADDR=${connection.remote.ip}`);
-                return;
-            }
+        if (/^XCLIENT/.test(smtp_client.response[line]) && !smtp_client.xclient) {
+            smtp_client.send_command('XCLIENT', `ADDR=${connection.remote.ip}`);
+            return;
         }
 
         if (/^SMTPUTF8/.test(smtp_client.response[line])) {

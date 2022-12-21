@@ -24,11 +24,9 @@ exports.load_ini = function () {
         this.cfg.main.timeout = 29;
     }
 
-    if (this.timeout) {
-        if (this.timeout <= this.cfg.main.timeout) {
-            this.cfg.main.timeout = this.timeout - 1;
-            this.logwarn(`reducing plugin timeout to ${this.cfg.main.timeout}s`);
-        }
+    if (this.timeout && this.timeout <= this.cfg.main.timeout) {
+        this.cfg.main.timeout = this.timeout - 1;
+        this.logwarn(`reducing plugin timeout to ${this.cfg.main.timeout}s`);
     }
 
     this.re_bogus_ip = new RegExp(this.cfg.main.re_bogus_ip ||
@@ -116,17 +114,13 @@ exports.hook_mail = function (next, connection, params) {
                 connection.logdebug(plugin, `${domain}: MX ${addr.priority} ${addr.exchange} => ${addresses2}`);
                 for (const element of addresses2) {
                     // Ignore anything obviously bogus
-                    if (net.isIPv4(element)){
-                        if (plugin.re_bogus_ip.test(element)) {
-                            connection.logdebug(plugin, `${addr.exchange}: discarding ${element}`);
-                            continue;
-                        }
+                    if (net.isIPv4(element) && plugin.re_bogus_ip.test(element)){
+                        connection.logdebug(plugin, `${addr.exchange}: discarding ${element}`);
+                        continue;
                     }
-                    if (net.isIPv6(element)){
-                        if (net_utils.ipv6_bogus(element)) {
-                            connection.logdebug(plugin, `${addr.exchange}: discarding ${element}`);
-                            continue;
-                        }
+                    if (net.isIPv6(element) && net_utils.ipv6_bogus(element)){
+                        connection.logdebug(plugin, `${addr.exchange}: discarding ${element}`);
+                        continue;
                     }
                     records[element] = 1;
                 }
@@ -175,17 +169,13 @@ exports.implicit_mx = function (connection, domain, mxDone) {
         let records = {};
         for (const addr of addresses) {
             // Ignore anything obviously bogus
-            if (net.isIPv4(addr)) {
-                if (this.re_bogus_ip.test(addr)) {
-                    connection.logdebug(this, `${domain}: discarding ${addr}`);
-                    continue;
-                }
+            if (net.isIPv4(addr) && this.re_bogus_ip.test(addr)) {
+                connection.logdebug(this, `${domain}: discarding ${addr}`);
+                continue;
             }
-            if (net.isIPv6(addr)) {
-                if (net_utils.ipv6_bogus(addr)) {
-                    connection.logdebug(this, `${domain}: discarding ${addr}`);
-                    continue;
-                }
+            if (net.isIPv6(addr) && net_utils.ipv6_bogus(addr)) {
+                connection.logdebug(this, `${domain}: discarding ${addr}`);
+                continue;
             }
             records[addr] = true;
         }

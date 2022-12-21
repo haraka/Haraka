@@ -1478,12 +1478,10 @@ function sort_mx (mx_list) {
 
     // This isn't a very good shuffle but it'll do for now.
     for (let i=0,l=sorted.length-1; i<l; i++) {
-        if (sorted[i].priority === sorted[i+1].priority) {
-            if (Math.round(Math.random())) { // 0 or 1
-                const j = sorted[i];
-                sorted[i] = sorted[i+1];
-                sorted[i+1] = j;
-            }
+        if (sorted[i].priority === sorted[i+1].priority && Math.round(Math.random())) { // 0 or 1
+            const j = sorted[i];
+            sorted[i] = sorted[i+1];
+            sorted[i+1] = j;
         }
     }
     return sorted;

@@ -161,10 +161,8 @@ class DKIMObject {
         }
 
         const now = new Date().getTime()/1000;
-        if (this.fields.t) {
-            if (this.fields.t > (this.allowed_time_skew ? (now + parseInt(this.allowed_time_skew)) : now)) {
-                return this.result('creation date is invalid or in the future', 'invalid')
-            }
+        if (this.fields.t && this.fields.t > (this.allowed_time_skew ? (now + parseInt(this.allowed_time_skew)) : now)) {
+            return this.result('creation date is invalid or in the future', 'invalid')
         }
 
         if (this.fields.x) {
@@ -349,10 +347,8 @@ class DKIMObject {
                         }
                     }
                 }
-                if (this.dns_fields.k) {
-                    if (!this.fields.a.includes(this.dns_fields.k)) {
-                        return this.result('inappropriate key type', 'invalid');
-                    }
+                if (this.dns_fields.k && !this.fields.a.includes(this.dns_fields.k)) {
+                    return this.result('inappropriate key type', 'invalid');
                 }
                 if (this.dns_fields.t) {
                     const flags = this.dns_fields.t.split(':');
@@ -535,42 +531,39 @@ class DKIMVerifyStream extends Stream {
             }
 
             // Look for CRLF
-            if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
-                // Look for end of headers marker
-                if (!this._in_body) {
-                    this._in_body = true;
-                    // Parse the headers
-                    for (const header of this.headers) {
-                        const match = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(header);
-                        if (!match) continue;
-                        const header_name = match[1];
-                        if (!header_name) continue;
-                        const hn = header_name.toLowerCase();
-                        if (!this.header_idx[hn]) this.header_idx[hn] = [];
-                        this.header_idx[hn].push(header);
+            if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a && !this._in_body) {
+                this._in_body = true;
+                // Parse the headers
+                for (const header of this.headers) {
+                    const match = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(header);
+                    if (!match) continue;
+                    const header_name = match[1];
+                    if (!header_name) continue;
+                    const hn = header_name.toLowerCase();
+                    if (!this.header_idx[hn]) this.header_idx[hn] = [];
+                    this.header_idx[hn].push(header);
+                }
+                if (!this.header_idx['dkim-signature']) {
+                    this._no_signatures_found = true;
+                    return process.nextTick(() => {
+                        self.cb(null, self.result, self.results);
+                    });
+                }
+                else {
+                    // Create new DKIM objects for each header
+                    const dkim_headers = this.header_idx['dkim-signature'];
+                    this.debug(`Found ${dkim_headers.length} DKIM signatures`);
+                    this.pending = dkim_headers.length;
+                    for (const dkimHeader of dkim_headers) {
+                        this.dkim_objects.push(new DKIMObject(dkimHeader, this.header_idx, callback, this.opts));
                     }
-                    if (!this.header_idx['dkim-signature']) {
-                        this._no_signatures_found = true;
-                        return process.nextTick(() => {
-                            self.cb(null, self.result, self.results);
+                    if (this.pending === 0) {
+                        process.nextTick(() => {
+                            if (self.cb) self.cb(new Error('no signatures found'));
                         });
                     }
-                    else {
-                        // Create new DKIM objects for each header
-                        const dkim_headers = this.header_idx['dkim-signature'];
-                        this.debug(`Found ${dkim_headers.length} DKIM signatures`);
-                        this.pending = dkim_headers.length;
-                        for (const dkimHeader of dkim_headers) {
-                            this.dkim_objects.push(new DKIMObject(dkimHeader, this.header_idx, callback, this.opts));
-                        }
-                        if (this.pending === 0) {
-                            process.nextTick(() => {
-                                if (self.cb) self.cb(new Error('no signatures found'));
-                            });
-                        }
-                    }
-                    continue;  // while()
                 }
+                continue;  // while()
             }
 
             if (!this._in_body) {
