@@ -103,13 +103,13 @@ exports.set_temp_fail_intervals = function () {
                 // do nothing, this is the base unit
                 break;
             case 'm':
-                num = num * 60;
+                num *= 60;
                 break;
             case 'h':
-                num = num * 3600;
+                num *= 3600;
                 break;
             case 'd':
-                num = num * 86400;
+                num *= 86400;
                 break;
             default:
                 return error(i, 'invalid time span symbol');
