@@ -3,6 +3,7 @@
 
 ### Changes
 
+- smtp_forward: restored ability to enable queue_outbound #3119
 - dep(generic-pool): remove pooling from outbound #3115
 - smtp_client: disable pooling in get_client_plugin, #3113
 - fix(smtp_client): add missing `$` char in front of interpolated string
