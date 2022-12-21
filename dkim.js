@@ -26,7 +26,7 @@ class Buf {
             if (!buf) buf = Buffer.from('');
             return buf;
         }
-        if (buf && buf.length) {
+        if (buf?.length) {
             this.bar.push(buf);
             this.blen += buf.length;
         }

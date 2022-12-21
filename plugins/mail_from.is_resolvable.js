@@ -84,7 +84,7 @@ exports.hook_mail = function (next, connection, params) {
             if (pending_queries !== 0) return;
 
             records = Object.keys(records);
-            if (records && records.length) {
+            if (records?.length) {
                 connection.logdebug(plugin, `${domain}: ${records}`);
                 results.add(plugin, {pass: 'has_fwd_dns'});
                 return mxDone();
@@ -194,7 +194,7 @@ exports.implicit_mx = function (connection, domain, mxDone) {
         }
 
         records = Object.keys(records);
-        if (records && records.length) {
+        if (records?.length) {
             txn.results.add(plugin, {pass: 'implicit_mx'});
             return mxDone();
         }

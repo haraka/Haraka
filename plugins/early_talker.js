@@ -25,7 +25,7 @@ exports.load_config = function () {
     // Generate a white list of IP addresses
     plugin.whitelist = plugin.load_ip_list(Object.keys(plugin.cfg.ip_whitelist));
 
-    if (plugin.cfg.main && plugin.cfg.main.pause) {
+    if (plugin.cfg.main?.pause) {
         plugin.pause = plugin.cfg.main.pause * 1000;
         return;
     }

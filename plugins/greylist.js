@@ -384,7 +384,7 @@ exports.craft_hostid = function (connection) {
     const { transaction, remote } = connection ?? {};
     if (!transaction || !remote) return null;
 
-    if (transaction.notes?.greylist && transaction.notes.greylist.hostid) {
+    if (transaction.notes?.greylist?.hostid) {
         return transaction.notes.greylist.hostid; // "caching"
     }
 

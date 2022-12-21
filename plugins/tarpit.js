@@ -10,7 +10,7 @@ exports.register = function () {
     // Register tarpit function last
 
     const cfg = this.config.get('tarpit.ini');
-    if (cfg && cfg.main.hooks_to_delay) {
+    if (cfg?.main.hooks_to_delay) {
         hooks_to_delay = cfg.main.hooks_to_delay.split(/[\s,;]+/);
     }
 

@@ -109,12 +109,12 @@ exports.hook_data_post = function (next, connection) {
     socket.once('end', () => {
         if (!conn.transaction) return next() // client gone
 
-        if (spamd_response.headers && spamd_response.headers.Tests) {
+        if (spamd_response.headers?.Tests) {
             spamd_response.tests = spamd_response.headers.Tests.replace(/\s/g, '');
         }
         if (spamd_response.tests === undefined) {
             // strip the 'tests' from the X-Spam-Status header
-            if (spamd_response.headers && spamd_response.headers.Status) {
+            if (spamd_response.headers?.Status) {
                 // SpamAssassin appears to have a bug that causes a space not to
                 // be added before autolearn= when the header line has been folded.
                 // So we modify the regexp here not to match autolearn onwards.

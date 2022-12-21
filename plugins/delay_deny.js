@@ -35,14 +35,14 @@ exports.hook_deny = function (next, connection, params) {
     }
 
     // 'included' mode: only delay deny plugins in the included list
-    if (included && included.length) {
+    if (included?.length) {
         if (!included.includes(pi_name) &&
             !included.includes(`${pi_name}:${pi_hook}`) &&
             !included.includes(`${pi_name}:${pi_hook}:${pi_function}`)) {
             return next();
         }
     }
-    else if (skip && skip.length) { // 'excluded' mode: delay deny everything except in skip list
+    else if (skip?.length) { // 'excluded' mode: delay deny everything except in skip list
         // Skip by <plugin name>
         if (skip.includes(pi_name)) {
             connection.logdebug(plugin, `not delaying excluded plugin: ${pi_name}`);

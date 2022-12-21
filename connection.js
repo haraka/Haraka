@@ -1384,7 +1384,7 @@ class Connection {
         }
 
         // Handle SIZE extension
-        if (params && params.SIZE && params.SIZE > 0) {
+        if (params?.SIZE && params.SIZE > 0) {
             if (this.max_bytes > 0 && params.SIZE > this.max_bytes) {
                 return this.respond(550, 'Message too big!');
             }
@@ -1473,7 +1473,7 @@ class Connection {
     }
     auth_results (message) {
         // http://tools.ietf.org/search/rfc7001
-        const has_tran = !!((this.transaction && this.transaction.notes));
+        const has_tran = !!((this.transaction?.notes));
 
         // initialize connection note
         if (!this.notes.authentication_results) {

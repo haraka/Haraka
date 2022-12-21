@@ -245,13 +245,14 @@ class SMTPClient extends events.EventEmitter {
 
         this.socket.upgrade(tls_options, (verified, verifyError, cert, cipher) => {
             this_logger.loginfo(`secured:${
+
                 (cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : ''
             } verified=${verified}${
                 (verifyError) ? ` error="${verifyError}"` : ''
-            }${(cert && cert.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : ''
-            }${(cert && cert.issuer) ? ` issuer="${cert.issuer.O}"` : ''
-            }${(cert && cert.valid_to) ? ` expires="${cert.valid_to}"` : ''
-            }${(cert && cert.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''}`);
+            }${(cert?.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : ''
+            }${(cert?.issuer) ? ` issuer="${cert.issuer.O}"` : ''
+            }${(cert?.valid_to) ? ` expires="${cert.valid_to}"` : ''
+            }${(cert?.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''}`);
         });
     }
 

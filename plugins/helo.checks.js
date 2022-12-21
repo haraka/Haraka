@@ -184,7 +184,7 @@ exports.match_re = function (next, connection, helo) {
 
     if (this.should_skip(connection, 'match_re')) return next();
 
-    if (this.cfg.list_re && this.cfg.list_re.test(helo)) {
+    if (this.cfg.list_re?.test(helo)) {
         connection.results.add(this, {fail: 'match_re'});
         if (this.cfg.reject.match_re) {
             return next(DENY, "That HELO not allowed here");

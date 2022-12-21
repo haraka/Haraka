@@ -224,7 +224,7 @@ exports._list_file = (file, cb) => {
                 todo_struct.file = file;
                 todo_struct.full_path = path.join(queue_dir, file);
                 const parts = _qfile.parts(file);
-                todo_struct.pid = (parts && parts.pid) || null;
+                todo_struct.pid = (parts?.pid) || null;
                 cb(null, todo_struct);
             }
         });
