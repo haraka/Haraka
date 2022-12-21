@@ -58,7 +58,7 @@
     "haraka-plugin-headers" : "^1.0.3",
     "haraka-plugin-karma"   : "^2.1.0",
     "haraka-plugin-limit"   : "^1.1.0",
-    "haraka-plugin-p0f"     : "^1.0.8",
+    "haraka-plugin-p0f"     : "^1.0.9",
     "haraka-plugin-qmail-deliverable" : "^1.1.1",
     "haraka-plugin-known-senders": "^1.0.8",
     "haraka-plugin-rcpt-ldap": "^1.0.0",
