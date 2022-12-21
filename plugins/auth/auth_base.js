@@ -29,10 +29,9 @@ exports.get_plain_passwd = (user, connection, cb) => cb()
 exports.hook_unrecognized_command = function (next, connection, params) {
     const plugin = this;
     if (params[0].toUpperCase() === AUTH_COMMAND && params[1]) {
-        return plugin.select_auth_method(next, connection,
-            params.slice(1).join(' '));
+        return plugin.select_auth_method(next, connection, params.slice(1).join(' '));
     }
-    if (!connection.notes.authenticating) { return next(); }
+    if (!connection.notes.authenticating) return next();
 
     const am = connection.notes.auth_method;
     if (am === AUTH_METHOD_CRAM_MD5 && connection.notes.auth_ticket) {
@@ -44,14 +43,14 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     if (am === AUTH_METHOD_PLAIN) {
         return plugin.auth_plain(next, connection, params);
     }
-    return next();
+    next();
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     function callback (plain_pw) {
-        if (plain_pw === null  ) { return cb(false); }
-        if (plain_pw !== passwd) { return cb(false); }
-        return cb(true);
+        if (plain_pw === null  ) return cb(false);
+        if (plain_pw !== passwd) return cb(false);
+        cb(true);
     }
     if (this.get_plain_passwd.length == 2) {
         this.get_plain_passwd(user, callback);
@@ -66,16 +65,13 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
 
 exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
     function callback (plain_pw) {
-        if (plain_pw == null) {
-            return cb(false);
-        }
+        if (plain_pw == null) return cb(false);
 
         const hmac = crypto.createHmac('md5', plain_pw.toString());
         hmac.update(connection.notes.auth_ticket);
 
-        if (hmac.digest('hex') === passwd) {
-            return cb(true);
-        }
+        if (hmac.digest('hex') === passwd) return cb(true);
+
         return cb(false);
     }
     if (this.get_plain_passwd.length == 2) {
@@ -127,9 +123,8 @@ exports.check_user = function (next, connection, credentials, method) {
             return;
         }
 
-        if (!connection.notes.auth_fails) {
-            connection.notes.auth_fails = 0;
-        }
+        if (!connection.notes.auth_fails) connection.notes.auth_fails = 0;
+
         connection.notes.auth_fails++;
         connection.results.add({name: 'auth'}, {
             fail:`${plugin.name}/${method}`,
@@ -150,12 +145,10 @@ exports.check_user = function (next, connection, credentials, method) {
     }
 
     if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
-        plugin.check_plain_passwd(connection, credentials[0], credentials[1],
-            passwd_ok);
+        plugin.check_plain_passwd(connection, credentials[0], credentials[1], passwd_ok);
     }
     else if (method === AUTH_METHOD_CRAM_MD5) {
-        plugin.check_cram_md5_passwd(connection, credentials[0], credentials[1],
-            passwd_ok);
+        plugin.check_cram_md5_passwd(connection, credentials[0], credentials[1], passwd_ok);
     }
 }
 
@@ -163,24 +156,16 @@ exports.select_auth_method = function (next, connection, method) {
     const split = method.split(/\s+/);
     method = split.shift().toUpperCase();
     if (!connection.notes.allowed_auth_methods) return next();
-    if (!connection.notes.allowed_auth_methods.includes(method)) {
-        return next();
-    }
+    if (!connection.notes.allowed_auth_methods.includes(method)) return next();
 
     if (connection.notes.authenticating) return next(DENYDISCONNECT, 'bad protocol');
 
     connection.notes.authenticating = true;
     connection.notes.auth_method = method;
 
-    if (method === AUTH_METHOD_PLAIN) {
-        return this.auth_plain(next, connection, split);
-    }
-    if (method === AUTH_METHOD_LOGIN) {
-        return this.auth_login(next, connection, split);
-    }
-    if (method === AUTH_METHOD_CRAM_MD5) {
-        return this.auth_cram_md5(next, connection);
-    }
+    if (method === AUTH_METHOD_PLAIN) return this.auth_plain(next, connection, split);
+    if (method === AUTH_METHOD_LOGIN) return this.auth_login(next, connection, split);
+    if (method === AUTH_METHOD_CRAM_MD5) return this.auth_cram_md5(next, connection);
 }
 
 exports.auth_plain = function (next, connection, params) {
@@ -193,20 +178,18 @@ exports.auth_plain = function (next, connection, params) {
     if (params[0]) {
         const credentials = utils.unbase64(params[0]).split(/\0/);
         credentials.shift();  // Discard authid
-        return plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
+        plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
+        return
     }
-    else {
-        if (connection.notes.auth_plain_asked_login) {
-            return next(DENYDISCONNECT, 'bad protocol');
-        }
-        else {
-            connection.respond(334, ' ', () => {
-                connection.notes.auth_plain_asked_login = true;
-                return next(OK);
-            });
-            return;
-        }
+
+    if (connection.notes.auth_plain_asked_login) {
+        return next(DENYDISCONNECT, 'bad protocol');
     }
+
+    connection.respond(334, ' ', () => {
+        connection.notes.auth_plain_asked_login = true;
+        next(OK);
+    });
 }
 
 exports.auth_login = function (next, connection, params) {
@@ -214,15 +197,14 @@ exports.auth_login = function (next, connection, params) {
     if ((!connection.notes.auth_login_asked_login && params[0]) ||
         ( connection.notes.auth_login_asked_login &&
          !connection.notes.auth_login_userlogin)) {
-        if (!params[0]){
-            return next(DENYDISCONNECT, 'bad protocol');
-        }
+
+        if (!params[0]) return next(DENYDISCONNECT, 'bad protocol');
 
         const login = utils.unbase64(params[0]);
         connection.respond(334, LOGIN_STRING2, () => {
             connection.notes.auth_login_userlogin = login;
             connection.notes.auth_login_asked_login = true;
-            return next(OK);
+            next(OK);
         });
         return;
     }
@@ -236,13 +218,12 @@ exports.auth_login = function (next, connection, params) {
         connection.notes.auth_login_userlogin = null;
         connection.notes.auth_login_asked_login = false;
 
-        return plugin.check_user(next, connection, credentials,
-            AUTH_METHOD_LOGIN);
+        return plugin.check_user(next, connection, credentials, AUTH_METHOD_LOGIN);
     }
 
     connection.respond(334, LOGIN_STRING1, () => {
         connection.notes.auth_login_asked_login = true;
-        return next(OK);
+        next(OK);
     });
 }
 
@@ -250,8 +231,7 @@ exports.auth_cram_md5 = function (next, connection, params) {
     const plugin = this;
     if (params) {
         const credentials = utils.unbase64(params[0]).split(' ');
-        return plugin.check_user(next, connection, credentials,
-            AUTH_METHOD_CRAM_MD5);
+        return plugin.check_user(next, connection, credentials, AUTH_METHOD_CRAM_MD5);
     }
 
     const ticket = `<${plugin.hexi(Math.floor(Math.random() * 1000000))}. ${plugin.hexi(Date.now())}@${connection.local.host}>`;
@@ -259,7 +239,7 @@ exports.auth_cram_md5 = function (next, connection, params) {
     connection.loginfo(plugin, `ticket: ${ticket}`);
     connection.respond(334, utils.base64(ticket), () => {
         connection.notes.auth_ticket = ticket;
-        return next(OK);
+        next(OK);
     });
 }
 

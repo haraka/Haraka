@@ -304,7 +304,7 @@ class HMailItem extends events.EventEmitter {
         }
 
         const mx = this.mxlist.shift();
-        let host = mx.exchange;
+        const host = mx.exchange;
 
         self.force_tls = this.todo.force_tls;
         if (!self.force_tls) {
@@ -324,23 +324,19 @@ class HMailItem extends events.EventEmitter {
             }
         }
 
-        host   = mx.exchange;
-        const family = mx.family;
-
         // we have a host, look up the addresses for the host
         // and try each in order they appear
-        // IS: IPv6 compatible
-        dns.resolve(host, family, (err, addresses) => {
+        dns.resolve(host, mx.family, (err, addresses) => {
             if (err) {
-                self.lognotice(`DNS (${family}) for ${host} failed: ${err}`);
+                self.lognotice(`DNS (${mx.family}) for ${host} failed: ${err}`);
                 return self.try_deliver(); // try next MX
             }
             if (addresses.length === 0) {
                 // NODATA or empty host list
-                self.lognotice(`DNS (${family}) for ${host} resulted in no data`);
+                self.lognotice(`DNS (${mx.family}) for ${host} resulted in no data`);
                 return self.try_deliver(); // try next MX
             }
-            this.logdebug(`DNS (${family}) for ${host} -> ${addresses.join(',')}`);
+            this.logdebug(`DNS (${mx.family}) for ${host} -> ${addresses.join(',')}`);
             self.hostlist = addresses;
             self.try_deliver_host(mx);
         });
@@ -406,16 +402,16 @@ class HMailItem extends events.EventEmitter {
         });
 
         socket.once('error', err => {
-            if (processing_mail) {
-                self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`);
-                processing_mail = false;
-                client_pool.release_client(socket, port, host, mx.bind, true);
-                if (err.source === 'tls') // exception thrown from tls_socket during tls upgrade
-                    return obtls.mark_tls_nogo(host, () => { return self.try_deliver_host(mx); });
-                // try the next MX
-                return self.try_deliver_host(mx);
-            }
-        });
+            if (!processing_mail) return
+
+            self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`);
+            processing_mail = false;
+            client_pool.release_client(socket, port, host, mx.bind, true);
+            if (err.source === 'tls') // exception thrown from tls_socket during tls upgrade
+                return obtls.mark_tls_nogo(host, () => { return self.try_deliver_host(mx); });
+            // try the next MX
+            self.try_deliver_host(mx);
+        })
 
         socket.once('close', () => {
             if (!processing_mail) return
@@ -423,7 +419,7 @@ class HMailItem extends events.EventEmitter {
             self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`);
             processing_mail = false;
             client_pool.release_client(socket, port, host, mx.bind, true);
-            return self.try_deliver_host(mx);
+            self.try_deliver_host(mx);
         });
 
         let fin_sent = false;
