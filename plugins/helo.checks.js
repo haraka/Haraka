@@ -52,7 +52,6 @@ exports.register = function () {
 }
 
 exports.load_helo_checks_ini = function () {
-    const plugin = this;
 
     const booleans = [
         '+skip.private_ip',
@@ -68,30 +67,30 @@ exports.load_helo_checks_ini = function () {
         booleans.push(`-reject.${c}`);
     });
 
-    plugin.cfg = plugin.config.get('helo.checks.ini', { booleans },
+    this.cfg = this.config.get('helo.checks.ini', { booleans },
         () => {
-            plugin.load_helo_checks_ini();
+            this.load_helo_checks_ini();
         });
 
     // backwards compatible with old config file
-    if (plugin.cfg.check_no_dot !== undefined) {
-        plugin.cfg.check.valid_hostname = !!plugin.cfg.check_no_dot;
+    if (this.cfg.check_no_dot !== undefined) {
+        this.cfg.check.valid_hostname = !!this.cfg.check_no_dot;
     }
-    if (plugin.cfg.check_dynamic !== undefined) {
-        plugin.cfg.check.dynamic = !!plugin.cfg.check_dynamic;
+    if (this.cfg.check_dynamic !== undefined) {
+        this.cfg.check.dynamic = !!this.cfg.check_dynamic;
     }
-    if (plugin.cfg.check_raw_ip !== undefined) {
-        plugin.cfg.check.bare_ip = !!plugin.cfg.check_raw_ip;
+    if (this.cfg.check_raw_ip !== undefined) {
+        this.cfg.check.bare_ip = !!this.cfg.check_raw_ip;
     }
 
     // non-default setting, so apply their localized setting
-    if (plugin.cfg.check.mismatch !== undefined && !plugin.cfg.check.mismatch) {
-        plugin.logerror('deprecated setting mismatch renamed to host_mismatch');
-        plugin.cfg.check.host_mismatch = plugin.cfg.check.mismatch;
+    if (this.cfg.check.mismatch !== undefined && !this.cfg.check.mismatch) {
+        this.logerror('deprecated setting mismatch renamed to host_mismatch');
+        this.cfg.check.host_mismatch = this.cfg.check.mismatch;
     }
-    if (plugin.cfg.reject.mismatch !== undefined && plugin.cfg.reject.mismatch) {
-        plugin.logerror('deprecated setting mismatch renamed to host_mismatch');
-        plugin.cfg.reject.host_mismatch = plugin.cfg.reject.mismatch;
+    if (this.cfg.reject.mismatch !== undefined && this.cfg.reject.mismatch) {
+        this.logerror('deprecated setting mismatch renamed to host_mismatch');
+        this.cfg.reject.host_mismatch = this.cfg.reject.mismatch;
     }
 }
 

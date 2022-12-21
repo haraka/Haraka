@@ -17,7 +17,6 @@ exports.transaction = {
     tearDown : _tear_down,
 
     'add_body_filter' (test) {
-        const self = this;
 
         test.expect(3);
 
@@ -43,7 +42,7 @@ exports.transaction = {
             "<p>HTML part</p>\n",
             "--abcd--\n",
         ].forEach(line => {
-            self.transaction.add_data(line);
+            this.transaction.add_data(line);
         });
         this.transaction.end_data(() => {
             test.done();
@@ -51,7 +50,6 @@ exports.transaction = {
     },
 
     'regression: attachment_hooks before set_banner/add_body_filter' (test) {
-        const self = this;
 
         test.expect(2);
 
@@ -65,10 +63,10 @@ exports.transaction = {
             "\n",
             "Some text\n",
         ].forEach(line => {
-            self.transaction.add_data(line);
+            this.transaction.add_data(line);
         });
         this.transaction.end_data(() => {
-            self.transaction.message_stream.get_data(body => {
+            this.transaction.message_stream.get_data(body => {
                 test.ok(/banner$/.test(body.toString().trim()), "banner applied");
                 test.done();
             });
@@ -103,7 +101,6 @@ exports.transaction = {
     },
 
     'no munging of bytes if not parsing body' (test) {
-        const self = this;
 
         // Czech panagram "Příliš žluťoučký kůň úpěl ďábelské ódy.\n" in ISO-8859-2 encoding
         const message = Buffer.from([0x50, 0xF8, 0xED, 0x6C, 0x69, 0xB9, 0x20, 0xBE, 0x6C, 0x75, 0xBB, 0x6F, 0x76, 0xE8, 0x6B, 0xFD, 0x20, 0x6B, 0xF9, 0xF2, 0xFA, 0xEC, 0x6C, 0x20, 0xEF, 0xE2, 0x62, 0x65, 0x6C, 0x73, 0x6b, 0xE9, 0x20, 0xF3, 0x64, 0x79, 0x2E, 0x0A]);
@@ -116,10 +113,10 @@ exports.transaction = {
         test.expect(1);
 
         payload.forEach(line => {
-            self.transaction.add_data(line);
+            this.transaction.add_data(line);
         });
         this.transaction.end_data(() => {
-            self.transaction.message_stream.get_data(body => {
+            this.transaction.message_stream.get_data(body => {
                 test.ok(body.includes(message), "message not damaged");
                 test.done();
             });
@@ -186,12 +183,11 @@ exports.base64_handling = {
     tearDown: _tear_down,
 
     'varied-base64-fold-lengths-preserve-data' (test) {
-        const self = this;
 
         const parsed_attachments = {};
-        self.transaction.parse_body = true;
+        this.transaction.parse_body = true;
         //accumulate attachment buffers.
-        self.transaction.attachment_hooks((ct, filename, body, stream) => {
+        this.transaction.attachment_hooks((ct, filename, body, stream) => {
             let attachment = Buffer.alloc(0);
             stream.on('data', data => {
                 attachment = Buffer.concat([attachment, data]);
@@ -202,9 +198,9 @@ exports.base64_handling = {
         });
 
         const specimen_path = path.join(__dirname, 'mail_specimen', 'varied-fold-lengths-preserve-data.txt');
-        write_file_data_to_transaction(self.transaction, specimen_path);
+        write_file_data_to_transaction(this.transaction, specimen_path);
 
-        test.equal(self.transaction.body.children.length, 6);
+        test.equal(this.transaction.body.children.length, 6);
 
         let first_attachment = null;
         for (const i in parsed_attachments) {
@@ -219,13 +215,12 @@ exports.base64_handling = {
     },
 
     'base64-root-html-decodes-correct-number-of-bytes' (test) {
-        const self = this;
 
-        self.transaction.parse_body = true;
+        this.transaction.parse_body = true;
         const specimen_path = path.join(__dirname, 'mail_specimen', 'base64-root-part.txt');
-        write_file_data_to_transaction(self.transaction, specimen_path);
+        write_file_data_to_transaction(this.transaction, specimen_path);
 
-        test.equal(self.transaction.body.bodytext.length, 425);
+        test.equal(this.transaction.body.bodytext.length, 425);
         test.done();
     },
 }

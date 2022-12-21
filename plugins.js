@@ -39,7 +39,6 @@ class Plugin {
     }
 
     _get_plugin_path () {
-        const plugin = this;
         /* From https://github.com/haraka/Haraka/pull/1278#issuecomment-168856528
         In Development mode, or install via a plain "git clone":
 
@@ -57,9 +56,9 @@ class Plugin {
             Plugin in <core_haraka_dir>/node_modules.
         */
 
-        plugin.hasPackageJson = false;
-        const name = plugin.name.startsWith('haraka-plugin-') ? plugin.name.substr(14) : plugin.name;
-        if (plugin.name !== name) plugin.name = name;
+        this.hasPackageJson = false;
+        const name = this.name.startsWith('haraka-plugin-') ? this.name.substr(14) : this.name;
+        if (this.name !== name) this.name = name;
 
         let paths = [];
         if (process.env.HARAKA) {
@@ -76,12 +75,12 @@ class Plugin {
         // development mode
         paths = paths.concat(plugin_search_paths(__dirname, name));
         paths.forEach(pp => {
-            if (plugin.plugin_path) return;
+            if (this.plugin_path) return;
             try {
                 fs.statSync(pp);
-                plugin.plugin_path = pp;
+                this.plugin_path = pp;
                 if (path.basename(pp) === 'package.json') {
-                    plugin.hasPackageJson = true;
+                    this.hasPackageJson = true;
                 }
             }
             catch (ignore) {}
@@ -155,9 +154,8 @@ class Plugin {
     }
 
     _make_custom_require () {
-        const plugin = this;
         return module => {
-            if (plugin.hasPackageJson) {
+            if (this.hasPackageJson) {
                 const mod = require(module);
                 constants.import(global);
                 global.server = plugins.server;
@@ -165,7 +163,7 @@ class Plugin {
             }
 
             if (module === './config') {
-                return plugin.config;
+                return this.config;
             }
 
             if (!/^\./.test(module)) {
@@ -177,14 +175,13 @@ class Plugin {
                 return require(module);
             }
 
-            return require(path.join(path.dirname(plugin.plugin_path), module));
+            return require(path.join(path.dirname(this.plugin_path), module));
         };
     }
 
     _get_code (pp) {
-        const plugin = this;
 
-        if (plugin.hasPackageJson) {
+        if (this.hasPackageJson) {
             let packageDir = path.dirname(pp);
             if (/^win(32|64)/.test(process.platform)) {
                 // escape the c:\path\back\slashes else they disappear
@@ -198,25 +195,24 @@ class Plugin {
         }
         catch (err) {
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-                logger.logcrit(`Loading plugin ${plugin.name} failed: ${err}`);
+                logger.logcrit(`Loading plugin ${this.name} failed: ${err}`);
                 return;
             }
-            throw `Loading plugin ${plugin.name} failed: ${err}`;
+            throw `Loading plugin ${this.name} failed: ${err}`;
         }
     }
 
     _compile () {
-        const plugin = this;
 
-        const pp = plugin.plugin_path;
-        const code = plugin._get_code(pp);
+        const pp = this.plugin_path;
+        const code = this._get_code(pp);
         if (!code) return;
 
         const sandbox = {
-            require: plugin._make_custom_require(),
+            require: this._make_custom_require(),
             __filename: pp,
             __dirname:  path.dirname(pp),
-            exports: plugin,
+            exports: this,
             setTimeout,
             clearTimeout,
             setInterval,
@@ -227,7 +223,7 @@ class Plugin {
             server: plugins.server,
             setImmediate
         };
-        if (plugin.hasPackageJson) {
+        if (this.hasPackageJson) {
             delete sandbox.__filename;
         }
         constants.import(sandbox);
@@ -235,16 +231,16 @@ class Plugin {
             vm.runInNewContext(code, sandbox, pp);
         }
         catch (err) {
-            logger.logcrit(`Compiling plugin: ${plugin.name} failed`);
+            logger.logcrit(`Compiling plugin: ${this.name} failed`);
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-                logger.logcrit(`Loading plugin ${plugin.name} failed: `,
+                logger.logcrit(`Loading plugin ${this.name} failed: `,
                     `${err.message} - will skip this plugin and continue`);
                 return;
             }
             throw err; // default is to re-throw and stop Haraka
         }
 
-        return plugin;
+        return this;
     }
 }
 

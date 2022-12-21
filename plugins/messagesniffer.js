@@ -13,7 +13,6 @@ exports.register = function () {
 }
 
 exports.hook_connect = function (next, connection) {
-    const self = this;
     const cfg = this.config.get('messagesniffer.ini');
     // Skip any private IP ranges
     // Skip connection.transaction undefined
@@ -22,13 +21,13 @@ exports.hook_connect = function (next, connection) {
     // Retrieve GBUdb information for the connecting IP
     SNFClient(`<snf><xci><gbudb><test ip='${connection.remote.ip}'/></gbudb></xci></snf>`, (err, result) => {
         if (err) {
-            connection.logerror(self, err.message);
+            connection.logerror(this, err.message);
             return next();
         }
         let match;
         if ((match = /<result ((?:(?!\/>)[^])+)\/>/.exec(result))) {
             // Log result
-            connection.loginfo(self, match[1]);
+            connection.loginfo(this, match[1]);
             // Populate result
             const gbudb = {};
             const split = match[1].toString().split(/\s+/);
@@ -53,7 +52,7 @@ exports.hook_connect = function (next, connection) {
                 case 'black':
                 case 'truncate':
                     if (cfg.gbudb?.[gbudb.range]) {
-                        connection.loginfo(self, `range=${gbudb.range} action=${cfg.gbudb[gbudb.range]}`);
+                        connection.loginfo(this, `range=${gbudb.range} action=${cfg.gbudb[gbudb.range]}`);
                         switch (cfg.gbudb[gbudb.range]) {
                             case 'accept':
                                 // Whitelist
@@ -89,7 +88,7 @@ exports.hook_connect = function (next, connection) {
                     return next();
                 default:
                     // Unknown
-                    connection.logerror(self, `Unknown GBUdb range: ${gbudb.range}`);
+                    connection.logerror(this, `Unknown GBUdb range: ${gbudb.range}`);
                     return next();
             }
         }
@@ -100,7 +99,6 @@ exports.hook_connect = function (next, connection) {
 }
 
 exports.hook_data_post = function (next, connection) {
-    const self = this;
     const cfg = this.config.get('messagesniffer.ini');
     const txn = connection?.transaction;
     if (!txn) return next();
@@ -137,7 +135,7 @@ exports.hook_data_post = function (next, connection) {
     const ws = fs.createWriteStream(tmpfile);
 
     ws.once('error', err => {
-        connection.logerror(self, `Error writing temporary file: ${err.message}`);
+        connection.logerror(this, `Error writing temporary file: ${err.message}`);
         return next();
     });
 
@@ -189,11 +187,11 @@ exports.hook_data_post = function (next, connection) {
                             // Retrieve IP address determined by GBUdb
                             const gbudb_split = header.value.split(/,\s*/);
                             gbudb_ip = gbudb_split[1];
-                            connection.logdebug(self, `GBUdb: ${header.value.replace(/\r?\n/gm, '')}`);
+                            connection.logdebug(this, `GBUdb: ${header.value.replace(/\r?\n/gm, '')}`);
                         }
                         if (header.header === 'X-MessageSniffer-Rules') {
                             rules = header.value.replace(/\r?\n/gm, '').replace(/\s+/g,' ').trim();
-                            connection.logdebug(self, `rules: ${rules}`);
+                            connection.logdebug(this, `rules: ${rules}`);
                         }
                         // Remove any existing headers
                         txn.remove_header(header.header);
@@ -201,7 +199,7 @@ exports.hook_data_post = function (next, connection) {
                     }
                 }
                 // Summary log
-                connection.loginfo(self, `result: time=${elapsed}ms code=${code
+                connection.loginfo(this, `result: time=${elapsed}ms code=${code
                 }${gbudb_ip ? ` ip="${gbudb_ip}"` : ''
                 }${group ? ` group="${group}"` : ''
                 }${rules ? ` rule_count=${rules.split(/\s+/).length}` : ''
@@ -247,7 +245,7 @@ exports.hook_data_post = function (next, connection) {
                                         action = cfg.message.nonzero;
                                     }
                                     else {
-                                        return next(DENY, `${'Spam detected by MessageSniffer (code='}${code} group=${group})`);
+                                        return next(DENY, `Spam detected by MessageSniffer (code=${code} group=${group})`);
                                     }
                                 }
                             }
@@ -256,7 +254,7 @@ exports.hook_data_post = function (next, connection) {
                     else {
                         // Default with no configuration
                         if (code > 1 && code !== 40) {
-                            return next(DENY, `${'Spam detected by MessageSniffer (code='}${code} group=${group})`);
+                            return next(DENY, `Spam detected by MessageSniffer (code=${code} group=${group})`);
                         }
                         else {
                             return next();
@@ -316,7 +314,7 @@ exports.hook_data_post = function (next, connection) {
             }
             else {
                 // Something must have gone wrong
-                connection.logwarn(self, `unexpected response: ${result}`);
+                connection.logwarn(this, `unexpected response: ${result}`);
             }
             return next();
         });
@@ -327,7 +325,6 @@ exports.hook_data_post = function (next, connection) {
 }
 
 exports.hook_disconnect = function (next, connection) {
-    const self = this;
     const cfg = this.config.get('messagesniffer.ini');
 
     // Train GBUdb on rejected messages and recipients
@@ -336,10 +333,10 @@ exports.hook_disconnect = function (next, connection) {
         const snfreq = `<snf><xci><gbudb><bad ip='${connection.remote.ip}'/></gbudb></xci></snf>`;
         SNFClient(snfreq, (err, result) => {
             if (err) {
-                connection.logerror(self, err.message);
+                connection.logerror(this, err.message);
             }
             else {
-                connection.logdebug(self, `GBUdb bad encounter added for ${connection.remote.ip}`);
+                connection.logdebug(this, `GBUdb bad encounter added for ${connection.remote.ip}`);
             }
             return next();
         });

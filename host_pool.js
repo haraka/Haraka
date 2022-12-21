@@ -28,7 +28,6 @@ class HostPool {
     // takes a comma/space-separated list of ip:ports
     //  1.1.1.1:22,  3.3.3.3:44
     constructor (hostports_str, retry_secs) {
-        const self = this;
         const hosts = (hostports_str || '')
             .trim()
             .split(/[\s,]+/)
@@ -42,11 +41,11 @@ class HostPool {
                     port: splithost[1]
                 };
             });
-        self.hostports_str = hostports_str;
-        self.hosts = utils.shuffle(hosts);
-        self.dead_hosts = {};  // hostport => true/false
-        self.last_i = 0;  // the last one we checked
-        self.retry_secs = retry_secs || 10;
+        this.hostports_str = hostports_str;
+        this.hosts = utils.shuffle(hosts);
+        this.dead_hosts = {};  // hostport => true/false
+        this.last_i = 0;  // the last one we checked
+        this.retry_secs = retry_secs || 10;
     }
 
     /* failed
@@ -91,14 +90,12 @@ class HostPool {
     probe_dead_host (
         host, port, cb_if_still_dead, cb_if_alive
     ){
-
-        const self = this;
         logger.loginfo(`probing dead host ${host}:${port}`);
 
         const connect_timeout_ms = 200; // keep it snappy
         let s;
         try {
-            s = self.get_socket();
+            s = this.get_socket();
             s.setTimeout(connect_timeout_ms, () => {
                 // nobody home, it's still dead
                 s.destroy();
@@ -127,8 +124,7 @@ class HostPool {
      * so we can override in unit test
      */
     get_socket () {
-        const s = new net.Socket();
-        return s;
+        return new net.Socket();
     }
 
     /* get_host

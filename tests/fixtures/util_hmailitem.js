@@ -152,8 +152,7 @@ function getNextEntryFromPlaybook (ofType, playbook) {
         return false;
     }
     if (playbook[0].from == ofType) {
-        const entry = playbook.shift();
-        return entry;
+        return playbook.shift();
     }
     return false;
 }

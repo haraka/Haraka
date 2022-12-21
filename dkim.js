@@ -280,12 +280,10 @@ class DKIMObject {
         our_sig = our_sig.replace(/\r\n$/,'');
         this.verifier.update(our_sig);
 
-        // Do the DNS lookup to retrieve the public key
-        const self = this;
         let timeout = false;
         const timer = setTimeout(() => {
             timeout = true;
-            return self.result('DNS timeout', 'tempfail');
+            return this.result('DNS timeout', 'tempfail');
         }, this.timeout * 1000);
         const lookup = `${this.fields.s}._domainkey.${this.fields.d}`;
         this.debug(`${this.identity}: DNS lookup ${lookup} (timeout= ${this.timeout}s)`);
@@ -297,76 +295,76 @@ class DKIMObject {
                     case dns.NOTFOUND:
                     case dns.NODATA:
                     case dns.NXDOMAIN:
-                        return self.result('no key for signature', 'invalid');
+                        return this.result('no key for signature', 'invalid');
                     default:
-                        self.debug(`${self.identity}: DNS lookup error: ${err.code}`);
-                        return self.result('key unavailable', 'tempfail');
+                        this.debug(`${this.identity}: DNS lookup error: ${err.code}`);
+                        return this.result('key unavailable', 'tempfail');
                 }
             }
-            if (!res) return self.result('no key for signature', 'invalid');
+            if (!res) return this.result('no key for signature', 'invalid');
             for (let record of res) {
                 // Node 0.11.x compatibility
                 if (Array.isArray(record)) {
                     record = record.join('');
                 }
                 if (!record.includes('p=')) {
-                    self.debug(`${self.identity}: ignoring TXT record: ${record}`);
+                    this.debug(`${this.identity}: ignoring TXT record: ${record}`);
                     continue;
                 }
-                self.debug(`${self.identity}: got DNS record: ${record}`);
+                this.debug(`${this.identity}: got DNS record: ${record}`);
                 const rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
                 const split = rec.split(';');
                 for (const element of split) {
                     const split2 = element.split('=');
-                    if (split2[0]) self.dns_fields[split2[0]] = split2[1];
+                    if (split2[0]) this.dns_fields[split2[0]] = split2[1];
                 }
 
                 // Validate
-                if (!self.dns_fields.v || self.dns_fields.v !== 'DKIM1') {
-                    return self.result('invalid version', 'invalid');
+                if (!this.dns_fields.v || this.dns_fields.v !== 'DKIM1') {
+                    return this.result('invalid version', 'invalid');
                 }
-                if (self.dns_fields.g) {
-                    if (self.dns_fields.g !== '*') {
-                        let s = self.dns_fields.g;
+                if (this.dns_fields.g) {
+                    if (this.dns_fields.g !== '*') {
+                        let s = this.dns_fields.g;
                         // Escape any special regexp characters
                         s = s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
                         // Make * a non-greedy match against anything except @
                         s = s.replace('\\*','[^@]*?');
                         const reg = new RegExp(`^${s}@`);
-                        self.debug(`${self.identity}: matching ${self.dns_fields.g} against i=${self.fields.i} regexp=${reg.toString()}`);
-                        if (!reg.test(self.fields.i)) {
-                            return self.result('inapplicable key', 'invalid');
+                        this.debug(`${this.identity}: matching ${this.dns_fields.g} against i=${this.fields.i} regexp=${reg.toString()}`);
+                        if (!reg.test(this.fields.i)) {
+                            return this.result('inapplicable key', 'invalid');
                         }
                     }
                 }
                 else {
-                    return self.result('inapplicable key', 'invalid');
+                    return this.result('inapplicable key', 'invalid');
                 }
-                if (self.dns_fields.h) {
-                    const hashes = self.dns_fields.h.split(':');
+                if (this.dns_fields.h) {
+                    const hashes = this.dns_fields.h.split(':');
                     for (const hashElement of hashes) {
                         const hash = hashElement.trim();
-                        if (!self.fields.a.includes(hash)) {
-                            return self.result('inappropriate hash algorithm', 'invalid');
+                        if (!this.fields.a.includes(hash)) {
+                            return this.result('inappropriate hash algorithm', 'invalid');
                         }
                     }
                 }
-                if (self.dns_fields.k) {
-                    if (!self.fields.a.includes(self.dns_fields.k)) {
-                        return self.result('inappropriate key type', 'invalid');
+                if (this.dns_fields.k) {
+                    if (!this.fields.a.includes(this.dns_fields.k)) {
+                        return this.result('inappropriate key type', 'invalid');
                     }
                 }
-                if (self.dns_fields.t) {
-                    const flags = self.dns_fields.t.split(':');
+                if (this.dns_fields.t) {
+                    const flags = this.dns_fields.t.split(':');
                     for (const flagElement of flags) {
                         const flag = flagElement.trim();
                         if (flag === 'y') {
                             // Test mode
-                            self.test_mode = true;
+                            this.test_mode = true;
                         }
                         else if (flag === 's') {
                             // 'i' and 'd' domain much match exactly
-                            let { i } = self.fields
+                            let { i } = this.fields
                             i = i.substr(i.indexOf('@')+1, i.length)
                             if (i.toLowerCase() !== this.fields.d.toLowerCase()) {
                                 return this.result('i/d selector domain mismatch (t=s)', 'invalid')
@@ -374,26 +372,27 @@ class DKIMObject {
                         }
                     }
                 }
-                if (!self.dns_fields.p) return self.result('key revoked', 'invalid');
+                if (!this.dns_fields.p) return this.result('key revoked', 'invalid');
 
                 // crypto.verifier requires the key in PEM format
-                self.public_key = `-----BEGIN PUBLIC KEY-----\r\n${
-                    self.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n')
+                this.public_key = `-----BEGIN PUBLIC KEY-----\r\n${
+
+                    this.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n')
                 }-----END PUBLIC KEY-----\r\n`;
 
                 let verified;
                 try {
-                    verified = self.verifier.verify(self.public_key, self.fields.b, 'base64');
-                    self.debug(`${self.identity}: verified=${verified}`);
+                    verified = this.verifier.verify(this.public_key, this.fields.b, 'base64');
+                    this.debug(`${this.identity}: verified=${verified}`);
                 }
                 catch (e) {
-                    self.debug(`${self.identity}: verification error: ${e.message}`);
-                    return self.result('verification error', 'invalid');
+                    this.debug(`${this.identity}: verification error: ${e.message}`);
+                    return this.result('verification error', 'invalid');
                 }
-                return self.result(null, ((verified) ? 'pass' : 'fail'));
+                return this.result(null, ((verified) ? 'pass' : 'fail'));
             }
             // We didn't find a valid DKIM record for this signature
-            self.result('no key for signature', 'invalid');
+            this.result('no key for signature', 'invalid');
         });
     }
 
@@ -608,9 +607,8 @@ class DKIMVerifyStream extends Stream {
             dkimObject.end();
         }
         if (this.pending === 0 && this._no_signatures_found === false) {
-            const self = this;
             process.nextTick(() => {
-                self.cb(null, self.result, self.results);
+                this.cb(null, this.result, this.results);
             });
         }
     }

@@ -4,26 +4,24 @@ let toobusy;
 let was_busy = false;
 
 exports.register = function () {
-    const plugin = this;
 
     try {
         toobusy = require('toobusy-js');
     }
     catch (e) {
-        plugin.logerror(e);
-        plugin.logerror("try: 'npm install -g toobusy-js'");
+        this.logerror(e);
+        this.logerror("try: 'npm install -g toobusy-js'");
         return;
     }
 
-    plugin.loadConfig();
+    this.loadConfig();
 
-    plugin.register_hook('connect', 'check_busy', -100);
+    this.register_hook('connect', 'check_busy', -100);
 }
 
 exports.loadConfig = function () {
-    const plugin = this;
-    let maxLag = plugin.config.get('toobusy.maxlag','value', () => {
-        plugin.loadConfig();
+    let maxLag = this.config.get('toobusy.maxlag','value', () => {
+        this.loadConfig();
     });
 
     maxLag = parseInt(maxLag);

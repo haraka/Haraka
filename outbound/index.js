@@ -222,7 +222,6 @@ function get_deliveries (transaction) {
 }
 
 exports.send_trans_email = function (transaction, next) {
-    const self = this;
 
     // add potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
@@ -257,7 +256,7 @@ exports.send_trans_email = function (transaction, next) {
             const todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
             todo.uuid = `${todo.uuid}.${todo_index}`;
             todo_index++;
-            self.process_delivery(ok_paths, todo, hmails, cb);
+            this.process_delivery(ok_paths, todo, hmails, cb);
         },
         (err) => {
             if (err) {
@@ -284,7 +283,6 @@ exports.send_trans_email = function (transaction, next) {
 }
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
-    const self = this;
     logger.loginfo(`[outbound] Transaction delivery for domain: ${todo.domain}`);
     const fname = _qfile.name();
     const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
@@ -313,7 +311,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         cb("Queueing failed");
     })
 
-    self.build_todo(todo, ws, () => {
+    this.build_todo(todo, ws, () => {
         todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
     });
 }

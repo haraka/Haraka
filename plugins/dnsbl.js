@@ -1,85 +1,81 @@
 // dnsbl plugin
 
 exports.register = function () {
-    const plugin = this;
-    plugin.inherits('dns_list_base');
+    this.inherits('dns_list_base');
 
-    plugin.load_config();
+    this.load_config();
 
-    if (plugin.cfg.main.periodic_checks) {
-        plugin.check_zones(plugin.cfg.main.periodic_checks);
+    if (this.cfg.main.periodic_checks) {
+        this.check_zones(this.cfg.main.periodic_checks);
     }
 
-    if (plugin.cfg.main.search === 'all') {
-        plugin.register_hook('connect',  'connect_multi');
+    if (this.cfg.main.search === 'all') {
+        this.register_hook('connect',  'connect_multi');
     }
     else {
-        plugin.register_hook('connect',  'connect_first');
+        this.register_hook('connect',  'connect_first');
     }
 }
 
 exports.load_config = function () {
-    const plugin = this;
 
-    plugin.cfg = plugin.config.get('dnsbl.ini', {
+    this.cfg = this.config.get('dnsbl.ini', {
         booleans: ['+main.reject', '-main.enable_stats'],
     }, () => {
-        plugin.load_config();
+        this.load_config();
     });
 
-    if (plugin.cfg.main.enable_stats && !plugin.enable_stats) {
-        plugin.loginfo('stats reporting enabled');
-        plugin.enable_stats = true;
+    if (this.cfg.main.enable_stats && !this.enable_stats) {
+        this.loginfo('stats reporting enabled');
+        this.enable_stats = true;
     }
-    if (!plugin.cfg.main.enable_stats && plugin.enable_stats) {
-        plugin.loginfo('stats reporting disabled');
-        plugin.enable_stats = false;
-    }
-
-    if (plugin.cfg.main.stats_redis_host &&
-        plugin.cfg.main.stats_redis_host !== plugin.redis_host) {
-        plugin.redis_host = plugin.cfg.main.stats_redis_host;
-        plugin.loginfo(`set stats redis host to: ${plugin.redis_host}`);
+    if (!this.cfg.main.enable_stats && this.enable_stats) {
+        this.loginfo('stats reporting disabled');
+        this.enable_stats = false;
     }
 
-    plugin.get_uniq_zones();
+    if (this.cfg.main.stats_redis_host &&
+        this.cfg.main.stats_redis_host !== this.redis_host) {
+        this.redis_host = this.cfg.main.stats_redis_host;
+        this.loginfo(`set stats redis host to: ${this.redis_host}`);
+    }
+
+    this.get_uniq_zones();
 }
 
 exports.get_uniq_zones = function () {
-    const plugin = this;
-    plugin.zones = [];
+    this.zones = [];
 
     const unique_zones = {};
 
     // Compatibility with old plugin
-    const legacy_zones = plugin.config.get('dnsbl.zones', 'list');
+    const legacy_zones = this.config.get('dnsbl.zones', 'list');
     for (const legacyZone of legacy_zones) {
         unique_zones[legacyZone] = true;
     }
 
-    if (plugin.cfg.main.zones) {
-        const new_zones = plugin.cfg.main.zones.split(/[\s,;]+/);
+    if (this.cfg.main.zones) {
+        const new_zones = this.cfg.main.zones.split(/[\s,;]+/);
         for (const newZone of new_zones) {
             unique_zones[newZone] = true;
         }
     }
 
-    for (const key in unique_zones) { plugin.zones.push(key); }
-    return plugin.zones;
+    for (const key in unique_zones) { this.zones.push(key); }
+    return this.zones;
 }
 
 exports.should_skip = function (connection) {
-    const plugin = this;
 
     if (!connection) { return true; }
 
     if (connection.remote.is_private) {
-        connection.logdebug(plugin, `skip private: ${connection.remote.ip}`);
+        connection.logdebug(this, `skip private: ${connection.remote.ip}`);
         return true;
     }
 
-    if (!plugin.zones || !plugin.zones.length) {
-        connection.logerror(plugin, "no zones");
+    if (!this.zones || !this.zones.length) {
+        connection.logerror(this, "no zones");
         return true;
     }
 
@@ -112,21 +108,20 @@ exports.connect_first = function (next, connection) {
 }
 
 exports.connect_multi = function (next, connection) {
-    const plugin = this;
     const remote_ip = connection.remote.ip;
 
-    if (plugin.should_skip(connection)) { return next(); }
+    if (this.should_skip(connection)) { return next(); }
 
     const hits = [];
     function get_deny_msg () {
         return `host [${remote_ip}] is blacklisted by ${hits.join(', ')}`;
     }
 
-    plugin.multi(remote_ip, plugin.zones, (err, zone, a, pending) => {
+    this.multi(remote_ip, this.zones, (err, zone, a, pending) => {
         if (err) {
-            connection.results.add(plugin, {err: err.message});
+            connection.results.add(this, {err: err.message});
             if (pending) return;
-            if (plugin.cfg.main.reject && hits.length) {
+            if (this.cfg.main.reject && hits.length) {
                 return next(DENY, get_deny_msg());
             }
             return next();
@@ -134,16 +129,16 @@ exports.connect_multi = function (next, connection) {
 
         if (a) {
             hits.push(zone);
-            connection.results.add(plugin, {fail: zone});
+            connection.results.add(this, {fail: zone});
         }
         else {
-            if (zone) connection.results.add(plugin, {pass: zone});
+            if (zone) connection.results.add(this, {pass: zone});
         }
 
         if (pending) return;
-        connection.results.add(plugin, {emit: true});
+        connection.results.add(this, {emit: true});
 
-        if (plugin.cfg.main.reject && hits.length) {
+        if (this.cfg.main.reject && hits.length) {
             return next(DENY, get_deny_msg());
         }
         return next();

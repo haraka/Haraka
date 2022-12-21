@@ -4,35 +4,33 @@ const ipaddr = require('ipaddr.js');
 const { isIPv6 } = require('net');
 
 exports.register = function () {
-    const plugin = this;
-    plugin.load_config();
-    plugin.register_hook('connect_init', 'early_talker');
-    plugin.register_hook('data',         'early_talker');
+    this.load_config();
+    this.register_hook('connect_init', 'early_talker');
+    this.register_hook('data',         'early_talker');
 }
 
 exports.load_config = function () {
-    const plugin = this;
 
-    plugin.cfg = plugin.config.get('early_talker.ini', {
+    this.cfg = this.config.get('early_talker.ini', {
         booleans: [
             '+main.reject'
         ]
     },
     () => {
-        plugin.load_config();
+        this.load_config();
     });
 
     // Generate a white list of IP addresses
-    plugin.whitelist = plugin.load_ip_list(Object.keys(plugin.cfg.ip_whitelist));
+    this.whitelist = this.load_ip_list(Object.keys(this.cfg.ip_whitelist));
 
-    if (plugin.cfg.main?.pause) {
-        plugin.pause = plugin.cfg.main.pause * 1000;
+    if (this.cfg.main?.pause) {
+        this.pause = this.cfg.main.pause * 1000;
         return;
     }
 
     // config/early_talker.pause is in milliseconds
-    plugin.pause = plugin.config.get('early_talker.pause', () => {
-        plugin.load_config();
+    this.pause = this.config.get('early_talker.pause', () => {
+        this.load_config();
     });
 }
 
@@ -73,13 +71,12 @@ exports.early_talker = function (next, connection) {
  * @return {Boolean}         True if is whitelisted
  */
 exports.ip_in_list = function (ip) {
-    const plugin = this;
 
-    if (!plugin.whitelist) return false;
+    if (!this.whitelist) return false;
 
     const ipobj = ipaddr.parse(ip);
 
-    for (const element of plugin.whitelist) {
+    for (const element of this.whitelist) {
         try {
             if (ipobj.match(element)) {
                 return true;
@@ -120,37 +117,36 @@ exports.load_ip_list = list => {
 }
 
 exports.should_check = function (connection) {
-    const plugin = this;
     // Skip delays for privileged senders
 
     if (connection.notes.auth_user) {
-        connection.results.add(plugin, { skip: 'authed'});
+        connection.results.add(this, { skip: 'authed'});
         return false;
     }
 
     if (connection.relaying) {
-        connection.results.add(plugin, { skip: 'relay'});
+        connection.results.add(this, { skip: 'relay'});
         return false;
     }
 
-    if (plugin.ip_in_list(connection.remote.ip)) {
-        connection.results.add(plugin, { skip: 'whitelist' });
+    if (this.ip_in_list(connection.remote.ip)) {
+        connection.results.add(this, { skip: 'whitelist' });
         return false;
     }
 
     const karma = connection.results.get('karma');
     if (karma && karma.good > 0) {
-        connection.results.add(plugin, { skip: '+karma' });
+        connection.results.add(this, { skip: '+karma' });
         return false;
     }
 
     if (connection.remote.is_local) {
-        connection.results.add(plugin, { skip: 'local_ip'});
+        connection.results.add(this, { skip: 'local_ip'});
         return false;
     }
 
     if (connection.remote.is_private) {
-        connection.results.add(plugin, { skip: 'private_ip'});
+        connection.results.add(this, { skip: 'private_ip'});
         return false;
     }
 

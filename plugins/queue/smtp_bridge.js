@@ -6,9 +6,8 @@ exports.register = function () {
 }
 
 exports.load_flat_ini = function () {
-    const plugin = this;
-    plugin.cfg = plugin.config.get('smtp_bridge.ini', () => {
-        plugin.load_flat_ini();
+    this.cfg = this.config.get('smtp_bridge.ini', () => {
+        this.load_flat_ini();
     });
 }
 
