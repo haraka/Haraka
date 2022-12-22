@@ -97,17 +97,16 @@ exports._load_cur_queue = (pid, iteratee, cb) => {
     });
 }
 
-// TODO: check this against https://rules.sonarsource.com/javascript/RSPEC-3800
 exports.read_parts = file => {
     if (file.indexOf(_qfile.platformDOT) === 0) {
         logger.logwarn(`[outbound] 'Skipping' dot-file in queue folder: ${file}`);
-        return false;
+        return null;
     }
 
     const parts = _qfile.parts(file);
     if (!parts) {
         logger.logerror(`[outbound] Unrecognized file in queue folder: ${file}`);
-        return false;
+        return null;
     }
 
     return parts;

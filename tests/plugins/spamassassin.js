@@ -158,7 +158,7 @@ exports.score_too_high = {
         test.expect(1);
         this.connection.relaying = true;
         this.plugin.cfg.main.relay_reject_threshold = 7;
-        test.equal(false, this.plugin.score_too_high(this.connection, {score: 6}));
+        test.equal('', this.plugin.score_too_high(this.connection, {score: 6}));
         test.done();
     },
     'too high score with relaying is too high' (test) {

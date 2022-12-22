@@ -211,7 +211,6 @@ exports.do_header_updates = function (conn, spamd_response) {
     }
 }
 
-// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-3800
 exports.score_too_high = function (conn, spamd_response) {
     const { score } = spamd_response;
     if (conn.relaying) {
@@ -226,7 +225,7 @@ exports.score_too_high = function (conn, spamd_response) {
         return "spam score exceeded threshold";
     }
 
-    return false;
+    return '';
 }
 
 exports.get_spamd_username = function (conn) {
@@ -359,30 +358,25 @@ exports.should_skip = function (connection = {}) {
         }
     }
 
-    // TODO: check these boolean tests against https://rules.sonarsource.com/javascript/RSPEC-1125
-    if (this.cfg.check.authenticated == false && connection.notes.auth_user) {
+    if (!this.cfg.check.authenticated && connection.notes.auth_user) {
         connection.transaction.results.add(this, { skip: 'authed'});
         result = true;
     }
 
-    if (this.cfg.check.relay == false && connection.relaying) {
+    if (!this.cfg.check.relay && connection.relaying) {
         connection.transaction.results.add(this, { skip: 'relay'});
         result = true;
     }
 
-    if (this.cfg.check.local_ip == false && connection.remote.is_local) {
+    if (!this.cfg.check.local_ip && connection.remote.is_local) {
         connection.transaction.results.add(this, { skip: 'local_ip'});
         result = true;
     }
 
-    if (this.cfg.check.private_ip == false && connection.remote.is_private) {
-        if (this.cfg.check.local_ip == true && connection.remote.is_local) {
-            // local IPs are included in private IPs
-        }
-        else {
-            connection.transaction.results.add(this, { skip: 'private_ip'});
-            result = true;
-        }
+    if (!this.cfg.check.private_ip && connection.remote.is_private
+        && !(this.cfg.check.local_ip && connection.remote.is_local)) {
+        connection.transaction.results.add(this, { skip: 'private_ip'});
+        result = true;
     }
 
     return result;

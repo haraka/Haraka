@@ -43,8 +43,6 @@ const obc = require('./config');
 
 function dummy_func () {}
 
-const CRLF = '\r\n';
-
 class HMailItem extends events.EventEmitter {
     constructor (filename, filePath, notes) {
         super();
@@ -1011,11 +1009,11 @@ class HMailItem extends events.EventEmitter {
      */
     populate_bounce_message_with_headers (from, to, reason, header, cb) {
         const originalMessageId = header.get('Message-Id');
-
         const bounce_msg_ = config.get('outbound.bounce_message', 'data');
         const bounce_msg_html_ = config.get('outbound.bounce_message_html', 'data');
         const bounce_msg_image_ = config.get('outbound.bounce_message_image', 'data');
 
+        const CRLF = '\r\n';
         const bounce_header_lines = [];
         const bounce_body_lines = [];
         const bounce_html_lines = [];

@@ -153,6 +153,12 @@ Server.gracefulShutdown = () => {
 }
 
 Server._graceful = shutdown => {
+
+    // TODO: There was an expressed desire to make these values configurable.
+    //       Also, SonarLint said these could be top-level; don't move without reason.
+    const disconnect_timeout = 30;
+    const exit_timeout = 30;
+
     if (!Server.cluster && shutdown) {
         ['outbound', 'cfreader', 'plugins'].forEach(module => {
             process.emit('message', {event: `${module  }.shutdown`});
@@ -167,9 +173,6 @@ Server._graceful = shutdown => {
     }
 
     gracefull_in_progress = true;
-    // TODO: Make these configurable
-    const disconnect_timeout = 30;
-    const exit_timeout = 30;
     cluster.removeAllListeners('exit');
     // we reload using eachLimit where limit = num_workers - 1
     // this kills all-but-one workers in parallel, leaving one running

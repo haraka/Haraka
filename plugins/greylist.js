@@ -328,7 +328,6 @@ exports.was_whitelisted_in_session = function (connection) {
     return connection.transaction.results.has(this, 'pass', 'whitelisted');
 }
 
-// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-3800
 exports.process_skip_rules = function (connection) {
     const cr = connection.results;
 
@@ -343,7 +342,7 @@ exports.process_skip_rules = function (connection) {
         }
     }
 
-    return false;
+    return null;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -635,15 +634,11 @@ exports.domain_in_list = function (list_name, domain) {
 
 // Check for special rDNS cases
 // @return {type: 'dynamic'} if rnds is dynamic (hostid should be IP)
-// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-3800
 exports.check_rdns_for_special_cases = function (domain, label) {
 
     // ptr for these is in fact dynamic
-    if (this.domain_in_list('dyndom', domain))
-        return {
-            type : 'dynamic',
-            why : 'rDNS considered dynamic: listed in dynamic.domains config list'
-        };
-
-    return false;
+    return this.domain_in_list('dyndom', domain) ? {
+        type : 'dynamic',
+        why : 'rDNS considered dynamic: listed in dynamic.domains config list'
+    } : null;
 }

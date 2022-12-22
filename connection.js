@@ -1182,18 +1182,23 @@ class Connection {
         const src_port = match[4];
         const dst_port = match[5];
 
+        // TODO: is it at all possible to avoid the ESLint disable here?
         // Validate source/destination IP
         /*eslint no-fallthrough: 0 */
-        // TODO: verify replacing the switch-case here worked
-        if (proto == 'TCP4' && !ipaddr.IPv4.isValid(src_ip) && !ipaddr.IPv4.isValid(dst_ip)) {
-            this.respond(421, 'Invalid IPv4 PROXY format');
-            return this.disconnect();
+        switch (proto) {
+            case 'TCP4':
+                if (ipaddr.IPv4.isValid(src_ip) && ipaddr.IPv4.isValid(dst_ip)) {
+                    break; // Valid IPv4 address
+                }
+            case 'TCP6':
+                if (ipaddr.IPv6.isValid(src_ip) && ipaddr.IPv6.isValid(dst_ip)) {
+                    break; // Valid IPv6 address
+                }
+            case 'UNKNOWN':
+            default:
+                this.respond(421, 'Invalid PROXY format');
+                return this.disconnect(); // Invalid address
         }
-        if (proto == 'TCP6' && !ipaddr.IPv6.isValid(src_ip) && !ipaddr.IPv6.isValid(dst_ip)) {
-            this.respond(421, 'Invalid IPv6 PROXY format');
-            return this.disconnect();
-        }
-
         // Apply changes
         this.loginfo(
             'HAProxy',

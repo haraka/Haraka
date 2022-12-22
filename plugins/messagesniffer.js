@@ -12,7 +12,6 @@ exports.register = function () {
     if (cfg.main.port) port = parseInt(cfg.main.port);
 }
 
-// TODO: validate "if var =" against https://rules.sonarsource.com/javascript/RSPEC-1121
 exports.hook_connect = function (next, connection) {
     const cfg = this.config.get('messagesniffer.ini');
     // Skip any private IP ranges
@@ -25,8 +24,8 @@ exports.hook_connect = function (next, connection) {
             connection.logerror(this, err.message);
             return next();
         }
-        let match;
-        if ((match = /<result ((?:(?!\/>)[^])+)\/>/.exec(result))) {
+        let match = match = /<result ((?:(?!\/>)[^])+)\/>/.exec(result);
+        if (match) {
             // Log result
             connection.loginfo(this, match[1]);
             // Populate result
@@ -147,9 +146,9 @@ exports.hook_data_post = function (next, connection) {
             const elapsed = end_time - start_time;
             // Delete the tempfile
             fs.unlink(tmpfile, () => {});
-            let match;
+            let match = /<result code='(\d+)'/.exec(result);
             // Make sure we actually got a result
-            if ((match = /<result code='(\d+)'/.exec(result))) {
+            if (match) {
                 const code = parseInt(match[1]);
                 let group;
                 let rules;
@@ -157,7 +156,8 @@ exports.hook_data_post = function (next, connection) {
                 // Make a note that we actually ran
                 connection.notes.snf_run = true;
                 // Get the returned headers
-                if ((match = /<xhdr>((?:(?!<\/xhdr>)[^])+)/.exec(result,'m'))) {
+                match = /<xhdr>((?:(?!<\/xhdr>)[^])+)/.exec(result,'m');
+                if (match) {
                     // Parse the returned headers and add them to the message
                     const xhdr = match[1].split('\r\n');
                     const headers = [];
@@ -364,20 +364,14 @@ function SNFClient (req, cb) {
     sock.on('data', data => {
         plugin.logprotocol(`< ${data}`);
         // Buffer all the received lines
+        // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
         (result ? result += data : result = data);
     });
     sock.once('end', () => {
         // Check for result
-        let match;
-        if (/<result /.exec(result)) {
-            return cb(null, result);
-        }
-        else if ((match = /<error message='([^']+)'/.exec(result))) {
-            return cb(new Error(match[1]));
-        }
-        else {
-            return cb(new Error(`unexpected result: ${result}`));
-        }
+        if (/<result /.exec(result)) return cb(null, result);
+        const match = /<error message='([^']+)'/.exec(result);
+        return match ? cb(new Error(match[1])) : cb(new Error(`unexpected result: ${result}`));
     });
     // Start the sequence
     sock.connect(port);

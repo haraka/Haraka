@@ -130,7 +130,6 @@ logger.dump_and_exit = function (code) {
     });
 }
 
-// TODO: check against https://rules.sonarsource.com/javascript/RSPEC-3516
 logger.log = (level, data, logobj) => {
     if (level === 'PROTOCOL') {
         data = data.replace(/\n/g, '\\n');
@@ -142,18 +141,19 @@ logger.log = (level, data, logobj) => {
 
     // buffer until plugins are loaded
     const emptyPluginList = !plugins || Array.isArray(plugins.plugin_list) && !plugins.plugin_list.length;
+
     if (emptyPluginList) {
         logger.deferred_logs.push(item);
-        return true;
+    }
+    else {
+        // process buffered logs
+        while (logger.deferred_logs.length > 0) {
+            const log_item = logger.deferred_logs.shift();
+            plugins.run_hooks('log', logger, log_item);
+        }
+        plugins.run_hooks('log', logger, item);
     }
 
-    // process buffered logs
-    while (logger.deferred_logs.length > 0) {
-        const log_item = logger.deferred_logs.shift();
-        plugins.run_hooks('log', logger, log_item);
-    }
-
-    plugins.run_hooks('log', logger, item);
     return true;
 }
 
@@ -215,7 +215,7 @@ logger._init_loglevel = function () {
     this.set_loglevel(_loglevel);
 }
 
-logger.would_log = level => !(logger.loglevel < level)
+logger.would_log = level => logger.loglevel >= level
 
 logger.set_timestamps = value => {
     logger.timestamps = !!value;

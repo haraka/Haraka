@@ -39,9 +39,8 @@ exports.hook_data_post = function (next, connection) {
         });
 
         // Get virus name
-        let virus;
-        // TODO: check against https://rules.sonarsource.com/javascript/RSPEC-1121
-        if ((virus = virus_re.exec(stdout))) {
+        let virus = virus_re.exec(stdout);
+        if (virus) {
             virus = virus[1];
         }
 
