@@ -93,7 +93,7 @@ exports.multi = {
                 test.done();
             }
         }
-        this.plugin.multi('127.0.0.2', 'cbl.abuseat.org', cb);
+        this.plugin.multi('127.0.0.2', 'xbl.spamhaus.org', cb);
     },
     'Spamcop + CBL' (test) {
         test.expect(12);
@@ -111,7 +111,7 @@ exports.multi = {
                 test.done();
             }
         }
-        const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
+        const dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
         this.plugin.multi('127.0.0.2', dnsbls, cb);
     },
     'Spamcop + CBL + negative result' (test) {
@@ -129,7 +129,7 @@ exports.multi = {
                 test.done();
             }
         }
-        const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
+        const dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
         this.plugin.multi('127.0.0.1', dnsbls, cb);
     },
     'IPv6 addresses supported' (test) {
@@ -148,7 +148,7 @@ exports.multi = {
                 test.done();
             }
         }
-        const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
+        const dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
         this.plugin.multi('::1', dnsbls, cb);
     }
 }
@@ -163,7 +163,7 @@ exports.first = {
             test.ok((Array.isArray(a) && a.length > 0));
             test.done();
         }
-        const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
+        const dnsbls = [ 'xbl.spamhaus.org', 'bl.spamcop.net' ];
         this.plugin.first('127.0.0.2', dnsbls , cb);
     },
     'negative result' (test) {
@@ -174,12 +174,12 @@ exports.first = {
             test.equal(null, a);
             test.done();
         }
-        const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
+        const dnsbls = [ 'xbl.spamhaus.org', 'bl.spamcop.net' ];
         this.plugin.first('127.0.0.1', dnsbls, cb);
     },
     'each_cb' (test) {
         test.expect(7);
-        const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
+        const dnsbls = [ 'xbl.spamhaus.org', 'bl.spamcop.net' ];
         let pending = dnsbls.length;
         function cb () {
             test.ok(pending);
