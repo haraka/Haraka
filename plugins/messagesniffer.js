@@ -352,7 +352,7 @@ function SNFClient (req, cb) {
     sock.setTimeout(30 * 1000); // Connection timeout
     sock.once('timeout', function () {
         this.destroy();
-        return cb(new Error('connection timed out'));
+        cb(new Error('connection timed out'));
     });
     sock.once('error', err => cb(err));
     sock.once('connect', function () {
@@ -374,7 +374,7 @@ function SNFClient (req, cb) {
             return cb(new Error(match[1]));
         }
 
-        return cb(new Error(`unexpected result: ${result}`));
+        cb(new Error(`unexpected result: ${result}`));
     });
     // Start the sequence
     sock.connect(port);
