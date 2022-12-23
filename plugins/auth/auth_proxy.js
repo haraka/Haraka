@@ -1,7 +1,9 @@
 // Proxy AUTH requests selectively by domain
+
 const sock  = require('./line_socket');
 const utils = require('haraka-utils');
-const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+
+const smtp_regexp = /^(\d{3})([ -])(.*)/;
 
 exports.register = function () {
     this.inherits('auth/auth_base');
@@ -25,8 +27,8 @@ exports.hook_capabilities = (next, connection) => {
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    let domain;
-    if ((domain = /@([^@]+)$/.exec(user))) {
+    let domain = /@([^@]+)$/.exec(user);
+    if (domain) {
         domain = domain[1].toLowerCase();
     }
     else {
@@ -82,7 +84,6 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     socket.on('error', err => {
         connection.logerror(self, `connection failed to host ${host}: ${err}`);
         socket.end();
-        return;
     });
     socket.send_command = function (cmd, data) {
         let line = cmd + (data ? (` ${data}`) : '');
@@ -175,8 +176,8 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
             }
             if (code.startsWith('5')) {
                 // Initial attempt failed; strip domain and retry.
-                let u;
-                if ((u = /^([^@]+)@.+$/.exec(user))) {
+                const u = /^([^@]+)@.+$/.exec(user)
+                if (u) {
                     user = u[1];
                     if (methods.includes('PLAIN')) {
                         socket.send_command('AUTH', `PLAIN ${utils.base64(`\0${user}\0${passwd}`)}`);

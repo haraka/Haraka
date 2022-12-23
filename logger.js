@@ -134,8 +134,7 @@ logger.log = (level, data, logobj) => {
     if (level === 'PROTOCOL') {
         data = data.replace(/\n/g, '\\n');
     }
-    data = data.replace(/\r/g, '\\r')
-        .replace(/\n$/, '');
+    data = data.replace(/\r/g, '\\r').replace(/\n$/, '');
 
     const item = { level, data, obj: logobj};
 
@@ -158,18 +157,19 @@ logger.log = (level, data, logobj) => {
 
 logger.log_respond = (retval, msg, data) => {
     // any other return code is irrelevant
-    if (retval !== constants.cont) { return false; }
+    if (retval !== constants.cont) return false;
+
     let timestamp_string = '';
-    if (logger.timestamps) {
-        timestamp_string = `${new Date().toISOString()} `;
-    }
+    if (logger.timestamps) timestamp_string = `${new Date().toISOString()} `;
+
     const color = logger.colors[data.level];
     if (color && stdout_is_tty) {
         process.stdout.write(`${timestamp_string}${logger.colorize(color,data.data)}\n`);
-        return true;
+    }
+    else {
+        process.stdout.write(`${timestamp_string}${data.data}\n`);
     }
 
-    process.stdout.write(`${timestamp_string}${data.data}\n`);
     return true;
 }
 
@@ -215,7 +215,7 @@ logger._init_loglevel = function () {
 }
 
 logger.would_log = level => {
-    if (logger.loglevel < level) { return false; }
+    if (logger.loglevel < level) return false;
     return true;
 }
 
@@ -229,8 +229,7 @@ logger._init_timestamps = function () {
         this._init_timestamps();
     });
 
-    // If we've already been toggled to true by the cfg, we should respect
-    // this.
+    // If we've already been toggled to true by the cfg, we should respect this.
     this.set_timestamps(logger.timestamps || _timestamps);
 }
 
@@ -254,9 +253,7 @@ logger.log_if_level = (level, key, plugin) => function () {
         // if the object is a connection, add the connection id
         if (data instanceof connection.Connection) {
             logobj.uuid = data.uuid;
-            if (data.tran_count > 0) {
-                logobj.uuid += `.${data.tran_count}`;
-            }
+            if (data.tran_count > 0) logobj.uuid += `.${data.tran_count}`;
         }
         else if (data instanceof plugins.Plugin) {
             logobj.origin = data.name;
@@ -267,10 +264,8 @@ logger.log_if_level = (level, key, plugin) => function () {
         else if (data instanceof outbound.HMailItem) {
             logobj.origin = 'outbound';
             if (data.todo) {
-                if (data.todo.uuid)
-                    logobj.uuid = data.todo.uuid;
-                if (data.todo.client_uuid) {
-                    // dirty hack
+                if (data.todo.uuid) logobj.uuid = data.todo.uuid;
+                if (data.todo.client_uuid) {    // dirty hack
                     logobj.origin = `outbound] [${data.todo.client_uuid}`;
                 }
             }
@@ -294,32 +289,34 @@ logger.log_if_level = (level, key, plugin) => function () {
             logobj.message += (util.inspect(data));
         }
     }
+
     switch (logger.format) {
         case logger.formats.LOGFMT:
             logger.log(
                 level,
                 stringify(logobj)
             );
-            return true;
+            break
         case logger.formats.JSON:
             logger.log(
                 level,
                 JSON.stringify(logobj)
             );
-            return true;
+            break
         case logger.formats.DEFAULT:
         default:
             logger.log(
                 level,
                 `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${logobj.message}`
             );
-            return true;
     }
+    return true;
 }
 
 logger.add_log_methods = (object, plugin) => {
     if (!object) return;
     if (typeof(object) !== 'object') return;
+
     for (const level in logger.levels) {
         const fname = `log${level.toLowerCase()}`;
         if (object[fname]) continue;  // already added

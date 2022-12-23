@@ -93,7 +93,7 @@ exports.hook_deny = function (next, connection, params) {
             // fall through
         default:
             // No delays
-            return next();
+            next();
     }
 }
 
@@ -128,7 +128,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
             return next(params[0], params[1]);
         }
     }
-    return next();
+    next();
 }
 
 exports.hook_data = (next, connection) => {
@@ -145,5 +145,5 @@ exports.hook_data = (next, connection) => {
     }
     if (fails.length) transaction.add_header('X-Haraka-Fail-Pre', fails.join(' '));
 
-    return next();
+    next();
 }

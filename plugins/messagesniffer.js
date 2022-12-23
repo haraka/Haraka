@@ -89,11 +89,11 @@ exports.hook_connect = function (next, connection) {
                 default:
                     // Unknown
                     connection.logerror(this, `Unknown GBUdb range: ${gbudb.range}`);
-                    return next();
+                    next();
             }
         }
         else {
-            return next();
+            next();
         }
     });
 }
@@ -136,7 +136,7 @@ exports.hook_data_post = function (next, connection) {
 
     ws.once('error', err => {
         connection.logerror(this, `Error writing temporary file: ${err.message}`);
-        return next();
+        next();
     });
 
     ws.once('close', () => {
@@ -338,11 +338,11 @@ exports.hook_disconnect = function (next, connection) {
             else {
                 connection.logdebug(this, `GBUdb bad encounter added for ${connection.remote.ip}`);
             }
-            return next();
+            next();
         });
     }
     else {
-        return next();
+        next();
     }
 }
 
@@ -367,16 +367,14 @@ function SNFClient (req, cb) {
     });
     sock.once('end', () => {
         // Check for result
+        if (/<result /.exec(result)) return cb(null, result);
+
         let match;
-        if (/<result /.exec(result)) {
-            return cb(null, result);
-        }
-        else if ((match = /<error message='([^']+)'/.exec(result))) {
+        if ((match = /<error message='([^']+)'/.exec(result))) {
             return cb(new Error(match[1]));
         }
-        else {
-            return cb(new Error(`unexpected result: ${result}`));
-        }
+
+        return cb(new Error(`unexpected result: ${result}`));
     });
     // Start the sequence
     sock.connect(port);

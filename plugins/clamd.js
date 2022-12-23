@@ -363,18 +363,19 @@ exports.send_clamd_predata = (socket, cb) => {
 }
 
 function clamd_connect (socket, host) {
-    let match;
+
     if (host.match(/^\//)) {
-        // assume unix socket
-        socket.connect(host);
+        socket.connect(host); // starts with /, unix socket
+        return
     }
-    else if ((match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host))) {
-        // IPv6 literal
-        socket.connect((match[2] || 3310), match[1]);
+
+    const match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host);
+    if (match) {
+        socket.connect((match[2] || 3310), match[1]); // IPv6 literal
+        return
     }
-    else {
-        // IP:port, hostname:port or hostname
-        const hostport = host.split(/:/);
-        socket.connect((hostport[1] || 3310), hostport[0]);
-    }
+
+    // IP:port, hostname:port or hostname
+    const hostport = host.split(/:/);
+    socket.connect((hostport[1] || 3310), hostport[0]);
 }

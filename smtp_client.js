@@ -20,7 +20,7 @@ const line_socket = require('./line_socket');
 const logger      = require('./logger');
 const HostPool    = require('./host_pool');
 
-const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+const smtp_regexp = /^(\d{3})([ -])(.*)/;
 const STATE = {
     IDLE: 1,
     ACTIVE: 2,
