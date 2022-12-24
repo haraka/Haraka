@@ -21,8 +21,8 @@ exports.hook_data_post = (next, connection) => {
 
     let user = connection.notes.auth_user;
     let domain;
-    let idx;
-    if ((idx = user.indexOf('@'))) {
+    const idx = user.indexOf('@')
+    if (idx) {
         // If the username is qualified (e.g. user@domain.com)
         // then we make the @domain.com part optional in the regexp.
         domain = user.substr(idx);

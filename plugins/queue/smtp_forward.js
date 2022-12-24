@@ -189,16 +189,17 @@ exports.auth = function (cfg, connection, smtp_client) {
         if (cfg.auth_type === 'plain') {
             connection.loginfo(this, `Authenticating with AUTH PLAIN ${cfg.auth_user}`);
             smtp_client.send_command('AUTH', `PLAIN ${base64(`\0${cfg.auth_user}\0${cfg.auth_pass}`)}`);
+            return
         }
-        else if (cfg.auth_type === 'login') {
+
+        if (cfg.auth_type === 'login') {
             smtp_client.authenticating = true;
             smtp_client.authenticated = false;
 
             connection.loginfo(this, `Authenticating with AUTH LOGIN ${cfg.auth_user}`);
             smtp_client.send_command('AUTH', 'LOGIN');
             smtp_client.on('auth', () => {
-                //TODO: nothing?
-
+                // do nothing
             });
             smtp_client.on('auth_username', () => {
                 smtp_client.send_command(base64(cfg.auth_user));

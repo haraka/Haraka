@@ -342,7 +342,7 @@ exports.process_skip_rules = function (connection) {
         }
     }
 
-    return false;
+    return '';
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

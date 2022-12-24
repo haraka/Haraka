@@ -23,9 +23,7 @@ exports.load_host_list_regex = function () {
         () => { this.load_host_list_regex(); }
     );
 
-    this.hl_re = new RegExp (`^(?:${
-
-        this.host_list_regex.join('|')})$`, 'i');
+    this.hl_re = new RegExp (`^(?:${this.host_list_regex.join('|')})$`, 'i');
 }
 
 exports.hook_mail = function (next, connection, params) {
@@ -58,10 +56,7 @@ exports.hook_mail = function (next, connection, params) {
 
 exports.in_host_list = function (domain) {
     this.logdebug(`checking ${domain} in config/host_list`);
-    if (this.host_list[domain]) {
-        return true;
-    }
-    return false;
+    return !!(this.host_list[domain]);
 }
 
 exports.in_host_regex = function (domain) {
@@ -70,6 +65,5 @@ exports.in_host_regex = function (domain) {
 
     this.logdebug(`checking ${domain} against config/host_list_regex `);
 
-    if (this.hl_re.test(domain)) { return true; }
-    return false;
+    return !!(this.hl_re.test(domain));
 }
