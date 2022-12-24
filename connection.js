@@ -1183,20 +1183,14 @@ class Connection {
         const dst_port = match[5];
 
         // Validate source/destination IP
-        /*eslint no-fallthrough: 0 */
-        switch (proto) {
-            case 'TCP4':
-                if (ipaddr.IPv4.isValid(src_ip) && ipaddr.IPv4.isValid(dst_ip)) {
-                    break;
-                }
-            case 'TCP6':
-                if (ipaddr.IPv6.isValid(src_ip) && ipaddr.IPv6.isValid(dst_ip)) {
-                    break;
-                }
-            // case 'UNKNOWN':
-            default:
-                this.respond(421, 'Invalid PROXY format');
-                return this.disconnect();
+        if ((proto !== ('TCP4' || 'TCP6'))
+            || (proto == 'TCP4' && !ipaddr.IPv4.isValid(src_ip))
+            || (proto == 'TCP4' && !ipaddr.IPv4.isValid(dst_ip))
+            || (proto == 'TCP6' && !ipaddr.IPv6.isValid(src_ip))
+            || (proto == 'TCP6' && !ipaddr.IPv6.isValid(dst_ip))
+        ){
+            this.respond(421, 'Invalid PROXY format');
+            return this.disconnect();
         }
 
         // Apply changes
