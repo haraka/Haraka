@@ -38,7 +38,7 @@
     "haraka-net-utils"      : "^1.5.0",
     "haraka-notes"          : "^1.0.6",
     "haraka-plugin-attachment": "^1.0.7",
-    "haraka-plugin-spf"     : "1.1.2",
+    "haraka-plugin-spf"     : "1.1.3",
     "haraka-plugin-redis"   : "^2.0.5",
     "haraka-results"        : "^2.2.2",
     "haraka-tld"            : "^1.1.0",
