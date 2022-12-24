@@ -23,9 +23,7 @@ exports.load_host_list_regex = function () {
         () => { this.load_host_list_regex(); }
     );
 
-    this.hl_re = new RegExp (`^(?:${
-
-        this.host_list_regex.join('|')})$`, 'i');
+    this.hl_re = new RegExp (`^(?:${this.host_list_regex.join('|')})$`, 'i');
 }
 
 exports.hook_mail = function (next, connection, params) {
