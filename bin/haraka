@@ -383,7 +383,7 @@ else if (parsed.qlist) {
 }
 else if (parsed.qstat) {
     if (!parsed.configs) {
-        fail("qlist option requires config path");
+        fail("qstat option requires config path");
     }
     process.env.HARAKA = parsed.configs;
     logger = require(path.join(base, "logger"));
@@ -435,7 +435,7 @@ else if (parsed.graceful) {
 }
 else if (parsed.qempty) {
     if (!parsed.configs) {
-        fail("qlist option requires config path");
+        fail("qempty option requires config path");
     }
     fail("qempty is unimplemented");
 }
@@ -476,7 +476,7 @@ else if (parsed.order) {
 }
 else if (parsed.test) {
     if (!parsed.configs) {
-        fail("order option requires config path");
+        fail("test option requires config path");
     }
     process.env.HARAKA = parsed.configs;
     try {
