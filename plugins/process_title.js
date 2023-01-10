@@ -120,7 +120,7 @@ exports.hook_init_master = function (next, server) {
         });
     }
     this._interval = setupInterval(title, server);
-    return next();
+    next();
 }
 
 exports.hook_init_child = function (next, server) {
@@ -134,10 +134,9 @@ exports.hook_init_child = function (next, server) {
     server.notes.pt_messages = 0;
     server.notes.pt_mps_diff = 0;
     server.notes.pt_mps_max = 0;
-    const title = 'Haraka (worker)';
-    process.title = title;
-    this._interval = setupInterval(title, server);
-    return next();
+    process.title = 'Haraka (worker)';
+    this._interval = setupInterval(process.title, server);
+    next();
 }
 
 exports.shutdown = function () {
@@ -154,7 +153,7 @@ exports.hook_connect_init = (next, connection) => {
     }
     server.notes.pt_connections++;
     server.notes.pt_concurrent++;
-    return next();
+    next();
 }
 
 exports.hook_disconnect = (next, connection) => {
@@ -177,7 +176,7 @@ exports.hook_disconnect = (next, connection) => {
         worker.send({event: 'process_title.disconnect', wid: worker.id});
     }
     server.notes.pt_concurrent--;
-    return next();
+    next();
 }
 
 exports.hook_rcpt = (next, connection) => {
@@ -187,7 +186,7 @@ exports.hook_rcpt = (next, connection) => {
         worker.send({event: 'process_title.recipient'});
     }
     server.notes.pt_recipients++;
-    return next();
+    next();
 }
 
 exports.hook_data = (next, connection) => {
@@ -197,5 +196,5 @@ exports.hook_data = (next, connection) => {
         worker.send({event: 'process_title.message'});
     }
     server.notes.pt_messages++;
-    return next();
+    next();
 }

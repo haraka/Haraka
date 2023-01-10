@@ -7,7 +7,8 @@ const fs   = require('fs');
 const path = require('path');
 
 const sock = require('./line_socket');
-const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+
+const smtp_regexp = /^(\d{3})([ -])(.*)/;
 
 exports.register = function () {
 

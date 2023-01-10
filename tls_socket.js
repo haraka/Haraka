@@ -629,9 +629,7 @@ exports.get_rejectUnauthorized = (rejectUnauthorized, port, port_list) => {
 
     if (rejectUnauthorized) return true;
 
-    if (port_list.includes(port)) return true;
-
-    return false;
+    return !!(port_list.includes(port));
 }
 
 function createServer (cb) {

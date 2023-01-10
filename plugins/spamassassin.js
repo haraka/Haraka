@@ -220,11 +220,9 @@ exports.score_too_high = function (conn, spamd_response) {
     }
 
     const max = this.cfg.main.reject_threshold;
-    if (max && (score >= max)) {
-        return "spam score exceeded threshold";
-    }
+    if (max && (score >= max)) return "spam score exceeded threshold";
 
-    return false;
+    return '';
 }
 
 exports.get_spamd_username = function (conn) {

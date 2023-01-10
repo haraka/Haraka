@@ -302,11 +302,7 @@ class DKIMObject {
                 }
             }
             if (!res) return this.result('no key for signature', 'invalid');
-            for (let record of res) {
-                // Node 0.11.x compatibility
-                if (Array.isArray(record)) {
-                    record = record.join('');
-                }
+            for (const record of res) {
                 if (!record.includes('p=')) {
                     this.debug(`${this.identity}: ignoring TXT record: ${record}`);
                     continue;

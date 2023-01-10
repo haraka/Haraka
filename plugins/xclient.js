@@ -22,10 +22,7 @@ exports.load_xclient_hosts = function () {
 }
 
 function xclient_allowed (ip) {
-    if (ip === '127.0.0.1' || ip === '::1' || allowed_hosts[ip]) {
-        return true;
-    }
-    return false;
+    return !!(ip === '127.0.0.1' || ip === '::1' || allowed_hosts[ip]);
 }
 
 exports.hook_capabilities = (next, connection) => {

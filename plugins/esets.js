@@ -5,17 +5,16 @@ const virus_re = new RegExp('virus="([^"]+)"');
 
 exports.hook_data_post = function (next, connection) {
     const plugin = this;
-    const txn = connection.transaction;
     const cfg = this.config.get('esets.ini');
 
     // Write message to temporary file
     const tmpdir = cfg.main.tmpdir || '/tmp';
-    const tmpfile = `${tmpdir}/${txn.uuid}.esets`;
+    const tmpfile = `${tmpdir}/${connection?.transaction?.uuid}.esets`;
     const ws = fs.createWriteStream(tmpfile);
 
     ws.once('error', err => {
         connection.logerror(plugin, `Error writing temporary file: ${err.message}`);
-        return next();
+        next();
     });
 
     let start_time;
@@ -39,10 +38,8 @@ exports.hook_data_post = function (next, connection) {
         });
 
         // Get virus name
-        let virus;
-        if ((virus = virus_re.exec(stdout))) {
-            virus = virus[1];
-        }
+        let virus = virus_re.exec(stdout)
+        if (virus) virus = virus[1];
 
         // Log a summary
         const exit_code = parseInt((error) ? error.code : 0)
@@ -60,7 +57,7 @@ exports.hook_data_post = function (next, connection) {
                 return next(DENYSOFT, 'Virus scanner error');
             }
         }
-        return next();
+        next();
     }
 
     ws.once('close', () => {
@@ -70,5 +67,5 @@ exports.hook_data_post = function (next, connection) {
             wsOnClose);
     });
 
-    txn.message_stream.pipe(ws, { line_endings: '\r\n' });
+    connection.transaction.message_stream.pipe(ws, { line_endings: '\r\n' });
 }
