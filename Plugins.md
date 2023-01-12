@@ -69,6 +69,7 @@ Create a PR adding yours to this list.
 | [messagesniffer][url-msgsniff]    | Anti-spam via [MessageSniffer][url-ms] |
 | [milter][url-milter]              | milter support |
 | [mongodb][mongo-url]              | Queue emails to MongoDB |
+| [outbound-logger][url-outbound-logger] | JSON logging of outbound email traffic. Logs useful metadata about delivered/bounced emails |
 | [prevent_credential_leaks][url-creds]  | Prevent users from emailing their credentials |
 | [process_title][url-proctitle]    | Populate `ps` output with activity counters |
 | queue/[discard][url-qdisc]        | queues messages to /dev/null |
@@ -190,4 +191,5 @@ Create a PR adding yours to this list.
 [url-wildduck]: https://github.com/nodemailer/haraka-plugin-wildduck
 [url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
 [mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
+[url-outbound-logger]: https://github.com/mr-karan/haraka-plugin-outbound-logger
 
