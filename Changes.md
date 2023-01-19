@@ -1,6 +1,21 @@
 
 ### Unreleased
 
+
+### [3.0.1] - 2023-01-19
+
+#### Fixed
+
+- fix(bin/haraka): set server.cfg and pass to conn, fixes #3143
+- fix(bin/haraka): correct error messages for help options #3142
+- fix: dkim_verify fails to find record #3149
+
+#### Changed
+
+- plugins: Add haraka-plugin-outbound-logger to registry #3146
+- dep(pi-spf): bump version 1.1.3 to 1.2.0
+
+
 ### [3.0.0] - 2022-12-17
 
 #### Added
@@ -1329,3 +1344,4 @@
 
 
 [3.0.0]: https://github.com/haraka/Haraka/releases/tag/3.0.0
+[3.0.1]: https://github.com/haraka/Haraka/releases/tag/3.0.1

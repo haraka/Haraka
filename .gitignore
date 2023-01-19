@@ -12,4 +12,3 @@ tests/queue/plain
 tests/queue/multibyte
 tests/test-queue
 package-lock.json
-.release
