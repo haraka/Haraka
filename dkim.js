@@ -302,7 +302,8 @@ class DKIMObject {
                 }
             }
             if (!res) return this.result('no key for signature', 'invalid');
-            for (const record of res) {
+            for (const recordSegments of res) {
+                const record = recordSegments.join('');
                 if (!record.includes('p=')) {
                     this.debug(`${this.identity}: ignoring TXT record: ${record}`);
                     continue;
