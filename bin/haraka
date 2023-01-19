@@ -528,9 +528,10 @@ else if (parsed.test) {
         address () {
             return { port: 25, family: 'ipv4', address: '127.0.0.1' };
         },
+        cfg  : require('haraka-config').get('smtp.ini'),
         notes: new Notes(),
     }
-    const connection = Connection.createConnection(client, server);
+    const connection = Connection.createConnection(client, server, server.cfg);
     if (parsed['set-relay']) connection.relaying = true;
 
     const run_next_hook = function () {
