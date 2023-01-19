@@ -168,10 +168,10 @@ class SMTPClient extends events.EventEmitter {
                 // error is e.g. "Error: connect ECONNREFUSED"
                 const errMsg = `${client.uuid}: [${client.host}:${client.port}] SMTP connection ${msg} ${error}`;
 
+                /* eslint-disable no-fallthrough */
                 switch (client.state) {
                     case STATE.ACTIVE:
                         client.emit('error', errMsg);
-                    // eslint-disable no-fallthrough
                     case STATE.IDLE:
                     case STATE.RELEASED:
                         client.destroy();
