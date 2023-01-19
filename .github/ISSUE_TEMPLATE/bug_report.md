@@ -8,9 +8,11 @@ assignees: ''
 ---
 
 **Describe the bug**
+
 A clear and concise description of what the bug is.
 
 **Expected behavior**
+
 A clear and concise description of what you expected to happen.
 
 **Observed behavior**
@@ -24,4 +26,5 @@ Please report your OS, Node version, and Haraka version by running this shell sc
 echo "Haraka | $(haraka -v)"; echo " --- | :--- "; echo "Node | $(node -v)"; echo "OS | $(uname -a)"; echo "openssl | $(openssl version)"
 
 **Additional context**
+
 Add any other context about the problem here.

@@ -9,3 +9,4 @@ http/node_modules
 appveyor.yml
 codecov.yml
 .codeclimate.yml
+.release
