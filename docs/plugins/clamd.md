@@ -133,7 +133,7 @@ meeting following criteria.
   via regexp by enclosing the pattern in //.
 
   To negate a match (e.g. reject if it matches), prefix the match with !.
-  Negative matches are always tested fist.
+  Negative matches are always tested first.
 
   Example:
 
