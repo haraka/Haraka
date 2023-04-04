@@ -1,6 +1,9 @@
 
 ### Unreleased
 
+#### Fixed
+
+- fix(outbound/mx_lookup): prevent outbound loop when target mx is self host
 
 ### [3.0.1] - 2023-01-19
 

@@ -37,7 +37,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
             for (let i=0,l=addresses.length; i < l; i++) {
                 if (
                     obc.cfg.local_mx_ok ||
-                    await net_utils.is_local_host(addresses[i].exchange).catch(() => null) === false
+                    await net_utils.is_self_host(addresses[i].exchange).catch(() => null) === false
                 ) {
                     const mx = wrap_mx(addresses[i]);
                     mxs.push(mx);
