@@ -1,6 +1,9 @@
 
 ### Unreleased
 
+#### Fixed
+
+- fix: rename redis command setex to setEx #3174
 
 ### [3.0.1] - 2023-01-19
 
