@@ -1325,10 +1325,8 @@ class Connection {
             return this.respond(550, 'Authentication required');
         }
         let results;
-        let from;
         try {
             results = rfc1869.parse('mail', line, this.cfg.main.strict_rfc1869 && !this.relaying);
-            from    = new Address (results.shift());
         }
         catch (err) {
             this.errors++;
@@ -1346,6 +1344,19 @@ class Connection {
                 return this.respond(501, ["Command parsing failed", err]);
             }
         }
+
+        let address;
+        let from;
+        try {
+            address = results.shift();
+            from = new Address (address);
+        }
+        catch (e) {
+            const msg = `Invalid MAIL FROM address "${address}"`;
+            this.logerror(msg);
+            return this.respond(501, msg);
+        }
+
         // Get rest of key=value pairs
         const params = {};
         results.forEach(param => {
@@ -1382,10 +1393,8 @@ class Connection {
         }
 
         let results;
-        let recip;
         try {
             results = rfc1869.parse('rcpt', line, this.cfg.main.strict_rfc1869 && !this.relaying);
-            recip   = new Address(results.shift());
         }
         catch (err) {
             this.errors++;
@@ -1403,6 +1412,19 @@ class Connection {
                 return this.respond(501, ["Command parsing failed", err]);
             }
         }
+
+        let address;
+        let recip;
+        try {
+            address = results.shift();
+            recip = new Address (address);
+        }
+        catch (e) {
+            const msg = `Invalid RCPT TO address "${address}"`;
+            this.logerror(msg);
+            return this.respond(501, msg);
+        }
+
         // Get rest of key=value pairs
         const params = {};
         results.forEach((param) => {

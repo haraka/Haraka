@@ -1,6 +1,9 @@
 
 ### Unreleased
 
+#### Fixed
+
+- fix: parsing error leaking to SMTP communication #3176
 
 ### [3.0.1] - 2023-01-19
 
