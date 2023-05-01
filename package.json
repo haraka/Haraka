@@ -28,7 +28,7 @@
     "node-gyp": "^9.3.1",
     "nopt": "~7.0.0",
     "npid": "~0.4.0",
-    "semver": "~7.3.8",
+    "semver": "~7.5.0",
     "sprintf-js": "~1.1.2",
     "haraka-config": "^1.1.0",
     "haraka-constants": "^1.0.6",
