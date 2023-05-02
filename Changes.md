@@ -4,6 +4,7 @@
 #### Fixed
 
 - fix: parsing error leaking to SMTP communication #3176
+- fix: rename redis command setex to setEx #3174
 
 ### [3.0.1] - 2023-01-19
 
