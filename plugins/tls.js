@@ -75,7 +75,7 @@ exports.set_notls = function (connection) {
 
     this.lognotice(connection, `STARTTLS failed. Marking ${connection.remote.ip} as non-TLS host for ${expiry} seconds`);
 
-    server.notes.redis.setex(`no_tls|${connection.remote.ip}`, expiry, (new Date()).toISOString());
+    server.notes.redis.setEx(`no_tls|${connection.remote.ip}`, expiry, (new Date()).toISOString());
 }
 
 exports.upgrade_connection = function (next, connection, params) {

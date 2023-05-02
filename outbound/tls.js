@@ -95,7 +95,7 @@ class OutboundTLS {
 
         logger.lognotice(this, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
 
-        this.db.setex(dbkey, expiry, (new Date()).toISOString())
+        this.db.setEx(dbkey, expiry, (new Date()).toISOString())
             .then(cb)
             .catch(err => {
                 logger.logerror(this, `Redis returned error: ${err}`);

@@ -4,6 +4,7 @@
 #### Fixed
 
 - fix: do not panic at zero-byte queue files #3175
+- fix: rename redis command setex to setEx #3174
 
 ### [3.0.1] - 2023-01-19
 
