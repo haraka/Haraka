@@ -126,7 +126,7 @@ exports.multi = function (lookup, zones, cb) {
             }
             cb(err, zone, a, true);
             done();
-        });
+        })
     }
     function zonesDone (err) {
         cb(err, null, null, false);
@@ -148,8 +148,8 @@ exports.first = function (lookup, zones, cb, cb_each) {
 
         // has pending queries OR this one is a positive result
         ran_cb = true;
-        return cb(err, zone, a);
-    });
+        cb(err, zone, a);
+    })
 }
 
 exports.check_zones = function (interval) {
