@@ -735,7 +735,7 @@ class Connection {
                 break;
             default:
                 // BUG: dns.reverse throws on invalid input (and sometimes valid
-                // input #47847) and also throws when empty results
+                // input nodejs/node#47847). Also throws when empty results
                 try {
                     dns.reverse(this.remote.ip, (err, domains) => {
                         this.rdns_response(err, domains);
