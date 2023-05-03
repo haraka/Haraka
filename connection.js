@@ -734,9 +734,16 @@ class Connection {
                 });
                 break;
             default:
-                dns.reverse(this.remote.ip, (err, domains) => {
-                    this.rdns_response(err, domains);
-                });
+                // BUG: dns.reverse throws on invalid input (and sometimes valid
+                // input nodejs/node#47847). Also throws when empty results
+                try {
+                    dns.reverse(this.remote.ip, (err, domains) => {
+                        this.rdns_response(err, domains);
+                    })
+                }
+                catch (err) {
+                    this.rdns_response(err, []);
+                }
         }
     }
     rdns_response (err, domains) {

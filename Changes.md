@@ -3,8 +3,15 @@
 
 #### Fixed
 
-- fix: parsing error leaking to SMTP communication #3176
-- fix: rename redis command setex to setEx #3174
+- parsing error leaking to SMTP communication #3176
+- rename redis command setex to setEx #3174
+
+#### Changed
+
+- connection: handle dns.reverse invalid throws on node v20
+- chore: bump a few dependency versions
+- dns_list_base: avoid test failure when public DNS used
+
 
 ### [3.0.1] - 2023-01-19
 
