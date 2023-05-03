@@ -3,7 +3,14 @@
 
 #### Fixed
 
-- fix: rename redis command setex to setEx #3174
+- rename redis command setex to setEx #3174
+
+#### Changed
+
+- connection: handle dns.reverse invalid throws on node v20
+- chore: bump a few dependency versions
+- dns_list_base: avoid test failure when public DNS used
+
 
 ### [3.0.1] - 2023-01-19
 
