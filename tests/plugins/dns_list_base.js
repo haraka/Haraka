@@ -69,7 +69,7 @@ exports.multi = {
     setUp : _set_up,
     'Spamcop' (test) {
         test.expect(4);
-        function cb (err, zone, a, pending) {
+        this.plugin.multi('127.0.0.2', 'bl.spamcop.net', (err, zone, a, pending) => {
             test.equal(null, err);
             if (pending) {
                 test.ok((Array.isArray(a) && a.length > 0));
@@ -78,12 +78,11 @@ exports.multi = {
             else {
                 test.done();
             }
-        }
-        this.plugin.multi('127.0.0.2', 'bl.spamcop.net', cb);
+        })
     },
     'CBL' (test) {
         test.expect(4);
-        function cb (err, zone, a, pending) {
+        this.plugin.multi('127.0.0.2', 'xbl.spamhaus.org', (err, zone, a, pending) => {
             test.equal(null, err);
             if (pending) {
                 test.ok((Array.isArray(a) && a.length > 0));
@@ -92,12 +91,12 @@ exports.multi = {
             else {
                 test.done();
             }
-        }
-        this.plugin.multi('127.0.0.2', 'xbl.spamhaus.org', cb);
+        })
     },
     'Spamcop + CBL' (test) {
         test.expect(12);
-        function cb (err, zone, a, pending) {
+        const dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
+        this.plugin.multi('127.0.0.2', dnsbls, (err, zone, a, pending) => {
             test.equal(null, err);
             if (pending) {
                 test.ok(zone);
@@ -110,15 +109,20 @@ exports.multi = {
                 test.equal(false, pending);
                 test.done();
             }
-        }
-        const dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
-        this.plugin.multi('127.0.0.2', dnsbls, cb);
+        })
     },
     'Spamcop + CBL + negative result' (test) {
         test.expect(12);
-        function cb (err, zone, a, pending) {
+        const dnsbls = [ 'bl.spamcop.net','xbl.spamhaus.org' ];
+        this.plugin.multi('127.0.0.1', dnsbls, (err, zone, a, pending) => {
             test.equal(null, err);
-            test.equal(null, a);
+            if (a && a[0] && a[0] === '127.255.255.254') {
+                test.deepEqual(['127.255.255.254'], a)
+                console.warn(`ERROR: DNSBLs don't work with PUBLIC DNS!`)
+            }
+            else {
+                test.equal(null, a)
+            }
             if (pending) {
                 test.equal(true, pending);
                 test.ok(zone);
@@ -128,14 +132,19 @@ exports.multi = {
                 test.equal(null, zone);
                 test.done();
             }
-        }
-        const dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
-        this.plugin.multi('127.0.0.1', dnsbls, cb);
+        })
     },
     'IPv6 addresses supported' (test) {
         test.expect(12);
-        function cb (err, zone, a, pending) {
-            test.equal(null, a);
+        const dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
+        this.plugin.multi('::1', dnsbls, (err, zone, a, pending) => {
+            if (a && a[0] && a[0] === '127.255.255.254') {
+                test.deepEqual(['127.255.255.254'], a)
+                console.warn(`ERROR: DNSBLs don't work with PUBLIC DNS!`)
+            }
+            else {
+                test.equal(null, a);
+            }
             if (pending) {
                 test.deepEqual(null, err);
                 test.equal(true, pending);
@@ -147,9 +156,7 @@ exports.multi = {
                 test.equal(null, zone);
                 test.done();
             }
-        }
-        const dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
-        this.plugin.multi('::1', dnsbls, cb);
+        })
     }
 }
 
@@ -157,25 +164,28 @@ exports.first = {
     setUp : _set_up,
     'positive result' (test) {
         test.expect(3);
-        function cb (err, zone, a) {
+        const dnsbls = [ 'xbl.spamhaus.org', 'bl.spamcop.net' ];
+        this.plugin.first('127.0.0.2', dnsbls, (err, zone, a) => {
             test.equal(null, err);
             test.ok(zone);
             test.ok((Array.isArray(a) && a.length > 0));
             test.done();
-        }
-        const dnsbls = [ 'xbl.spamhaus.org', 'bl.spamcop.net' ];
-        this.plugin.first('127.0.0.2', dnsbls , cb);
+        })
     },
     'negative result' (test) {
-        test.expect(3);
-        function cb (err, zone, a) {
-            test.equal(null, err);
-            test.equal(null, zone);
-            test.equal(null, a);
-            test.done();
-        }
+        test.expect(2);
         const dnsbls = [ 'xbl.spamhaus.org', 'bl.spamcop.net' ];
-        this.plugin.first('127.0.0.1', dnsbls, cb);
+        this.plugin.first('127.0.0.1', dnsbls, (err, zone, a) => {
+            test.equal(null, err);
+            if (a && a[0] && a[0] === '127.255.255.254') {
+                test.deepEqual(['127.255.255.254'], a)
+                console.warn(`ERROR: DNSBLs don't work with PUBLIC DNS!`)
+            }
+            else {
+                test.equal(null, a);
+            }
+            test.done();
+        })
     },
     'each_cb' (test) {
         test.expect(7);
