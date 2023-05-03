@@ -1358,7 +1358,6 @@ class Connection {
             from = new Address(results.shift());
         }
         catch (err) {
-            this.loginfo(`Invalid MAIL FROM address: ${err.message}`);
             return this.respond(501, `Invalid MAIL FROM address`);
         }
 
@@ -1423,7 +1422,6 @@ class Connection {
             recip = new Address(results.shift());
         }
         catch (err) {
-            this.loginfo(`Invalid RCPT TO address: ${err.message}`);
             return this.respond(501, `Invalid RCPT TO address`);
         }
 
