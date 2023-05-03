@@ -4,6 +4,7 @@
 #### Fixed
 
 - fix(outbound/mx_lookup): prevent outbound loop when target mx is self host
+- fix: rename redis command setex to setEx #3174
 
 ### [3.0.1] - 2023-01-19
 
