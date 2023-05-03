@@ -26,9 +26,9 @@
     "daemon": "~1.1.0",
     "ipaddr.js": "~2.0.1",
     "node-gyp": "^9.3.1",
-    "nopt": "~7.0.0",
+    "nopt": "~7.1.0",
     "npid": "~0.4.0",
-    "semver": "~7.3.8",
+    "semver": "~7.5.0",
     "sprintf-js": "~1.1.2",
     "haraka-config": "^1.1.0",
     "haraka-constants": "^1.0.6",
@@ -73,12 +73,12 @@
     "tmp": "~0.2.1"
   },
   "devDependencies": {
-    "nodeunit-x": "^0.15.0",
+    "nodeunit-x": "^0.16.0",
     "haraka-test-fixtures": "^1.2.1",
     "mock-require": "^3.0.3",
-    "eslint": "^8.27.0",
+    "eslint": "^8.39.0",
     "eslint-plugin-haraka": "^1.0.15",
-    "nodemailer": "^6.7.7"
+    "nodemailer": "^6.9.1"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
