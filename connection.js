@@ -15,7 +15,7 @@ const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
 const Notes       = require('haraka-notes');
 const utils       = require('haraka-utils');
-const { Address }     = require('address-rfc2821');
+const { Address } = require('address-rfc2821');
 const ResultStore = require('haraka-results');
 
 // Haraka libs
@@ -1326,16 +1326,15 @@ class Connection {
             this.errors++;
             return this.respond(503, 'Use EHLO/HELO before MAIL');
         }
-        // Require authentication on connections to port 587 & 465
+        // Require authentication on ports 587 & 465
         if (!this.relaying && [587,465].includes(this.local.port)) {
             this.errors++;
             return this.respond(550, 'Authentication required');
         }
+
         let results;
-        let from;
         try {
             results = rfc1869.parse('mail', line, this.cfg.main.strict_rfc1869 && !this.relaying);
-            from    = new Address (results.shift());
         }
         catch (err) {
             this.errors++;
@@ -1350,9 +1349,18 @@ class Connection {
                 return this.respond(452, 'Internal Server Error');
             }
             else {
-                return this.respond(501, ["Command parsing failed", err]);
+                return this.respond(501, ['Command parsing failed', err]);
             }
         }
+
+        let from;
+        try {
+            from = new Address(results.shift());
+        }
+        catch (err) {
+            return this.respond(501, `Invalid MAIL FROM address`);
+        }
+
         // Get rest of key=value pairs
         const params = {};
         results.forEach(param => {
@@ -1389,10 +1397,8 @@ class Connection {
         }
 
         let results;
-        let recip;
         try {
             results = rfc1869.parse('rcpt', line, this.cfg.main.strict_rfc1869 && !this.relaying);
-            recip   = new Address(results.shift());
         }
         catch (err) {
             this.errors++;
@@ -1410,6 +1416,15 @@ class Connection {
                 return this.respond(501, ["Command parsing failed", err]);
             }
         }
+
+        let recip;
+        try {
+            recip = new Address(results.shift());
+        }
+        catch (err) {
+            return this.respond(501, `Invalid RCPT TO address`);
+        }
+
         // Get rest of key=value pairs
         const params = {};
         results.forEach((param) => {
