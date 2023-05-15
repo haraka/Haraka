@@ -4,6 +4,7 @@ const path         = require('path');
 
 const { Address }  = require('address-rfc2821');
 const fixtures     = require('haraka-test-fixtures');
+const Notes        = require('haraka-notes')
 
 const OK = 906;
 
@@ -14,6 +15,7 @@ function _setup (done) {
     this.plugin.config = this.plugin.config.module_config(path.resolve('tests'));
 
     this.plugin.register();
+    this.hmail = { todo: { notes: new Notes() } };
 
     this.connection = new fixtures.connection.createConnection();
     this.connection.transaction = new fixtures.transaction.createTransaction();
@@ -131,21 +133,19 @@ exports.get_config = {
     }
 }
 
-const hmail = { todo: { notes: {} } };
 exports.get_mx = {
     setUp : _setup,
     'returns no outbound route for undefined domains' (test) {
         test.expect(2);
-        function cb (code, mx) {
+        this.plugin.get_mx((code, mx) => {
             test.equal(code, undefined);
             test.deepEqual(mx, undefined);
             test.done();
-        }
-        this.plugin.get_mx(cb, hmail, 'undefined.com');
+        }, this.hmail, 'undefined.com');
     },
     'returns an outbound route for defined domains' (test) {
         test.expect(2);
-        function cb (code, mx) {
+        this.plugin.get_mx((code, mx) => {
             test.equal(code, OK);
             test.deepEqual(mx, {
                 priority: 0, exchange: '1.2.3.4', port: 2555,
@@ -153,9 +153,19 @@ exports.get_mx = {
                 auth_pass: 'superDuperSecret'
             });
             test.done();
-        }
-        this.plugin.get_mx(cb, hmail, 'test.com');
+        }, this.hmail, 'test.com');
     },
+    'is enabled when queue.wants is set' (test) {
+        test.expect(2);
+        this.hmail.todo.notes.set('queue.wants', 'smtp_forward')
+        this.hmail.todo.notes.set('queue.next_hop', 'smtp://4.3.2.1:465')
+        this.plugin.get_mx((code, mx) => {
+            test.equal(code, OK);
+            test.deepEqual(mx, { priority: 0, port: 465, exchange: '4.3.2.1' });
+            test.done();
+        }, this.hmail, 'undefined.com');
+    },
+
 }
 
 exports.is_outbound_enabled = {
