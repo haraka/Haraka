@@ -328,8 +328,8 @@ exports.get_mx_next_hop = next_hop => {
 exports.get_mx = function (next, hmail, domain) {
 
     // hmail.todo not defined in tests.
-    if (hmail.todo.notes.next_hop) {
-        return next(OK, this.get_mx_next_hop(hmail.todo.notes.next_hop));
+    if (hmail.todo.notes?.queue?.next_hop) {
+        return next(OK, this.get_mx_next_hop(hmail.todo.notes?.queue?.next_hop));
     }
 
     const dom = this.cfg.main.domain_selector === 'mail_from' ? hmail.todo.mail_from.host.toLowerCase() : domain.toLowerCase();
