@@ -3,6 +3,7 @@
 
 #### Fixed
 
+- q(forward): correct path to next_hop
 - parsing error leaking to SMTP communication #3176
 - rename redis command setex to setEx #3174
 
