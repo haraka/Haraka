@@ -11,7 +11,6 @@ const checks = [
     'bare_ip',            // HELO is bare IP (vs required Address Literal)
     'dynamic',            // HELO hostname looks dynamic (dsl|dialup|etc...)
     'big_company',        // Well known HELOs that must match rdns
-    'literal_mismatch',   // IP literal that doesn't match remote IP
     'valid_hostname',     // HELO hostname is a legal DNS name
     'rdns_match',         // HELO hostname matches rDNS
     'forward_dns',        // HELO hostname resolves to the connecting IP
@@ -40,6 +39,17 @@ exports.register = function () {
     // Always emit a log entry
     this.register_hook('helo', 'emit_log');
     this.register_hook('ehlo', 'emit_log');
+
+    // IP literal that doesn't match remote IP
+    this.register_hook('helo', 'literal_mismatch');
+    this.register_hook('ehlo', 'literal_mismatch');
+
+    if (this.cfg.check.literal_mismatch === undefined) {
+        this.cfg.check.literal_mismatch = 2;
+    }
+    if (this.cfg.reject.literal_mismatch === undefined) {
+        this.cfg.reject.literal_mismatch = false;
+    }
 
     if (this.cfg.check.match_re) {
         const load_re_file = () => {
