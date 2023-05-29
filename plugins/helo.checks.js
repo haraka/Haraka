@@ -30,7 +30,7 @@ exports.register = function () {
     this.register_hook('helo', 'init');
     this.register_hook('ehlo', 'init');
 
-    for (const c in checks) {
+    for (const c of checks) {
         if (!this.cfg.check[c]) continue; // disabled in config
         this.register_hook('helo', c);
         this.register_hook('ehlo', c);
@@ -44,12 +44,8 @@ exports.register = function () {
     this.register_hook('helo', 'literal_mismatch');
     this.register_hook('ehlo', 'literal_mismatch');
 
-    if (this.cfg.check.literal_mismatch === undefined) {
-        this.cfg.check.literal_mismatch = 2;
-    }
-    if (this.cfg.reject.literal_mismatch === undefined) {
-        this.cfg.reject.literal_mismatch = false;
-    }
+    this.cfg.check.literal_mismatch = this.cfg.check.literal_mismatch ?? 2;
+    this.cfg.reject.literal_mismatch = this.cfg.reject.literal_mismatch ?? false;
 
     if (this.cfg.check.match_re) {
         const load_re_file = () => {
@@ -105,9 +101,7 @@ exports.load_helo_checks_ini = function () {
 }
 
 exports.init = function (next, connection, helo) {
-
-    const hc = connection.results.get('helo.checks');
-    if (!hc) {     // first HELO result
+    if (!connection.results.has('helo.checks', 'helo_host', helo)) {
         connection.results.add(this, {helo_host: helo});
         return next();
     }
@@ -116,6 +110,11 @@ exports.init = function (next, connection, helo) {
 }
 
 exports.should_skip = function (connection, test_name) {
+    if (connection.results.has('helo.checks', '_skip_hooks', test_name)) {
+        this.loginfo(connection, `SKIPPING: ${test_name}`);
+        return true;
+    }
+    connection.results.push(this, {_skip_hooks: test_name});
 
     if (this.cfg.skip.relaying && connection.relaying) {
         connection.results.add(this, {skip: `${test_name}(relay)`});
