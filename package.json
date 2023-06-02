@@ -24,7 +24,7 @@
     "address-rfc2822": "^2.1.0",
     "async": "^3.2.4",
     "daemon": "~1.1.0",
-    "ipaddr.js": "~2.0.1",
+    "ipaddr.js": "~2.1.0",
     "node-gyp": "^9.3.1",
     "nopt": "~7.1.0",
     "npid": "~0.4.0",
