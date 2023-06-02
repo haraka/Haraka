@@ -11,7 +11,6 @@ const checks = [
     'bare_ip',            // HELO is bare IP (vs required Address Literal)
     'dynamic',            // HELO hostname looks dynamic (dsl|dialup|etc...)
     'big_company',        // Well known HELOs that must match rdns
-    'literal_mismatch',   // IP literal that doesn't match remote IP
     'valid_hostname',     // HELO hostname is a legal DNS name
     'rdns_match',         // HELO hostname matches rDNS
     'forward_dns',        // HELO hostname resolves to the connecting IP
@@ -31,7 +30,7 @@ exports.register = function () {
     this.register_hook('helo', 'init');
     this.register_hook('ehlo', 'init');
 
-    for (const c in checks) {
+    for (const c of checks) {
         if (!this.cfg.check[c]) continue; // disabled in config
         this.register_hook('helo', c);
         this.register_hook('ehlo', c);
@@ -40,6 +39,13 @@ exports.register = function () {
     // Always emit a log entry
     this.register_hook('helo', 'emit_log');
     this.register_hook('ehlo', 'emit_log');
+
+    // IP literal that doesn't match remote IP
+    this.register_hook('helo', 'literal_mismatch');
+    this.register_hook('ehlo', 'literal_mismatch');
+
+    this.cfg.check.literal_mismatch = this.cfg.check.literal_mismatch ?? 2;
+    this.cfg.reject.literal_mismatch = this.cfg.reject.literal_mismatch ?? false;
 
     if (this.cfg.check.match_re) {
         const load_re_file = () => {
@@ -95,9 +101,7 @@ exports.load_helo_checks_ini = function () {
 }
 
 exports.init = function (next, connection, helo) {
-
-    const hc = connection.results.get('helo.checks');
-    if (!hc) {     // first HELO result
+    if (!connection.results.has('helo.checks', 'helo_host', helo)) {
         connection.results.add(this, {helo_host: helo});
         return next();
     }
@@ -106,6 +110,11 @@ exports.init = function (next, connection, helo) {
 }
 
 exports.should_skip = function (connection, test_name) {
+    if (connection.results.has('helo.checks', '_skip_hooks', test_name)) {
+        this.loginfo(connection, `SKIPPING: ${test_name}`);
+        return true;
+    }
+    connection.results.push(this, {_skip_hooks: test_name});
 
     if (this.cfg.skip.relaying && connection.relaying) {
         connection.results.add(this, {skip: `${test_name}(relay)`});
