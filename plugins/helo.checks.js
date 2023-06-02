@@ -103,7 +103,6 @@ exports.load_helo_checks_ini = function () {
 exports.init = function (next, connection, helo) {
     if (!connection.results.has('helo.checks', 'helo_host', helo)) {
         connection.results.add(this, {helo_host: helo});
-        return next();
     }
 
     next();
