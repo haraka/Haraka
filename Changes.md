@@ -3,6 +3,7 @@
 
 #### Fixed
 
+- q(forward): tighten up queue.wants handling #3199
 - helo.checks: serveral fixes, #3191
 - q(forward): correct path to next_hop
 - parsing error leaking to SMTP communication #3176
