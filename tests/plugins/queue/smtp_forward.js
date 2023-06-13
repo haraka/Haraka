@@ -143,6 +143,16 @@ exports.get_mx = {
             test.done();
         }, this.hmail, 'undefined.com');
     },
+    'returns no outbound route when queue.wants !== smtp_forward' (test) {
+        test.expect(2);
+        this.hmail.todo.notes.set('queue.wants', 'outbound')
+        this.hmail.todo.notes.set('queue.next_hop', 'smtp://5.4.3.2:26')
+        this.plugin.get_mx((code, mx) => {
+            test.equal(code, undefined);
+            test.deepEqual(mx, undefined);
+            test.done();
+        }, this.hmail, 'undefined.com');
+    },
     'returns an outbound route for defined domains' (test) {
         test.expect(2);
         this.plugin.get_mx((code, mx) => {
@@ -165,7 +175,16 @@ exports.get_mx = {
             test.done();
         }, this.hmail, 'undefined.com');
     },
-
+    'sets using_lmtp when next_hop URL is lmtp' (test) {
+        test.expect(2);
+        this.hmail.todo.notes.set('queue.wants', 'smtp_forward')
+        this.hmail.todo.notes.set('queue.next_hop', 'lmtp://4.3.2.1')
+        this.plugin.get_mx((code, mx) => {
+            test.equal(code, OK);
+            test.deepEqual(mx, { priority: 0, port: 24, using_lmtp: true, exchange: '4.3.2.1' });
+            test.done();
+        }, this.hmail, 'undefined.com');
+    },
 }
 
 exports.is_outbound_enabled = {
