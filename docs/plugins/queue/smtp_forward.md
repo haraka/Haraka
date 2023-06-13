@@ -1,27 +1,18 @@
-queue/smtp\_forward
+# queue/smtp\_forward
 ==================
 
-This plugin delivers to another mail server. This is a common setup when you
-want to have a mail server with a solid pedigree of outbound delivery to
-other hosts, and inbound delivery to users.
+This plugin delivers to another mail server. This is a common setup when you want to have a mail server with a solid pedigree of outbound delivery to other hosts, and inbound delivery to users.
 
-In comparison to `queue/smtp_proxy`, this plugin waits until queue time to
-attempt the ongoing connection. This can be a benefit in reducing connections
-to your inbound mail server when you have content filtering (such as
-spamassassin) enabled. A possible downside is that it also delays recipient
-validation that the ongoing mail server may provide until queue time.
+In comparison to `queue/smtp_proxy`, this plugin waits until queue time to attempt the ongoing connection. This can be a benefit in reducing connections to your inbound mail server when you have content filtering (such as spamassassin) enabled. A possible downside is that it also delays recipient validation that the ongoing mail server may provide until queue time.
 
-Configuration
+## Configuration
 -------------
 
-* smtp\_forward.ini
-
-  Configuration is stored in this file in the following keys:
+Configuration is stored in smtp\_forward.ini in the following keys:
 
   * enable\_outbound=[true]
 
-    SMTP forward outbound messages (set to false to enable Haraka's separate
-    Outbound mail routing (MX based delivery)).
+    SMTP forward outbound messages (set to false to enable Haraka's separate Outbound mail routing (MX based delivery)).
 
   * host=HOST
 
@@ -33,14 +24,11 @@ Configuration
 
   * connect\_timeout=SECONDS
 
-    The maximum amount of time to wait when creating a new connection
-    to the host.  Default: 30 seconds.
+    The maximum amount of time to wait when creating a new connection to the host.  Default: 30 seconds.
 
   * timeout=SECONDS
 
-    The amount of seconds to let a backend connection live idle in the
-    connection pool.  This should always be less than the global plugin
-    timeout, which should in turn be less than the connection timeout.
+    The amount of seconds to let a backend connection live idle in the connection pool.  This should always be less than the global plugin timeout, which should in turn be less than the connection timeout.
 
   * max\_connections=NUMBER
 
@@ -48,12 +36,9 @@ Configuration
 
   * enable\_tls=[true]
 
-    Enable TLS with the forward host (if supported). TLS uses options
-    from the tls plugin. If key and cert are provided in the the outbound section of the tls plugin,
-    that certificate will be used as a TLS Client Certificate.
+    Enable TLS with the forward host (if supported). TLS uses options from the tls plugin. If key and cert are provided in the the outbound section of the tls plugin, that certificate will be used as a TLS Client Certificate.
 
-    This option controls the use of TLS via `STARTTLS`. This plugin does not work with
-    SMTP over TLS.
+    This option controls the use of TLS via `STARTTLS`. This plugin does not work with SMTP over TLS.
 
   * auth\_type=[plain\|login]
 
@@ -69,9 +54,7 @@ Configuration
 
   * queue
 
-    Which queue plugin to use. Default: undefined. The default bahavior is to
-    use smtp_forward for inbound connections and outbound for relaying
-    connections. This option is used for complex mail routes.
+    Which queue plugin to use. Default: undefined. The default bahavior is to use smtp_forward for inbound connections and outbound for relaying connections. This option is used for complex mail routes.
 
   * check_sender=false
 
@@ -86,18 +69,13 @@ Configuration
 
 # Per-Domain Configuration
 
-More specific forward routes for domains can be defined. The domain is
-chosen based on the value of the `domain_selector` config variable.
+More specific forward routes for domains can be defined. The domain is chosen based on the value of the `domain_selector` config variable.
 
-When `domain_selector` is set to `rcpt_to` (the default), more specific
-routes are only honored for SMTP connections with a single recipient or SMTP
-connections where every recipient host is identical.
+When `domain_selector` is set to `rcpt_to` (the default), more specific routes are only honored for SMTP connections with a single recipient or SMTP connections where every recipient host is identical.
 
-When `domain_selector` is set to `mail_from`, the domain of the MAIL FROM
-address is used.
+When `domain_selector` is set to `mail_from`, the domain of the MAIL FROM address is used.
 
-enable\_outbound can be set or unset on a per-domain level to enable or disable
-forwarding for specific domains.
+enable\_outbound can be set or unset on a per-domain level to enable or disable forwarding for specific domains.
 
     # default SMTP host
     host=1.2.3.4
