@@ -26,10 +26,12 @@ exports.register = function () {
     this.register_hook('queue', 'queue_forward');
 
     if (this.cfg.main.enable_outbound) {
+        // deliver local message via smtp forward when relaying=true
         this.register_hook('queue_outbound', 'queue_forward');
-    }
 
-    this.register_hook('get_mx', 'get_mx'); // for relaying outbound messages
+        // may specify more specific routes for outbound
+        this.register_hook('get_mx', 'get_mx');
+    }
 }
 
 exports.load_smtp_forward_ini = function () {
@@ -75,7 +77,7 @@ exports.is_outbound_enabled = function (dom_cfg) {
     if ('enable_outbound' in dom_cfg) return dom_cfg.enable_outbound; // per-domain flag
 
     return this.cfg.main.enable_outbound; // follow the global configuration
-};
+}
 
 exports.check_sender = function (next, connection, params) {
     const txn = connection?.transaction;
@@ -99,7 +101,7 @@ exports.check_sender = function (next, connection, params) {
     }
 
     txn.results.add(this, {pass: 'mail_from'});
-    return next();
+    next();
 }
 
 exports.set_queue = function (connection, queue_wanted, domain) {
@@ -109,7 +111,6 @@ exports.set_queue = function (connection, queue_wanted, domain) {
 
     if (!queue_wanted) queue_wanted = dom_cfg.queue || this.cfg.main.queue;
     if (!queue_wanted) return true;
-
 
     let dst_host = dom_cfg.host || this.cfg.main.host;
     if (dst_host) dst_host = `smtp://${dst_host}`;
@@ -164,7 +165,7 @@ exports.check_recipient = function (next, connection, params) {
     // the MAIL FROM domain is not local and neither is the RCPT TO
     // Another RCPT plugin may vouch for this recipient.
     txn.results.add(this, {msg: 'rcpt!local'});
-    return next();
+    next();
 }
 
 exports.auth = function (cfg, connection, smtp_client) {
@@ -303,20 +304,24 @@ exports.queue_forward = function (next, connection) {
 
         smtp_client.on('bad_code', (code, msg) => {
             if (dead_sender() || !txn) return;
-            smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
-                msg);
+            smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT), msg);
             smtp_client.release();
         });
     });
 }
 
 exports.get_mx_next_hop = next_hop => {
-    const dest = url.parse(next_hop);
+    // queue.wants && queue.next_hop are mechanisms for fine-grained MX routing.
+    // Plugins can specify a queue to perform the delivery as well as a route. A
+    // plugin that uses this is qmail-deliverable, which can direct email delivery
+    // via smtp_forward, outbound (SMTP), and outbound (LMTP).
+    const dest = new url.URL(next_hop);
     const mx = {
         priority: 0,
-        port: dest.port || 25,
+        port: dest.port || (dest.protocol === 'lmtp:' ? 24 : 25),
         exchange: dest.hostname,
     }
+    if (dest.protocol === 'lmtp:') mx.using_lmtp = true;
     if (dest.auth) {
         mx.auth_type = 'plain';
         mx.auth_user = dest.auth.split(':')[0];
@@ -327,9 +332,11 @@ exports.get_mx_next_hop = next_hop => {
 
 exports.get_mx = function (next, hmail, domain) {
 
-    // hmail.todo not defined in tests.
-    if (hmail.todo.notes?.queue?.next_hop) {
-        return next(OK, this.get_mx_next_hop(hmail.todo.notes?.queue?.next_hop));
+    const qw = hmail.todo.notes.get('queue.wants')
+    if (qw && qw !== 'smtp_forward') return next()
+
+    if (qw === 'smtp_forward' && hmail.todo.notes.get('queue.next_hop')) {
+        return next(OK, this.get_mx_next_hop(hmail.todo.notes.get('queue.next_hop')));
     }
 
     const dom = this.cfg.main.domain_selector === 'mail_from' ? hmail.todo.mail_from.host.toLowerCase() : domain.toLowerCase();
@@ -341,8 +348,7 @@ exports.get_mx = function (next, hmail, domain) {
     }
 
     const mx_opts = [
-        'auth_type', 'auth_user', 'auth_pass', 'bind', 'bind_helo',
-        'using_lmtp'
+        'auth_type', 'auth_user', 'auth_pass', 'bind', 'bind_helo', 'using_lmtp'
     ]
 
     const mx = {
@@ -357,5 +363,5 @@ exports.get_mx = function (next, hmail, domain) {
         mx[o] = this.cfg[dom][o];
     })
 
-    return next(OK, mx);
+    next(OK, mx);
 }

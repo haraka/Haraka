@@ -1,4 +1,4 @@
-queue/smtp\_proxy
+# queue/smtp\_proxy
 ================
 
 This plugin delivers to another mail server. This is a common setup when you
@@ -12,14 +12,12 @@ particular one important facility to some setups is recipient filtering.
 However be aware that other than connect and HELO-time filtering, you will
 have as many connections to your ongoing SMTP server as you have to Haraka.
 
-Configuration
+## Configuration
 -------------
 
-* smtp\_proxy.ini
-  
-  Configuration is stored in this file in the following keys:
+Configuration is stored in smtp\_proxy.ini in the following keys:
 
-    * enable\_outbound=[true]
+  * enable\_outbound=[true]
 
     SMTP proxy outbound messages (set to false to enable Haraka's
     separate Outbound mail routing (MX based delivery)).
@@ -27,9 +25,9 @@ Configuration
   * host=HOST
     
     The host to connect to.
-    
+
   * port=PORT
-    
+
     The port to connect to.
 
   * connect\_timeout=SECONDS
@@ -38,17 +36,17 @@ Configuration
     to the host.  Default if unspecified is 30 seconds.
 
   * timeout=SECONDS
-    
+
     The amount of seconds to let a backend connection live idle in the
     proxy pool.  This should always be less than the global plugin timeout,
     which should in turn be less than the connection timeout.
 
   * max\_connections=NUMBER
-    
+
     Maximum number of connections to create at any given time.
 
   * enable\_tls=[true|yes|1]
- 
+
     Enable TLS with the forward host (if supported). TLS uses options from
     the tls plugin.
 
