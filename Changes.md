@@ -3,9 +3,11 @@
 
 #### Fixed
 
-- q(forward): tighten up queue.wants handling #3199
+- feat(q_forward): add LMTP routing handling #3190
+- chore(q_forward): tighten up queue.wants handling #3190
+- fix(q_forward): correct path to next_hop
+- doc(q_forward): improve markdown formatting #3190
 - helo.checks: serveral fixes, #3191
-- q(forward): correct path to next_hop
 - parsing error leaking to SMTP communication #3176
 - rename redis command setex to setEx #3174
 
