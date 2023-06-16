@@ -110,7 +110,7 @@ exports.init = function (next, connection, helo) {
 
 exports.should_skip = function (connection, test_name) {
     if (connection.results.has('helo.checks', '_skip_hooks', test_name)) {
-        this.loginfo(connection, `SKIPPING: ${test_name}`);
+        this.logdebug(connection, `SKIPPING: ${test_name}`);
         return true;
     }
     connection.results.push(this, {_skip_hooks: test_name});

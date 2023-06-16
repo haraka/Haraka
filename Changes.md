@@ -1,21 +1,29 @@
 
 ### Unreleased
 
+
+### [3.0.2] - 2023-06-12
+
 #### Fixed
 
-- feat(q_forward): add LMTP routing handling #3190
-- chore(q_forward): tighten up queue.wants handling #3190
-- fix(q_forward): correct path to next_hop
-- doc(q_forward): improve markdown formatting #3190
-- helo.checks: serveral fixes, #3191
-- parsing error leaking to SMTP communication #3176
-- rename redis command setex to setEx #3174
+- feat(q_forward): add LMTP routing handling #3199
+- chore(q_forward): tighten up queue.wants handling #3199
+- doc(q_forward): improve markdown formatting #3199
+- helo.checks: several fixes, #3191
+- q/smtp_forward: correct path to next_hop #3186
+- don't leak addr parsing errors into SMTP conversation #3185
+- connection: handle dns.reverse invalid throws on node v20 #3184
+- rename redis command setex to setEx #3181
 
 #### Changed
 
+- test(helo.checks): add regression tests for #3191 #3195
 - connection: handle dns.reverse invalid throws on node v20
-- chore: bump a few dependency versions
-- dns_list_base: avoid test failure when public DNS used
+- build(deps): bump ipaddr.js from 2.0.1 to 2.1.0 #3194
+- chore: bump a few dependency versions #3184
+- dns_list_base: avoid test failure when public DNS used #3184
+- doc(outbound.ini) update link #3159
+- doc(clamd.md) fixed spelling error #3155
 
 
 ### [3.0.1] - 2023-01-19
@@ -1361,3 +1369,4 @@
 
 [3.0.0]: https://github.com/haraka/Haraka/releases/tag/3.0.0
 [3.0.1]: https://github.com/haraka/Haraka/releases/tag/3.0.1
+[3.0.2]: https://github.com/haraka/Haraka/releases/tag/3.0.2
