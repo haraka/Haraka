@@ -100,4 +100,4 @@ enable\_outbound can be set or unset on a per-domain level to enable or disable 
 
 # Split host forward routing
 
-When an incoming email transaction has multiple recipients with different forward routes,  recipients to subsequent forward routes are deferred. Example: an incoming email transaction has recipients user@example1.com, user@example2.com, and user@example3.com. The first two recipients will be accepted (they share the same forward destination) and the latter will be deferred. It will arrive in a future delivery attempt by the remote.
+When an incoming email transaction has multiple recipients with different forward routes, recipients to subsequent forward routes are deferred. Example: an incoming email transaction has recipients user@example1.com, user@example2.com, and user@example3.com. The first two recipients will be accepted (they share the same forward destination) and the latter will be deferred. It will arrive in a future delivery attempt by the remote.
