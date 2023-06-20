@@ -28,10 +28,10 @@ exports.register = function () {
     if (this.cfg.main.enable_outbound) {
         // deliver local message via smtp forward when relaying=true
         this.register_hook('queue_outbound', 'queue_forward');
-
-        // may specify more specific routes for outbound
-        this.register_hook('get_mx', 'get_mx');
     }
+
+    // may specify more specific [per-domain] outbound routes
+    this.register_hook('get_mx', 'get_mx');
 }
 
 exports.load_smtp_forward_ini = function () {
