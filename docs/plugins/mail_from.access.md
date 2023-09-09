@@ -1,6 +1,6 @@
 ## DEPRECATION NOTICE
 
-See the [access](http://haraka.github.io/manual/plugins/access.html) plugin
+See [haraka-plugin-access](https://github.com/haraka/haraka-plugin-access)
 for upgrade instructions.
 
 
