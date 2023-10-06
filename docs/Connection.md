@@ -63,5 +63,5 @@ For low level use.  This value is set when the remote host drops the connection.
 
 * connection.results
 
-Store results of processing in a structured format. See [docs/Results](http://haraka.github.io/manual/Results.html)
+Store results of processing in a structured format. See [haraka-results](https://github.com/haraka/haraka-results)
 

@@ -140,10 +140,10 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [6]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
 [7]: https://en.wikipedia.org/wiki/Mail_delivery_agent
 [8]: mailto:haraka-sub@harakamail.com
-[9]: https://haraka.github.io/manual/plugins/spamassassin.html
-[10]: https://haraka.github.io/manual/plugins/helo.checks.html
-[11]: https://haraka.github.io/manual/plugins/dnsbl.html
-[12]: https://github.com/haraka/Haraka/tree/master/plugins
+[9]:  https://haraka.github.io/plugins/spamassassin
+[10]: https://haraka.github.io/plugins/helo.checks
+[11]: https://haraka.github.io/plugins/dnsbl
+[12]: https://github.com/haraka/Haraka/blob/master/Plugins.md
 [13]: https://github.com/smtpd/qpsmtpd/
 [15]: https://github.com/haraka/Haraka/issues
 [16]: https://github.com/haraka/Haraka/blob/master/LICENSE
