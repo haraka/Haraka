@@ -36,5 +36,11 @@ Configuration
 		durable = true
 		autoDelete = false
 
+        ; Optional queue arguments
+        [queue_args]
+        x-dead-letter-exchange =
+        x-dead-letter-routing-key = emails_dlq
+        x-overflow = reject-publish
+        x-queue-type = quorum
     
  More information about RabbitMQ can be found at https://www.rabbitmq.com/

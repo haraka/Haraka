@@ -26,6 +26,7 @@ exports.rabbitmq_queue = function (next, connection) {
 
 exports.init_amqp_connection = function () {
     const cfg = this.config.get("rabbitmq.ini").rabbitmq;
+    const queueArgs = this.config.get("rabbitmq.ini").queue_args;
 
     const protocol = cfg.protocol || "amqp";
     const host = cfg.host || "127.0.0.1";
@@ -58,7 +59,7 @@ exports.init_amqp_connection = function () {
                     return conn.close();
                 }
                 ch.assertQueue(queueName,
-                    {durable, autoDelete},
+                    {durable, autoDelete, arguments: queueArgs},
                     (err4, ok2) => {
                         if (err4) {
                             this.logerror(`Error asserting rabbitmq queue: ${err4}`);
