@@ -269,6 +269,7 @@ exports.hook_data_post = function (next, connection) {
                 if (virus && plugin.rejectRE &&       // enabled
                     plugin.allRE.test(virus) &&       // has a reject option
                     !plugin.rejectRE.test(virus)) {   // reject=false set
+                    txn.add_header('X-Haraka-Virus', virus);
                     return next();
                 }
                 if (!plugin.cfg.reject.virus) { return next(); }

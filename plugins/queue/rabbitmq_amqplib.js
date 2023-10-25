@@ -58,7 +58,7 @@ exports.init_amqp_connection = function () {
                     return conn.close();
                 }
                 ch.assertQueue(queueName,
-                    {durable, autoDelete},
+                    {durable, autoDelete, arguments: this.config.get("rabbitmq.ini").queue_args},
                     (err4, ok2) => {
                         if (err4) {
                             this.logerror(`Error asserting rabbitmq queue: ${err4}`);

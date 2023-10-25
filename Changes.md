@@ -1,6 +1,8 @@
 
 ### Unreleased
 
+- dep(plugin-spf): bump version to 1.2.1
+- feat(rabbitmq_amqplib): configurable optional queue arguments
 
 ### [3.0.2] - 2023-06-12
 

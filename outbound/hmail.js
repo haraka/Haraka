@@ -1062,7 +1062,7 @@ class HMailItem extends events.EventEmitter {
             "\r": '#10',
             "\n": '#13'
         };
-        const escape_pattern = new RegExp(`[${Object.keys(escaped_chars).join()}]`, 'g');
+        const escape_pattern = new RegExp(`[${Object.keys(escaped_chars).join('')}]`, 'g');
 
         bounce_msg_html_.forEach(line => {
             line = line.replace(/\{(\w+)\}/g, (i, word) => {

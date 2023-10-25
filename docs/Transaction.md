@@ -160,6 +160,6 @@ body in the same encoding.
 
 * transaction.results
 
-Store results of processing in a structured format. See [docs/Results](http://haraka.github.io/manual/Results.html)
+Store results of processing in a structured format. See [haraka-results](https://github.com/haraka/haraka-results)
 
 [1]: `Address` objects are address-rfc2821 objects. See https://github.com/haraka/node-address-rfc2821

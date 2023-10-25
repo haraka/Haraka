@@ -3,7 +3,7 @@
 To create your own plugin, see:
 - the [plugin template][template] that includes all the boilerplate
 - the [Write a Plugin][write-plugin] tutorial
-- the [Plugins](plugins-doc) section of [the manual](https://haraka.github.io)
+- the [Plugins][plugins-doc] section of [the manual](https://haraka.github.io)
 
 ## Installing NPM packaged plugins
 
@@ -109,7 +109,7 @@ Create a PR adding yours to this list.
 
 [template]: https://github.com/haraka/haraka-plugin-template
 [write-plugin]: https://github.com/haraka/Haraka/wiki/Write-a-Plugin
-[plugins-doc]: https://haraka.github.io/manual/Plugins.html
+[plugins-doc]: https://haraka.github.io/core/Plugins
 [url-access]: https://github.com/haraka/haraka-plugin-access
 [url-acc-files]: https://github.com/acharkizakaria/haraka-plugin-accounting-files/blob/master/README.md
 [url-action-mailbox]: https://guides.rubyonrails.org/action_mailbox_basics.html
