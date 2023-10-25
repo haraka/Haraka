@@ -37,6 +37,7 @@ Configuration
 		autoDelete = false
 
         ; Optional queue arguments
+		; More information about x-arguments can be found at https://www.rabbitmq.com/queues.html#optional-arguments
         [queue_args]
         x-dead-letter-exchange =
         x-dead-letter-routing-key = emails_dlq
