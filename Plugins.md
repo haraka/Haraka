@@ -82,6 +82,7 @@ Create a PR adding yours to this list.
 | queue/[smtp_bridge][url-qbridge]   | Bridge SMTP sessions to another MTA |
 | queue/[smtp_forward][url-qforward] | Forward emails to another MTA |
 | queue/[smtp_proxy][url-qproxy]     | Proxy SMTP connections to another MTA |
+| [queue-kafka][url-kafka]           | Queue inbound mail to a Kafka topic |
 | [recipient-routes][url-rroutes]    | Route emails based on their recipient(s) |
 | [redis][url-redis]                 | multi-purpose Redis db connection(s) |
 | [rcpt_to.in_host_list][url-rhost]  | Define local email domains in a file |
@@ -192,4 +193,4 @@ Create a PR adding yours to this list.
 [url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
 [mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
 [url-outbound-logger]: https://github.com/mr-karan/haraka-plugin-outbound-logger
-
+[url-kafka]: https://github.com/benjamonnguyen/haraka-plugin-queue-kafka
