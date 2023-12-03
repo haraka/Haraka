@@ -117,7 +117,7 @@ you may be interested in are:
 * domain - the domain this mail is going to (see `always_split` above)
 * notes - the original transaction.notes for this mail, also contains the
   following useful keys:
-** outbound_ip - the IP address to bind to (note do not set this manually,
+** outbound_ip - the IP address to bind to (do not set manually,
   use the `get_mx` hook)
 ** outbound_helo - the EHLO domain to use (again, do not set manually)
 * queue_time - the epoch milliseconds time when this mail was queued
@@ -240,19 +240,10 @@ different IP addresses based on sender, domain or some other identifier.
 To do this, the IP address that you want to use *must* be bound to an 
 interface (or alias) on the local system.
 
-As described above the outbound IP can be set using the `bind` parameter
+As described above, the outbound IP can be set using the `bind` parameter
 and also the outbound helo for the IP can be set using the `bind_ehlo` 
-parameter returned by the `get_mx` hook or during the reception of the message 
-you can set a transaction note in a plugin to tell Haraka which outbound IP 
-address you would like it to use when it tries to deliver the message:
+parameter returned by the `get_mx` hook.
 
-`````
-connection.transaction.notes.outbound_ip = '1.2.3.4';
-connection.transaction.notes.outbound_helo = 'mail-2.example.com';
-`````
-
-Note: if the `get_mx` hook returns a `bind` and `bind_helo` parameter, then
-this will be used in preference to the transaction note.
 
 AUTH
 ----
