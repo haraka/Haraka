@@ -38,9 +38,9 @@ of CPUs that you have.
 
 Default: true. Switch to false to disable TLS for outbound mail.
 
-This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
-plugin uses, along with other values in `tls.ini`. See the [tls plugin
-docs](http://haraka.github.io/manual/plugins/tls.html) for information on generating those files.
+This uses the same `tls_key.pem` and `tls_cert.pem` files that the `TLS`
+plugin uses, along with other values in `tls.ini`. See the [TLS plugin
+docs](http://haraka.github.io/plugins/tls) for information on generating those files.
 
 Within `tls.ini` you can specify global options for the values `ciphers`, `minVersion`, `requestCert` and `rejectUnauthorized`, alternatively you can provide separate values by putting them under a key: `[outbound]`, such as:
 

@@ -3,7 +3,7 @@
 To create your own plugin, see:
 - the [plugin template][template] that includes all the boilerplate
 - the [Write a Plugin][write-plugin] tutorial
-- the [Plugins](plugins-doc) section of [the manual](https://haraka.github.io)
+- the [Plugins][plugins-doc] section of [the manual](https://haraka.github.io)
 
 ## Installing NPM packaged plugins
 
@@ -82,6 +82,7 @@ Create a PR adding yours to this list.
 | queue/[smtp_bridge][url-qbridge]   | Bridge SMTP sessions to another MTA |
 | queue/[smtp_forward][url-qforward] | Forward emails to another MTA |
 | queue/[smtp_proxy][url-qproxy]     | Proxy SMTP connections to another MTA |
+| [queue-kafka][url-kafka]           | Queue inbound mail to a Kafka topic |
 | [recipient-routes][url-rroutes]    | Route emails based on their recipient(s) |
 | [redis][url-redis]                 | multi-purpose Redis db connection(s) |
 | [rcpt_to.in_host_list][url-rhost]  | Define local email domains in a file |
@@ -109,7 +110,7 @@ Create a PR adding yours to this list.
 
 [template]: https://github.com/haraka/haraka-plugin-template
 [write-plugin]: https://github.com/haraka/Haraka/wiki/Write-a-Plugin
-[plugins-doc]: https://haraka.github.io/manual/Plugins.html
+[plugins-doc]: https://haraka.github.io/core/Plugins
 [url-access]: https://github.com/haraka/haraka-plugin-access
 [url-acc-files]: https://github.com/acharkizakaria/haraka-plugin-accounting-files/blob/master/README.md
 [url-action-mailbox]: https://guides.rubyonrails.org/action_mailbox_basics.html
@@ -192,4 +193,4 @@ Create a PR adding yours to this list.
 [url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
 [mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
 [url-outbound-logger]: https://github.com/mr-karan/haraka-plugin-outbound-logger
-
+[url-kafka]: https://github.com/benjamonnguyen/haraka-plugin-queue-kafka

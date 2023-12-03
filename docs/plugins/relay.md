@@ -8,7 +8,7 @@ This **relay** plugin provides Haraka with options for managing relay permission
 
 ## Authentication
 
-One way to enable relaying is [authentication](http://haraka.github.io/manual.html) via the auth plugins. Successful authentication enables relaying during _that_ SMTP connection. To securely offer SMTP AUTH, the [tls](http://haraka.github.io/manual/plugins/tls.html) plugin and at least one auth plugin must be enabled and properly configured. When that requirement is met, the AUTH SMTP extension will be advertised to SMTP clients.
+One way to enable relaying is authentication via the [auth plugins](http://haraka.github.io/plugins). Successful authentication enables relaying during _that_ SMTP connection. To securely offer SMTP AUTH, the [tls](http://haraka.github.io/plugins/tls) plugin and at least one auth plugin must be enabled and properly configured. When that requirement is met, the AUTH SMTP extension will be advertised to SMTP clients.
 
     % nc mail.example.com 587
     220 mail.example.com ESMTP Haraka 2.4.0 ready
@@ -118,7 +118,7 @@ Example:
     [domains]
     test.com = { "action": "accept" }
 
-I think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Haraka `rcpt_to.*` plugin. The *accept* mechanism is another way to tell Haraka that a particular domain is one we accept mail for. The difference between this and the [rcpt_to.in_host_list](http://haraka.github.io/manual/plugins/rcpt_to.in_host_list.html) plugin is that this one also enables relaying.
+Think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Haraka `rcpt_to.*` plugin. The *accept* mechanism is another way to tell Haraka that a particular domain is one we accept mail for. The difference between this and the [rcpt_to.in_host_list](http://haraka.github.io/plugins/rcpt_to.in_host_list) plugin is that this one also enables relaying.
 
     * continue (mails are subject to further checks)
 

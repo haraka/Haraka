@@ -38,7 +38,7 @@
     "haraka-net-utils": "^1.5.0",
     "haraka-notes": "^1.0.6",
     "haraka-plugin-attachment": "^1.0.7",
-    "haraka-plugin-spf": "1.2.1",
+    "haraka-plugin-spf": "1.2.3",
     "haraka-plugin-redis": "^2.0.5",
     "haraka-results": "^2.2.3",
     "haraka-tld": "^1.1.1",
@@ -69,7 +69,7 @@
     "haraka-plugin-uribl": "^1.0.6",
     "haraka-plugin-watch": "^2.0.2",
     "ocsp": "~1.2.0",
-    "redis": "^4.5.1",
+    "redis": "~4.6.7",
     "tmp": "~0.2.1"
   },
   "devDependencies": {

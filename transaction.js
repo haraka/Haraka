@@ -152,7 +152,7 @@ class Transaction {
                 this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'));
             }
         }
-        else if (this.header_pos && this.parse_body) {
+        else if (this.parse_body) {
             let new_line = line;
             if (new_line[0] === 0x2E) new_line = new_line.slice(1); // Strip leading "."
 
