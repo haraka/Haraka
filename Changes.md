@@ -1,7 +1,15 @@
 
 ### Unreleased
 
-- dep(plugin-spf): bump version to 1.2.1
+- docs(outbound): remove example setting outbound_ip #3253
+- dep(plugin-es): bump version to 8.0.2 #3206
+- transaction: simplify else condition in add_data #3252
+- doc(Plugins.md): add pi-queue-kafka #3247
+- feat(rabbitmq_amqplib): configurable optional queue arguments #3239
+- fix(ob/hmail): bounce, add '' in .join() #3237
+- dep(pi-redis): bump version to 4.6.7 #3193
+- feat(clamd): add x-haraka-virus header #3207
+- dep(pi-spf): bump version to 1.2.1 #3214
 - feat(rabbitmq_amqplib): configurable optional queue arguments
 
 ### [3.0.2] - 2023-06-12
