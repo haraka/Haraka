@@ -1,16 +1,32 @@
 
 ### Unreleased
 
-- docs(outbound): remove example setting outbound_ip #3253
-- dep(plugin-es): bump version to 8.0.2 #3206
-- transaction: simplify else condition in add_data #3252
-- doc(Plugins.md): add pi-queue-kafka #3247
-- feat(rabbitmq_amqplib): configurable optional queue arguments #3239
-- fix(ob/hmail): bounce, add '' in .join() #3237
-- dep(pi-redis): bump version to 4.6.7 #3193
+
+### [3.0.3] - 2023-12-31
+
+#### Added
+
 - feat(clamd): add x-haraka-virus header #3207
-- dep(pi-spf): bump version to 1.2.1 #3214
-- feat(rabbitmq_amqplib): configurable optional queue arguments
+- feat(rabbitmq_amqplib): configurable optional queue arguments #3239
+- add queue-kafka plugin to Plugins.md (#3247)
+- allow configuring optional queue arguments (#3239)
+
+#### Fixed
+
+- Fix: add empty string as param to .join() on bounce. (#3237)
+- Update links in documentation (#3234)
+
+#### Changed
+
+- docs(outbound): remove example of outbound_ip (#3253)
+- build(deps): bump haraka-plugin-elasticsearch from 1.0.8 to 8.0.0 (#3206)
+- transaction.js: simplify else condition in add_data (#3252)
+- Add missing X-Haraka-Virus header (#3207)
+- q/smtp_forward: always register get_mx hook (#3204)
+- dep(plugin-es): bump version to 8.0.2 #3206
+- dep(pi-redis): bump version to 4.6.7 #3193
+- dep(pi-spf): bump version to 1.2.3 #3214
+
 
 ### [3.0.2] - 2023-06-12
 
@@ -1380,3 +1396,4 @@
 [3.0.0]: https://github.com/haraka/Haraka/releases/tag/3.0.0
 [3.0.1]: https://github.com/haraka/Haraka/releases/tag/3.0.1
 [3.0.2]: https://github.com/haraka/Haraka/releases/tag/3.0.2
+[3.0.3]: https://github.com/haraka/Haraka/releases/tag/3.0.3
