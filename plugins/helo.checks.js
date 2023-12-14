@@ -499,7 +499,7 @@ exports.get_a_records = async function (host) {
         err.code = dns.TIMEOUT;
         this.logerror(err);
         throw err;
-    }, (this.cfg.main.dns_timeout || 30) * 1000);
+    }, (this.cfg.main.dns_timeout || 28) * 1000);
 
     // fully qualify, to ignore any search options in /etc/resolv.conf
     if (!/\.$/.test(host)) host = `${host}.`;
