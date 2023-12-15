@@ -247,8 +247,7 @@ exports.queue_forward = function (next, connection) {
         );
 
         function get_rs () {
-            if (txn) return txn.results;
-            return connection.results;
+            return connection?.transaction?.results ? connection.transaction.results : connection.results
         }
 
         function dead_sender () {
