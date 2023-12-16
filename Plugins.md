@@ -40,7 +40,6 @@ Create a PR adding yours to this list.
 | [block_me][url-blockme]     | Populate block list via forwarded emails |
 | [bounce][url-bounce]        | Many options for bounce processing |
 | [clamd][url-clamd]          | Anti-Virus scanning with ClamAV |
-| [connect.p0f][url-p0f]      | TCP Fingerprinting |
 | [data.signatures][url-sigs] | Block emails whose bodies match signatures |
 | [uribl][url-uribl]          | Block based on URI blacklists |
 | [dcc][url-dcc]              | Distributed Checksum Clearinghouse |
@@ -70,6 +69,7 @@ Create a PR adding yours to this list.
 | [milter][url-milter]              | milter support |
 | [mongodb][mongo-url]              | Queue emails to MongoDB |
 | [outbound-logger][url-outbound-logger] | JSON logging of outbound email traffic. Logs useful metadata about delivered/bounced emails |
+| [p0f][url-p0f]              | TCP Fingerprinting |
 | [prevent_credential_leaks][url-creds]  | Prevent users from emailing their credentials |
 | [process_title][url-proctitle]    | Populate `ps` output with activity counters |
 | queue/[discard][url-qdisc]        | queues messages to /dev/null |
