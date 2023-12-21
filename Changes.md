@@ -11,6 +11,8 @@
 - feat(clamd): add x-haraka-virus header #3207
 - dep(pi-spf): bump version to 1.2.1 #3214
 - feat(rabbitmq_amqplib): configurable optional queue arguments
+- fix(ob/hmail):Add filename to the 'Didn't find right amount of data in todo!' error for easy debugging
+- fix(ob/queue):Ignore error. prefixed files in the queue because are corrupted
 
 ### [3.0.2] - 2023-06-12
 

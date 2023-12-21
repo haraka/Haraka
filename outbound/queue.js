@@ -103,6 +103,11 @@ exports.read_parts = file => {
         return false;
     }
 
+    if (file.startsWith('error.')) {
+        logger.logwarn(`[outbound] 'Skipping' error file in queue folder: ${file}`);
+        return false;
+    }
+
     const parts = _qfile.parts(file);
     if (!parts) {
         logger.logerror(`[outbound] Unrecognized file in queue folder: ${file}`);
