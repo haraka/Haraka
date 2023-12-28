@@ -15,7 +15,7 @@ const LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
 
 exports.hook_capabilities = (next, connection) => {
     // Don't offer AUTH capabilities unless session is encrypted
-    if (!connection.tls.enabled) { return next(); }
+    if (!connection.tls.enabled) return next();
 
     const methods = [ 'PLAIN', 'LOGIN', 'CRAM-MD5' ];
     connection.capabilities.push(`AUTH ${methods.join(' ')}`);
@@ -47,9 +47,8 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     function callback (plain_pw) {
-        if (plain_pw === null  ) return cb(false);
-        if (plain_pw !== passwd) return cb(false);
-        cb(true);
+        const result = plain_pw === null ? false : plain_pw === passwd
+        cb(result);
     }
     if (this.get_plain_passwd.length == 2) {
         this.get_plain_passwd(user, callback);
@@ -71,7 +70,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
 
         if (hmac.digest('hex') === passwd) return cb(true);
 
-        return cb(false);
+        cb(false);
     }
     if (this.get_plain_passwd.length == 2) {
         this.get_plain_passwd(user, callback);
@@ -117,7 +116,7 @@ exports.check_user = function (next, connection, credentials, method) {
                 connection.auth_results(`auth=pass (${method.toLowerCase()})`);
                 connection.notes.auth_user = credentials[0];
                 if (!plugin.blankout_password) connection.notes.auth_passwd = credentials[1];
-                return next(OK);
+                next(OK);
             });
             return;
         }
