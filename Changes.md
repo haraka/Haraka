@@ -1,6 +1,7 @@
 
 ### Unreleased
 
+- feat(auth_vpopmaild): when outbound, assure the envelope domain matches AUTH domain #3265
 - docs(outbound): remove example setting outbound_ip #3253
 - dep(plugin-es): bump version to 8.0.2 #3206
 - transaction: simplify else condition in add_data #3252
