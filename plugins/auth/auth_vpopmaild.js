@@ -6,16 +6,24 @@ const tlds   = require('haraka-tld')
 
 exports.register = function () {
     this.inherits('auth/auth_base');
-    this.load_vpop_ini();
+    this.blankout_password=true
 
-    this.register_hook('mail', 'env_from_matches_auth_domain')
+    this.load_vpopmaild_ini();
+
+    if (this.cfg.main.constrain_sender) {
+        this.register_hook('mail', 'env_from_matches_auth_domain')
+    }
 }
 
-exports.load_vpop_ini = function () {
-    this.cfg = this.config.get('auth_vpopmaild.ini', () => {
-        this.load_vpop_ini();
+exports.load_vpopmaild_ini = function () {
+    this.cfg = this.config.get('auth_vpopmaild.ini', {
+        booleans: [
+            '+main.constrain_sender',
+        ]
+    },
+    () => {
+        this.load_vpopmaild_ini();
     });
-    this.blankout_password=true
 }
 
 exports.hook_capabilities = function (next, connection) {
@@ -72,13 +80,11 @@ exports.get_sock_opts = function (user) {
 
     const domain = (user.split('@'))[1];
     let sect = this.cfg.main;
-    if (domain && this.cfg[domain]) {
-        sect = this.cfg[domain];
-    }
+    if (domain && this.cfg[domain]) sect = this.cfg[domain];
 
-    if (sect.port)     { this.sock_opts.port     = sect.port;     }
-    if (sect.host)     { this.sock_opts.host     = sect.host;     }
-    if (sect.sysadmin) { this.sock_opts.sysadmin = sect.sysadmin; }
+    if (sect.port)     this.sock_opts.port     = sect.port;
+    if (sect.host)     this.sock_opts.host     = sect.host;
+    if (sect.sysadmin) this.sock_opts.sysadmin = sect.sysadmin;
 
     this.logdebug(`sock: ${this.sock_opts.host}:${this.sock_opts.port}`);
     return this.sock_opts;
@@ -95,14 +101,14 @@ exports.get_vpopmaild_socket = function (user) {
     socket.on('timeout', () => {
         this.logerror("vpopmaild connection timed out");
         socket.end();
-    });
+    })
     socket.on('error', err => {
         this.logerror(`vpopmaild connection failed: ${err}`);
         socket.end();
-    });
+    })
     socket.on('connect', () => {
         this.logdebug('vpopmail connected');
-    });
+    })
     return socket;
 }
 
