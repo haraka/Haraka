@@ -229,7 +229,7 @@ exports.auth_cram_md5 = function (next, connection, params) {
         return this.check_user(next, connection, credentials, AUTH_METHOD_CRAM_MD5);
     }
 
-    const ticket = `<${this.hexi(Math.floor(Math.random() * 1000000))}. ${this.hexi(Date.now())}@${connection.local.host}>`;
+    const ticket = `<${this.hexi(Math.floor(Math.random() * 1000000))}.${this.hexi(Date.now())}@${connection.local.host}>`;
 
     connection.loginfo(this, `ticket: ${ticket}`);
     connection.respond(334, utils.base64(ticket), () => {
