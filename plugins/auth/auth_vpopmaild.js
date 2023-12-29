@@ -2,8 +2,6 @@
 
 const net    = require('net');
 
-const tlds   = require('haraka-tld')
-
 exports.register = function () {
     this.inherits('auth/auth_base');
     this.blankout_password=true
@@ -11,7 +9,7 @@ exports.register = function () {
     this.load_vpopmaild_ini();
 
     if (this.cfg.main.constrain_sender) {
-        this.register_hook('mail', 'env_from_matches_auth_domain')
+        this.register_hook('mail', 'constrain_sender')
     }
 }
 
@@ -27,7 +25,7 @@ exports.load_vpopmaild_ini = function () {
 }
 
 exports.hook_capabilities = function (next, connection) {
-    if (!connection.tls.enabled) { return next(); }
+    if (!connection.tls.enabled) return next();
 
     const methods = [ 'PLAIN', 'LOGIN' ];
     if (this.cfg.main.sysadmin) methods.push('CRAM-MD5');
@@ -162,21 +160,4 @@ exports.get_plain_passwd = function (user, connection, cb) {
     socket.on('end', () => {
         cb(plain_pass ? plain_pass.toString() : plain_pass);
     });
-}
-
-exports.env_from_matches_auth_domain = function (next, connection, params) {
-    const au = connection.results.get('auth')?.user
-    if (!au) return next()
-
-    const ad = /@/.test(au) ? au.split('@').pop() : au
-    const ed = params[0].host
-
-    if (!ad || !ed) return next()
-
-    const auth_od = tlds.get_organizational_domain(ad)
-    const envelope_od = tlds.get_organizational_domain(ed)
-
-    if (auth_od === envelope_od) return next()
-
-    next(DENY, `Envelope domain '${envelope_od}' doesn't match AUTH domain '${auth_od}'`)
 }

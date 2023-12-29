@@ -5,7 +5,10 @@
 // Note: You can disable setting `connection.notes.auth_passwd` by `plugin.blankout_password = true`
 
 const crypto = require('crypto');
-const utils = require('haraka-utils');
+
+const tlds   = require('haraka-tld')
+const utils  = require('haraka-utils');
+
 const AUTH_COMMAND = 'AUTH';
 const AUTH_METHOD_CRAM_MD5 = 'CRAM-MD5';
 const AUTH_METHOD_PLAIN = 'PLAIN';
@@ -47,8 +50,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     function callback (plain_pw) {
-        const result = plain_pw === null ? false : plain_pw === passwd
-        cb(result);
+        cb(plain_pw === null ? false : plain_pw === passwd);
     }
     if (this.get_plain_passwd.length == 2) {
         this.get_plain_passwd(user, callback);
@@ -124,9 +126,7 @@ exports.check_user = function (next, connection, credentials, method) {
         if (!connection.notes.auth_fails) connection.notes.auth_fails = 0;
 
         connection.notes.auth_fails++;
-        connection.results.add({name: 'auth'}, {
-            fail:`${plugin.name}/${method}`,
-        });
+        connection.results.add({name: 'auth'}, { fail:`${plugin.name}/${method}` });
 
         let delay = Math.pow(2, connection.notes.auth_fails - 1);
         if (plugin.timeout && delay >= plugin.timeout) {
@@ -239,3 +239,20 @@ exports.auth_cram_md5 = function (next, connection, params) {
 }
 
 exports.hexi = number => String(Math.abs(parseInt(number)).toString(16))
+
+exports.constrain_sender = function (next, connection, params) {
+    const au = connection.results.get('auth')?.user
+    if (!au) return next()
+
+    const ad = /@/.test(au) ? au.split('@').pop() : au
+    const ed = params[0].host
+
+    if (!ad || !ed) return next()
+
+    const auth_od = tlds.get_organizational_domain(ad)
+    const envelope_od = tlds.get_organizational_domain(ed)
+
+    if (auth_od === envelope_od) return next()
+
+    next(DENY, `Envelope domain '${envelope_od}' doesn't match AUTH domain '${auth_od}'`)
+}
