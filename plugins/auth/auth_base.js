@@ -5,7 +5,10 @@
 // Note: You can disable setting `connection.notes.auth_passwd` by `plugin.blankout_password = true`
 
 const crypto = require('crypto');
-const utils = require('haraka-utils');
+
+const tlds   = require('haraka-tld')
+const utils  = require('haraka-utils');
+
 const AUTH_COMMAND = 'AUTH';
 const AUTH_METHOD_CRAM_MD5 = 'CRAM-MD5';
 const AUTH_METHOD_PLAIN = 'PLAIN';
@@ -15,7 +18,7 @@ const LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
 
 exports.hook_capabilities = (next, connection) => {
     // Don't offer AUTH capabilities unless session is encrypted
-    if (!connection.tls.enabled) { return next(); }
+    if (!connection.tls.enabled) return next();
 
     const methods = [ 'PLAIN', 'LOGIN', 'CRAM-MD5' ];
     connection.capabilities.push(`AUTH ${methods.join(' ')}`);
@@ -47,9 +50,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     function callback (plain_pw) {
-        if (plain_pw === null  ) return cb(false);
-        if (plain_pw !== passwd) return cb(false);
-        cb(true);
+        cb(plain_pw === null ? false : plain_pw === passwd);
     }
     if (this.get_plain_passwd.length == 2) {
         this.get_plain_passwd(user, callback);
@@ -71,7 +72,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
 
         if (hmac.digest('hex') === passwd) return cb(true);
 
-        return cb(false);
+        cb(false);
     }
     if (this.get_plain_passwd.length == 2) {
         this.get_plain_passwd(user, callback);
@@ -117,7 +118,7 @@ exports.check_user = function (next, connection, credentials, method) {
                 connection.auth_results(`auth=pass (${method.toLowerCase()})`);
                 connection.notes.auth_user = credentials[0];
                 if (!plugin.blankout_password) connection.notes.auth_passwd = credentials[1];
-                return next(OK);
+                next(OK);
             });
             return;
         }
@@ -125,9 +126,7 @@ exports.check_user = function (next, connection, credentials, method) {
         if (!connection.notes.auth_fails) connection.notes.auth_fails = 0;
 
         connection.notes.auth_fails++;
-        connection.results.add({name: 'auth'}, {
-            fail:`${plugin.name}/${method}`,
-        });
+        connection.results.add({name: 'auth'}, { fail:`${plugin.name}/${method}` });
 
         let delay = Math.pow(2, connection.notes.auth_fails - 1);
         if (plugin.timeout && delay >= plugin.timeout) {
@@ -230,7 +229,7 @@ exports.auth_cram_md5 = function (next, connection, params) {
         return this.check_user(next, connection, credentials, AUTH_METHOD_CRAM_MD5);
     }
 
-    const ticket = `<${this.hexi(Math.floor(Math.random() * 1000000))}. ${this.hexi(Date.now())}@${connection.local.host}>`;
+    const ticket = `<${this.hexi(Math.floor(Math.random() * 1000000))}.${this.hexi(Date.now())}@${connection.local.host}>`;
 
     connection.loginfo(this, `ticket: ${ticket}`);
     connection.respond(334, utils.base64(ticket), () => {
@@ -240,3 +239,20 @@ exports.auth_cram_md5 = function (next, connection, params) {
 }
 
 exports.hexi = number => String(Math.abs(parseInt(number)).toString(16))
+
+exports.constrain_sender = function (next, connection, params) {
+    const au = connection.results.get('auth')?.user
+    if (!au) return next()
+
+    const ad = /@/.test(au) ? au.split('@').pop() : au
+    const ed = params[0].host
+
+    if (!ad || !ed) return next()
+
+    const auth_od = tlds.get_organizational_domain(ad)
+    const envelope_od = tlds.get_organizational_domain(ed)
+
+    if (auth_od === envelope_od) return next()
+
+    next(DENY, `Envelope domain '${envelope_od}' doesn't match AUTH domain '${auth_od}'`)
+}

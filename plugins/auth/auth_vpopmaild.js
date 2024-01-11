@@ -4,25 +4,36 @@ const net    = require('net');
 
 exports.register = function () {
     this.inherits('auth/auth_base');
-    this.load_vpop_ini();
+    this.blankout_password=true
+
+    this.load_vpopmaild_ini();
+
+    if (this.cfg.main.constrain_sender) {
+        this.register_hook('mail', 'constrain_sender')
+    }
 }
 
-exports.load_vpop_ini = function () {
-    this.cfg = this.config.get('auth_vpopmaild.ini', () => {
-        this.load_vpop_ini();
+exports.load_vpopmaild_ini = function () {
+    this.cfg = this.config.get('auth_vpopmaild.ini', {
+        booleans: [
+            '+main.constrain_sender',
+        ]
+    },
+    () => {
+        this.load_vpopmaild_ini();
     });
 }
 
 exports.hook_capabilities = function (next, connection) {
-    if (!connection.tls.enabled) { return next(); }
+    if (!connection.tls.enabled) return next();
 
     const methods = [ 'PLAIN', 'LOGIN' ];
-    if (this.cfg.main.sysadmin) { methods.push('CRAM-MD5'); }
+    if (this.cfg.main.sysadmin) methods.push('CRAM-MD5');
 
     connection.capabilities.push(`AUTH ${methods.join(' ')}`);
     connection.notes.allowed_auth_methods = methods;
 
-    return next();
+    next();
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
@@ -49,11 +60,12 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
             }
             socket.end();             // disconnect
         }
-    });
+    })
+
     socket.on('end', () => {
         connection.loginfo(this, `AUTH user="${user}" success=${auth_success}`);
-        return cb(auth_success);
-    });
+        cb(auth_success);
+    })
 }
 
 exports.get_sock_opts = function (user) {
@@ -66,13 +78,11 @@ exports.get_sock_opts = function (user) {
 
     const domain = (user.split('@'))[1];
     let sect = this.cfg.main;
-    if (domain && this.cfg[domain]) {
-        sect = this.cfg[domain];
-    }
+    if (domain && this.cfg[domain]) sect = this.cfg[domain];
 
-    if (sect.port)     { this.sock_opts.port     = sect.port;     }
-    if (sect.host)     { this.sock_opts.host     = sect.host;     }
-    if (sect.sysadmin) { this.sock_opts.sysadmin = sect.sysadmin; }
+    if (sect.port)     this.sock_opts.port     = sect.port;
+    if (sect.host)     this.sock_opts.host     = sect.host;
+    if (sect.sysadmin) this.sock_opts.sysadmin = sect.sysadmin;
 
     this.logdebug(`sock: ${this.sock_opts.host}:${this.sock_opts.port}`);
     return this.sock_opts;
@@ -89,14 +99,14 @@ exports.get_vpopmaild_socket = function (user) {
     socket.on('timeout', () => {
         this.logerror("vpopmaild connection timed out");
         socket.end();
-    });
+    })
     socket.on('error', err => {
         this.logerror(`vpopmaild connection failed: ${err}`);
         socket.end();
-    });
+    })
     socket.on('connect', () => {
         this.logdebug('vpopmail connected');
-    });
+    })
     return socket;
 }
 
