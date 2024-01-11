@@ -103,7 +103,7 @@ class HMailItem extends events.EventEmitter {
 
             this._stream_bytes_from(this.path, {start: 4, end: todo_len + 3}, (err2, todo_bytes) => {
                 if (todo_bytes.length !== todo_len) {
-                    const wrongLength = `Didn't find right amount of data in todo!: ${err2}`;
+                    const wrongLength = `Didn't find right amount of data in todo!: ${err2} ${this.path}`;
                     this.logcrit(wrongLength);
                     fs.rename(this.path, path.join(queue_dir, `error.${this.filename}`), (err3) => {
                         if (err3) {

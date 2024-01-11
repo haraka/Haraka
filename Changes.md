@@ -1,29 +1,29 @@
 
 ### Unreleased
 
-
-### [3.0.3] - 2023-12-31
+### [3.0.3] - 2024-01-31
 
 #### Added
 
-- feat(clamd): add x-haraka-virus header #3207
+- feat(auth_vpopmaild): when outbound, assure the envelope domain matches AUTH domain #3265
+- docs(outbound): remove example setting outbound_ip #3253
+- doc(Plugins.md): add pi-queue-kafka #3247
 - feat(rabbitmq_amqplib): configurable optional queue arguments #3239
-- add queue-kafka plugin to Plugins.md (#3247)
-- allow configuring optional queue arguments (#3239)
+- feat(clamd): add x-haraka-virus header #3207
 
 #### Fixed
 
-- Fix: add empty string as param to .join() on bounce. (#3237)
-- Update links in documentation (#3234)
+- Fix: add empty string as param to .join() on bounce. #3237
+- Update links in documentation #3234
+- fix(ob/hmail):Add filename to the error for easy debugging
+- fix(ob/queue): Ignore 'error.' prefixed files in the queue because corrupted
 
 #### Changed
 
-- docs(outbound): remove example of outbound_ip (#3253)
-- build(deps): bump haraka-plugin-elasticsearch from 1.0.8 to 8.0.0 (#3206)
-- transaction.js: simplify else condition in add_data (#3252)
-- Add missing X-Haraka-Virus header (#3207)
-- q/smtp_forward: always register get_mx hook (#3204)
-- dep(plugin-es): bump version to 8.0.2 #3206
+- docs(outbound): remove example of outbound_ip #3253
+- transaction: simplify else condition in add_data #3252
+- q/smtp_forward: always register get_mx hook #3204
+- dep(pi-es): bump version to 8.0.2 #3206
 - dep(pi-redis): bump version to 4.6.7 #3193
 - dep(pi-spf): bump version to 1.2.3 #3214
 
