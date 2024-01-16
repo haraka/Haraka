@@ -26,6 +26,7 @@
 - dep(pi-es): bump version to 8.0.2 #3206
 - dep(pi-redis): bump version to 4.6.7 #3193
 - dep(pi-spf): bump version to 1.2.3 #3214
+- remove defunct config files: lookup_rdns.strict.ini, lookup_rdns.strict.timeout, lookup_rdns.strict.whitelist, lookup_rdns.strict.whitelist_regex, rcpt_to.blocklist, rdns.allow_regexps, rdns.deny_regexps
 
 
 ### [3.0.2] - 2023-06-12
