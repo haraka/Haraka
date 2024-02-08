@@ -1,7 +1,7 @@
 
 ### Unreleased
 
-### [3.0.3] - 2024-01-31
+### [3.0.3] - 2024-02-07
 
 #### Added
 
@@ -24,8 +24,11 @@
 - transaction: simplify else condition in add_data #3252
 - q/smtp_forward: always register get_mx hook #3204
 - dep(pi-es): bump version to 8.0.2 #3206
-- dep(pi-redis): bump version to 4.6.7 #3193
-- dep(pi-spf): bump version to 1.2.3 #3214
+- dep(redis): bump version to 4.6.7 #3193
+- dep(pi-spf): bump version to 1.2.4
+- dep(net-utils): bump version to 1.5.3
+- dep(pi-redis): bump version to 2.0.6
+- dep(tld): bump version to 1.2.0
 - remove defunct config files: lookup_rdns.strict.ini, lookup_rdns.strict.timeout, lookup_rdns.strict.whitelist, lookup_rdns.strict.whitelist_regex, rcpt_to.blocklist, rdns.allow_regexps, rdns.deny_regexps
 
 

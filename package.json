@@ -35,13 +35,13 @@
     "haraka-dsn": "^1.0.4",
     "haraka-email-message": "^1.2.0",
     "haraka-message-stream": "^1.2.0",
-    "haraka-net-utils": "^1.5.2",
+    "haraka-net-utils": "^1.5.3",
     "haraka-notes": "^1.0.6",
     "haraka-plugin-attachment": "^1.0.7",
     "haraka-plugin-spf": "1.2.4",
-    "haraka-plugin-redis": "^2.0.5",
+    "haraka-plugin-redis": "^2.0.6",
     "haraka-results": "^2.2.3",
-    "haraka-tld": "^1.1.2",
+    "haraka-tld": "^1.2.0",
     "haraka-utils": "^1.0.3",
     "openssl-wrapper": "^0.3.4",
     "sockaddr": "^1.0.1"
@@ -74,11 +74,11 @@
   },
   "devDependencies": {
     "nodeunit-x": "^0.16.0",
-    "haraka-test-fixtures": "^1.3.1",
+    "haraka-test-fixtures": "^1.3.3",
     "mock-require": "^3.0.3",
-    "eslint": "^8.55.0",
+    "eslint": "^8.56.0",
     "eslint-plugin-haraka": "^1.0.15",
-    "nodemailer": "^6.9.7"
+    "nodemailer": "^6.9.9"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
