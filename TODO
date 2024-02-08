@@ -1,8 +1,6 @@
 - Milter support
 - Ability to modify the body of email
     - Done for banners. Modifying the rest, not so much.
-- Plugins to copy from Qpsmtpd:
-  - dspam
 
 Outbound improvements
  - Provide better command line tools for manipulating/inspecting the queue
@@ -16,29 +14,8 @@ Plugin behavior changes
    only when requested, with a sunset date.
  - data.uribl; expand short URLs before lookups, add support for uri-a (sbl.spamhaus.org), uri-ns, uri-ns-a lookup types.
 
-
-Remove the following deprecated plugins
- - rdns.regexp
- - data.nomsgid         (subsumed into data.headers.js)
- - data.noreceived               ""
- - data.rfc5322_header_checks    ""
- - daemonize
- - mail_from.nobounces  (subsumed into bounce.js)
- - mail_from.blocklist
- - rcpt_to.blocklist
- - lookup_rdns_strict
- - mail_from.access     (replaced by access.js)
- - rcpt_to.access                 ""
- - connect.rdns_access            ""
- - relay_acl            (replaced by relay.js)
- - relay_all                      ""
- - relay_force_routing            ""
-
-Move the following plugins:
- - test_queue   -> queue/test_queue
-
 Built-in HTTP server
-- uses the same TLS/SSL certs as smtpd
+- use the same TLS/SSL certs as smtpd
 - auth against SMTP-AUTH provider
 
 Update tests to detect HARAKA_NETWORK_TESTS and skip network tests unless it's set

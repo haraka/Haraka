@@ -363,6 +363,7 @@ plugins.deprecated = {
     'rcpt_to.qmail_deliverable' : 'qmail-deliverable',
     'rdns.regexp'         : 'access',
     'relay_acl'           : 'relay',
+    'relay_all'           : 'relay',
     'relay_force_routing' : 'relay',
 }
 
