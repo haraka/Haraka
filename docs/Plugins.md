@@ -20,7 +20,6 @@ Display the help text for a plugin by running:
 ## Overview
 
 
-
 ## Anatomy of a Plugin
 
 Plugins in Haraka are JS files in the `plugins` directory (legacy) and npm
@@ -42,37 +41,43 @@ There are two ways for plugins to register hooks. Both examples register a funct
 
 1. The `register_hook` function in register():
 
-    exports.register = function() {
-        this.register_hook('rcpt', 'my_rcpt_validate');
-    };
+```js
+exports.register = function () {
+    this.register_hook('rcpt', 'my_rcpt_validate')
+};
 
-    exports.my_rcpt_validate = function (next, connection, params) {
-        // do processing
-        next();
-    };
+exports.my_rcpt_validate = function (next, connection, params) {
+    // do processing
+    next()
+};
+```
 
 2. The hook_[$name] syntax:
 
-    exports.hook_rcpt = function (next, connection, params) {
-        // do processing
-        next();
-    };
+```js
+exports.hook_rcpt = function (next, connection, params) {
+    // do processing
+    next()
+}
+```
 
 The register_hook function within `register()` offers a few advantages:
 
-    1. register a hook multiple times (see below)
-    2. a unique function name in stack traces
-    3. [a better function name](https://google.com/search?q=programming%20good%20function%20names)
-    4. hooks can be registered conditionally (ie, based on a config setting)
+1. register a hook multiple times (see below)
+2. a unique function name in stack traces
+3. [a better function name](https://google.com/search?q=programming%20good%20function%20names)
+4. hooks can be registered conditionally (ie, based on a config setting)
 
 ### Register a Hook Multiple Times
 
 To register the same hook more than once, call `register_hook()` multiple times with the same hook name:
 
-    exports.register = function() {
-        this.register_hook('queue', 'try_queue_my_way');
-        this.register_hook('queue', 'try_queue_highway');
-    };
+```js
+exports.register = function () {
+    this.register_hook('queue', 'try_queue_my_way')
+    this.register_hook('queue', 'try_queue_highway')
+};
+```
 
 When `try_queue_my_way()` calls `next()`, the next function registered on hook *queue* will be called, in this case, `try_queue_highway()`.
 
@@ -81,17 +86,18 @@ When `try_queue_my_way()` calls `next()`, the next function registered on hook *
 When a single function runs on multiple hooks, the function can check the
 *hook* property of the *connection* or *hmail* argument to determine which hook it is running on:
 
-    exports.register = function() {
-        this.register_hook('rcpt',    'my_rcpt');
-        this.register_hook('rcpt_ok', 'my_rcpt');
-    };
-     
-    exports.my_rcpt = function (next, connection, params) {
-        var hook_name = connection.hook; // rcpt or rcpt_ok
-        // email address is in params[0]
-        // do processing
-    }
-
+```js
+exports.register = function () {
+    this.register_hook('rcpt',    'my_rcpt')
+    this.register_hook('rcpt_ok', 'my_rcpt')
+};
+ 
+exports.my_rcpt = function (next, connection, params) {
+    const hook_name = connection.hook; // rcpt or rcpt_ok
+    // email address is in params[0]
+    // do processing
+}
+```
 
 ### Next()
 
@@ -252,12 +258,11 @@ This is important as some plugins might rely on `results` or `notes` that have b
 
 If you are writing a complex plugin, you may have to split it into multiple plugins to run in a specific order e.g. you want hook_deny to run last after all other plugins and hook_lookup_rdns to run first, then you can explicitly register your hooks and provide a `priority` value which is an integer between -100 (highest priority) to 100 (lowest priority) which defaults to 0 (zero) if not supplied.  You can apply a priority to your hook in the following way:
 
-````
-exports.register = function() {
-    var plugin = this;
-    plugin.register_hook('connect',  'hook_connect', -100);
+```js
+exports.register = function () {
+    this.register_hook('connect',  'hook_connect', -100);
 }
-````
+```
 
 This would ensure that your hook_connect function will run before any other
 plugins registered on the `connect` hook, regardless of the order it was
@@ -370,9 +375,11 @@ to remote servers. See [Issue 2024](https://github.com/haraka/Haraka/issues/2024
 
 e.g.
 
-    exports.shutdown = function () {
-        clearInterval(this._interval);
-    }
+```js
+exports.shutdown = function () {
+    clearInterval(this._interval);
+}
+```
 
 If you don't implement this in your plugin and have a connection open or a
 timer running then Haraka will take 30 seconds to shut down and have to
