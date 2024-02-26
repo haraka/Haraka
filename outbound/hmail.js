@@ -455,7 +455,7 @@ class HMailItem extends events.EventEmitter {
                 }
                 return;
             }
-            if (self.force_tls && (cmd != 'EHLO' && cmd != 'STARTTLS') && !socket.isSecure()) {
+            if (self.force_tls && !['EHLO', 'LHLO', 'STARTTLS'].includes(cmd.toUpperCase()) && !socket.isSecure()) {
                 // For safety against programming mistakes
                 self.logerror("Blocking attempt to send unencrypted data to forced TLS socket. This message indicates a programming error in the software.");
                 processing_mail = false;
