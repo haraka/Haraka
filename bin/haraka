@@ -460,17 +460,19 @@ else if (parsed.order) {
     plugins = require(path.join(base, "plugins"));
     plugins.load_plugins();
     console.log('');
-    const hooks = Object.keys(plugins.registered_hooks);
+    const hooks = ["init_master", "init_child", "init_http", "init_wss", "connect_init", "lookup_rdns", "connect", "capabilities", "unrecognized_command", "disconnect", "helo", "ehlo", "quit", "vrfy", "noop", "rset", "mail", "rcpt", "rcpt_ok", "data", "data_post", "max_data_exceeded", "queue", "queue_outbound", "queue_ok", "reset_transaction", "deny", "get_mx", "deferred", "bounce", "delivered", "send_email", "pre_send_trans_email"];
     for (let h = 0; h < hooks.length; h++) {
         const hook = hooks[h];
-        console.log(sprintf('%\'--80s', `Hook: ${hook} `));
-        console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'));
-        console.log(sprintf("%'-80s",''));
-        for (let p=0; p<plugins.registered_hooks[hook].length; p++) {
-            const item = plugins.registered_hooks[hook][p];
-            console.log(sprintf('%-35s %-35s %4d %3d', item.plugin, item.method, item.priority, item.timeout));
+        if (plugins.registered_hooks[hook]) {
+            console.log(sprintf('%\'--80s', `Hook: ${hook} `));
+            console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'));
+            console.log(sprintf("%'-80s",''));
+            for (let p=0; p<plugins.registered_hooks[hook].length; p++) {
+                const item = plugins.registered_hooks[hook][p];
+                console.log(sprintf('%-35s %-35s %4d %3d', item.plugin, item.method, item.priority, item.timeout));
+            }
+            console.log('');
         }
-        console.log('');
     }
     process.exit();
 }
