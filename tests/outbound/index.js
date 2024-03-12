@@ -166,10 +166,7 @@ exports.get_tls_options = {
         const testDir = path.resolve('tests');
         this.outbound.config = this.outbound.config.module_config(testDir);
         this.obtls.test_config(tls_socket.config.module_config(testDir), this.outbound.config);
-        this.obtls.init(() => {
-            done();
-        })
-
+        this.obtls.init(done)
     },
     tearDown: done => {
         delete process.env.HARAKA_TEST_DIR;
