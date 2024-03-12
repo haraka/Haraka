@@ -1,9 +1,15 @@
 
 ### Unreleased
 
+#### Changed
+
+- outbound/mx_lookup: make it async/await
+
 #### Fixed
 
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
+- outbound: emit log message when ignoring local MX
+- fix(outbound): don't send SNI servername when connecting to an IP
 
 ### [3.0.3] - 2024-02-07
 
