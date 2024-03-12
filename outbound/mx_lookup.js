@@ -32,19 +32,19 @@ exports.lookup_mx = async function lookup_mx (domain, cb) {
     }
     catch (err) {
         switch (err.code) {
-          case 'ENODATA':
-          case 'ENOTFOUND':
-            // likely a hostname with no MX record, drop through
-            break
-          default:
-            throw err(err)
+            case 'ENODATA':
+            case 'ENOTFOUND':
+                // likely a hostname with no MX record, drop through
+                break
+            default:
+                throw err(err)
         }
     }
 
     // No MX record, try resolving A record
 
     // wrap addresses with "priority" and "exchange" keys
-    let wrap_mx = a => ({priority:0,exchange:a});
+    const wrap_mx = a => ({priority:0,exchange:a});
 
     const addresses = await dns.resolve(domain)
     for (const a of addresses) {
