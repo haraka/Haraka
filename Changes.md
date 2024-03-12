@@ -4,6 +4,7 @@
 #### Fixed
 
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
+- fix(outbound): include return path param SMTPUTF8 when required #3289
 
 ### [3.0.3] - 2024-02-07
 
