@@ -158,5 +158,5 @@ exports.hook_data_post = function (next, connection) {
         socket.connect((plugin.cfg.main.port || 54322), plugin.cfg.main.host);
     });
 
-    connection.transaction.message_stream.pipe(ws, { line_endings: '\r\n' });
+    connection.transaction.message_stream.pipe(ws);
 }

@@ -13,6 +13,7 @@
 - new NPM plugin dns-list, repackages dnsbl, dnswl, backscatterer #3313
 - test: add a connection.response test case with DSN #3305
 - deps: bump all versions to latest #3303
+- when using message-stream, don't send default options #3290
 - auth_base: enable disabling constrain_sender at runtime #3298
 - connection: support IPv6 when setting remote.is_private #3295
   - in setTLS, replace forEach with for...of

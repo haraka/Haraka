@@ -67,5 +67,5 @@ exports.hook_data_post = function (next, connection) {
             wsOnClose);
     });
 
-    connection.transaction.message_stream.pipe(ws, { line_endings: '\r\n' });
+    connection.transaction.message_stream.pipe(ws);
 }

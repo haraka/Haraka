@@ -6,7 +6,7 @@ const dns          = require('dns');
 const path         = require('path');
 const net          = require('net');
 
-const { Address }     = require('address-rfc2821');
+const { Address } = require('address-rfc2821');
 const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const DSN         = require('haraka-dsn');
