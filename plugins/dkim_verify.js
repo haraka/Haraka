@@ -58,5 +58,5 @@ exports.hook_data_post = function (next, connection) {
         next();
     })
 
-    txn.message_stream.pipe(verifier, { line_endings: '\r\n' });
+    txn.message_stream.pipe(verifier);
 }

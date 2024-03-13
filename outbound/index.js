@@ -310,7 +310,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     })
 
     this.build_todo(todo, ws, () => {
-        todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
+        todo.message_stream.pipe(ws, { dot_stuffing: true });
     });
 }
 
