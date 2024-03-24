@@ -1,5 +1,7 @@
 'use strict';
 
+const net          = require('net')
+
 const logger       = require('../logger');
 const tls_socket   = require('../tls_socket');
 const config       = require('haraka-config');
@@ -69,6 +71,7 @@ class OutboundTLS {
     }
 
     get_tls_options (mx) {
+        if (net.isIP(mx.exchange)) return this.cfg
         return Object.assign(this.cfg, {servername: mx.exchange});
     }
 

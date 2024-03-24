@@ -17,11 +17,11 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "dependencies": {
-    "address-rfc2821": "^2.1.1",
-    "address-rfc2822": "^2.1.0",
+    "address-rfc2821": "^2.1.2",
+    "address-rfc2822": "^2.2.0",
     "async": "^3.2.5",
     "daemon": "~1.1.0",
     "ipaddr.js": "~2.1.0",

@@ -227,9 +227,7 @@ class HMailItem extends events.EventEmitter {
         }
 
         // if none of the above return codes, drop through to this...
-        mx_lookup.lookup_mx(this.todo.domain, (err, mxs) => {
-            this.found_mx(err, mxs);
-        });
+        mx_lookup.lookup_mx(this.todo.domain, this.found_mx)
     }
 
     found_mx (err, mxs) {
@@ -287,7 +285,7 @@ class HMailItem extends events.EventEmitter {
         }
     }
 
-    try_deliver () {
+    async try_deliver () {
 
         // check if there are any MXs left
         if (this.mxlist.length === 0) {
@@ -299,6 +297,13 @@ class HMailItem extends events.EventEmitter {
 
         const mx = this.mxlist.shift();
         const host = mx.exchange;
+
+        if (!obc.cfg.local_mx_ok) {
+            if (await net_utils.is_local_host(host)) {
+                this.loginfo(`MX ${host} is local, skipping since local_mx_ok=false`)
+                return this.try_deliver(); // try next MX
+            }
+        }
 
         this.force_tls = this.todo.force_tls;
         if (!this.force_tls) {
