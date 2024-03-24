@@ -4,13 +4,14 @@
 #### Changed
 
 - outbound/mx_lookup: make it async/await
+- outbound: emit log message when ignoring local MX
 
 #### Fixed
 
+- fix(helo.checks): declare reject.literal_mismatch as boolean
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
 - fix(outbound): include return path param SMTPUTF8 when required #3289
 - fix(outbound): replace empty Message-ID header
-- outbound: emit log message when ignoring local MX
 - fix(outbound): don't send SNI servername when connecting to an IP
 - fix(outbound): chown queue dir after creation #3291
 
