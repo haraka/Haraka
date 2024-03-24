@@ -1,10 +1,11 @@
 'use strict';
 
-const async       = require('async');
+const child_process = require('child_process');
 const fs          = require('fs');
 const path        = require('path');
 
-const { Address }     = require('address-rfc2821');
+const async       = require('async');
+const { Address } = require('address-rfc2821');
 const config      = require('haraka-config');
 
 const logger      = require('../logger');
@@ -270,6 +271,17 @@ exports.ensure_queue_dir = () => {
     logger.logdebug(`[outbound] Creating queue directory ${queue_dir}`);
     try {
         fs.mkdirSync(queue_dir, 493); // 493 == 0755
+        const cfg = config.get('smtp.ini');
+        let uid
+        let gid
+        if (cfg.user) uid = child_process.execSync(`id -u ${cfg.user}`).toString().trim();
+        if (cfg.group) gid = child_process.execSync(`id -g ${cfg.group}`).toString().trim();
+        if (uid && gid) {
+            fs.chown(queue_dir, uid, gid)
+        }
+        else if (uid) {
+            fs.chown(queue_dir, uid)
+        }
     }
     catch (err) {
         if (err.code !== 'EEXIST') {

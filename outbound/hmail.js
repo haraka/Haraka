@@ -227,9 +227,7 @@ class HMailItem extends events.EventEmitter {
         }
 
         // if none of the above return codes, drop through to this...
-        mx_lookup.lookup_mx(this.todo.domain, (err, mxs) => {
-            this.found_mx(err, mxs);
-        });
+        mx_lookup.lookup_mx(this.todo.domain, this.found_mx)
     }
 
     found_mx (err, mxs) {
@@ -287,7 +285,7 @@ class HMailItem extends events.EventEmitter {
         }
     }
 
-    try_deliver () {
+    async try_deliver () {
 
         // check if there are any MXs left
         if (this.mxlist.length === 0) {
@@ -299,6 +297,13 @@ class HMailItem extends events.EventEmitter {
 
         const mx = this.mxlist.shift();
         const host = mx.exchange;
+
+        if (!obc.cfg.local_mx_ok) {
+            if (await net_utils.is_local_host(host)) {
+                this.loginfo(`MX ${host} is local, skipping since local_mx_ok=false`)
+                return this.try_deliver(); // try next MX
+            }
+        }
 
         this.force_tls = this.todo.force_tls;
         if (!this.force_tls) {
@@ -512,14 +517,26 @@ class HMailItem extends events.EventEmitter {
             }
         }
 
+        function get_reverse_path_with_params () {
+            const rp = self.todo.mail_from.format(!smtp_properties.smtp_utf8)
+            let rp_params = ''
+            if (smtp_properties.smtp_utf8 && has_non_ascii(rp)) rp_params += ' SMTPUTF8'
+            return `FROM:${rp}${rp_params}`
+        }
+
+        function has_non_ascii (string) {
+            return [...string].some(char => char.charCodeAt(0) > 127)
+        }
+
         function auth_and_mail_phase () {
             if (!authenticated && (mx.auth_user && mx.auth_pass)) {
                 // We have AUTH credentials to send for this domain
+
                 if (!(Array.isArray(smtp_properties.auth) && smtp_properties.auth.length)) {
                     // AUTH not offered
                     self.logwarn(`AUTH configured for domain ${self.todo.domain} but host ${host} did not advertise AUTH capability`);
                     // Try and send the message without authentication
-                    return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
+                    return send_command('MAIL', get_reverse_path_with_params());
                 }
 
                 if (!mx.auth_type) {
@@ -543,7 +560,7 @@ class HMailItem extends events.EventEmitter {
                     // No compatible authentication types offered by the server
                     self.logwarn(`AUTH configured for domain ${self.todo.domain} but host ${host}did not offer any compatible types${(mx.auth_type) ? ` (requested: ${mx.auth_type})` : ''} (offered: ${smtp_properties.auth.join(',')})`);
                     // Proceed without authentication
-                    return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
+                    return send_command('MAIL', get_reverse_path_with_params());
                 }
 
                 switch (mx.auth_type.toUpperCase()) {
@@ -558,12 +575,12 @@ class HMailItem extends events.EventEmitter {
                     default:
                         // Unsupported AUTH type
                         self.logwarn(`Unsupported authentication type ${mx.auth_type.toUpperCase()} requested for domain ${self.todo.domain}`);
-                        return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
+                        return send_command('MAIL', get_reverse_path_with_params());
                 }
             }
 
-            return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
-        } // auth_and_mail_phase()
+            return send_command('MAIL', get_reverse_path_with_params());
+        }
 
         // IMPORTANT: do STARTTLS before AUTH for security
         function process_ehlo_data () {
@@ -591,7 +608,7 @@ class HMailItem extends events.EventEmitter {
                 });
                 return send_command('STARTTLS');
             }
-            if (!obc.cfg.enable_tls) return auth_and_mail_phase();      // TLS not enabled
+            if (!obc.cfg.enable_tls) return auth_and_mail_phase(); // TLS not enabled
             if (!smtp_properties.tls) return auth_and_mail_phase(); // TLS not advertised by remote
 
             if (obtls.cfg === undefined) {
@@ -623,7 +640,7 @@ class HMailItem extends events.EventEmitter {
                     return auth_and_mail_phase();
                 }
             );
-        } // process_ehlo_data()
+        }
 
         let fp_called = false;
 
@@ -864,10 +881,10 @@ class HMailItem extends events.EventEmitter {
                 case 'auth':
                     authenticating = false;
                     authenticated = true;
-                    send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
+                    send_command('MAIL', get_reverse_path_with_params());
                     break;
                 case 'helo':
-                    send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
+                    send_command('MAIL', get_reverse_path_with_params());
                     break;
                 case 'mail':
                     last_recip = recipients[recip_index];
@@ -930,7 +947,7 @@ class HMailItem extends events.EventEmitter {
             logger.logdebug('[outbound] got socket, trying to deliver');
             secured = socket.isEncrypted();
             logger.logdebug(`[outbound] got ${secured ? 'TLS ' : '' }socket, trying to deliver`);
-            send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
+            send_command('MAIL', get_reverse_path_with_params());
         }
     }
 
