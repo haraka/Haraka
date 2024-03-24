@@ -226,6 +226,11 @@ exports.send_trans_email = function (transaction, next) {
         logger.loginfo("[outbound] Adding missing Message-Id header");
         transaction.add_header('Message-Id', `<${transaction.uuid}@${net_utils.get_primary_host_name()}>`);
     }
+    if (transaction.header.get('Message-Id') === '<>') {
+        logger.loginfo("[outbound] Replacing empty Message-Id header");
+        transaction.remove_header('Message-Id');
+        transaction.add_header('Message-Id', `<${transaction.uuid}@${net_utils.get_primary_host_name()}>`);
+    }
     if (!transaction.header.get_all('Date').length) {
         logger.loginfo("[outbound] Adding missing Date header");
         transaction.add_header('Date', utils.date_to_str(new Date()));
