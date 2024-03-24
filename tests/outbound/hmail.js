@@ -99,7 +99,7 @@ exports.HMailItem = {
                 // test.equals(this.hmail.todo.message_stream.headers.length, 22);
 
                 const ds = this.hmail.data_stream()
-                ds.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
+                ds.pipe(ws, { dot_stuffing: true });
 
                 ws.on('close', () => {
                     // console.log(this.hmail.todo)

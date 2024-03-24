@@ -321,7 +321,7 @@ exports.hook_data_post = function (next, connection) {
     });
 
     // TODO: we only need the first 64Kb of the message
-    txn.message_stream.pipe(ws, { line_endings: '\r\n' });
+    txn.message_stream.pipe(ws);
 }
 
 exports.hook_disconnect = function (next, connection) {
