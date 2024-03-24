@@ -324,7 +324,7 @@ class Connection {
             return;
         }
 
-        this.current_line = line.toString(this.encoding).replace(/\r?\n/, '');
+        this.current_line = line.toString(this.encoding).replace(/\r\n/, '');
         if (logger.would_log(logger.LOGPROTOCOL)) {
             this.logprotocol(`C: ${this.current_line}`, {'state': this.state});
         }
@@ -447,7 +447,7 @@ class Connection {
                 // Allow EHLO/HELO to be pipelined with PROXY
                 if (this.proxy.allowed && /^(?:EH|HE)LO /i.test(this_line)) return;
                 if (!this.early_talker) {
-                    this_line = this_line.toString().replace(/\r?\n/,'');
+                    this_line = this_line.toString().replace(/\r\n/,'');
                     this.logdebug('[early_talker]', { state: this.state, esmtp: this.esmtp, line: this_line });
                 }
                 this.early_talker = true;
@@ -1459,10 +1459,10 @@ class Connection {
 \tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}\r
 \tenvelope-from ${this.transaction.mail_from.format()}`;
 
-        if (sslheader)       received_header += `\r\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+        if (sslheader)       received_header += `\r\n\t${sslheader.replace(/\r\n\t?$/,'')}`
 
         // Does not follow RFC 5321 section 4.4 grammar
-        if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
+        if (this.authheader) received_header += ` ${this.authheader.replace(/\r\n\t?$/, '')}`
 
         received_header += `;\r\n\t${utils.date_to_str(new Date())}`
 
@@ -1661,7 +1661,7 @@ class Connection {
         this.lognotice(
             'message',
             {
-                'mid': mid.replace(/\r?\n/,''),
+                'mid': mid.replace(/\r\n/,''),
                 'size': this.transaction.data_bytes,
                 'rcpts': `${this.transaction.rcpt_count.accept}/${this.transaction.rcpt_count.tempfail}/${this.transaction.rcpt_count.reject}`,
                 'delay': this.transaction.data_post_delay,

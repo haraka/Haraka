@@ -149,7 +149,7 @@ class Transaction {
             // Build up headers
             if (this.header_lines.length < this.cfg.headers.max_lines) {
                 if (line[0] === 0x2E) line = line.slice(1); // Strip leading '.'
-                this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'));
+                this.header_lines.push(line.toString(this.encoding));
             }
         }
         else if (this.parse_body) {
