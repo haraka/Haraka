@@ -64,14 +64,15 @@ exports.load_helo_checks_ini = function () {
         '+skip.whitelist',
         '+skip.relaying',
 
+        '-reject.literal_mismatch',
         '+check.proto_mismatch',
         '-reject.proto_mismatch',
     ];
 
-    checks.forEach(c => {
+    for (const c of checks) {
         booleans.push(`+check.${c}`);
         booleans.push(`-reject.${c}`);
-    });
+    }
 
     this.cfg = this.config.get('helo.checks.ini', { booleans },
         () => {
@@ -348,7 +349,7 @@ exports.literal_mismatch = function (next, connection, helo) {
         }
 
         connection.results.add(this, {fail: 'literal_mismatch'});
-        if (this.cfg.reject.literal_mismatch) {
+        if (this.cfg.reject.literal_mismatch === true) {
             return next(DENY, 'HELO IP literal not in the same /24 as your IP address');
         }
         return next();
@@ -360,7 +361,7 @@ exports.literal_mismatch = function (next, connection, helo) {
     }
 
     connection.results.add(this, {fail: 'literal_mismatch'});
-    if (this.cfg.reject.literal_mismatch) {
+    if (this.cfg.reject.literal_mismatch === true) {
         return next(DENY, 'HELO IP literal does not match your IP address');
     }
     next();

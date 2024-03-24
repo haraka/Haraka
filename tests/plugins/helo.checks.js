@@ -74,7 +74,7 @@ exports.init = {
                 rdns_match: true,
                 forward_dns: true,
                 host_mismatch: true,
-                literal_mismatch: 'true'
+                literal_mismatch: true,
             },
             list_re: /^()$/i,
         })
