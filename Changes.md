@@ -4,6 +4,7 @@
 #### Fixed
 
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
+- fix(outbound): chown queue dir after creation #3291
 
 ### [3.0.3] - 2024-02-07
 
