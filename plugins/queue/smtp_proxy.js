@@ -79,6 +79,10 @@ exports.hook_mail = function (next, connection, params) {
 exports.hook_rcpt_ok = (next, connection, recipient) => {
     const { smtp_client } = connection.notes;
     if (!smtp_client) return next();
+    if (smtp_client.is_dead_sender(this, connection)) {
+        delete connection.notes.smtp_client;
+        return;
+    }
     smtp_client.next = next;
     smtp_client.send_command('RCPT', `TO:${recipient.format(!smtp_client.smtp_utf8)}`);
 }
@@ -86,6 +90,11 @@ exports.hook_rcpt_ok = (next, connection, recipient) => {
 exports.hook_data = (next, connection) => {
     const { smtp_client } = connection.notes;
     if (!smtp_client) return next();
+
+    if (smtp_client.is_dead_sender(this, connection)) {
+        delete connection.notes.smtp_client;
+        return;
+    }
     smtp_client.next = next;
     smtp_client.send_command("DATA");
 }
@@ -96,11 +105,11 @@ exports.hook_queue = function (next, connection) {
     const { smtp_client } = connection.notes;
     if (!smtp_client) return next();
 
-    smtp_client.next = next;
     if (smtp_client.is_dead_sender(this, connection)) {
         delete connection.notes.smtp_client;
         return;
     }
+    smtp_client.next = next;
     smtp_client.start_data(connection.transaction.message_stream);
 }
 

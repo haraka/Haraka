@@ -1,11 +1,9 @@
 "use strict";
 
-const dns         = require('dns');
-const net_utils   = require('haraka-net-utils')
+const dns        = require('node:dns').promises;
+const net_utils  = require('haraka-net-utils')
 
-const obc         = require('./config');
-
-exports.lookup_mx = function lookup_mx (domain, cb) {
+exports.lookup_mx = async function lookup_mx (domain, cb) {
     const mxs = [];
 
     // Possible DNS errors
@@ -22,49 +20,41 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
     // EREFUSED
     // SERVFAIL
 
-    // default wrap_mx just returns our object with "priority" and "exchange" keys
-    let wrap_mx = a => a;
-    async function process_dns (err, addresses) {
-        if (err) {
-            if (err.code === 'ENODATA' || err.code === 'ENOTFOUND') {
-                // Most likely this is a hostname with no MX record
-                // Drop through and we'll get the A record instead.
-                return 0;
-            }
-            cb(err);
+    try {
+        const addresses = await net_utils.get_mx(domain)
+        for (const a of addresses) {
+            mxs.push(a);
         }
-        else if (addresses?.length) {
-            for (let i=0,l=addresses.length; i < l; i++) {
-                if (
-                    obc.cfg.local_mx_ok ||
-                    await net_utils.is_local_host(addresses[i].exchange).catch(() => null) === false
-                ) {
-                    const mx = wrap_mx(addresses[i]);
-                    mxs.push(mx);
-                }
-            }
-            cb(null, mxs);
+        if (mxs.length) {
+            if (cb) return cb(null, mxs)
+            return mxs
         }
-        else {
-            // return zero if we need to keep trying next option
-            return 0;
+    }
+    catch (err) {
+        switch (err.code) {
+            case 'ENODATA':
+            case 'ENOTFOUND':
+                // likely a hostname with no MX record, drop through
+                break
+            default:
+                throw err(err)
         }
-        return 1;
     }
 
-    net_utils.get_mx(domain, async (err, addresses) => {
-        if (await process_dns(err, addresses)) return;
+    // No MX record, try resolving A record
 
-        // if MX lookup failed, we lookup an A record. To do that we change
-        // wrap_mx() to return same thing as resolveMx() does.
-        wrap_mx = a => ({priority:0,exchange:a});
-        // IS: IPv6 compatible
-        dns.resolve(domain, async (err2, addresses2) => {
-            if (await process_dns(err2, addresses2)) return;
+    // wrap addresses with "priority" and "exchange" keys
+    const wrap_mx = a => ({priority:0,exchange:a});
 
-            err2 = new Error("Found nowhere to deliver to");
-            err2.code = 'NOMX';
-            cb(err2);
-        });
-    });
+    const addresses = await dns.resolve(domain)
+    for (const a of addresses) {
+        mxs.push(wrap_mx(a));
+    }
+
+    if (mxs.length) return mxs
+
+    const err = new Error("Found nowhere to deliver to");
+    err.code = 'NOMX';
+    if (cb) return cb(err)
+    throw err
 }
