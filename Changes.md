@@ -8,6 +8,7 @@
 #### Fixed
 
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
+- fix(outbound): replace empty Message-ID header
 - outbound: emit log message when ignoring local MX
 - fix(outbound): don't send SNI servername when connecting to an IP
 - fix(outbound): chown queue dir after creation #3291
