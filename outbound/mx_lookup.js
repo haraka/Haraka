@@ -6,20 +6,6 @@ const net_utils  = require('haraka-net-utils')
 exports.lookup_mx = async function lookup_mx (domain, cb) {
     const mxs = [];
 
-    // Possible DNS errors
-    // NODATA
-    // FORMERR
-    // BADRESP
-    // NOTFOUND
-    // BADNAME
-    // TIMEOUT
-    // CONNREFUSED
-    // NOMEM
-    // DESTRUCTION
-    // NOTIMP
-    // EREFUSED
-    // SERVFAIL
-
     try {
         const addresses = await net_utils.get_mx(domain)
         for (const a of addresses) {
@@ -31,6 +17,21 @@ exports.lookup_mx = async function lookup_mx (domain, cb) {
         }
     }
     catch (err) {
+
+        // Possible DNS errors
+        // NODATA
+        // FORMERR
+        // BADRESP
+        // NOTFOUND
+        // BADNAME
+        // TIMEOUT
+        // CONNREFUSED
+        // NOMEM
+        // DESTRUCTION
+        // NOTIMP
+        // EREFUSED
+        // SERVFAIL
+
         switch (err.code) {
             case 'ENODATA':
             case 'ENOTFOUND':
@@ -51,7 +52,10 @@ exports.lookup_mx = async function lookup_mx (domain, cb) {
         mxs.push(wrap_mx(a));
     }
 
-    if (mxs.length) return mxs
+    if (mxs.length) {
+        if (cb) return cb(null, mxs)
+        return mxs
+    }
 
     const err = new Error("Found nowhere to deliver to");
     err.code = 'NOMX';
