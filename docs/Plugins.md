@@ -260,11 +260,11 @@ If you are writing a complex plugin, you may have to split it into multiple plug
 
 ```js
 exports.register = function () {
-    this.register_hook('connect',  'hook_connect', -100);
+    this.register_hook('connect',  'do_connect_stuff', -100);
 }
 ```
 
-This would ensure that your hook_connect function will run before any other
+This would ensure that your `do_connect_stuff` function will run before any other
 plugins registered on the `connect` hook, regardless of the order it was
 specified in `config/plugins`.
 
