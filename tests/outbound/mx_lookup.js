@@ -42,4 +42,20 @@ exports.lookup_mx = {
             test.done()
         });
     },
+    'MX records for no-mx.tnpi.net (await)': async test => {
+        test.expect(2)
+        const r = await mx.lookup_mx('no-mx.tnpi.net');
+        // console.log(r)
+        test.equal(r.length, 1) // the A record
+        test.equal(r[0].exchange, '192.0.99.5')
+        test.done()
+    },
+    'MX records for no-mx.tnpi.net (callback)': test => {
+        test.expect(2)
+        mx.lookup_mx('no-mx.tnpi.net', (err, r) => {
+            test.equal(r.length, 1) // the A record
+            test.equal(r[0].exchange, '192.0.99.5')
+            test.done()
+        });
+    },
 }
