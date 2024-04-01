@@ -51,7 +51,10 @@ exports.lookup_mx = async function lookup_mx (domain, cb) {
         mxs.push(wrap_mx(a));
     }
 
-    if (mxs.length) return mxs
+    if (mxs.length) {
+        if (cb) return cb(null, mxs)
+        return mxs
+    }
 
     const err = new Error("Found nowhere to deliver to");
     err.code = 'NOMX';
