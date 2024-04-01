@@ -8,6 +8,7 @@
 
 #### Fixed
 
+- fix(outbound): call cb even if no MX is found
 - fix(helo.checks): declare reject.literal_mismatch as boolean
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
 - fix(outbound): include return path param SMTPUTF8 when required #3289
