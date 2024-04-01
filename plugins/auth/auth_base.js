@@ -241,6 +241,8 @@ exports.auth_cram_md5 = function (next, connection, params) {
 exports.hexi = number => String(Math.abs(parseInt(number)).toString(16))
 
 exports.constrain_sender = function (next, connection, params) {
+    if (this?.cfg?.main?.constrain_sender === false) return next()
+
     const au = connection.results.get('auth')?.user
     if (!au) return next()
 
