@@ -3,6 +3,7 @@
 
 #### Changed
 
+- outbound: exlude non-SMTP services from cfg.local_mx_ok
 - outbound/mx_lookup: make it async/await
 - outbound: emit log message when ignoring local MX
 
