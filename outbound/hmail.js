@@ -298,7 +298,7 @@ class HMailItem extends events.EventEmitter {
         const mx = this.mxlist.shift();
         const host = mx.exchange;
 
-        if (!obc.cfg.local_mx_ok) {
+        if (mx.port === 25 && !obc.cfg.local_mx_ok) {
             if (await net_utils.is_local_host(host)) {
                 this.loginfo(`MX ${host} is local, skipping since local_mx_ok=false`)
                 return this.try_deliver(); // try next MX
