@@ -269,7 +269,7 @@ class Connection {
                 this.set('remote.is_private', true);
             }
             else {
-                this.set('remote.is_private', net_utils.is_private_ipv4(this.remote.ip));
+                this.set('remote.is_private', net_utils.is_private_ip(this.remote.ip));
             }
         }
 

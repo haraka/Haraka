@@ -3,6 +3,7 @@
 
 #### Changed
 
+- connection: support IPv6 when setting remote.is_private #3295
 - outbound/mx_lookup: make it async/await
 - outbound: emit log message when ignoring local MX
 
