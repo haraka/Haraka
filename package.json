@@ -44,6 +44,7 @@
     "haraka-tld": "^1.2.0",
     "haraka-utils": "^1.0.3",
     "openssl-wrapper": "^0.3.4",
+    "redis": "~4.6.11",
     "sockaddr": "^1.0.1"
   },
   "optionalDependencies": {
@@ -69,7 +70,6 @@
     "haraka-plugin-uribl": "^1.0.8",
     "haraka-plugin-watch": "^2.0.2",
     "ocsp": "~1.2.0",
-    "redis": "~4.6.11",
     "tmp": "~0.2.1"
   },
   "devDependencies": {
