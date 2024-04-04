@@ -23,7 +23,6 @@
 #### Added
 
 - feat(auth_vpopmaild): when outbound, assure the envelope domain matches AUTH domain #3265
-- docs(outbound): remove example setting outbound_ip #3253
 - doc(Plugins.md): add pi-queue-kafka #3247
 - feat(rabbitmq_amqplib): configurable optional queue arguments #3239
 - feat(clamd): add x-haraka-virus header #3207
