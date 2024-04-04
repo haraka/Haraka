@@ -227,7 +227,9 @@ class HMailItem extends events.EventEmitter {
         }
 
         // if none of the above return codes, drop through to this...
-        mx_lookup.lookup_mx(this.todo.domain, this.found_mx)
+        mx_lookup.lookup_mx(this.todo.domain, (err, mxs) => {
+            this.found_mx(err, mxs);
+        });
     }
 
     found_mx (err, mxs) {

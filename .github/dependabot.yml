@@ -11,6 +11,11 @@ updates:
       interval: "monthly"
     allow:
       - dependency-type: production
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+      development-dependencies:
+        dependency-type: "development"
 
   - package-ecosystem: "docker"
     # Look for a `Dockerfile` in the `root` directory
