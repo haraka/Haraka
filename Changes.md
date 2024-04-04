@@ -3,6 +3,7 @@
 
 #### Changed
 
+- deps: bump all versions to latest #3303
 - auth_base: enable disabling constrain_sender at runtime #3298
 - connection: support IPv6 when setting remote.is_private #3295
 - outbound/mx_lookup: make it async/await
