@@ -38,7 +38,8 @@ exports.lookup_mx = async function lookup_mx (domain, cb) {
                 // likely a hostname with no MX record, drop through
                 break
             default:
-                throw err(err)
+                if (cb) return cb(err, mxs)
+                throw err
         }
     }
 
