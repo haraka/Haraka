@@ -3,7 +3,7 @@
 
 #### Changed
 
-- outbound: exlude non-SMTP services from cfg.local_mx_ok #3300
+- outbound: include only default routes to cfg.local_mx_ok check #3300
 - auth_base: enable disabling constrain_sender at runtime #3298
 - connection: support IPv6 when setting remote.is_private #3295
 - outbound/mx_lookup: make it async/await
