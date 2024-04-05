@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 // this script takes inspiration from:
-// https://github.com/visionmedia/express/blob/master/bin/express
 // https://github.com/tnantoka/LooseLeaf/blob/master/bin/looseleaf
 
+const child = require('child_process');
 const fs   = require('fs');
 const net  = require('net');
 const nopt = require('nopt');
@@ -87,7 +87,7 @@ const usage = [
 
 function listPlugins (b, dir) {
 
-    if (!dir) { dir = "plugins/"; }
+    if (!dir) dir = "plugins/";
 
     let plist = `${dir}\n`;
     const subdirs = [];
@@ -224,6 +224,21 @@ function setupBaseConfig (confPath) {
     copyDir(path.join(base, 'config', 'dkim'), path.join(confPath, 'dkim'));
 }
 
+function setupRequire () {
+
+    process.env.HARAKA = parsed.configs;
+    try {
+        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
+    }
+    catch (e) {
+        process.env.NODE_PATH = process.env.NODE_PATH ?
+            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
+            :
+            (path.join(process.env.HARAKA, 'node_modules'));
+        require('module')._initPaths(); // Horrible hack
+    }
+}
+
 const readme = [
     "Haraka",
     "",
@@ -338,14 +353,13 @@ else if (parsed.help) {
             process.exit();
         }
         let pager = 'less';
-        const spawn = require('child_process').spawn;
         if (process.env.PAGER) {
             const pager_split = process.env.PAGER.split(/ +/);
             pager = pager_split.shift();
             md_path = pager_split.concat(md_path);
         }
 
-        const less  = spawn( pager, md_path, { stdio: 'inherit' } );
+        const less  = child.spawn( pager, md_path, { stdio: 'inherit' } );
         less.on('exit', function () {
             process.exit(0);
         });
@@ -440,29 +454,24 @@ else if (parsed.qempty) {
     fail("qempty is unimplemented");
 }
 else if (parsed.order) {
-    if (!parsed.configs) {
-        fail("order option requires config path");
-    }
-    process.env.HARAKA = parsed.configs;
-    try {
-        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
-    }
-    catch (e) {
-        process.env.NODE_PATH = process.env.NODE_PATH ?
-            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
-            :
-            (path.join(process.env.HARAKA, 'node_modules'));
-        require('module')._initPaths(); // Horrible hack
-    }
-    logger = require(path.join(base, "logger"));
-    if (!parsed.verbose)
-        logger.log = function () {} // disable logging for this
-    plugins = require(path.join(base, "plugins"));
+    if (!parsed.configs) fail("order option requires config path");
+
+    setupRequire();
+
+    logger = require(path.join(base, 'logger'));
+    if (!parsed.verbose) logger.log = function () {} // disable logging
+
+    plugins = require(path.join(base, 'plugins'));
     plugins.load_plugins();
     console.log('');
-    const hooks = Object.keys(plugins.registered_hooks);
-    for (let h = 0; h < hooks.length; h++) {
-        const hook = hooks[h];
+
+    const hooks = child.spawnSync('awk', ['/## Available/,/## rcpt/{ if (/^\\*/) print $2 }', 'docs/Plugins.md'])
+        .stdout.toString()
+        .replace(/\\/g, '')
+        .split('\n')
+
+    for (const hook of hooks) {
+        if (!plugins.registered_hooks[hook]) continue;
         console.log(sprintf('%\'--80s', `Hook: ${hook} `));
         console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'));
         console.log(sprintf("%'-80s",''));
@@ -475,21 +484,11 @@ else if (parsed.order) {
     process.exit();
 }
 else if (parsed.test) {
-    if (!parsed.configs) {
-        fail("test option requires config path");
-    }
-    process.env.HARAKA = parsed.configs;
-    try {
-        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
-    }
-    catch (e) {
-        process.env.NODE_PATH = process.env.NODE_PATH ?
-            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
-            :
-            (path.join(process.env.HARAKA, 'node_modules'));
-        require('module')._initPaths(); // Horrible hack
-    }
-    logger = require(path.join(base, "logger"));
+    if (!parsed.configs) fail("test option requires config path");
+
+    setupRequire();
+
+    logger = require(path.join(base, 'logger'));
     logger.loglevel = logger.levels.PROTOCOL;
 
     // Attempt to load message early
@@ -513,8 +512,10 @@ else if (parsed.test) {
     const Notes = require('haraka-notes');
     const constants = require('haraka-constants');
     const client = {
-        remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
-        remotePort: 1234,
+        remote: {
+            address: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
+            port: 1234,
+        },
         destroy () {},
         on (event, done) {},
         end () {
@@ -652,9 +653,9 @@ else if (parsed.configs) {
 else if (parsed.install) {
     const pa = parsed.install;
     mkDir(parsed.install);
-    mkDir(path.join(pa, 'plugins'));
-    mkDir(path.join(pa, 'docs'));
-    mkDir(path.join(pa, 'config'));
+    for (const d of ['plugins', 'docs', 'config']) {
+        mkDir(path.join(pa, d));
+    }
     createFile(path.join(pa, 'README'), readme);
     createFile(path.join(pa, 'package.json'), packageJson);
     const bytes = require('crypto').randomBytes(32);
