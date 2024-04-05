@@ -227,7 +227,11 @@ class HMailItem extends events.EventEmitter {
         }
 
         // if none of the above return codes, drop through to this...
-        mx_lookup.lookup_mx(this.todo.domain, this.found_mx)
+        mx_lookup.lookup_mx(this.todo.domain, (err, mxs) => {
+            if (mxs) mxs.forEach(mx => { mx.default = true; });
+
+            this.found_mx (err, mxs)
+        })
     }
 
     found_mx (err, mxs) {
@@ -272,8 +276,8 @@ class HMailItem extends events.EventEmitter {
                 }
                 else if (obc.cfg.ipv6_enabled) {
                     this.mxlist.push(
-                        { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'AAAA' },
-                        { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'A' }
+                        { default: mxlist[mx].default, exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'AAAA' },
+                        { default: mxlist[mx].default, exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'A' }
                     );
                 }
                 else {
@@ -298,7 +302,7 @@ class HMailItem extends events.EventEmitter {
         const mx = this.mxlist.shift();
         const host = mx.exchange;
 
-        if (mx.port === 25 && !obc.cfg.local_mx_ok) {
+        if (mx.default && !obc.cfg.local_mx_ok) {
             if (await net_utils.is_local_host(host)) {
                 this.loginfo(`MX ${host} is local, skipping since local_mx_ok=false`)
                 return this.try_deliver(); // try next MX
@@ -369,7 +373,7 @@ class HMailItem extends events.EventEmitter {
             host = mx.path;
         }
 
-        this.logdebug(`delivering from: ${mx.bind_helo} to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`)
+        this.logdebug(`delivering from: ${mx.bind_helo} to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""}${mx.default ? " (default route)" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`)
         client_pool.get_client(port, host, mx.bind, !!mx.path, (err, socket) => {
             if (err) {
                 if (/connection timed out|connect ECONNREFUSED/.test(err)) {
