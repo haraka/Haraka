@@ -11,6 +11,7 @@
 
 #### Fixed
 
+- fix(bin/haraka): get hook list from doc/Plugins #3306
 - fix(outbound): call cb even if no MX is found
 - fix(helo.checks): declare reject.literal_mismatch as boolean
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
