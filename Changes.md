@@ -3,6 +3,7 @@
 
 #### Changed
 
+- check for local_mx only when default route is used #3307
 - deps: bump all versions to latest #3303
 - auth_base: enable disabling constrain_sender at runtime #3298
 - connection: support IPv6 when setting remote.is_private #3295
