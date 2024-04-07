@@ -3,6 +3,7 @@
 
 #### Changed
 
+- test: add a connection.response test case with DSN #3305
 - deps: bump all versions to latest #3303
 - auth_base: enable disabling constrain_sender at runtime #3298
 - connection: support IPv6 when setting remote.is_private #3295

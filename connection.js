@@ -538,6 +538,7 @@ class Connection {
             code = msg.code;
             msg = msg.reply;
         }
+
         if (!Array.isArray(msg)) {
             messages = msg.toString().split(/\n/);
         }
@@ -573,6 +574,8 @@ class Connection {
             this.logprotocol(`S: ${line}`);
             buf = `${buf}${line}\r\n`;
         }
+
+        if (this.client.write === undefined) return buf;  // testing
 
         try {
             this.client.write(buf);
