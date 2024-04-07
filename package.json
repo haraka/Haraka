@@ -42,7 +42,7 @@
     "haraka-plugin-redis": "^2.0.6",
     "haraka-results": "^2.2.3",
     "haraka-tld": "^1.2.1",
-    "haraka-utils": "^1.0.3",
+    "haraka-utils": "^1.1.1",
     "openssl-wrapper": "^0.3.4",
     "redis": "~4.6.13",
     "sockaddr": "^1.0.1"

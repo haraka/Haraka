@@ -4,7 +4,6 @@ on: [ pull_request ]
 
 env:
   CI: true
-  node_version: 16
 
 jobs:
   coverage:
@@ -12,9 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
-      name: Node.js ${{ env.node_version }}
-      with:
-        node-version: ${{ env.node_version }}
+      name: Node.js
 
     - name: install libarchive-tools
       run: |

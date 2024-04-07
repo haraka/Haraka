@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 // this script takes inspiration from:
-// https://github.com/visionmedia/express/blob/master/bin/express
 // https://github.com/tnantoka/LooseLeaf/blob/master/bin/looseleaf
 
+const child = require('child_process');
 const fs   = require('fs');
 const net  = require('net');
 const nopt = require('nopt');
@@ -54,47 +54,45 @@ const shortHands = {
 }
 const parsed = nopt(knownOpts, shortHands, process.argv, 2);
 
-const usage = [
-    "\033[32;40mHaraka.js\033[0m — A Node.js Email Server project",
-    "Usage: haraka [options] [path]",
-    "Options:",
-    "\t-v, --version \t\tOutputs version number",
-    "\t-h, --help    \t\tOutputs this help message",
-    "\t-h NAME       \t\tShows help for NAME",
-    "\t-c, --configs \t\tPath to your config directory",
-    "\t-i, --install \t\tCopies the default configs to a specified dir",
-    "\t-l, --list    \t\tList the plugins bundled with Haraka",
-    "\t-p, --plugin  \t\tGenerate a new plugin with the given name",
-    "\t-f, --force   \t\tForce overwriting of old files",
-    "\t--qlist       \t\tList the outbound queue",
-    "\t--qstat       \t\tGet statistics on the outbound queue",
-    "\t--qunstick    \t\tUnstick (force delivery) for a given domain",
-    "\t-o, --order   \t\tShow all registered plugins and their run order",
-    "\t-t PLUGIN     \t\tPlugin test mode",
-    "\t--------------- PLUGIN TEST MODE OPTIONS (all optional) --------------",
-    "\t--ip IP       \t\tIP address to use",
-    "\t--helo HELO   \t\tHELO to use",
-    "\t--ehlo EHLO   \t\tEHLO to use",
-    "\t--envfrom FROM\t\tMAIL FROM to use",
-    "\t--envfrom TO  \t\tRCPT TO(s) to use",
-    "\t--message FILE\t\tMessage file to use",
-    "\t--dump-mime   \t\tDump the MIME structure and body text",
-    "\t--dump-stream \t\tDump the MessageStream to stdout",
-    "\t--skip-deny   \t\tContinue running hooks after DENY/DENYSOFT",
-    "\t--set-relay   \t\tSet connection.relaying",
-].join('\n');
+const usage = `\x1B[32;40mHaraka.js\x1B[0m — A Node.js Email Server project
+Usage: haraka [options] [path]
+Options:
+    -v, --version \t\tOutputs version number
+    -h, --help    \t\tOutputs this help message
+    -h NAME       \t\tShows help for NAME
+    -c, --configs \t\tPath to your config directory
+    -i, --install \t\tCopies the default configs to a specified dir
+    -l, --list    \t\tList the plugins bundled with Haraka
+    -p, --plugin  \t\tGenerate a new plugin with the given name
+    -f, --force   \t\tForce overwriting of old files
+    --qlist       \t\tList the outbound queue
+    --qstat       \t\tGet statistics on the outbound queue
+    --qunstick    \t\tUnstick (force delivery) for a given domain
+    -o, --order   \t\tShow all registered plugins and their run order
+    -t PLUGIN     \t\tPlugin test mode
+    --------------- PLUGIN TEST MODE OPTIONS (all optional) --------------
+    --ip IP       \t\tIP address to use
+    --helo HELO   \t\tHELO to use
+    --ehlo EHLO   \t\tEHLO to use
+    --envfrom FROM\t\tMAIL FROM to use
+    --envfrom TO  \t\tRCPT TO(s) to use
+    --message FILE\t\tMessage file to use
+    --dump-mime   \t\tDump the MIME structure and body text
+    --dump-stream \t\tDump the MessageStream to stdout
+    --skip-deny   \t\tContinue running hooks after DENY/DENYSOFT
+    --set-relay   \t\tSet connection.relaying
+`;
 
 
 function listPlugins (b, dir) {
 
-    if (!dir) { dir = "plugins/"; }
+    if (!dir) dir = "plugins/";
 
     let plist = `${dir}\n`;
     const subdirs = [];
     const gl = path.join((b ? b : base), dir);
-    const pd = fs.readdirSync(gl);
 
-    pd.forEach(function (p) {
+    for (const p of fs.readdirSync(gl)) {
         const stat = fs.statSync(`${gl}/${p}`);
         if (stat.isFile() && ~p.search('.js')) {
             plist += `\t${p.replace('.js', '')}\n`;
@@ -102,19 +100,13 @@ function listPlugins (b, dir) {
         else if (stat.isDirectory()) {
             subdirs.push(`${dir + p}/`);
         }
-    });
+    }
 
-    subdirs.forEach(function (s) {
+    for (const s of subdirs) {
         plist += `\n${listPlugins(b, s)}`;
-    });
+    }
 
     return plist;
-}
-
-
-// Show message when create
-function create (dirPath) {
-    console.log(`\x1b[32mcreate\x1b[0m: ${dirPath}`);
 }
 
 // Warning messsage
@@ -127,82 +119,8 @@ function fail (msg) {
     process.exit(-1);
 }
 
-// Make directory if NOT exist
-function mkDir (dstPath) {
-    try {
-        if (fs.statSync(dstPath).isDirectory()) return;
-    }
-    catch (ignore) {}
-
-    try {
-        fs.mkdirSync(dstPath, { recursive: true });
-        create(dstPath);
-    }
-    catch (e) {
-        // File exists
-        console.error(e);
-        if (e.errno == 17) {
-            warning(e.message);
-        }
-        else {
-            throw e;
-        }
-    }
-}
-
-// Copy directory
-function copyDir (srcPath, dstPath) {
-
-    mkDir(dstPath);
-    const files = fs.readdirSync(srcPath);
-
-    for (let i=0; i < files.length; i++) {
-
-        // Ignore ".*"
-        if (/^\./.test(files[i])) continue;
-
-        const srcFile = path.join(srcPath, files[i]);
-        const dstFile = path.join(dstPath, files[i]);
-
-        const srcStat = fs.statSync(srcFile);
-
-        // Recursive call If direcotory
-        if (srcStat.isDirectory()) {
-            copyDir(srcFile, dstFile);
-        }
-        // Copy to dstPath if file
-        else if (srcStat.isFile()) {
-            // NOT overwrite file
-            copyFile(srcFile, dstFile);
-        }
-    }
-}
-
-function copyFile (srcFile, dstFile) {
-
-    try {
-        if (fs.statSync(dstFile).isFile()) {
-            warning(`EEXIST, File exists '${dstFile}'`);
-            return;
-        }
-        throw `EEXIST but not a file: '${dstFile}'`;
-    }
-    catch (e) {
-        // File NOT exists
-        if (e.code == 'ENOENT') {
-            mkDir(path.dirname(dstFile));
-            fs.writeFileSync(dstFile, fs.readFileSync(srcFile));
-            create(dstFile)
-        }
-        else {
-            console.log(`copy ${srcFile} to ${dstFile}`);
-            throw e;
-        }
-    }
-}
-
 function setupHostname (confPath) {
-    mkDir(confPath);
+    utils.mkDir(confPath);
 
     const hostname = `${os.hostname()}${os.EOL}`;
 
@@ -218,37 +136,57 @@ function setupHostname (confPath) {
 }
 
 function setupBaseConfig (confPath) {
-    copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'));
-    copyFile(path.join(base, 'config', 'log.ini'),  path.join(confPath, 'log.ini'));
-    copyFile(path.join(base, 'config', 'plugins'),  path.join(confPath, 'plugins'));
-    copyDir(path.join(base, 'config', 'dkim'), path.join(confPath, 'dkim'));
+    utils.copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'));
+    utils.copyFile(path.join(base, 'config', 'log.ini'),  path.join(confPath, 'log.ini'));
+    utils.copyFile(path.join(base, 'config', 'plugins'),  path.join(confPath, 'plugins'));
+    utils.copyDir(path.join(base, 'config', 'dkim'), path.join(confPath, 'dkim'));
 }
 
-const readme = [
-    "Haraka",
-    "",
-    "Congratulations on creating a new installation of Haraka.",
-    "",
-    "This directory contains two key directories for how Haraka will function:",
-    "",
-    " - config",
-    "           This directory contains configuration files for Haraka. The",
-    "           directory contains the default configuration. You probably want",
-    "           to modify some files in here, particularly `smtp.ini`.",
-    " - plugins",
-    "           This directory contains custom plugins which you write to run in",
-    "           Haraka. The plugins which ship with Haraka are still available",
-    "           to use.",
-    " - docs/plugins",
-    "           This directory contains documentation for your plugins.",
-    "",
-    "Documentation for Haraka is available via `haraka -h <name> where the name",
-    "is either the name of a plugin (without the .js extension) or the name of",
-    "a core Haraka module, such as `Connection` or `Transaction`.",
-    "",
-    "To get documentation on writing a plugin type `haraka -h Plugins`.",
-    "",
-].join("\n");
+function setupRequire () {
+
+    process.env.HARAKA = parsed.configs;
+    try {
+        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
+    }
+    catch (e) {
+        process.env.NODE_PATH = process.env.NODE_PATH ?
+            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
+            :
+            (path.join(process.env.HARAKA, 'node_modules'));
+        require('module')._initPaths(); // Horrible hack
+    }
+}
+
+function noop () {}
+
+const readme = `Haraka
+
+Congratulations on creating a new installation of Haraka.
+
+This directory contains two key directories for how Haraka will function:
+
+- config
+
+        This directory contains configuration files for Haraka. The
+        directory contains the default configuration. You probably want
+        to modify some files in here, particularly 'smtp.ini'.
+
+- plugins
+
+        This directory contains custom plugins which you write to run in
+        Haraka. The plugins which ship with Haraka are still available
+        to use.
+
+- docs/plugins
+
+        This directory contains documentation for your plugins.
+
+Documentation for Haraka is available via 'haraka -h <name>' where the name
+is either the name of a plugin (without the .js extension) or the name of
+a core Haraka module, such as 'Connection' or 'Transaction'.
+
+To get documentation on writing a plugin type 'haraka -h Plugins'.
+`;
 
 const packageJson = JSON.stringify({
     "name": "haraka_local",
@@ -282,19 +220,13 @@ const plugin_doc = [
     "",
 ].join("\n");
 
-function createFile (filePath, data, info) {
-    try {
-        if (fs.existsSync(filePath) && !parsed.force) {
-            throw `${filePath} already exists`;
-        }
-        mkDir(path.dirname(filePath));
-        const fd = fs.openSync(filePath, 'w');
-        const output = data.replace(/%(\w+)%/g, function (i, m1) { return info[m1] });
-        fs.writeSync(fd, output, null);
-    }
-    catch (e) {
-        warning(`Unable to create file: ${e}`);
-    }
+
+function getHooks () {   // see haraka/Haraka#3306
+    fs.readFileSync('docs/Plugins.md').toString()
+        .split('## Available Hooks')[1]    // discard everything before this string
+        .split('### rcpt')[0]              // discard everything after this string
+        .match(/\*\s(\S+)/gm)              // grab the first word of lines starting with '* '
+        .map(a => a.replace(/^\* /, '').replace(/\\/g, '')) // strip list prefix and escapes
 }
 
 let config;
@@ -313,52 +245,49 @@ else if (parsed.list) {
 else if (parsed.help) {
     if (parsed.help === 'true') {
         console.log(usage);
+        return
     }
-    else {
-        let md_path;
-        const md_paths = [
-            path.join(base, 'docs', `${parsed.help}.md`),
-            path.join(base, 'docs', 'plugins', `${parsed.help}.md`),
-            path.join(base, 'docs', 'deprecated', `${parsed.help}.md`),
-            path.join(base, 'node_modules', `haraka-plugin-${parsed.help}`, 'README.md'),
-        ];
-        if (parsed.configs) {
-            md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', `${parsed.help}.md`));
-            md_paths.unshift(path.join(parsed.configs, 'docs', `${parsed.help}.md`));
-        }
-        for (let i=0, j=md_paths.length; i<j; i++) {
-            const _md_path = md_paths[i];
-            if (fs.existsSync(_md_path)) {
-                md_path = [_md_path];
-                break;
-            }
-        }
-        if (!md_path) {
-            warning(`No documentation found for: ${parsed.help}`);
-            process.exit();
-        }
-        let pager = 'less';
-        const spawn = require('child_process').spawn;
-        if (process.env.PAGER) {
-            const pager_split = process.env.PAGER.split(/ +/);
-            pager = pager_split.shift();
-            md_path = pager_split.concat(md_path);
-        }
 
-        const less  = spawn( pager, md_path, { stdio: 'inherit' } );
-        less.on('exit', function () {
-            process.exit(0);
-        });
+    let md_path;
+    const md_paths = [
+        path.join(base, 'docs', `${parsed.help}.md`),
+        path.join(base, 'docs', 'plugins', `${parsed.help}.md`),
+        path.join(base, 'docs', 'deprecated', `${parsed.help}.md`),
+        path.join(base, 'node_modules', `haraka-plugin-${parsed.help}`, 'README.md'),
+    ];
+    if (parsed.configs) {
+        md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', `${parsed.help}.md`));
+        md_paths.unshift(path.join(parsed.configs, 'docs', `${parsed.help}.md`));
     }
+    for (let i=0, j=md_paths.length; i<j; i++) {
+        const _md_path = md_paths[i];
+        if (fs.existsSync(_md_path)) {
+            md_path = [_md_path];
+            break;
+        }
+    }
+    if (!md_path) {
+        warning(`No documentation found for: ${parsed.help}`);
+        process.exit();
+    }
+    let pager = 'less';
+    if (process.env.PAGER) {
+        const pager_split = process.env.PAGER.split(/ +/);
+        pager = pager_split.shift();
+        md_path = pager_split.concat(md_path);
+    }
+
+    const less  = child.spawn( pager, md_path, { stdio: 'inherit' } );
+    less.on('exit', function () {
+        process.exit(0);
+    });
 }
 else if (parsed.configs && parsed.plugin) {
     const js_path = path.join(parsed.configs, 'plugins', `${parsed.plugin}.js`);
-    createFile(js_path,
-        plugin_src, { plugin: parsed.plugin, config: parsed.configs });
+    utils.createFile(js_path, plugin_src, { plugin: parsed.plugin, config: parsed.configs}, parsed.force);
 
     const doc_path = path.join(parsed.configs, 'docs', 'plugins', `${parsed.plugin}.md`);
-    createFile(doc_path,
-        plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
+    utils.createFile(doc_path, plugin_doc, { plugin: parsed.plugin, config: parsed.configs}, parsed.force);
 
     console.log(`Plugin ${parsed.plugin} created`);
     console.log(`Now edit javascript in:    ${js_path}`);
@@ -366,29 +295,24 @@ else if (parsed.configs && parsed.plugin) {
     console.log(`And edit documentation in: ${doc_path}`);
 }
 else if (parsed.qlist) {
-    if (!parsed.configs) {
-        fail("qlist option requires config path");
-    }
+    if (!parsed.configs) fail("qlist option requires config path");
     process.env.HARAKA = parsed.configs;
-    logger = require(path.join(base, "logger"));
-    if (!parsed.verbose)
-        logger.log = function () {} // disable logging for this
-    outbound = require(path.join(base, "outbound"));
+    logger = require(path.join(base, 'logger'));
+    if (!parsed.verbose) logger.log = noop // disable logging
+    outbound = require(path.join(base, 'outbound'));
     outbound.list_queue(function (err, qlist) {
-        qlist.forEach(function (todo) {
+        for (const todo of qlist) {
             console.log(sprintf("Q: %s rcpt:%d from:%s domain:%s", todo.file, todo.rcpt_to.length, todo.mail_from.toString(), todo.domain));
-        });
+        }
         process.exit();
-    });
+    })
 }
 else if (parsed.qstat) {
-    if (!parsed.configs) {
-        fail("qstat option requires config path");
-    }
+    if (!parsed.configs) fail("qstat option requires config path");
+
     process.env.HARAKA = parsed.configs;
     logger = require(path.join(base, "logger"));
-    if (!parsed.verbose)
-        logger.log = function () {} // disable logging for this
+    if (!parsed.verbose) logger.log = noop // disable logging
     outbound = require(path.join(base, "outbound"));
     outbound.stat_queue(function (err, stats) {
         console.log(stats);
@@ -396,17 +320,12 @@ else if (parsed.qstat) {
     });
 }
 else if (parsed.qunstick) {
-    if (!parsed.configs) {
-        fail("qunstick option requires config path");
-    }
+    if (!parsed.configs) fail('qunstick option requires config path');
     const domain = parsed.qunstick.toLowerCase();
     process.env.HARAKA = parsed.configs;
-    logger = require(path.join(base, "logger"));
-    if (!parsed.verbose)
-        logger.log = function () {} // disable logging for this
-    const cb = function () {
-        process.exit();
-    };
+    logger = require(path.join(base, 'logger'));
+    if (!parsed.verbose) logger.log = noop // disable logging
+    const cb = function () { process.exit(); }
     if (domain == 'true') {
         send_internal_command('flushQueue', cb);
     }
@@ -415,54 +334,36 @@ else if (parsed.qunstick) {
     }
 }
 else if (parsed.graceful) {
-    if (!parsed.configs) {
-        fail("graceful option requires config path");
-    }
+    if (!parsed.configs) fail("graceful option requires config path");
+
     process.env.HARAKA = parsed.configs;
-    logger = require(path.join(base, "logger"));
-    if (!parsed.verbose)
-        logger.log = function () {} // disable logging for this
+    logger = require(path.join(base, 'logger'));
+    if (!parsed.verbose) logger.log = noop // disable logging
     config = require('haraka-config');
     if (!config.get("smtp.ini").main.nodes) {
         console.log("Graceful restart not possible without `nodes` value in smtp.ini");
         process.exit();
     }
     else {
-        send_internal_command('gracefulRestart', function () {
+        send_internal_command('gracefulRestart', () => {
             process.exit();
         });
     }
 }
 else if (parsed.qempty) {
-    if (!parsed.configs) {
-        fail("qempty option requires config path");
-    }
-    fail("qempty is unimplemented");
+    if (!parsed.configs) fail('qempty option requires config path');
+    fail('qempty is unimplemented');
 }
 else if (parsed.order) {
-    if (!parsed.configs) {
-        fail("order option requires config path");
-    }
-    process.env.HARAKA = parsed.configs;
-    try {
-        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
-    }
-    catch (e) {
-        process.env.NODE_PATH = process.env.NODE_PATH ?
-            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
-            :
-            (path.join(process.env.HARAKA, 'node_modules'));
-        require('module')._initPaths(); // Horrible hack
-    }
-    logger = require(path.join(base, "logger"));
-    if (!parsed.verbose)
-        logger.log = function () {} // disable logging for this
-    plugins = require(path.join(base, "plugins"));
+    if (!parsed.configs) fail('order option requires config path');
+    setupRequire();
+    logger = require(path.join(base, 'logger'));
+    if (!parsed.verbose) logger.log = noop // disable logging
+    plugins = require(path.join(base, 'plugins'));
     plugins.load_plugins();
     console.log('');
-    const hooks = Object.keys(plugins.registered_hooks);
-    for (let h = 0; h < hooks.length; h++) {
-        const hook = hooks[h];
+    for (const hook of getHooks()) {
+        if (!plugins.registered_hooks[hook]) continue;
         console.log(sprintf('%\'--80s', `Hook: ${hook} `));
         console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'));
         console.log(sprintf("%'-80s",''));
@@ -475,21 +376,11 @@ else if (parsed.order) {
     process.exit();
 }
 else if (parsed.test) {
-    if (!parsed.configs) {
-        fail("test option requires config path");
-    }
-    process.env.HARAKA = parsed.configs;
-    try {
-        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
-    }
-    catch (e) {
-        process.env.NODE_PATH = process.env.NODE_PATH ?
-            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
-            :
-            (path.join(process.env.HARAKA, 'node_modules'));
-        require('module')._initPaths(); // Horrible hack
-    }
-    logger = require(path.join(base, "logger"));
+    if (!parsed.configs) fail("test option requires config path");
+
+    setupRequire();
+
+    logger = require(path.join(base, 'logger'));
     logger.loglevel = logger.levels.PROTOCOL;
 
     // Attempt to load message early
@@ -513,8 +404,10 @@ else if (parsed.test) {
     const Notes = require('haraka-notes');
     const constants = require('haraka-constants');
     const client = {
-        remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
-        remotePort: 1234,
+        remote: {
+            address: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
+            port: 1234,
+        },
         destroy () {},
         on (event, done) {},
         end () {
@@ -651,14 +544,14 @@ else if (parsed.configs) {
 }
 else if (parsed.install) {
     const pa = parsed.install;
-    mkDir(parsed.install);
-    mkDir(path.join(pa, 'plugins'));
-    mkDir(path.join(pa, 'docs'));
-    mkDir(path.join(pa, 'config'));
-    createFile(path.join(pa, 'README'), readme);
-    createFile(path.join(pa, 'package.json'), packageJson);
+    utils.mkDir(parsed.install);
+    for (const d of ['plugins', 'docs', 'config']) {
+        utils.mkDir(path.join(pa, d));
+    }
+    utils.createFile(path.join(pa, 'README'), readme, {}, parsed.force);
+    utils.createFile(path.join(pa, 'package.json'), packageJson, {}, parsed.force);
     const bytes = require('crypto').randomBytes(32);
-    createFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'));
+    utils.createFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'), {}, parsed.force);
     setupHostname(path.join(pa, 'config'));
     setupBaseConfig(path.join(pa, 'config'));
 }
