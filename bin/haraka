@@ -157,7 +157,7 @@ function setupRequire () {
     }
 }
 
-function noop () {};
+function noop () {}
 
 const readme = `Haraka
 
@@ -223,10 +223,10 @@ const plugin_doc = [
 
 function getHooks () {   // see haraka/Haraka#3306
     fs.readFileSync('docs/Plugins.md').toString()
-      .split('## Available Hooks')[1]    // discard everything before this string
-      .split('### rcpt')[0]              // discard everything after this string
-      .match(/\*\s(\S+)/gm)              // grab the first word of lines starting with '* '
-      .map(a => a.replace(/^\* /, '').replace(/\\/g, '')) // strip list prefix and escapes
+        .split('## Available Hooks')[1]    // discard everything before this string
+        .split('### rcpt')[0]              // discard everything after this string
+        .match(/\*\s(\S+)/gm)              // grab the first word of lines starting with '* '
+        .map(a => a.replace(/^\* /, '').replace(/\\/g, '')) // strip list prefix and escapes
 }
 
 let config;
@@ -325,9 +325,7 @@ else if (parsed.qunstick) {
     process.env.HARAKA = parsed.configs;
     logger = require(path.join(base, 'logger'));
     if (!parsed.verbose) logger.log = noop // disable logging
-    function cb () {
-        process.exit();
-    };
+    const cb = function () { process.exit(); }
     if (domain == 'true') {
         send_internal_command('flushQueue', cb);
     }
