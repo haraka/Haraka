@@ -1,5 +1,6 @@
 
 const constants    = require('haraka-constants');
+const DSN          = require('haraka-dsn')
 
 const connection   = require('../connection');
 const Server       = require('../server');
@@ -21,16 +22,11 @@ function _set_up (done) {
         }
     }
     this.connection = connection.createConnection(client, server, Server.cfg);
-    done();
-}
-
-function _tear_down (done) {
-    done();
+    done()
 }
 
 exports.connectionRaw = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'has remote object' (test) {
         test.expect(5);
         test.deepEqual(this.connection.remote, {
@@ -199,7 +195,6 @@ exports.connectionPrivate = {
         this.connection = connection.createConnection(client, server, Server.cfg);
         done();
     },
-    tearDown : _tear_down,
     'sets remote.is_private and remote.is_local' (test) {
         test.expect(3);
         test.equal(true, this.connection.remote.is_private);
@@ -227,7 +222,6 @@ exports.connectionLocal = {
         this.connection = connection.createConnection(client, server, Server.cfg);
         done();
     },
-    tearDown : _tear_down,
     'sets remote.is_private and remote.is_local' (test) {
         test.expect(3);
         test.equal(true, this.connection.remote.is_private);
@@ -239,7 +233,6 @@ exports.connectionLocal = {
 
 exports.get_remote = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'valid hostname' (test) {
         test.expect(1);
         this.connection.remote.host='a.host.tld'
@@ -271,7 +264,6 @@ exports.get_remote = {
 
 exports.local_info = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'is Haraka/version' (test) {
         test.expect(1);
         test.ok(/Haraka\/\d.\d/.test(this.connection.local.info), this.connection.local.info);
@@ -281,7 +273,6 @@ exports.local_info = {
 
 exports.relaying = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'sets and gets' (test) {
         test.expect(3);
         test.equal(this.connection.relaying, false);
@@ -302,7 +293,6 @@ exports.relaying = {
 
 exports.get_set = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'sets single level properties' (test) {
         test.expect(2);
         this.connection.set('encoding', true);
@@ -322,6 +312,47 @@ exports.get_set = {
         this.connection.set('some.fine.example', true);
         test.ok(this.connection.some.fine.example);
         test.ok(this.connection.get('some.fine.example'));
+        test.done();
+    },
+}
+
+exports.respond = {
+    setUp : _set_up,
+    'disconnected returns undefined' (test) {
+        test.expect(2);
+        this.connection.state = constants.connection.state.DISCONNECTED
+        test.equal(this.connection.respond(200, 'your lucky day'), undefined);
+        test.equal(this.connection.respond(550, 'you are jacked'), undefined);
+        test.done();
+    },
+    'state=command, 200' (test) {
+        test.expect(1);
+        test.equal(this.connection.respond(200, 'you may pass Go'), '200 you may pass Go\r\n');
+        test.done();
+    },
+    'DSN 200' (test) {
+        test.expect(1);
+        test.equal(
+            this.connection.respond(200, DSN.create(200, 'you may pass Go')),
+            '200 2.0.0 you may pass Go\r\n'
+        );
+        test.done();
+    },
+    'DSN 550 create' (test) {
+        test.expect(1);
+        // note, the DSN code overrides the response code
+        test.equal(
+            this.connection.respond(450, DSN.create(550, 'This domain is not in use and does not accept mail')),
+            '550 5.0.0 This domain is not in use and does not accept mail\r\n'
+        );
+        test.done();
+    },
+    'DSN 550 addr_bad_dest_system' (test) {
+        test.expect(1);
+        test.equal(
+            this.connection.respond(550, DSN.addr_bad_dest_system('This domain is not in use and does not accept mail', 550)),
+            '550 5.1.2 This domain is not in use and does not accept mail\r\n'
+        );
         test.done();
     },
 }

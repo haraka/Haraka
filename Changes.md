@@ -4,6 +4,7 @@
 #### Changed
 
 - check for local_mx only when default route is used #3307
+- test: add a connection.response test case with DSN #3305
 - deps: bump all versions to latest #3303
 - auth_base: enable disabling constrain_sender at runtime #3298
 - connection: support IPv6 when setting remote.is_private #3295
@@ -12,6 +13,7 @@
 
 #### Fixed
 
+- fix(bin/haraka): get hook list from doc/Plugins #3306
 - fix(outbound): call cb even if no MX is found
 - fix(helo.checks): declare reject.literal_mismatch as boolean
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
