@@ -352,6 +352,8 @@ plugins.deprecated = {
     'data.noreceived'     : 'headers',
     'data.rfc5322_header_checks': 'headers',
     'data.headers'        : 'headers',
+    'dkim_sign'           : 'dkim',
+    'dkim_verify'         : 'dkim',
     'log.syslog'          : 'syslog',
     'mail_from.access'    : 'access',
     'mail_from.blocklist' : 'access',

@@ -44,8 +44,7 @@ Create a PR adding yours to this list.
 | [uribl][url-uribl]          | Block based on URI blacklists |
 | [dcc][url-dcc]              | Distributed Checksum Clearinghouse |
 | [delay_deny][url-delay]     | Delays all pre-DATA 'deny' results |
-| [dkim_sign][url-sign]       | DKIM sign outbound messages |
-| [dkim_verify][url-dkimv]    | Verify DKIM signatures on incoming messages |
+| [dkim][url-dkim]            | DKIM sign & verify |
 | [opendkim][url-opendkim]    | DKIM sign and verify email messages |
 | [dnsbl][url-dnsbl]          | Check remote MTAs against DNS blacklists |
 | [dnswl][url-dnswl]          | Check remote MTAs against DNS whitelists |
@@ -137,8 +136,7 @@ Create a PR adding yours to this list.
 [url-uribl]: https://github.com/haraka/haraka-plugin-uribl
 [url-dcc]: https://github.com/haraka/haraka-plugin-dcc
 [url-delay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md
-[url-sign]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
-[url-dkimv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_verify.md
+[url-dkim]: https://github.com/haraka/haraka-plugin-dkim
 [url-opendkim]: https://www.npmjs.com/package/haraka-plugin-opendkim
 [url-dnsbl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnsbl.md
 [url-dnswl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnswl.md
