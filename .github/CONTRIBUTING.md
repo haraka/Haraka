@@ -40,5 +40,5 @@ Change all but the first "pick" lines to "s" and save your changes. Your $EDITOR
 
 ## Tests
 
-* run all tests: ./run_tests  (or "npm test")
+* run all tests: "npm test"
 * run tests for a single plugin: ./run_tests tests/plugins/bounce.js
