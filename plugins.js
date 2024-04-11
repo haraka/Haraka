@@ -343,6 +343,7 @@ plugins.load_plugins = override => {
 }
 
 plugins.deprecated = {
+    'backscatterer'       : 'dns-list',
     'connect.asn'         : 'asn',
     'connect.fcrdns'      : 'fcrdns',
     'connect.geoip'       : 'geoip',
@@ -352,6 +353,9 @@ plugins.deprecated = {
     'data.noreceived'     : 'headers',
     'data.rfc5322_header_checks': 'headers',
     'data.headers'        : 'headers',
+    'data.uribl'          : 'uribl',
+    'dnsbl'               : 'dns-list',
+    'dnswl'               : 'dns-list',
     'log.syslog'          : 'syslog',
     'mail_from.access'    : 'access',
     'mail_from.blocklist' : 'access',
