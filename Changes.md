@@ -13,6 +13,7 @@
 
 #### Fixed
 
+- fix(bin/haraka): list NPM installed plugin #3310
 - fix(bin/haraka): get hook list from doc/Plugins #3306
 - fix(outbound): call cb even if no MX is found
 - fix(helo.checks): declare reject.literal_mismatch as boolean
