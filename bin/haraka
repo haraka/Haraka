@@ -83,30 +83,37 @@ Options:
     --set-relay   \t\tSet connection.relaying
 `;
 
+function listPlugins (b, dir = 'plugins/') {
 
-function listPlugins (b, dir) {
+    const inital_dir = path.join((b ?? base), dir);
+    const plugin_dirs = [ inital_dir ]
 
-    if (!dir) dir = "plugins/";
-
-    let plist = `${dir}\n`;
-    const subdirs = [];
-    const gl = path.join((b ? b : base), dir);
-
-    for (const p of fs.readdirSync(gl)) {
-        const stat = fs.statSync(`${gl}/${p}`);
-        if (stat.isFile() && ~p.search('.js')) {
-            plist += `\t${p.replace('.js', '')}\n`;
-        }
-        else if (stat.isDirectory()) {
-            subdirs.push(`${dir + p}/`);
+    for (const d of fs.readdirSync(inital_dir)) {
+        if (fs.statSync(path.join(inital_dir, d)).isDirectory()) {
+            plugin_dirs.push(path.join(inital_dir, d));
         }
     }
 
-    for (const s of subdirs) {
-        plist += `\n${listPlugins(b, s)}`;
+    let plugin_list = ``
+    for (const pd of plugin_dirs) {
+        plugin_list += `\n${pd.match(/plugins.*$/)[0]}\n`;
+
+        for (const d of fs.readdirSync(pd)) {
+            if (fs.statSync(path.join(pd, d)).isFile() && ~d.search('.js')) {
+                plugin_list += `\t${d.replace('.js', '')}\n`;
+            }
+        }
     }
 
-    return plist;
+    plugin_list += `\nNPM packages (${b ?? base})\n`
+    const npm_plugins = []
+    for (const entry of fs.readdirSync(path.join(b ?? base, 'node_modules'))) {
+        if (!/^haraka-plugin-/.test(entry)) continue
+        npm_plugins.push(entry.split('-').slice(2).join('-'))
+    }
+    plugin_list += `\t${npm_plugins.join('\n\t')}\n`
+
+    return plugin_list;
 }
 
 // Warning messsage
