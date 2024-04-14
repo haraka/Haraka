@@ -14,21 +14,21 @@
 - auth_base: enable disabling constrain_sender at runtime #3298
 - connection: support IPv6 when setting remote.is_private #3295
   - in setTLS, replace forEach with for...of
-  - NOTE: remove a handful of 3.0 sunset property names
+  - NOTE: remove a handful of 3.0 sunset property names #3315
 - outbound/mx_lookup: make it async/await
-- outbound: emit log message when ignoring local MX
-- outbound: pass in config when initiating txn
-- outbound: minor es6 updates
+- outbound: emit log message when ignoring local MX #3285
+- outbound: pass in config when initiating txn #3315
+- outbound: minor es6 updates #3315
 
 #### Fixed
 
 - fix(bin/haraka): list NPM installed plugin #3310
 - fix(bin/haraka): get hook list from doc/Plugins #3306
-- fix(outbound): call cb even if no MX is found
-- fix(helo.checks): declare reject.literal_mismatch as boolean
+- fix(outbound): call cb even if no MX is found #3294
+- fix(helo.checks): declare reject.literal_mismatch as boolean #3293
 - fix(outbound): allow LHLO over insecure socket if TLS is forced #3278
 - fix(outbound): include return path param SMTPUTF8 when required #3289
-- fix(outbound): replace empty Message-ID header
+- fix(outbound): replace empty Message-ID header #3288
 - fix(outbound): don't send SNI servername when connecting to an IP
 - fix(outbound): chown queue dir after creation #3291
 
