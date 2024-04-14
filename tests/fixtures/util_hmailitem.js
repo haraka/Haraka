@@ -2,9 +2,6 @@
 
 const { Address }     = require('address-rfc2821');
 const fixtures        = require('haraka-test-fixtures');
-const stub_connection = fixtures.connection;
-// const transaction     = fixtures.transaction;  // not yet sufficient
-const transaction     = require('../../transaction');
 
 
 /**
@@ -51,8 +48,8 @@ exports.createHMailItem = (outbound_context, options, callback) => {
     const delivery_domain = options.delivery_domain || 'domain';
     const mail_recipients = options.mail_recipients || [new Address('recipient@domain')];
 
-    const conn = stub_connection.createConnection();
-    conn.transaction = transaction.createTransaction('someuuid');
+    const conn = fixtures.connection.createConnection();
+    conn.init_transaction()
     conn.transaction.mail_from = new Address(mail_from);
 
     const todo = new outbound_context.TODOItem(delivery_domain, mail_recipients, conn.transaction);
@@ -144,7 +141,6 @@ exports.playTestSmtpConversation = (hmail, socket, test, playbook, callback) => 
 
     const welcome = getNextEntryFromPlaybook('remote', playbook);
     socket.emit('line', welcome.line);
-
 }
 
 function getNextEntryFromPlaybook (ofType, playbook) {

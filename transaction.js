@@ -1,20 +1,16 @@
 'use strict';
 // An SMTP Transaction
 
-// node.js built-in modules
 const util   = require('util');
 
-// haraka npm modules
 const Notes  = require('haraka-notes');
 const utils  = require('haraka-utils');
-
-// Haraka modules
 const message = require('haraka-email-message')
 
 class Transaction {
-    constructor (uuid, cfg) {
+    constructor (uuid, cfg = {}) {
         this.uuid = uuid || utils.uuid();
-        this.cfg = cfg || load_smtp_ini();
+        this.cfg = cfg;
         this.mail_from = null;
         this.rcpt_to = [];
         this.header_lines = [];
@@ -50,13 +46,12 @@ class Transaction {
 
         this.body = new message.Body(this.header);
         this.body.on('mime_boundary', m => this.incr_mime_count());
-        this.attachment_start_hooks.forEach(h => {
-            this.body.on('attachment_start', h);
-        });
 
-        if (this.banner) {
-            this.body.set_banner(this.banner);
+        for (const hook of this.attachment_start_hooks) {
+            this.body.on('attachment_start', hook);
         }
+
+        if (this.banner) this.body.set_banner(this.banner);
 
         for (const o of this.body_filters) {
             this.body.add_filter((ct, enc, buf) => {
@@ -147,7 +142,7 @@ class Transaction {
         }
         else if (this.header_pos === 0) {
             // Build up headers
-            if (this.header_lines.length < this.cfg.headers.max_lines) {
+            if (this.header_lines.length < (this.cfg?.headers?.max_lines || 1000)) {
                 if (line[0] === 0x2E) line = line.slice(1); // Strip leading '.'
                 this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'));
             }
@@ -254,14 +249,4 @@ exports.Transaction = Transaction;
 
 exports.createTransaction = (uuid, cfg) => {
     return new Transaction(uuid, cfg);
-}
-
-// sunset after test-fixtures createTransaction() is updated to pass in cfg
-function load_smtp_ini () {
-    const config = require('haraka-config');
-    const cfg = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] });
-    if (!cfg.headers.max_lines) {
-        cfg.headers.max_lines = parseInt(config.get('max_header_lines')) || 1000;
-    }
-    return cfg;
 }

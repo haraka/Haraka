@@ -1,20 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 
+const config = require('haraka-config')
 const transaction = require('../transaction');
 
 function _set_up (done) {
-    this.transaction = transaction.createTransaction();
-    done();
-}
-
-function _tear_down (done) {
-    done();
+    this.transaction = transaction.createTransaction(undefined, config.get('smtp.ini'));
+    done()
 }
 
 exports.transaction = {
     setUp : _set_up,
-    tearDown : _tear_down,
 
     'add_body_filter' (test) {
 
@@ -180,7 +176,6 @@ function write_file_data_to_transaction (test_transaction, filename) {
 
 exports.base64_handling = {
     setUp : _set_up,
-    tearDown: _tear_down,
 
     'varied-base64-fold-lengths-preserve-data' (test) {
 
@@ -230,7 +225,6 @@ exports.base64_handling = {
 // Expected: --abcd
 exports.boundarymarkercorrupt_test = {
     setUp : _set_up,
-    tearDown: _tear_down,
 
     // populate the same email data in transaction (self.transaction.add_data()) and
     // in raw buffer, then compare

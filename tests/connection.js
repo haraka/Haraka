@@ -28,7 +28,7 @@ function _set_up (done) {
 exports.connectionRaw = {
     setUp : _set_up,
     'has remote object' (test) {
-        test.expect(5);
+        test.expect(1);
         test.deepEqual(this.connection.remote, {
             ip: null,
             port: null,
@@ -38,33 +38,23 @@ exports.connectionRaw = {
             is_private: false,
             is_local: false
         });
-        // backwards compat, sunset v3.0.0
-        test.equal(this.connection.remote_ip, null);
-        test.equal(this.connection.remote_port, null);
-        test.equal(this.connection.remote_host, null);
-        test.equal(this.connection.remote_info, null);
         test.done();
     },
     'has local object' (test) {
-        test.expect(5);
+        test.expect(3);
         test.equal(this.connection.local.ip, null);
         test.equal(this.connection.local.port, null);
         test.ok(this.connection.local.host, this.connection.local.host);
-        // backwards compat, sunset v3.0.0
-        test.equal(this.connection.local_ip, null);
-        test.equal(this.connection.local_port, null);
         test.done();
     },
     'has tls object' (test) {
-        test.expect(2);
+        test.expect(1);
         test.deepEqual(this.connection.tls, {
             enabled: false,
             advertised: false,
             verified: false,
             cipher: {},
         });
-        // backwards compat, sunset v3.0.0
-        test.equal(this.connection.using_tls, false);
         test.done();
     },
     'get_capabilities' (test) {
@@ -109,18 +99,6 @@ exports.connectionRaw = {
         test.equal('', this.connection.queue_msg('hello'));
         test.done();
     },
-    'has legacy connection properties' (test) {
-        test.expect(4);
-        this.connection.set('remote', 'ip', '172.16.15.1');
-        this.connection.set('hello', 'verb', 'EHLO');
-        this.connection.set('tls', 'enabled', true);
-
-        test.equal('172.16.15.1', this.connection.remote_ip);
-        test.equal(null, this.connection.remote_port);
-        test.equal('EHLO', this.connection.greeting);
-        test.equal(true, this.connection.using_tls);
-        test.done();
-    },
     'has normalized connection properties' (test) {
         test.expect(5);
         this.connection.set('remote', 'ip', '172.16.15.1');
@@ -138,12 +116,6 @@ exports.connectionRaw = {
         test.expect(2);
         test.equal(false, this.connection.remote.is_private);
         test.equal(false, this.connection.remote.is_local);
-        test.done();
-    },
-    'has legacy proxy property set' (test) {
-        test.expect(1);
-        this.connection.set('proxy', 'ip', '172.16.15.1');
-        test.equal('172.16.15.1', this.connection.haproxy_ip);
         test.done();
     },
     'has normalized proxy properties, default' (test) {

@@ -18,7 +18,7 @@ function _setup (done) {
     this.hmail = { todo: { notes: new Notes() } };
 
     this.connection = new fixtures.connection.createConnection();
-    this.connection.transaction = new fixtures.transaction.createTransaction();
+    this.connection.init_transaction();
 
     done();
 }
