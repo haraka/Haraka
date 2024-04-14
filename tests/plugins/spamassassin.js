@@ -14,7 +14,7 @@ function _set_up (done) {
     };
 
     this.connection = fixtures.connection.createConnection();
-    this.connection.transaction = fixtures.transaction.createTransaction()
+    this.connection.init_transaction()
 
     done();
 }

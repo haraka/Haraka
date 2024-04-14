@@ -24,21 +24,20 @@ const _qfile = exports.qfile = require('./qfile');
 
 const { queue_dir, temp_fail_queue, delivery_queue } = queuelib;
 
+const smtp_ini = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] })
+
 exports.temp_fail_queue = temp_fail_queue;
 exports.delivery_queue = delivery_queue;
 
 exports.net_utils = net_utils;
 exports.config = config;
 
-exports.get_stats = queuelib.get_stats;
-exports.list_queue = queuelib.list_queue;
-exports.stat_queue = queuelib.stat_queue;
-exports.scan_queue_pids = queuelib.scan_queue_pids;
-exports.flush_queue = queuelib.flush_queue;
-exports.load_pid_queue = queuelib.load_pid_queue;
-exports.ensure_queue_dir = queuelib.ensure_queue_dir;
-exports.load_queue = queuelib.load_queue;
-exports.stats = queuelib.stats;
+const qlfns = ['get_stats', 'list_queue', 'stat_queue', 'scan_queue_pids', 'flush_queue',
+    'load_pid_queue', 'ensure_queue_dir', 'load_queue', 'stats'
+]
+for (const n of qlfns) {
+    exports[n] = queuelib[n];
+}
 
 process.on('message', msg => {
     if (!msg.event) return
@@ -59,30 +58,24 @@ process.on('message', msg => {
     // ignores the message
 });
 
-exports.send_email = function () {
+exports.send_email = function (from, to, contents, next, options = {}) {
 
     if (arguments.length === 2) {
         logger.logdebug("[outbound] Sending email as a transaction");
         return this.send_trans_email(arguments[0], arguments[1]);
     }
 
-    let from = arguments[0];
-    let to   = arguments[1];
-    let contents = arguments[2];
-    const next = arguments[3];
-    const options = arguments[4] || {};
-
-    const dot_stuffed = options.dot_stuffed ? options.dot_stuffed : false;
-    const notes = options.notes ? options.notes : null;
-    const origin = options.origin ? options.origin : null;
+    const dot_stuffed = options.dot_stuffed ?? false;
+    const notes = options.notes ?? null;
+    const origin = options.origin ?? null;
 
     logger.loginfo("[outbound] Sending email via params", origin);
 
-    const transaction = trans.createTransaction();
+    const transaction = trans.createTransaction(null, smtp_ini);
 
     logger.loginfo(`[outbound] Created transaction: ${transaction.uuid}`, origin);
 
-    //Adding notes passed as parameter
+    // Adding notes passed as parameter
     if (notes) {
         transaction.notes = notes;
     }

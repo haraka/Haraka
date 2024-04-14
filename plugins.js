@@ -312,7 +312,7 @@ plugins.load_plugins = override => {
         plugin_list = exports.config.get('plugins', 'list');
     }
 
-    plugin_list.forEach(plugin => {
+    for (const plugin of plugin_list) {
         if (plugin.startsWith('haraka-plugin-')) plugin = plugin.substr(14)
         if (plugins.deprecated[plugin]) {
             logger.lognotice(`the plugin ${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
@@ -321,7 +321,7 @@ plugins.load_plugins = override => {
         else {
             plugins.load_plugin(plugin);
         }
-    });
+    };
 
     plugins.plugin_list = Object.keys(plugins.registered_plugins);
 
