@@ -1,16 +1,24 @@
 
 ### Unreleased
 
-#### Changed
+#### Added
 
 - doc: add CONTRIBUTORS #3312
+
+#### Changed
+
+- transaction: init with conn.init_transaction, always pass in cfg #3315
 - check for local_mx only when default route is used #3307
 - test: add a connection.response test case with DSN #3305
 - deps: bump all versions to latest #3303
 - auth_base: enable disabling constrain_sender at runtime #3298
 - connection: support IPv6 when setting remote.is_private #3295
+  - in setTLS, replace forEach with for...of
+  - NOTE: remove a handful of 3.0 sunset property names
 - outbound/mx_lookup: make it async/await
 - outbound: emit log message when ignoring local MX
+- outbound: pass in config when initiating txn
+- outbound: minor es6 updates
 
 #### Fixed
 
