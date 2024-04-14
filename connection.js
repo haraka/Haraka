@@ -223,11 +223,10 @@ class Connection {
     setTLS (obj) {
         this.set('hello', 'host', undefined);
         this.set('tls',   'enabled', true);
-        const options = ['cipher','verified','verifyError','peerCertificate'];
-        options.forEach(t => {
+        for (const t of ['cipher','verified','verifyError','peerCertificate']) {
             if (obj[t] === undefined) return;
             this.set('tls', t, obj[t]);
-        })
+        }
         // prior to 2017-07, authorized and verified were both used. Verified
         // seems to be the more common and has the property updated in the
         // tls object. However, authorized has been up-to-date in the notes. Store
@@ -272,22 +271,6 @@ class Connection {
                 this.set('remote.is_private', net_utils.is_private_ip(this.remote.ip));
             }
         }
-
-        // sunset 3.0.0
-        if (prop_str === 'hello.verb') {
-            this.greeting = val;
-        }
-        else if (prop_str === 'tls.enabled') {
-            this.using_tls = val;
-        }
-        else if (prop_str === 'proxy.ip') {
-            this.haproxy_ip = val;
-        }
-        else {
-            const legacy_name = prop_str.split('.').join('_');
-            this[legacy_name] = val;
-        }
-        // /sunset
     }
     get (prop_str) {
         return prop_str.split('.').reduce((prev, curr) => {
@@ -638,7 +621,6 @@ class Connection {
         this.client.end();
     }
     get_capabilities () {
-
         return [];
     }
     tran_uuid () {

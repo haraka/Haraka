@@ -74,7 +74,7 @@
   },
   "devDependencies": {
     "nodeunit-x": "^0.16.0",
-    "haraka-test-fixtures": "^1.3.3",
+    "haraka-test-fixtures": "^1.3.7",
     "mock-require": "^3.0.3",
     "eslint-plugin-haraka": "^1.0.15",
     "nodemailer": "^6.9.13"
