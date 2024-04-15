@@ -353,6 +353,8 @@ plugins.deprecated = {
     'data.noreceived'     : 'headers',
     'data.rfc5322_header_checks': 'headers',
     'data.headers'        : 'headers',
+    'dkim_sign'           : 'dkim',
+    'dkim_verify'         : 'dkim',
     'data.uribl'          : 'uribl',
     'dnsbl'               : 'dns-list',
     'dnswl'               : 'dns-list',

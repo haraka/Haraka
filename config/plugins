@@ -60,7 +60,7 @@ headers
 #attachment
 #clamd
 #spamassassin
-#dkim_sign
+#dkim
 #limit
 
 # QUEUE
