@@ -9,6 +9,7 @@
 
 - transaction: init with conn.init_transaction, always pass in cfg #3315
 - check for local_mx only when default route is used #3307
+- new NPM plugin dns-list, repackages dnsbl, dnswl, backscatterer #3313
 - test: add a connection.response test case with DSN #3305
 - deps: bump all versions to latest #3303
 - auth_base: enable disabling constrain_sender at runtime #3298

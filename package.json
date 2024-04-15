@@ -53,6 +53,7 @@
     "haraka-plugin-asn": "^2.0.2",
     "haraka-plugin-auth-ldap": "^1.1.0",
     "haraka-plugin-dcc": "^1.0.2",
+    "haraka-plugin-dns-list": "^1.1.0",
     "haraka-plugin-elasticsearch": "^8.0.2",
     "haraka-plugin-fcrdns": "^1.1.0",
     "haraka-plugin-graph": "^1.0.5",
