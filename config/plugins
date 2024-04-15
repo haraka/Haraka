@@ -23,8 +23,8 @@
 # geoip
 # asn
 # fcrdns
-# block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
-dnsbl
+# block & allow lists (see config/dns-list.ini)
+dns-list
 
 # HELO
 #early_talker
