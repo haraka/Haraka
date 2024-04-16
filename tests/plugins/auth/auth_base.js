@@ -1,5 +1,6 @@
 'use strict';
 
+const { Address } = require('address-rfc2821');
 const fixtures     = require('haraka-test-fixtures');
 const utils        = require('haraka-utils');
 
@@ -459,5 +460,46 @@ exports.hexi = {
         test.equal(this.plugin.hexi(512), 200);
         test.equal(this.plugin.hexi(8), 8);
         test.done();
+    },
+}
+
+exports.constrain_sender = {
+    setUp : _set_up,
+    'constrain_sender, domain match' (test) {
+        this.mfrom = new Address('user@example.com')
+        this.connection.results.add({name: 'auth'}, { user: 'user@example.com' })
+        test.expect(1);
+        this.plugin.constrain_sender((resCode) => {
+                test.equal(resCode, undefined)
+                test.done();
+            },
+            this.connection,
+            [this.mfrom],
+        )
+    },
+    'constrain_sender, domain mismatch' (test) {
+        this.mfrom = new Address('user@example.net')
+        this.connection.results.add({name: 'auth'}, { user: 'user@example.com' })
+        test.expect(2);
+        this.plugin.constrain_sender((resCode, denyMsg) => {
+                test.equal(resCode, DENY)
+                test.ok(denyMsg)
+                test.done();
+            },
+            this.connection,
+            [this.mfrom],
+        )
+    },
+    'constrain_sender, no domain' (test) {
+        this.mfrom = new Address('user@example.com')
+        this.connection.results.add({name: 'auth'}, { user: 'user' })
+        test.expect(1);
+        this.plugin.constrain_sender((resCode) => {
+                test.equal(resCode, undefined)
+                test.done();
+            },
+            this.connection,
+            [this.mfrom],
+        )
     },
 }

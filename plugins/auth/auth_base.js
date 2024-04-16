@@ -246,7 +246,7 @@ exports.constrain_sender = function (next, connection, params) {
     const au = connection.results.get('auth')?.user
     if (!au) return next()
 
-    const ad = /@/.test(au) ? au.split('@').pop() : au
+    const ad = /@/.test(au) ? au.split('@').pop() : null
     const ed = params[0].host
 
     if (!ad || !ed) return next()
