@@ -62,6 +62,7 @@ Create a PR adding yours to this list.
 | [Limit][url-limit]          | Apply many types of limits to SMTP connections |
 | [log.elasticsearch][url-elastic]  | Store message metadata in Elasticsearch |
 | [log reader][url-logreader]       | extract log entries from the haraka log file |
+| [mailauth][url-mailauth]          | Email Auth (SPF, DKIM, DMARC, ARC, & BIMI) |
 | [syslog][url-syslog]              | Log to syslog |
 | [mail_from.is_resolvable][url-mfres]  | Verifies the MAIL FROM domain resolves to a MX |
 | [messagesniffer][url-msgsniff]    | Anti-spam via [MessageSniffer][url-ms] |
@@ -192,3 +193,4 @@ Create a PR adding yours to this list.
 [mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
 [url-outbound-logger]: https://github.com/mr-karan/haraka-plugin-outbound-logger
 [url-kafka]: https://github.com/benjamonnguyen/haraka-plugin-queue-kafka
+[url-mailauth]: https://www.npmjs.com/package/haraka-plugin-mailauth

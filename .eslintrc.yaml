@@ -1,16 +1,12 @@
 env:
   es6: true
   node: true
-  es2020: true
+  es2022: true
 
-plugins:
-  - haraka
-
-root: true
+extends: ['@haraka']
 
 rules:
   semi-style: [ error, last ]
   prefer-template: "warn"
   no-unneeded-ternary: 1
-
-extends: ["eslint:recommended", "plugin:haraka/recommended"]
+  no-unused-vars: 1

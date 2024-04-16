@@ -146,7 +146,6 @@ function setupBaseConfig (confPath) {
     utils.copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'));
     utils.copyFile(path.join(base, 'config', 'log.ini'),  path.join(confPath, 'log.ini'));
     utils.copyFile(path.join(base, 'config', 'plugins'),  path.join(confPath, 'plugins'));
-    utils.copyDir(path.join(base, 'config', 'dkim'), path.join(confPath, 'dkim'));
 }
 
 function setupRequire () {

@@ -78,7 +78,7 @@
     "nodeunit-x": "^0.16.0",
     "haraka-test-fixtures": "^1.3.7",
     "mock-require": "^3.0.3",
-    "eslint-plugin-haraka": "^1.0.16",
+    "@haraka/eslint-config": "^1.1.3",
     "nodemailer": "^6.9.13"
   },
   "bugs": {
@@ -87,13 +87,12 @@
   },
   "bin": {
     "haraka": "./bin/haraka",
-    "dkimverify": "./bin/dkimverify",
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
     "test": "node run_tests",
-    "lint": "npx eslint@^8 *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka bin/dkimverify",
-    "lintfix": "npx eslint@^8 --fix *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka bin/dkimverify",
+    "lint": "npx eslint@^8 *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka",
+    "lintfix": "npx eslint@^8 --fix *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka",
     "versions": "npx dependency-version-checker check"
   }
 }
