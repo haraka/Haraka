@@ -15,6 +15,7 @@
 - deps: bump all versions to latest #3303
 - when using message-stream, don't send default options #3290
 - auth_base: enable disabling constrain_sender at runtime #3298
+- auth_base: skip constrain_sender when auth user has no domain #3319
 - connection: support IPv6 when setting remote.is_private #3295
   - in setTLS, replace forEach with for...of
   - NOTE: remove a handful of 3.0 sunset property names #3315
