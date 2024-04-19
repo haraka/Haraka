@@ -49,11 +49,6 @@ Within `tls.ini` you can specify global options for the values `ciphers`, `minVe
 ciphers=!DES
 ```
 
-* `ipv6_enabled`
-
-When this has a "true" value inside (usually a `1`), it defaults to an 'AAAA'
-lookup first for each MX record, and uses those hosts to send email via.
-
 * `always_split`
 
 Default: false. By default, Haraka groups message recipients by domain so that

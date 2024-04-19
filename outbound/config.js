@@ -11,7 +11,6 @@ function load_config () {
             '-disabled',
             '-always_split',
             '+enable_tls',
-            '-ipv6_enabled',
             '-local_mx_ok',
         ],
     }, () => {
@@ -36,9 +35,6 @@ function load_config () {
     }
     if (!cfg.connect_timeout) {
         cfg.connect_timeout = 30;
-    }
-    if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
-        cfg.ipv6_enabled = true;
     }
     if (!cfg.received_header) {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';

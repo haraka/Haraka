@@ -61,11 +61,6 @@ process.on('message', msg => {
 
 exports.send_email = function (from, to, contents, next, options = {}) {
 
-    if (arguments.length === 2) {
-        logger.debug(exports, "Sending email as a transaction");
-        return this.send_trans_email(arguments[0], arguments[1]);
-    }
-
     const dot_stuffed = options.dot_stuffed ?? false;
     const notes = options.notes ?? null;
     const origin = options.origin ?? exports;

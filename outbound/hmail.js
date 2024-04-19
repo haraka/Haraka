@@ -50,6 +50,7 @@ class HMailItem extends events.EventEmitter {
         if (!parts) throw new Error(`Bad filename: ${filename}`);
 
         this.cfg          = obc.cfg;
+        this.obtls        = obtls;
         this.name         = 'outbound';
         this.path         = filePath;
         this.filename     = filename;
@@ -293,7 +294,7 @@ class HMailItem extends events.EventEmitter {
             return this.try_deliver(); // try next MX
         }
 
-        this.force_tls = this.get_force_tls(mx.exchange)
+        this.force_tls = this.get_force_tls(mx)
 
         // Allow transaction notes to set outbound IP
         if (!mx.bind && this.todo.notes.outbound_ip) {
@@ -1350,13 +1351,22 @@ class HMailItem extends events.EventEmitter {
         this.discard();
     }
 
-    get_force_tls (host) {
-        if (!host) return false
+    get_force_tls (mx) {
+        if (!mx.exchange) return false
         if (!obtls.cfg.force_tls_hosts) return false
 
-        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, host)) {
-            this.logdebug(`Forcing TLS for host ${host}`);
+        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, mx.exchange)) {
+            this.logdebug(`Forcing TLS for host ${mx.exchange}`);
             return true;
+        }
+
+        if (mx.from_dns) {
+            // the MX was looked up in DNS and already resolved to IP(s).
+            // This checks the hostname.
+            if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, mx.from_dns)) {
+                this.logdebug(`Forcing TLS for host ${mx.from_dns}`);
+                return true;
+            }
         }
 
         if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, this.todo.domain)) {
