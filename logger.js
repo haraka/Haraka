@@ -9,7 +9,6 @@ const constants = require('haraka-constants');
 
 let plugins;
 let connection;
-let outbound;
 
 const regex = /(^$|[ ="\\])/;
 const escape_replace_regex = /["\\]/g;
@@ -235,14 +234,16 @@ logger._init_timestamps = function () {
 
 logger._init();
 
-logger.log_if_level = (level, key, plugin) => function () {
-    if (logger.loglevel < logger[key]) { return; }
+logger.log_if_level = (level, key, origin) => function () {
+    if (logger.loglevel < logger[key]) return;
+
     let logobj = {
         level,
         uuid: '-',
-        origin: (plugin || 'core'),
+        origin: (origin || 'core'),
         message: ''
     };
+
     for (const data of arguments) {
         if (typeof data !== 'object') {
             logobj.message += (data);
@@ -260,15 +261,7 @@ logger.log_if_level = (level, key, plugin) => function () {
         }
         else if (data.name) {
             logobj.origin = data.name;
-        }
-        else if (data instanceof outbound.HMailItem) {
-            logobj.origin = 'outbound';
-            if (data.todo) {
-                if (data.todo.uuid) logobj.uuid = data.todo.uuid;
-                if (data.todo.client_uuid) {    // dirty hack
-                    logobj.origin = `outbound] [${data.todo.client_uuid}`;
-                }
-            }
+            if (data.todo?.uuid) logobj.uuid = data.todo.uuid;
         }
         else if (
             logger.format === logger.formats.LOGFMT && data.constructor === Object) {
@@ -313,14 +306,14 @@ logger.log_if_level = (level, key, plugin) => function () {
     return true;
 }
 
-logger.add_log_methods = (object, plugin) => {
-    if (!object) return;
-    if (typeof(object) !== 'object') return;
+logger.add_log_methods = (object, logName) => {
+    if (!object || typeof(object) !== 'object') return;
 
-    for (const level in logger.levels) {
-        const fname = `log${level.toLowerCase()}`;
-        if (object[fname]) continue;  // already added
-        object[fname] = logger.log_if_level(level, `LOG${level}`, plugin);
+    for (const level of ['DATA','PROTOCOL','DEBUG','INFO','NOTICE','WARN','ERROR','CRIT','ALERT','EMERG']) {
+        for (const fname of [level.toLowerCase(), `log${level.toLowerCase()}`]) {
+            if (object[fname]) continue;  // already added
+            object[fname] = logger.log_if_level(level, `LOG${level}`, logName);
+        }
     }
 }
 
@@ -329,4 +322,3 @@ logger.add_log_methods(logger);
 // load these down here so it sees all the logger methods compiled above
 plugins = require('./plugins');
 connection = require('./connection');
-outbound = require('./outbound');

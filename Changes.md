@@ -22,7 +22,10 @@
 - outbound/mx_lookup: make it async/await
 - outbound: emit log message when ignoring local MX #3285
 - outbound: pass in config when initiating txn #3315
-- outbound: minor es6 updates #3315
+- outbound: minor es6 updates #3315, #33NN
+- outbound: logging message redundancy reduction
+  - was: [-] [core] [outbound] Failed to get socket: Outbound connection error: Error: connect ECONNREFUSED 172.16.16.14:25
+  - now: [-] [core] [outbound] Failed to get socket: connect ECONNREFUSED 172.16.16.14:25
 
 #### Fixed
 

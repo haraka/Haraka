@@ -29,6 +29,7 @@ const smtp_ini = config.get('smtp.ini', { booleans: [ '+headers.add_received' ] 
 exports.temp_fail_queue = temp_fail_queue;
 exports.delivery_queue = delivery_queue;
 
+exports.name = 'outbound';
 exports.net_utils = net_utils;
 exports.config = config;
 
@@ -51,7 +52,7 @@ process.on('message', msg => {
         return;
     }
     if (msg.event === 'outbound.shutdown') {
-        logger.loginfo("[outbound] Shutting down temp fail queue");
+        logger.loginfo(exports, "Shutting down temp fail queue");
         temp_fail_queue.shutdown();
         return;
     }
@@ -61,7 +62,7 @@ process.on('message', msg => {
 exports.send_email = function (from, to, contents, next, options = {}) {
 
     if (arguments.length === 2) {
-        logger.logdebug("[outbound] Sending email as a transaction");
+        logger.logdebug(exports, "Sending email as a transaction");
         return this.send_trans_email(arguments[0], arguments[1]);
     }
 
@@ -69,11 +70,11 @@ exports.send_email = function (from, to, contents, next, options = {}) {
     const notes = options.notes ?? null;
     const origin = options.origin ?? null;
 
-    logger.loginfo("[outbound] Sending email via params", origin);
+    logger.loginfo(exports, "Sending email via params", origin);
 
     const transaction = trans.createTransaction(null, smtp_ini);
 
-    logger.loginfo(`[outbound] Created transaction: ${transaction.uuid}`, origin);
+    logger.loginfo(exports, `Created transaction: ${transaction.uuid}`, origin);
 
     // Adding notes passed as parameter
     if (notes) {
@@ -192,10 +193,10 @@ function get_deliveries (transaction) {
     const deliveries = [];
 
     if (obc.cfg.always_split) {
-        logger.logdebug({name: "outbound"}, "always split");
-        transaction.rcpt_to.forEach(rcpt => {
+        logger.logdebug(exports, "always split");
+        for (const rcpt of transaction.rcpt_to) {
             deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
-        });
+        }
         return deliveries;
     }
 
@@ -216,16 +217,16 @@ exports.send_trans_email = function (transaction, next) {
 
     // add potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
-        logger.loginfo("[outbound] Adding missing Message-Id header");
+        logger.loginfo(exports, "Adding missing Message-Id header");
         transaction.add_header('Message-Id', `<${transaction.uuid}@${net_utils.get_primary_host_name()}>`);
     }
     if (transaction.header.get('Message-Id') === '<>') {
-        logger.loginfo("[outbound] Replacing empty Message-Id header");
+        logger.loginfo(exports, "Replacing empty Message-Id header");
         transaction.remove_header('Message-Id');
         transaction.add_header('Message-Id', `<${transaction.uuid}@${net_utils.get_primary_host_name()}>`);
     }
     if (!transaction.header.get_all('Date').length) {
-        logger.loginfo("[outbound] Adding missing Date header");
+        logger.loginfo(exports, "Adding missing Date header");
         transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
@@ -237,7 +238,7 @@ exports.send_trans_email = function (transaction, next) {
 
     logger.add_log_methods(connection);
     if (!transaction.results) {
-        logger.logdebug('adding results store');
+        logger.logdebug(exports, 'adding results store');
         transaction.results = new ResultStore(connection);
     }
 
@@ -279,7 +280,7 @@ exports.send_trans_email = function (transaction, next) {
 }
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
-    logger.loginfo(`[outbound] Transaction delivery for domain: ${todo.domain}`);
+    logger.loginfo(exports, `Transaction delivery for domain: ${todo.domain}`);
     const fname = _qfile.name();
     const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
     const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
@@ -288,7 +289,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         const dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, err => {
             if (err) {
-                logger.logerror(`[outbound] Unable to rename tmp file!: ${err}`);
+                logger.logerror(exports, `Unable to rename tmp file!: ${err}`);
                 fs.unlink(tmp_path, () => {});
                 cb("Queue error");
             }
@@ -301,7 +302,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     })
 
     ws.on('error', err => {
-        logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
+        logger.logerror(exports, `Unable to write queue file (${fname}): ${err}`);
         ws.destroy();
         fs.unlink(tmp_path, () => {});
         cb("Queueing failed");
@@ -344,5 +345,3 @@ function exclude_from_json (key, value) {
 exports.TODOItem = TODOItem;
 
 exports.HMailItem = HMailItem;
-
-exports.lookup_mx = require('./mx_lookup').lookup_mx;

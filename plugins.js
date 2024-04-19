@@ -283,18 +283,12 @@ function get_timeout (name) {
 }
 
 // copy logger methods into Plugin:
-for (const key in logger) {
-    if (!/^log\w/.test(key)) continue;
-    // console.log(`adding Plugin.${key} method`);
-    Plugin.prototype[key] = (function (lev) {
+for (const level of ['data','protocol','debug','info','notice','warn','error','crit','alert','emerg']) {
+    Plugin.prototype[`log${level}`] = (function (level) {
         return function () {
-            const args = [this];
-            for (let i=0, l=arguments.length; i<l; i++) {
-                args.push(arguments[i]);
-            }
-            logger[lev].apply(logger, args);
+            logger[level].apply(logger, [ this, ...arguments ]);
         };
-    })(key);
+    })(`log${level}`);
 }
 
 const plugins = exports;

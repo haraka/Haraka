@@ -38,7 +38,7 @@ exports.newMockHMailItem = (outbound_context, test, options, callback) => {
 /**
  * Creates a HMailItem instance for testing purpose
  *
- * @param outbound_context: The context of the outbound.js, e.g. from require('nodeunit').utils.sandbox("outbound.js")
+ * @param outbound_context: The context of outbound, e.g. from require('outbound/index.js')
  * @param options
  * @param callback(err, hmail)
  */
