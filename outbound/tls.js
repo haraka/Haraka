@@ -70,8 +70,16 @@ class OutboundTLS {
     }
 
     get_tls_options (mx) {
-        if (net.isIP(mx.exchange)) return this.cfg
-        return Object.assign(this.cfg, {servername: mx.exchange});
+        // do NOT set servername to an IP address
+        if (net.isIP(mx.exchange)) {
+            // when mx.exchange looked up in DNS, from_dns has the hostname
+            if (mx.from_dns) return { ...this.cfg, servername: mx.from_dns }
+            return { ...this.cfg }
+        }
+        else {
+            // mx.exchange is a hostname
+            return { ...this.cfg, servername: mx.exchange }
+        }
     }
 
     // Check for if host is prohibited from TLS negotiation
