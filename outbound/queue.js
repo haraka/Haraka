@@ -80,18 +80,18 @@ exports.load_queue = pid => {
     exports.delete_dot_files();
 
     exports._load_cur_queue(pid, exports._add_file, () => {
-        logger.loginfo(exports, `[pid: ${pid}] ${delivery_queue.length()} files in my delivery queue`);
-        logger.loginfo(exports, `[pid: ${pid}] ${load_queue.length()} files in my load queue`);
-        logger.loginfo(exports, `[pid: ${pid}] ${temp_fail_queue.length()} files in my temp fail queue`);
+        logger.info(exports, `[pid: ${pid}] ${delivery_queue.length()} files in my delivery queue`);
+        logger.info(exports, `[pid: ${pid}] ${load_queue.length()} files in my load queue`);
+        logger.info(exports, `[pid: ${pid}] ${temp_fail_queue.length()} files in my temp fail queue`);
     });
 }
 
 exports._load_cur_queue = (pid, iteratee, cb) => {
     const self = exports;
-    logger.loginfo(exports, "Loading outbound queue from ", queue_dir);
+    logger.info(exports, "Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, (err, files) => {
         if (err) {
-            return logger.logerror(exports, `Failed to load queue directory (${queue_dir}): ${err}`);
+            return logger.error(exports, `Failed to load queue directory (${queue_dir}): ${err}`);
         }
 
         self.cur_time = new Date(); // set once so we're not calling it a lot
@@ -102,18 +102,18 @@ exports._load_cur_queue = (pid, iteratee, cb) => {
 
 exports.read_parts = file => {
     if (file.indexOf(_qfile.platformDOT) === 0) {
-        logger.logwarn(exports, `'Skipping' dot-file in queue folder: ${file}`);
+        logger.warn(exports, `'Skipping' dot-file in queue folder: ${file}`);
         return false;
     }
 
     if (file.startsWith('error.')) {
-        logger.logwarn(exports, `'Skipping' error file in queue folder: ${file}`);
+        logger.warn(exports, `'Skipping' error file in queue folder: ${file}`);
         return false;
     }
 
     const parts = _qfile.parts(file);
     if (!parts) {
-        logger.logerror(exports, `Unrecognized file in queue folder: ${file}`);
+        logger.error(exports, `Unrecognized file in queue folder: ${file}`);
         return false;
     }
 
@@ -143,11 +143,11 @@ exports._add_file = (file, cb) => {
     const parts = _qfile.parts(file);
 
     if (parts.next_attempt <= self.cur_time) {
-        logger.logdebug(exports, `File ${file} needs processing now`);
+        logger.debug(exports, `File ${file} needs processing now`);
         load_queue.push(file);
     }
     else {
-        logger.logdebug(exports, `File ${file} needs processing later: ${parts.next_attempt - self.cur_time}ms`);
+        logger.debug(exports, `File ${file} needs processing later: ${parts.next_attempt - self.cur_time}ms`);
         temp_fail_queue.add(file, parts.next_attempt - self.cur_time, () => { load_queue.push(file);});
     }
 
@@ -162,10 +162,10 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
     let stat_loaded = 0;
 
     if (searchPid) {
-        logger.loginfo(exports, `Grabbing queue files for pid: ${pid}`);
+        logger.info(exports, `Grabbing queue files for pid: ${pid}`);
     }
     else {
-        logger.loginfo(exports, "Loading the queue...");
+        logger.info(exports, "Loading the queue...");
     }
 
     async.map(input_files, (file, cb) => {
@@ -177,7 +177,7 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
 
             self.rename_to_actual_pid(file, parts, (error, renamed_file) => {
                 if (error) {
-                    logger.logerror(exports, `${error}`);
+                    logger.error(exports, `${error}`);
                     return cb();
                 }
 
@@ -192,9 +192,9 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
         }
 
     }, (err, results) => {
-        if (err) logger.logerr(exports, `[pid: ${pid}] ${err}`);
-        if (searchPid) logger.loginfo(exports, `[pid: ${pid}] ${stat_renamed} files old PID queue fixed up`);
-        logger.logdebug(exports, `[pid: ${pid}] ${stat_loaded} files loaded`);
+        if (err) logger.err(exports, `[pid: ${pid}] ${err}`);
+        if (searchPid) logger.info(exports, `[pid: ${pid}] ${stat_renamed} files old PID queue fixed up`);
+        logger.debug(exports, `[pid: ${pid}] ${stat_loaded} files loaded`);
 
         async.map(results.filter((i) => i), iteratee, callback);
     });
@@ -246,7 +246,7 @@ exports._list_file = (file, cb) => {
 exports.flush_queue = (domain, pid) => {
     if (domain) {
         exports.list_queue((err, qlist) => {
-            if (err) return logger.logerror(exports, `Failed to load queue: ${err}`);
+            if (err) return logger.error(exports, `Failed to load queue: ${err}`);
             qlist.forEach(todo => {
                 if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
                 if (pid && todo.pid != pid) return;
@@ -261,7 +261,7 @@ exports.flush_queue = (domain, pid) => {
 }
 
 exports.load_pid_queue = pid => {
-    logger.loginfo(exports, `Loading queue for pid: ${pid}`);
+    logger.info(exports, `Loading queue for pid: ${pid}`);
     exports.load_queue(pid);
 }
 
@@ -270,7 +270,7 @@ exports.ensure_queue_dir = () => {
     // this code is only run at start-up.
     if (fs.existsSync(queue_dir)) return;
 
-    logger.logdebug(exports, `Creating queue directory ${queue_dir}`);
+    logger.debug(exports, `Creating queue directory ${queue_dir}`);
     try {
         fs.mkdirSync(queue_dir, 493); // 493 == 0755
         const cfg = config.get('smtp.ini');
@@ -287,21 +287,19 @@ exports.ensure_queue_dir = () => {
     }
     catch (err) {
         if (err.code !== 'EEXIST') {
-            logger.logerror(exports, `Error creating queue directory: ${err}`);
+            logger.error(exports, `Error creating queue directory: ${err}`);
             throw err;
         }
     }
 }
 
 exports.delete_dot_files = () => {
-    const files = fs.readdirSync(queue_dir);
-
-    files.forEach(file => {
+    for (const file of fs.readdirSync(queue_dir)) {
         if (file.indexOf(_qfile.platformDOT) === 0) {
-            logger.logwarn(exports, `Removing left over dot-file: ${file}`);
+            logger.warn(exports, `Removing left over dot-file: ${file}`);
             return fs.unlinkSync(path.join(queue_dir, file));
         }
-    });
+    }
 }
 
 exports._add_hmail = hmail => {
@@ -325,16 +323,16 @@ exports.scan_queue_pids = cb => {
 
     fs.readdir(queue_dir, (err, files) => {
         if (err) {
-            logger.logerror(exports, `Failed to load queue directory (${queue_dir}): ${err}`);
+            logger.error(exports, `Failed to load queue directory (${queue_dir}): ${err}`);
             return cb(err);
         }
 
         const pids = {};
 
-        files.forEach(file => {
+        for (const file of files) {
             const parts = self.read_parts(file);
             if (parts) pids[parts.pid] = true;
-        });
+        }
 
         return cb(null, Object.keys(pids));
     });

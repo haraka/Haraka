@@ -20,15 +20,20 @@
   - in setTLS, replace forEach with for...of
   - NOTE: remove a handful of 3.0 sunset property names #3315
 - outbound/mx_lookup: make it async/await
+- outbound/mx_lookup: deleted. Logic moved into net_utils #3322
 - outbound: emit log message when ignoring local MX #3285
 - outbound: pass in config when initiating txn #3315
-- outbound: minor es6 updates #3315, #33NN
+- outbound: minor es6 updates #3315, #3322
 - outbound: logging message redundancy reduction
   - was: [-] [core] [outbound] Failed to get socket: Outbound connection error: Error: connect ECONNREFUSED 172.16.16.14:25
   - now: [-] [core] [outbound] Failed to get socket: connect ECONNREFUSED 172.16.16.14:25
+- logger(connection, plugins, hmail), refactor copying in log functions #3322
+- logger: don't load outbound (race condition). Instead, set outbound.name property #3322
 
 #### Fixed
 
+- fix(logger): refactor add_log_methods, don't set extra `loglog*` names
+- doc(connection): update rfc7001 URL
 - fix(bin/haraka): list NPM installed plugin #3310
 - fix(bin/haraka): get hook list from doc/Plugins #3306
 - fix(outbound): call cb even if no MX is found #3294

@@ -317,10 +317,10 @@ class HMailItem extends events.EventEmitter {
         client_pool.get_client(port, host, mx.bind, !!mx.path, (err, socket) => {
             if (err) {
                 if (/connection timed out|connect ECONNREFUSED/.test(err)) {
-                    logger.lognotice(`[outbound] Failed to get socket: ${err}`);
+                    logger.notice(this, `Failed to get socket: ${err}`);
                 }
                 else {
-                    logger.logerror(`[outbound] Failed to get socket: ${err}`);
+                    logger.error(this, `Failed to get socket: ${err}`);
                 }
 
                 return this.try_deliver(); // try next MX
@@ -887,9 +887,9 @@ class HMailItem extends events.EventEmitter {
         });
 
         if (socket.__fromPool) {
-            logger.logdebug('[outbound] got socket, trying to deliver');
+            logger.debug(this, 'got socket, trying to deliver');
             secured = socket.isEncrypted();
-            logger.logdebug(`[outbound] got ${secured ? 'TLS ' : '' }socket, trying to deliver`);
+            logger.debug(this, `got ${secured ? 'TLS ' : '' }socket, trying to deliver`);
             send_command('MAIL', get_reverse_path_with_params());
         }
     }
@@ -1294,7 +1294,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     temp_fail (err, extra) {
-        logger.logdebug(`Temp fail for: ${err}`);
+        logger.debug(this, `Temp fail for: ${err}`);
         this.num_failures++;
 
         // Test for max failures which is configurable.
@@ -1397,7 +1397,7 @@ class HMailItem extends events.EventEmitter {
         const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
         const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
         function err_handler (err, location) {
-            logger.logerror(`[outbound] Error while splitting to new recipients (${location}): ${err}`);
+            logger.error(this, `Error while splitting to new recipients (${location}): ${err}`);
             hmail.todo.rcpt_to.forEach(rcpt => {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error splitting to new recipients: ${err}`));
             });
@@ -1435,7 +1435,7 @@ class HMailItem extends events.EventEmitter {
         }
 
         ws.on('error', err => {
-            logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
+            logger.error(this, `Unable to write queue file (${fname}): ${err}`);
             ws.destroy();
             hmail.todo.rcpt_to.forEach(rcpt => {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error re-queueing some recipients: ${err}`));

@@ -1784,7 +1784,7 @@ class Connection {
                 });
                 break;
             default:
-                outbound.send_email(this.transaction, (retval2, msg2) => {
+                outbound.send_trans_email(this.transaction, (retval2, msg2) => {
                     if (!msg2) msg2 = this.queue_msg(retval2, msg);
                     switch (retval2) {
                         case constants.ok:

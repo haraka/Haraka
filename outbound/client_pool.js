@@ -15,7 +15,7 @@ function _create_socket (name, port, host, local_addr, is_unix_socket, callback)
     socket.name = name;
     socket.__uuid = utils.uuid();
     socket.setTimeout(obc.cfg.connect_timeout * 1000);
-    logger.logdebug(exports, `created. host: ${host} port: ${port}`, { uuid: socket.__uuid });
+    logger.debug(exports, `created. host: ${host} port: ${port}`, { uuid: socket.__uuid });
     socket.once('connect', () => {
         socket.removeAllListeners('error'); // these get added after callback
         socket.removeAllListeners('timeout');
@@ -44,7 +44,7 @@ exports.get_client = function (port = 25, host = 'localhost', local_addr, is_uni
 }
 
 exports.release_client = (socket, port, host, local_addr, error) => {
-    logger.logdebug(exports, `release_client: ${socket.__uuid} ${host}:${port} to ${local_addr}`);
+    logger.debug(exports, `release_client: ${socket.__uuid} ${host}:${port} to ${local_addr}`);
     socket.removeAllListeners();
     socket.destroy();
 }
