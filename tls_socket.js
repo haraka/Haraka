@@ -173,13 +173,13 @@ exports.parse_x509_names = string => {
     // of names extracted from the Subject CN and the v3 Subject Alternate Names
     const names_found = [];
 
-    // log.loginfo(string);
+    // log.info(string);
 
     let match = /Subject:.*?CN=([^/\s]+)/.exec(string);
     if (match) {
-        // log.loginfo(match[0]);
+        // log.info(match[0]);
         if (match[1]) {
-            // log.loginfo(match[1]);
+            // log.info(match[1]);
             names_found.push(match[1]);
         }
     }
@@ -189,7 +189,7 @@ exports.parse_x509_names = string => {
         let dns_name;
         const re = /DNS:([^,]+)[,\n]/g;
         while ((dns_name = re.exec(match[0])) !== null) {
-            // log.loginfo(dns_name);
+            // log.info(dns_name);
             if (names_found.includes(dns_name[1])) continue; // ignore dupes
             names_found.push(dns_name[1]);
         }
@@ -203,7 +203,7 @@ exports.parse_x509_expire = (file, string) => {
     const dateMatch = /Not After : (.*)/.exec(string);
     if (!dateMatch) return;
 
-    // log.loginfo(dateMatch[1]);
+    // log.info(dateMatch[1]);
     return new Date(dateMatch[1]);
 }
 
@@ -224,7 +224,7 @@ exports.parse_x509 = string => {
 
 exports.load_tls_ini = (opts) => {
 
-    log.loginfo(`loading tls.ini`); // from ${this.config.root_path}`);
+    log.info(`loading tls.ini`); // from ${this.config.root_path}`);
 
     const cfg = exports.config.get('tls.ini', {
         booleans: [
@@ -253,18 +253,18 @@ exports.load_tls_ini = (opts) => {
     if (cfg.mutual_auth_hosts_exclude === undefined) cfg.mutual_auth_hosts_exclude = {};
 
     if (cfg.main.enableOCSPStapling !== undefined) {
-        log.logerror('deprecated setting enableOCSPStapling in tls.ini');
+        log.error('deprecated setting enableOCSPStapling in tls.ini');
         cfg.main.requestOCSP = cfg.main.enableOCSPStapling;
     }
 
     if (ocsp === undefined && cfg.main.requestOCSP) {
         try {
             ocsp = require('ocsp');
-            log.logdebug('ocsp loaded');
+            log.debug('ocsp loaded');
             ocspCache = new ocsp.Cache();
         }
         catch (ignore) {
-            log.lognotice("OCSP Stapling not available.");
+            log.notice("OCSP Stapling not available.");
         }
     }
 
@@ -357,12 +357,12 @@ exports.load_default_opts = () => {
     const cfg = certsByHost['*'];
 
     if (cfg.dhparam && typeof cfg.dhparam === 'string') {
-        log.logdebug(`loading dhparams from ${cfg.dhparam}`);
+        log.debug(`loading dhparams from ${cfg.dhparam}`);
         this.saveOpt('*', 'dhparam', this.config.get(cfg.dhparam, 'binary'));
     }
 
     if (cfg.ca && typeof cfg.ca === 'string') {
-        log.loginfo(`loading CA certs from ${cfg.ca}`);
+        log.info(`loading CA certs from ${cfg.ca}`);
         this.saveOpt('*', 'ca', this.config.get(cfg.ca, 'binary'));
     }
 
@@ -371,7 +371,7 @@ exports.load_default_opts = () => {
     if (!(Array.isArray(cfg.cert))) cfg.cert = [cfg.cert];
 
     if (cfg.key.length != cfg.cert.length) {
-        log.logerror(`number of keys (${cfg.key.length}) not equal to certs (${cfg.cert.length}).`);
+        log.error(`number of keys (${cfg.key.length}) not equal to certs (${cfg.cert.length}).`);
     }
 
     // if key file has already been loaded, it'll be a Buffer.
@@ -381,7 +381,7 @@ exports.load_default_opts = () => {
             if (!keyFileName) return;
             const key = this.config.get(keyFileName, 'binary');
             if (!key) {
-                log.logerror(`tls key ${path.join(this.config.root_path, keyFileName)} could not be loaded.`);
+                log.error(`tls key ${path.join(this.config.root_path, keyFileName)} could not be loaded.`);
             }
             return key;
         })
@@ -393,7 +393,7 @@ exports.load_default_opts = () => {
             if (!certFileName) return;
             const cert = this.config.get(certFileName, 'binary');
             if (!cert) {
-                log.logerror(`tls cert ${path.join(this.config.root_path, certFileName)} could not be loaded.`);
+                log.error(`tls cert ${path.join(this.config.root_path, certFileName)} could not be loaded.`);
             }
             return cert;
         })
@@ -411,7 +411,7 @@ exports.load_default_opts = () => {
 }
 
 function SNICallback (servername, sniDone) {
-    log.logdebug(`SNI servername: ${servername}`);
+    log.debug(`SNI servername: ${servername}`);
 
     if (ctxByHost[servername] === undefined) servername = '*';
 
@@ -443,13 +443,13 @@ exports.get_certs_dir = (tlsDir, done) => {
 
             openssl('x509', parsed.cert, x509args, (e, as_str) => {
                 if (e) {
-                    log.logerror(`BAD TLS in ${file.path}`);
-                    log.logerror(e);
+                    log.error(`BAD TLS in ${file.path}`);
+                    log.error(e);
                 }
 
                 const expire = this.parse_x509_expire(file, as_str);
                 if (expire && expire < new Date()) {
-                    log.logerror(`${file.path} expired on ${expire}`);
+                    log.error(`${file.path} expired on ${expire}`);
                 }
 
                 iter_done(null, {
@@ -464,22 +464,22 @@ exports.get_certs_dir = (tlsDir, done) => {
         },
         (finalErr, certs) => {
 
-            if (finalErr) log.logerror(finalErr);
+            if (finalErr) log.error(finalErr);
 
             if (!certs || !certs.length) {
-                log.loginfo('found 0 TLS certs in config/tls');
+                log.info('found 0 TLS certs in config/tls');
                 return done(null, certs);
             }
 
-            log.loginfo(`found ${certs.length} TLS certs in config/tls`);
+            log.info(`found ${certs.length} TLS certs in config/tls`);
             certs.forEach(cert => {
                 if (undefined === cert) return;
                 if (cert.err) {
-                    log.logerror(`${cert.file} had error: ${cert.err.message}`);
+                    log.error(`${cert.file} had error: ${cert.err.message}`);
                     return;
                 }
 
-                // log.logdebug(cert);  // DANGER: Also logs private key!
+                // log.debug(cert);  // DANGER: Also logs private key!
                 cert.names.forEach(name => {
                     this.applySocketOpts(name);
 
@@ -495,7 +495,7 @@ exports.get_certs_dir = (tlsDir, done) => {
                 })
             })
 
-            // log.loginfo(exports.certsByHost);
+            // log.info(exports.certsByHost);
             done(null, exports.certsByHost);
         })
     })
@@ -508,10 +508,10 @@ exports.getSocketOpts = (name, done) => {
 
     this.get_certs_dir('tls', () => {
         if (certsByHost[name]) {
-            // log.logdebug(certsByHost[name]);
+            // log.debug(certsByHost[name]);
             return done(certsByHost[name]);
         }
-        // log.logdebug(certsByHost['*']);
+        // log.debug(certsByHost['*']);
         done(certsByHost['*']);
     });
 }
@@ -543,12 +543,12 @@ exports.ensureDhparams = done => {
     const filePath = this.cfg.main.dhparam || 'dhparams.pem';
     const fpResolved = path.resolve(exports.config.root_path, filePath);
 
-    log.loginfo(`Generating a 2048 bit dhparams file at ${fpResolved}`);
+    log.info(`Generating a 2048 bit dhparams file at ${fpResolved}`);
 
     const o = spawn('openssl', ['dhparam', '-out', `${fpResolved}`, '2048']);
     o.stdout.on('data', data => {
         // normally empty output
-        log.logdebug(data);
+        log.debug(data);
     })
 
     o.stderr.on('data', data => {
@@ -560,7 +560,7 @@ exports.ensureDhparams = done => {
             return done(`Error code: ${code}`);
         }
 
-        log.loginfo(`Saved to ${fpResolved}`);
+        log.info(`Saved to ${fpResolved}`);
         const content = this.config.get(filePath, 'binary');
 
         this.saveOpt('*', 'dhparam', content);
@@ -570,20 +570,20 @@ exports.ensureDhparams = done => {
 
 exports.addOCSP = server => {
     if (!ocsp) {
-        log.logdebug('addOCSP: not available');
+        log.debug('addOCSP: not available');
         return;
     }
 
     if (server.listenerCount('OCSPRequest') > 0) {
-        log.logdebug('OCSPRequest already listening');
+        log.debug('OCSPRequest already listening');
         return;
     }
 
-    log.logdebug('adding OCSPRequest listener');
+    log.debug('adding OCSPRequest listener');
     server.on('OCSPRequest', (cert, issuer, ocr_cb) => {
-        log.logdebug(`OCSPRequest: ${cert}`);
+        log.debug(`OCSPRequest: ${cert}`);
         ocsp.getOCSPURI(cert, (err, uri) => {
-            log.logdebug(`OCSP Request, URI: ${uri  }, err=${ err}`);
+            log.debug(`OCSP Request, URI: ${uri  }, err=${ err}`);
             if (err) return ocr_cb(err);
             if (uri === null) return ocr_cb();  // not working OCSP server
 
@@ -594,7 +594,7 @@ exports.addOCSP = server => {
                 if (err2) return ocr_cb(err2);
 
                 if (cached) {
-                    log.logdebug(`OCSP cache: ${util.inspect(cached)}`);
+                    log.debug(`OCSP cache: ${util.inspect(cached)}`);
                     return ocr_cb(err2, cached.response);
                 }
 
@@ -603,7 +603,7 @@ exports.addOCSP = server => {
                     ocsp: req.data
                 };
 
-                log.logdebug(`OCSP req:${util.inspect(req)}`);
+                log.debug(`OCSP req:${util.inspect(req)}`);
                 ocspCache.request(req.id, options, ocr_cb);
             })
         })
@@ -615,7 +615,7 @@ exports.shutdown = () => {
 }
 
 function cleanOcspCache () {
-    log.logdebug(`Cleaning ocspCache. How many keys? ${Object.keys(ocspCache.cache).length}`);
+    log.debug(`Cleaning ocspCache. How many keys? ${Object.keys(ocspCache.cache).length}`);
     Object.keys(ocspCache.cache).forEach((key) => {
         clearTimeout(ocspCache.cache[key].timer);
     });
@@ -640,7 +640,7 @@ function createServer (cb) {
         exports.addOCSP(server);
 
         socket.upgrade = cb2 => {
-            log.logdebug('Upgrading to TLS');
+            log.debug('Upgrading to TLS');
 
             socket.clean();
 
@@ -661,7 +661,7 @@ function createServer (cb) {
                     socket.emit('error', exception);
                 })
                 .on('secure', () => {
-                    log.logdebug('TLS secured.');
+                    log.debug('TLS secured.');
                     socket.emit('secure');
                     const cipher = cleartext.getCipher();
                     cipher.version = cleartext.getProtocol();
@@ -739,12 +739,12 @@ function connect (port, host) {
 
         cleartext.on('error', err => {
             if (err.reason) {
-                log.logerror(`client TLS error: ${err}`);
+                log.error(`client TLS error: ${err}`);
             }
         })
 
         cleartext.once('secureConnect', () => {
-            log.logdebug('client TLS secured.');
+            log.debug('client TLS secured.');
             const cipher = cleartext.getCipher();
             cipher.version = cleartext.getProtocol();
             if (cb2) cb2(
@@ -765,7 +765,7 @@ function connect (port, host) {
 
         socket.attach(socket.cleartext);
 
-        log.logdebug('client TLS upgrade in progress, awaiting secured.');
+        log.debug('client TLS upgrade in progress, awaiting secured.');
     }
 
     return socket;

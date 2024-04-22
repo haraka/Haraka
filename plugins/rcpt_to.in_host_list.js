@@ -32,12 +32,12 @@ exports.hook_rcpt = function (next, connection, params) {
 
     const domain = rcpt.host.toLowerCase();
 
-    if (this.in_host_list(domain)) {
+    if (this.in_host_list(domain, connection)) {
         txn.results.add(this, {pass: 'rcpt_to'});
         return next(OK);
     }
 
-    if (this.in_host_regex(domain)) {
+    if (this.in_host_regex(domain, connection)) {
         txn.results.add(this, {pass: 'rcpt_to'});
         return next(OK);
     }

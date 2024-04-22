@@ -32,12 +32,7 @@ exports.bounce_3464 = {
                 done();
             }
             else {
-                fs.mkdir(queue_dir, err => {
-                    if (err) {
-                        return done(err);
-                    }
-                    done();
-                });
+                fs.mkdir(queue_dir, done)
             }
         });
     },
@@ -55,11 +50,8 @@ exports.bounce_3464 = {
                     const curPath = path.resolve(queue_dir, file);
                     fs.unlinkSync(curPath);
                 });
-                done();
             }
-            else {
-                done();
-            }
+            done();
         });
     },
     'test get-mx-deny triggers bounce(...)': test => {
@@ -104,38 +96,24 @@ exports.bounce_3464 = {
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const orig_bounce = HMailItem.prototype.bounce;
             HMailItem.prototype.bounce = function (err, opts) {
-                test.ok(true, 'found_mx({code: dns.NXDOMAIN}): bounce function called');
-                test.equal('5.1.2', this.todo.rcpt_to[0].dsn_status, 'found_mx({code: dns.NXDOMAIN}: dsn status = 5.1.2');
+                test.ok(true, 'get_mx_error({code: dns.NXDOMAIN}): bounce function called');
+                test.equal('5.1.2', this.todo.rcpt_to[0].dsn_status, 'get_mx_error({code: dns.NXDOMAIN}: dsn status = 5.1.2');
             };
-            HMailItem.prototype.found_mx.apply(mock_hmail, [{code: dns.NXDOMAIN}, {}]);
+            HMailItem.prototype.get_mx_error.apply(mock_hmail, [{code: dns.NXDOMAIN}]);
             HMailItem.prototype.bounce = orig_bounce;
             test.done();
         });
     },
-    'test found_mx({code:\'NOMX\'}) triggers bounce(...)': test => {
-        test.expect(2);
-
-        util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
-            const orig_bounce = HMailItem.prototype.bounce;
-            HMailItem.prototype.bounce = function (err, opts) {
-                test.ok(true, 'found_mx({code: "NOMX"}): bounce function called');
-                test.equal('5.1.2', this.todo.rcpt_to[0].dsn_status, 'found_mx({code: "NOMX"}: dsn status = 5.1.2');
-            };
-            HMailItem.prototype.found_mx.apply(mock_hmail, [{code: 'NOMX'}, {}]);
-            HMailItem.prototype.bounce = orig_bounce;
-            test.done();
-        });
-    },
-    'test found_mx({code:\'SOME-OTHER-ERR\'}) triggers temp_fail(...)': test => {
+    'test get_mx_error({code:\'SOME-OTHER-ERR\'}) triggers temp_fail(...)': test => {
         test.expect(2);
 
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const orig_temp_fail = HMailItem.prototype.temp_fail;
             HMailItem.prototype.temp_fail = function (err, opts) {
-                test.ok(true, 'found_mx({code: "SOME-OTHER-ERR"}): temp_fail function called');
-                test.equal('4.1.0', this.todo.rcpt_to[0].dsn_status, 'found_mx({code: "SOME-OTHER-ERR"}: dsn status = 4.1.0');
+                test.ok(true, 'get_mx_error({code: "SOME-OTHER-ERR"}): temp_fail function called');
+                test.equal('4.1.0', this.todo.rcpt_to[0].dsn_status, 'get_mx_error({code: "SOME-OTHER-ERR"}: dsn status = 4.1.0');
             };
-            HMailItem.prototype.found_mx.apply(mock_hmail, [{code: 'SOME-OTHER-ERR'}, {}]);
+            HMailItem.prototype.get_mx_error.apply(mock_hmail, [{code: 'SOME-OTHER-ERR'}, {}]);
             HMailItem.prototype.temp_fail = orig_temp_fail;
             test.done();
         });
@@ -143,14 +121,13 @@ exports.bounce_3464 = {
     'test found_mx(null, [{priority:0,exchange:\'\'}]) triggers bounce(...)': test => {
         test.expect(2);
 
-
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, mock_hmail => {
             const orig_bounce = HMailItem.prototype.bounce;
             HMailItem.prototype.bounce = function (err, opts) {
                 test.ok(true, 'found_mx(null, [{priority:0,exchange:""}]): bounce function called');
                 test.equal('5.1.2', this.todo.rcpt_to[0].dsn_status, 'found_mx(null, [{priority:0,exchange:""}]): dsn status = 5.1.2');
             };
-            HMailItem.prototype.found_mx.apply(mock_hmail, [null, [{priority:0,exchange:''}]]);
+            HMailItem.prototype.found_mx.apply(mock_hmail, [[{priority:0,exchange:''}]]);
             HMailItem.prototype.bounce = orig_bounce;
             test.done();
         });

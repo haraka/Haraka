@@ -30,10 +30,10 @@ exports.version = JSON.parse(
 
 process.on('uncaughtException', err => {
     if (err.stack) {
-        err.stack.split("\n").forEach(line => logger.logcrit(line));
+        err.stack.split("\n").forEach(line => logger.crit(line));
     }
     else {
-        logger.logcrit(`Caught exception: ${JSON.stringify(err)}`);
+        logger.crit(`Caught exception: ${JSON.stringify(err)}`);
     }
     logger.dump_and_exit(1);
 });
@@ -52,7 +52,7 @@ signals.forEach((sig) => {
         const [, filename] = process.argv;
         process.title = path.basename(filename, '.js');
 
-        logger.lognotice(`${sig} received`);
+        logger.notice(`${sig} received`);
         logger.dump_and_exit(() => {
             if (server.cluster?.isMaster) {
                 server.performShutdown();
@@ -65,7 +65,7 @@ signals.forEach((sig) => {
 });
 
 process.on('SIGHUP', () => {
-    logger.lognotice('Flushing the temp fail queue');
+    logger.notice('Flushing the temp fail queue');
     server.flushQueue();
 });
 
@@ -74,7 +74,7 @@ process.on('exit', code => {
     const [, filename] = process.argv;
     process.title = path.basename(filename, '.js');
 
-    logger.lognotice('Shutting down');
+    logger.notice('Shutting down');
     logger.dump_logs();
 });
 
