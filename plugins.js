@@ -128,7 +128,7 @@ class Plugin {
         this.hooks[hook_name] = this.hooks[hook_name] || [];
         this.hooks[hook_name].push(method_name);
 
-        logger.logdebug(`registered hook ${hook_name} to ${this.name}.` +
+        logger.debug(`registered hook ${hook_name} to ${this.name}.` +
                         `${method_name} priority ${priority}`);
     }
 
@@ -195,7 +195,7 @@ class Plugin {
         }
         catch (err) {
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-                logger.logcrit(`Loading plugin ${this.name} failed: ${err}`);
+                logger.crit(`Loading plugin ${this.name} failed: ${err}`);
                 return;
             }
             throw `Loading plugin ${this.name} failed: ${err}`;
@@ -231,9 +231,9 @@ class Plugin {
             vm.runInNewContext(code, sandbox, pp);
         }
         catch (err) {
-            logger.logcrit(`Compiling plugin: ${this.name} failed`);
+            logger.crit(`Compiling plugin: ${this.name} failed`);
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-                logger.logcrit(`Loading plugin ${this.name} failed: `,
+                logger.crit(`Loading plugin ${this.name} failed: `,
                     `${err.message} - will skip this plugin and continue`);
                 return;
             }
@@ -254,7 +254,7 @@ exports.shutdown_plugins = () => {
 
 process.on('message', msg => {
     if (msg.event && msg.event == 'plugins.shutdown') {
-        logger.loginfo("[plugins] Shutting down plugins");
+        logger.info("[plugins] Shutting down plugins");
         exports.shutdown_plugins();
     }
 });
@@ -270,33 +270,26 @@ function plugin_search_paths (prefix, name) {
 function get_timeout (name) {
     let timeout = parseFloat((exports.config.get(`${name}.timeout`)));
     if (isNaN(timeout)) {
-        logger.logdebug(`no timeout in ${name}.timeout`);
+        logger.debug(`no timeout in ${name}.timeout`);
         timeout = parseFloat(exports.config.get('plugin_timeout'));
     }
     if (isNaN(timeout)) {
-        logger.logdebug('no timeout in plugin_timeout');
+        logger.debug('no timeout in plugin_timeout');
         timeout = 30;
     }
 
-    logger.logdebug(`plugin ${name} timeout is: ${timeout}s`);
+    logger.debug(`plugin ${name} timeout is: ${timeout}s`);
     return timeout;
 }
 
-// copy logger methods into Plugin:
-for (const level of ['data','protocol','debug','info','notice','warn','error','crit','alert','emerg']) {
-    Plugin.prototype[`log${level}`] = (function (level) {
-        return function () {
-            logger[level].apply(logger, [ this, ...arguments ]);
-        };
-    })(`log${level}`);
-}
+logger.add_log_methods(Plugin)
 
 const plugins = exports;
 
 plugins.Plugin = Plugin;
 
 plugins.load_plugins = override => {
-    logger.loginfo('Loading plugins');
+    logger.info('Loading plugins');
     let plugin_list;
     if (override) {
         if (!Array.isArray(override)) override = [ override ];
@@ -309,7 +302,7 @@ plugins.load_plugins = override => {
     for (let plugin of plugin_list) {
         if (plugin.startsWith('haraka-plugin-')) plugin = plugin.substr(14)
         if (plugins.deprecated[plugin]) {
-            logger.lognotice(`the plugin ${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
+            logger.notice(`the plugin ${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
             plugins.load_plugin(plugins.deprecated[plugin]);
         }
         else {
@@ -368,7 +361,7 @@ plugins.deprecated = {
 }
 
 plugins.load_plugin = name => {
-    logger.loginfo(`Loading plugin: ${name}`);
+    logger.info(`Loading plugin: ${name}`);
 
     const plugin = plugins._load_and_compile_plugin(name);
     if (plugin) {
@@ -388,7 +381,7 @@ plugins._load_and_compile_plugin = name => {
     if (!plugin.plugin_path) {
         const err = `Loading plugin ${plugin.name} failed: No plugin with this name found`;
         if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.logcrit(err);
+            logger.crit(err);
             return;
         }
         throw err;

@@ -1895,11 +1895,4 @@ exports.createConnection = (client, server, cfg) => {
     return new Connection(client, server, cfg);
 }
 
-// add logger methods to Connection:
-for (const level of ['data','protocol','debug','info','notice','warn','error','crit','alert','emerg']) {
-    Connection.prototype[`log${level}`] = (function (level) {
-        return function () {
-            logger[level].apply(logger, [ this, ...arguments ]);
-        };
-    })(`log${level}`);
-}
+logger.add_log_methods(Connection)

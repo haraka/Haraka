@@ -66,7 +66,7 @@ class SMTPClient extends events.EventEmitter {
             if (cont !== ' ') return;
 
             if (client.command === 'auth' || client.authenticating) {
-                logger.loginfo(`SERVER RESPONSE, CLIENT ${client.command}, authenticating=${client.authenticating},code=${code},cont=${cont},msg=${msg}`);
+                logger.info(`SERVER RESPONSE, CLIENT ${client.command}, authenticating=${client.authenticating},code=${code},cont=${cont},msg=${msg}`);
                 if (/^3/.test(code) && (
                     msg === 'VXNlcm5hbWU6' ||
                     msg === 'dXNlcm5hbWU6' // Workaround ill-mannered SMTP servers (namely smtp.163.com)
@@ -79,7 +79,7 @@ class SMTPClient extends events.EventEmitter {
                     return;
                 }
                 if (/^2/.test(code) && client.authenticating) {
-                    logger.loginfo('AUTHENTICATED');
+                    logger.info('AUTHENTICATED');
                     client.authenticating = false;
                     client.authenticated = true;
                     client.emit('auth');
@@ -155,7 +155,7 @@ class SMTPClient extends events.EventEmitter {
             client.socket.setTimeout((opts.idle_timeout || 300) * 1000);
             if (!client.socket.remoteAddress) {
                 // "Value may be undefined if the socket is destroyed"
-                logger.logdebug('socket.remoteAddress undefined');
+                logger.debug('socket.remoteAddress undefined');
                 return;
             }
             client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
@@ -184,7 +184,7 @@ class SMTPClient extends events.EventEmitter {
                     default:
                 }
 
-                logger.logdebug(`[smtp_client] ${errMsg} (state=${client.state})`);
+                logger.debug(`[smtp_client] ${errMsg} (state=${client.state})`);
             }
         }
 
@@ -220,7 +220,7 @@ class SMTPClient extends events.EventEmitter {
 
     release () {
         if (this.state === STATE.DESTROYED) return;
-        logger.logdebug(`[smtp_client] ${this.uuid} releasing, state=${this.state}`);
+        logger.debug(`[smtp_client] ${this.uuid} releasing, state=${this.state}`);
 
         [
             'auth',   'bad_code', 'capabilities', 'client_protocol', 'connection-error',
@@ -243,7 +243,7 @@ class SMTPClient extends events.EventEmitter {
     upgrade (tls_options) {
 
         this.socket.upgrade(tls_options, (verified, verifyError, cert, cipher) => {
-            logger.loginfo(`secured:${
+            logger.info(`secured:${
 
                 (cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : ''
             } verified=${verified}${
@@ -271,7 +271,7 @@ exports.smtp_client = SMTPClient;
 // used only in testing
 exports.get_client = (server, callback, opts = {}) => {
     const smtp_client = new SMTPClient(opts)
-    logger.logdebug(`[smtp_client] uuid=${smtp_client.uuid} host=${opts.host} port=${opts.port} created`)
+    logger.debug(`[smtp_client] uuid=${smtp_client.uuid} host=${opts.host} port=${opts.port} created`)
     callback(smtp_client)
 }
 
@@ -336,7 +336,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
 
     const hostport = get_hostport(connection, connection.server, c);
     const smtp_client = new SMTPClient(hostport)
-    logger.loginfo(`[smtp_client] uuid=${smtp_client.uuid} host=${hostport.host} port=${hostport.port} created`);
+    logger.info(`[smtp_client] uuid=${smtp_client.uuid} host=${hostport.host} port=${hostport.port} created`);
 
     connection.logdebug(plugin, `Got smtp_client: ${smtp_client.uuid}`);
 
@@ -400,7 +400,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
                 if (!c.auth.user || !c.auth.pass) {
                     throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
                 }
-                logger.logdebug(`[smtp_client] uuid=${smtp_client.uuid} authenticating as "${c.auth.user}"`);
+                logger.debug(`[smtp_client] uuid=${smtp_client.uuid} authenticating as "${c.auth.user}"`);
                 smtp_client.send_command('AUTH', `PLAIN ${utils.base64(`${c.auth.user}\0${c.auth.user}\0${c.auth.pass}`)}`);
                 break;
             case 'cram-md5':
@@ -429,7 +429,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
     // these are the errors thrown when the connection is dead
     smtp_client.on('connection-error', (error) => {
         // error contains e.g. "Error: connect ECONNREFUSE"
-        logger.logerror(`backend failure: ${smtp_client.host}:${smtp_client.port} - ${error}`);
+        logger.error(`backend failure: ${smtp_client.host}:${smtp_client.port} - ${error}`);
         const { host_pool } = connection.server.notes;
         // only exists for if forwarding_host_pool is set in the config
         if (host_pool) {
@@ -465,12 +465,12 @@ function get_hostport (connection, server, cfg) {
         const host = server.notes.host_pool.get_host();
         if (host) return host; // { host: 1.2.3.4, port: 567 }
 
-        logger.logerror('[smtp_client] no backend hosts in pool!');
+        logger.error('[smtp_client] no backend hosts in pool!');
         throw new Error("no backend hosts found in pool!");
     }
 
     if (cfg.host && cfg.port) return { host: cfg.host, port: cfg.port };
 
-    logger.logwarn("[smtp_client] forwarding_host_pool or host and port were not found in config file");
+    logger.warn("[smtp_client] forwarding_host_pool or host and port were not found in config file");
     throw new Error("You must specify either forwarding_host_pool or host and port");
 }

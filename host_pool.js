@@ -61,7 +61,7 @@ class HostPool {
         self.dead_hosts[key] = true;
 
         function cb_if_still_dead () {
-            logger.logwarn(`${host} ${key} is still dead, will retry in ${self.retry_secs} secs`);
+            logger.warn(`${host} ${key} is still dead, will retry in ${self.retry_secs} secs`);
             self.dead_hosts[key] = true;
             // console.log(1);
             setTimeout(() => {
@@ -71,7 +71,7 @@ class HostPool {
 
         function cb_if_alive () {
             // console.log(2);
-            logger.loginfo(`${host} ${key} is back! adding back into pool`);
+            logger.info(`${host} ${key} is back! adding back into pool`);
             delete self.dead_hosts[key];
         }
 
@@ -90,7 +90,7 @@ class HostPool {
     probe_dead_host (
         host, port, cb_if_still_dead, cb_if_alive
     ){
-        logger.loginfo(`probing dead host ${host}:${port}`);
+        logger.info(`probing dead host ${host}:${port}`);
 
         const connect_timeout_ms = 200; // keep it snappy
         let s;
@@ -162,7 +162,7 @@ class HostPool {
             return host;
         }
         else {
-            logger.logwarn(
+            logger.warn(
                 `no working hosts found, retrying a dead one, config (probably from smtp_forward.forwarding_host_pool) is '${this.hostports_str}'`);
             this.last_i = first_i;
             return this.hosts[first_i];

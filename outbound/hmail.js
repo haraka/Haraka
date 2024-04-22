@@ -1462,14 +1462,7 @@ class HMailItem extends events.EventEmitter {
 module.exports = HMailItem;
 module.exports.obtls = obtls;
 
-// copy logger methods into HMailItem:
-for (const level of ['data','protocol','debug','info','notice','warn','error','crit','alert','emerg']) {
-    HMailItem.prototype[`log${level}`] = (function (level) {
-        return function () {
-            logger[level].apply(logger, [ this, ...arguments ]);
-        };
-    })(`log${level}`);
-}
+logger.add_log_methods(HMailItem)
 
 // MXs must be sorted by priority order, but matched priorities must be
 // randomly shuffled in that list, so this is a bit complex.

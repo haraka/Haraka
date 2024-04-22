@@ -8,7 +8,6 @@ const config    = require('haraka-config');
 const constants = require('haraka-constants');
 
 let plugins;
-let connection;
 
 const regex = /(^$|[ ="\\])/;
 const escape_replace_regex = /["\\]/g;
@@ -47,6 +46,7 @@ logger.levels = {
     ALERT:    1,
     EMERG:    0,
 }
+const level_names = Object.keys(logger.levels)
 
 for (const le in logger.levels) {
     logger.levels[`LOG${le}`] = logger.levels[le];
@@ -63,6 +63,7 @@ logger.loglevel      = logger.levels.WARN;
 logger.format        = logger.formats.DEFAULT;
 logger.timestamps    = false;
 logger.deferred_logs = [];
+logger.name          = 'logger'
 
 logger.colors = {
     "DATA" : "green",
@@ -252,16 +253,16 @@ logger.log_if_level = (level, key, origin) => function () {
         if (!data) continue;
 
         // if the object is a connection, add the connection id
-        if (data instanceof connection.Connection) {
+        if (data.constructor?.name === 'Connection') {
             logobj.uuid = data.uuid;
             if (data.tran_count > 0) logobj.uuid += `.${data.tran_count}`;
         }
         else if (data instanceof plugins.Plugin) {
             logobj.origin = data.name;
         }
-        else if (data.name) {
+        else if (Object.hasOwn(data, 'name')) { // outbound
             logobj.origin = data.name;
-            if (data.todo?.uuid) logobj.uuid = data.todo.uuid;
+            if (data.todo?.uuid) logobj.uuid = data.todo.uuid; // outbound/hmail
         }
         else if (
             logger.format === logger.formats.LOGFMT && data.constructor === Object) {
@@ -271,7 +272,7 @@ logger.log_if_level = (level, key, origin) => function () {
             logger.format === logger.formats.JSON && data.constructor === Object) {
             logobj = Object.assign(logobj, data);
         }
-        else if (typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, "uuid")) {
+        else if (Object.hasOwn(data, 'uuid')) {
             logobj.uuid = data.uuid;
         }
         else if (data.constructor === Object) {
@@ -307,12 +308,33 @@ logger.log_if_level = (level, key, origin) => function () {
 }
 
 logger.add_log_methods = (object, logName) => {
-    if (!object || typeof(object) !== 'object') return;
+    if (!object) return
 
-    for (const level of ['DATA','PROTOCOL','DEBUG','INFO','NOTICE','WARN','ERROR','CRIT','ALERT','EMERG']) {
-        for (const fname of [level.toLowerCase(), `log${level.toLowerCase()}`]) {
-            if (object[fname]) continue;  // already added
-            object[fname] = logger.log_if_level(level, `LOG${level}`, logName);
+    if (typeof object === 'function') {
+        // add logging methods to class prototypes (Connection, Plugin, etc.)
+
+        for (const level of level_names.map(l => l.toLowerCase())) {
+            object.prototype[`log${level}`] = (function (level) {
+                return function () {
+                    logger[level].apply(logger, [ this, ...arguments ]);
+                };
+            })(`log${level}`);
+        }
+    }
+    else if (typeof object === 'object') {
+        // add logging methods to objects
+
+        for (const level of level_names) {
+            // objects gets log function names: loginfo, logwarn, logdebug, ...
+            const fnNames = [`log${level.toLowerCase()}`]
+
+            // logger also gets short names
+            if (object.name === 'logger') fnNames.push(level.toLowerCase())
+
+            for (const fnName of fnNames) {
+                if (object[fnName]) continue; // already added
+                object[fnName] = logger.log_if_level(level, `LOG${level}`, logName);
+            }
         }
     }
 }
@@ -321,4 +343,3 @@ logger.add_log_methods(logger);
 
 // load these down here so it sees all the logger methods compiled above
 plugins = require('./plugins');
-connection = require('./connection');

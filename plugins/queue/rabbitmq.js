@@ -1,5 +1,4 @@
 const amqp = require('amqp');
-const logger = require('./logger');
 
 let rabbitqueue;
 let exchangeName;
@@ -12,41 +11,41 @@ exports.exchangeMapping = {}
 
 //This method registers the hook and try to initialize the connection to rabbitmq server for later use.
 exports.register = function () {
-    logger.logdebug("About to connect and initialize queue object");
+    this.logdebug("About to connect and initialize queue object");
     this.init_rabbitmq_server();
-    logger.logdebug(`Finished initiating : ${exports.exchangeMapping[exchangeName + queueName]}`);
+    this.logdebug(`Finished initiating : ${exports.exchangeMapping[exchangeName + queueName]}`);
 }
 
 
 //Actual magic of publishing message to rabbit when email comes happen here.
-exports.hook_queue = (next, connection) => {
+exports.hook_queue = function (next, connection) {
     if (!connection?.transaction) return next();
 
     //Calling the get_data method and when it gets the data on callback, publish the message to queue with routing key.
     connection.transaction.message_stream.get_data(buffere => {
         const exchangeData = exports.exchangeMapping[exchangeName + queueName]
-        logger.logdebug(`Sending the data: ${ queueName} Routing : ${exchangeData} exchange :${connExchange_}`);
+        this.logdebug(`Sending the data: ${ queueName} Routing : ${exchangeData} exchange :${connExchange_}`);
         if (connExchange_ && routing_) {
             //This is publish function of rabbitmq amqp library, currently direct queue is configured and routing is fixed.
             //Needs to be changed.
             connExchange_.publish(routing_, buffere,{deliveryMode}, error => {
                 if (error) {
                     //There was some error while sending the email to queue.
-                    logger.logdebug("queueFailure: #{JSON.stringify(error)}");
+                    this.logdebug("queueFailure: #{JSON.stringify(error)}");
                     exports.init_rabbitmq_server();
-                    return next();
+                    next();
                 }
                 else {
                     //Queueing was successful, send ok as reply
-                    logger.logdebug( "queueSuccess");
-                    return next(OK,"Successfully Queued! in rabbitmq");
+                    this.logdebug( "queueSuccess");
+                    next(OK,"Successfully Queued! in rabbitmq");
                 }
             });
         }
         else {
             //Seems like connExchange is not defined , lets create one for next call
             exports.init_rabbitmq_server();
-            return next();
+            next();
         }
     });
 }
@@ -88,18 +87,18 @@ exports.init_rabbitmq_server = function () {
 
 
     //Create connection to the rabbitmq server
-    logger.logdebug("About to Create connection with server");
+    this.logdebug("About to Create connection with server");
     rabbitqueue = amqp.createConnection(options);
 
 
     //Declaring listerner on error on connection.
     rabbitqueue.on('error', error => {
-        logger.logdebug(`There was some error on the connection : ${error}`);
+        this.logerror(`There was some error on the connection : ${error}`);
     });
 
     //Declaring listerner on close on connection.
     rabbitqueue.on('close', close => {
-        logger.logdebug(` Connection  is beingclosed : ${close}`);
+        this.logdebug(` Connection  is being closed : ${close}`);
     });
 
 
@@ -111,16 +110,16 @@ exports.init_rabbitmq_server = function () {
      */
 
     rabbitqueue.on('ready', () => {
-        logger.logdebug("Connection is ready, will try making exchange");
+        this.logdebug("Connection is ready, will try making exchange");
         // Now connection is ready will try to open exchange with config data.
         rabbitqueue.exchange(exchangeName, {  type: exchangeType,  confirm,  durable }, connExchange => {
 
 
-            logger.logdebug(`connExchange with server ${connExchange} autoDelete : ${autoDelete}`);
+            this.logdebug(`connExchange with server ${connExchange} autoDelete : ${autoDelete}`);
 
             //Exchange is now open, will try to open queue.
             return rabbitqueue.queue(queueName,{autoDelete, durable }, connQueue => {
-                logger.logdebug(`connQueue with server ${connQueue}`);
+                this.logdebug(`connQueue with server ${connQueue}`);
 
                 //Creating the Routing key to bind the queue and exchange.
                 const routing = `${queueName}Routing`;
@@ -142,7 +141,7 @@ exports.init_rabbitmq_server = function () {
                     routing : routing_,
                     queueName
                 });
-                logger.logdebug(`exchange: ${exchangeName}, queue: ${queueName}  exchange : ${connExchange_} queue : ${connQueue_}` );
+                this.logdebug(`exchange: ${exchangeName}, queue: ${queueName}  exchange : ${connExchange_} queue : ${connQueue_}` );
             });
         });
     });

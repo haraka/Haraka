@@ -17,6 +17,7 @@ class OutboundTLS {
     constructor () {
         this.config = config;
         this.name = 'OutboundTLS';
+        logger.add_log_methods(this);
     }
 
     test_config (tls_config, our_config) {
