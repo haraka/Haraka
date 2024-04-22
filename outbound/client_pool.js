@@ -12,11 +12,10 @@ exports.name = 'outbound'
 // Get a socket for the given attributes.
 exports.get_client = function (port = 25, host = 'localhost', localAddress, is_unix_socket, callback) {
 
-    const name = `outbound::${port}:${host}:${localAddress}`
     const socketArgs = is_unix_socket ? {path: host} : {port, host, localAddress};
     const socket = sock.connect(socketArgs);
 
-    socket.name = name;
+    socket.name = `outbound::${port}:${host}:${localAddress}`;
     socket.__uuid = utils.uuid();
     socket.setTimeout(obc.cfg.connect_timeout * 1000);
 
