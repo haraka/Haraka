@@ -16,16 +16,35 @@
 - when using message-stream, don't send default options #3290
 - auth_base: enable disabling constrain_sender at runtime #3298
 - auth_base: skip constrain_sender when auth user has no domain #3319
+- rcpt_to.host_list: add connection ID to log messages #3322
 - connection: support IPv6 when setting remote.is_private #3295
   - in setTLS, replace forEach with for...of
   - NOTE: remove a handful of 3.0 sunset property names #3315
 - outbound/mx_lookup: make it async/await
+- outbound/mx_lookup: deleted. Logic moved into net_utils #3322
 - outbound: emit log message when ignoring local MX #3285
 - outbound: pass in config when initiating txn #3315
-- outbound: minor es6 updates #3315
+- outbound: minor es6 updates #3315, #3322
+- outbound: logging improvements #3322
+  - was: [-] [core] [outbound] Failed to get socket: Outbound connection error: Error: connect ECONNREFUSED 172.16.16.14:25
+  - now: [A63B62DF-F3B8-4096-8996-8CE83494A188.1.1] [outbound] Failed to get socket: connect ECONNREFUSED 172.16.16.14:25
+  - shorter logger syntax: logger.loginfo -> logger.info
+  - outbound: remove log prefixes of `[outbound] `, no longer needed
+- logger: don't load outbound (race condition). Instead, set name property #3322
+- logger: extend add_log_methods to Classes (connection, plugins, hmail) #3322
+- logger: when logging via `logger` methods, use short names #3322
+- outbound: delete try_deliver_host. Use net_utils to resolve MX hosts to IPs #3322
+- outbound: remove config setting ipv6_enabled #3322
+- outbound: remove undocumented use of send_email with arity of 2. #3322
+- outbound: encapsulate force_tls logic into get_force_tls #3322
+- queue/lmtp: refactored for DRY and improved readability #3322
+- mail_from.resolvable: refactored, leaning on improved net_utils #3322
+  - fixes haraka/haraka-net-utils#88
 
 #### Fixed
 
+- fix(logger): refactor add_log_methods, don't set extra `loglog*` names
+- doc(connection): update rfc7001 URL
 - fix(bin/haraka): list NPM installed plugin #3310
 - fix(bin/haraka): get hook list from doc/Plugins #3306
 - fix(outbound): call cb even if no MX is found #3294

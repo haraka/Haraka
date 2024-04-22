@@ -3,13 +3,14 @@
 const config = require('haraka-config');
 const logger = require('../logger');
 
+exports.name = 'outbound/config'
+
 function load_config () {
     const cfg = exports.cfg = config.get('outbound.ini', {
         booleans: [
             '-disabled',
             '-always_split',
             '+enable_tls',
-            '-ipv6_enabled',
             '-local_mx_ok',
         ],
     }, () => {
@@ -34,9 +35,6 @@ function load_config () {
     }
     if (!cfg.connect_timeout) {
         cfg.connect_timeout = 30;
-    }
-    if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
-        cfg.ipv6_enabled = true;
     }
     if (!cfg.received_header) {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';
@@ -64,8 +62,8 @@ exports.set_temp_fail_intervals = function () {
 
     // Helpful error function in case of parsing failure
     function error (i, msg) {
-        logger.logerror(`outbound temp_fail_intervals syntax error parsing element ${i}: ${msg}`);
-        logger.logwarn('Setting outbound temp_fail_intervals to old defaults because of previous error');
+        logger.error(exports, `temp_fail_intervals syntax error parsing element ${i}: ${msg}`);
+        logger.warn(exports, 'Setting outbound temp_fail_intervals to old defaults');
         set_old_defaults();
     }
 

@@ -64,15 +64,23 @@ class OutboundTLS {
         this.load_config();
         // changing this var in-flight won't work
         if (this.cfg.redis && !this.cfg.redis.disable_for_failed_hosts) return cb();
-        logger.logdebug(this, 'Will disable outbound TLS for failing TLS hosts');
+        logger.debug(this, 'Will disable outbound TLS for failing TLS hosts');
         Object.assign(this, hkredis);
         this.merge_redis_ini();
         this.init_redis_plugin(cb);
     }
 
     get_tls_options (mx) {
-        if (net.isIP(mx.exchange)) return this.cfg
-        return Object.assign(this.cfg, {servername: mx.exchange});
+        // do NOT set servername to an IP address
+        if (net.isIP(mx.exchange)) {
+            // when mx.exchange looked up in DNS, from_dns has the hostname
+            if (mx.from_dns) return { ...this.cfg, servername: mx.from_dns }
+            return { ...this.cfg }
+        }
+        else {
+            // mx.exchange is a hostname
+            return { ...this.cfg, servername: mx.exchange }
+        }
     }
 
     // Check for if host is prohibited from TLS negotiation
@@ -85,7 +93,7 @@ class OutboundTLS {
                 dbr ? cb_nogo(dbr) : cb_ok();
             })
             .catch(err => {
-                this.logdebug(this, `Redis returned error: ${err}`);
+                logger.debug(this, `Redis returned error: ${err}`);
                 cb_ok();
             })
     }
@@ -96,12 +104,12 @@ class OutboundTLS {
 
         if (!this.cfg.redis.disable_for_failed_hosts) return cb();
 
-        logger.lognotice(this, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
+        logger.notice(this, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
 
         this.db.setEx(dbkey, expiry, (new Date()).toISOString())
             .then(cb)
             .catch(err => {
-                logger.logerror(this, `Redis returned error: ${err}`);
+                logger.error(this, `Redis returned error: ${err}`);
             })
     }
 }

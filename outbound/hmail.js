@@ -20,7 +20,6 @@ const plugins     = require('../plugins');
 
 const client_pool = require('./client_pool');
 const _qfile      = require('./qfile');
-const mx_lookup   = require('./mx_lookup');
 const outbound    = require('./index');
 const obtls       = require('./tls');
 
@@ -50,6 +49,9 @@ class HMailItem extends events.EventEmitter {
         const parts = _qfile.parts(filename);
         if (!parts) throw new Error(`Bad filename: ${filename}`);
 
+        this.cfg          = obc.cfg;
+        this.obtls        = obtls;
+        this.name         = 'outbound';
         this.path         = filePath;
         this.filename     = filename;
         this.next_process = parts.next_attempt;
@@ -210,140 +212,89 @@ class HMailItem extends events.EventEmitter {
                     mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
                 }
                 this.logdebug(`Got a MX from Plugin: ${this.todo.domain} => 0 ${JSON.stringify(mx)}`);
-                return this.found_mx(null, mx_list);
+                return this.found_mx(mx_list);
             }
             case constants.deny:
                 this.logwarn(`get_mx plugin returned DENY: ${mx}`);
-                this.todo.rcpt_to.forEach(rcpt => {
+                for (const rcpt of this.todo.rcpt_to) {
                     this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No MX for ${this.todo.domain}`));
-                });
+                }
                 return this.bounce(`No MX for ${this.todo.domain}`);
             case constants.denysoft:
                 this.logwarn(`get_mx plugin returned DENYSOFT: ${mx}`);
-                this.todo.rcpt_to.forEach(rcpt => {
+                for (const rcpt of this.todo.rcpt_to) {
                     this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Temporary MX lookup error for ${this.todo.domain}`, 450));
-                });
+                }
                 return this.temp_fail(`Temporary MX lookup error for ${this.todo.domain}`);
         }
 
-        // if none of the above return codes, drop through to this...
-        mx_lookup.lookup_mx(this.todo.domain, (err, mxs) => {
-            if (mxs) mxs.forEach(m => { m.from_dns = true; });
-
-            this.found_mx (err, mxs)
-        })
-    }
-
-    found_mx (err, mxs) {
-        if (err) {
-            this.lognotice(`MX Lookup for ${this.todo.domain} failed: ${err}`);
-            if (err.code === dns.NXDOMAIN || err.code === dns.NOTFOUND) {
-                this.todo.rcpt_to.forEach(rcpt => {
-                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No Such Domain: ${this.todo.domain}`));
-                });
-                this.bounce(`No Such Domain: ${this.todo.domain}`);
-            }
-            else if (err.code === 'NOMX') {
-                this.todo.rcpt_to.forEach(rcpt => {
-                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Nowhere to deliver mail to for domain: ${this.todo.domain}`));
-                });
-                this.bounce(`Nowhere to deliver mail to for domain: ${this.todo.domain}`);
+        // none of the above return codes, drop through to DNS
+        net_utils.get_mx(this.todo.domain).then(exchanges => {
+            if (exchanges.length) {
+                this.found_mx(this.sort_mx(exchanges))
             }
             else {
-                // every other error is transient
-                this.todo.rcpt_to.forEach(rcpt => {
-                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_unspecified(`DNS lookup failure: ${this.todo.domain}`));
-                });
-                this.temp_fail(`DNS lookup failure: ${err}`);
+                for (const rcpt of this.todo.rcpt_to) {
+                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Nowhere to deliver mail to for domain: ${this.todo.domain}`));
+                }
+                this.bounce(`Nowhere to deliver mail to for domain: ${this.todo.domain}`);
             }
+        })
+        .catch(this.get_mx_err)
+    }
+
+    get_mx_error (err) {
+        this.lognotice(`MX Lookup for ${this.todo.domain} failed: ${err}`);
+
+        if (err.code === dns.NXDOMAIN || err.code === dns.NOTFOUND) {
+            for (const rcpt of this.todo.rcpt_to) {
+                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No Such Domain: ${this.todo.domain}`));
+            }
+            this.bounce(`No Such Domain: ${this.todo.domain}`);
         }
         else {
-            // got MXs
-            const mxlist = sort_mx(mxs);
-            // support draft-delany-nullmx-02
-            if (mxlist.length === 1 && mxlist[0].priority === 0 && mxlist[0].exchange === '') {
-                this.todo.rcpt_to.forEach(rcpt => {
-                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`));
-                });
-                return this.bounce(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`);
+            // every other error is transient
+            for (const rcpt of this.todo.rcpt_to) {
+                this.extend_rcpt_with_dsn(rcpt, DSN.addr_unspecified(`DNS lookup failure: ${this.todo.domain}`));
             }
-            // duplicate each MX for each ip address family
-            this.mxlist = [];
-            for (const mx in mxlist) {
-                // Handle UNIX sockets for LMTP
-                if (mxlist[mx].path) {
-                    this.mxlist.push(mxlist[mx]);
-                }
-                else {
-                    if (obc.cfg.ipv6_enabled) {
-                        this.mxlist.push(Object.assign({}, mxlist[mx], { family: 'AAAA' }));
-                    }
-                    this.mxlist.push(Object.assign({}, mxlist[mx], { family: 'A' }));
-                }
-            }
-            this.try_deliver();
+            this.temp_fail(`DNS lookup failure: ${err}`);
         }
+    }
+
+    async found_mx (mxs) {
+
+        // support draft-delany-nullmx-02
+        if (mxs.length === 1 && mxs[0].priority === 0 && mxs[0].exchange === '') {
+            for (const rcpt of this.todo.rcpt_to) {
+                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`));
+            }
+            return this.bounce(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`);
+        }
+
+        // resolves the MX hostnames into IPs
+        this.mxlist = await net_utils.resolve_mx_hosts(mxs);
+
+        this.try_deliver();
     }
 
     async try_deliver () {
 
-        // check if there are any MXs left
+        // are any MXs left?
         if (this.mxlist.length === 0) {
-            this.todo.rcpt_to.forEach(rcpt => {
+            for (const rcpt of this.todo.rcpt_to) {
                 this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs ${this.todo.domain}`));
-            });
+            }
             return this.temp_fail("Tried all MXs");
         }
 
         const mx = this.mxlist.shift();
-        const host = mx.exchange;
 
-        if (!obc.cfg.local_mx_ok && mx.from_dns && await net_utils.is_local_host(host)) {
-            this.loginfo(`MX ${host} is local, skipping since local_mx_ok=false`)
+        if (!obc.cfg.local_mx_ok && mx.from_dns && await net_utils.is_local_host(mx.exchange)) {
+            this.loginfo(`MX ${mx.exchange} is local, skipping since local_mx_ok=false`)
             return this.try_deliver(); // try next MX
         }
 
-        this.force_tls = this.todo.force_tls;
-        if (!this.force_tls) {
-            if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, host)) {
-                this.logdebug(`Forcing TLS for host ${host}`);
-                this.force_tls = true;
-            }
-            if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, this.todo.domain)) {
-                this.logdebug(`Forcing TLS for domain ${this.todo.domain}`);
-                this.force_tls = true;
-            }
-
-            // IP or IP:port
-            if (net.isIP(host)) {
-                this.hostlist = [ host ];
-                return this.try_deliver_host(mx);
-            }
-        }
-
-        // we have a host, look up the addresses for the host
-        // and try each in order they appear
-        dns.resolve(host, mx.family, (err, addresses) => {
-            if (err) {
-                this.lognotice(`DNS (${mx.family}) for ${host} failed: ${err}`);
-                return this.try_deliver(); // try next MX
-            }
-            if (addresses.length === 0) {
-                // NODATA or empty host list
-                this.lognotice(`DNS (${mx.family}) for ${host} resulted in no data`);
-                return this.try_deliver(); // try next MX
-            }
-            this.logdebug(`DNS (${mx.family}) for ${host} -> ${addresses.join(',')}`);
-            this.hostlist = addresses;
-            this.try_deliver_host(mx);
-        });
-    }
-
-    try_deliver_host (mx) {
-
-        if (this.hostlist.length === 0) {
-            return this.try_deliver(); // try next MX
-        }
+        this.force_tls = this.get_force_tls(mx)
 
         // Allow transaction notes to set outbound IP
         if (!mx.bind && this.todo.notes.outbound_ip) {
@@ -360,24 +311,20 @@ class HMailItem extends events.EventEmitter {
             }
         }
 
-        let host = this.hostlist.shift();
+        const host = mx.path ? mx.path : mx.exchange;
         const port = mx.port || 25;
-
-        if (mx.path) {
-            host = mx.path;
-        }
 
         this.logdebug(`delivering from: ${mx.bind_helo} to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""}${mx.from_dns ? " (via DNS)" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`)
         client_pool.get_client(port, host, mx.bind, !!mx.path, (err, socket) => {
             if (err) {
                 if (/connection timed out|connect ECONNREFUSED/.test(err)) {
-                    logger.lognotice(`[outbound] Failed to get socket: ${err}`);
+                    logger.notice(this, `Failed to get socket: ${err}`);
                 }
                 else {
-                    logger.logerror(`[outbound] Failed to get socket: ${err}`);
+                    logger.error(this, `Failed to get socket: ${err}`);
                 }
-                // try next host
-                return this.try_deliver_host(mx);
+
+                return this.try_deliver(); // try next MX
             }
             this.try_deliver_host_on_socket(mx, host, port, socket);
         });
@@ -404,9 +351,8 @@ class HMailItem extends events.EventEmitter {
             processing_mail = false;
             client_pool.release_client(socket, port, host, mx.bind, true);
             if (err.source === 'tls') // exception thrown from tls_socket during tls upgrade
-                return obtls.mark_tls_nogo(host, () => { return self.try_deliver_host(mx); });
-            // try the next MX
-            self.try_deliver_host(mx);
+                return obtls.mark_tls_nogo(host, () => { return self.try_deliver(); });
+            self.try_deliver(); // try the next MX
         })
 
         socket.once('close', () => {
@@ -415,7 +361,7 @@ class HMailItem extends events.EventEmitter {
             self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`);
             processing_mail = false;
             client_pool.release_client(socket, port, host, mx.bind, true);
-            self.try_deliver_host(mx);
+            self.try_deliver();
         });
 
         let fin_sent = false;
@@ -454,7 +400,7 @@ class HMailItem extends events.EventEmitter {
                 if (processing_mail) {
                     processing_mail = false;
                     client_pool.release_client(socket, port, host, mx.bind, true);
-                    return self.try_deliver_host(mx);
+                    return self.try_deliver();
                 }
                 return;
             }
@@ -942,9 +888,9 @@ class HMailItem extends events.EventEmitter {
         });
 
         if (socket.__fromPool) {
-            logger.logdebug('[outbound] got socket, trying to deliver');
+            logger.debug(this, 'got socket, trying to deliver');
             secured = socket.isEncrypted();
-            logger.logdebug(`[outbound] got ${secured ? 'TLS ' : '' }socket, trying to deliver`);
+            logger.debug(this, `got ${secured ? 'TLS ' : '' }socket, trying to deliver`);
             send_command('MAIL', get_reverse_path_with_params());
         }
     }
@@ -1349,7 +1295,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     temp_fail (err, extra) {
-        logger.logdebug(`Temp fail for: ${err}`);
+        logger.debug(this, `Temp fail for: ${err}`);
         this.num_failures++;
 
         // Test for max failures which is configurable.
@@ -1394,7 +1340,7 @@ class HMailItem extends events.EventEmitter {
         });
     }
 
-    // The following handler has an impact on outgoing mail. It does remove the queue file.
+    // The following handler impacts outgoing mail. It removes the queue file.
     delivered_respond (retval, msg) {
         if (retval !== constants.cont && retval !== constants.ok) {
             this.logwarn(
@@ -1403,6 +1349,51 @@ class HMailItem extends events.EventEmitter {
             );
         }
         this.discard();
+    }
+
+    get_force_tls (mx) {
+        if (!mx.exchange) return false
+        if (!obtls.cfg.force_tls_hosts) return false
+
+        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, mx.exchange)) {
+            this.logdebug(`Forcing TLS for host ${mx.exchange}`);
+            return true;
+        }
+
+        if (mx.from_dns) {
+            // the MX was looked up in DNS and already resolved to IP(s).
+            // This checks the hostname.
+            if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, mx.from_dns)) {
+                this.logdebug(`Forcing TLS for host ${mx.from_dns}`);
+                return true;
+            }
+        }
+
+        if (net_utils.ip_in_list(obtls.cfg.force_tls_hosts, this.todo.domain)) {
+            this.logdebug(`Forcing TLS for domain ${this.todo.domain}`);
+            return true;
+        }
+
+        return false
+    }
+
+    sort_mx (mx_list) {
+        // MXs must be sorted by priority.
+        const sorted = mx_list.sort((a,b) => a.priority - b.priority);
+
+        // Matched priorities must be randomly shuffled.
+        // This isn't a very good shuffle but it'll do for now.
+        for (let i=0,l=sorted.length-1; i<l; i++) {
+            if (sorted[i].priority === sorted[i+1].priority) {
+                if (Math.round(Math.random())) { // 0 or 1
+                    const j = sorted[i];
+                    sorted[i] = sorted[i+1];
+                    sorted[i+1] = j;
+                }
+            }
+        }
+
+        return sorted;
     }
 
     split_to_new_recipients (recipients, response, cb) {
@@ -1416,7 +1407,7 @@ class HMailItem extends events.EventEmitter {
         const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
         const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
         function err_handler (err, location) {
-            logger.logerror(`[outbound] Error while splitting to new recipients (${location}): ${err}`);
+            logger.error(this, `Error while splitting to new recipients (${location}): ${err}`);
             hmail.todo.rcpt_to.forEach(rcpt => {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error splitting to new recipients: ${err}`));
             });
@@ -1454,7 +1445,7 @@ class HMailItem extends events.EventEmitter {
         }
 
         ws.on('error', err => {
-            logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
+            logger.error(this, `Unable to write queue file (${fname}): ${err}`);
             ws.destroy();
             hmail.todo.rcpt_to.forEach(rcpt => {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error re-queueing some recipients: ${err}`));
@@ -1471,20 +1462,7 @@ class HMailItem extends events.EventEmitter {
 module.exports = HMailItem;
 module.exports.obtls = obtls;
 
-// copy logger methods into HMailItem:
-for (const key in logger) {
-    if (!/^log\w/.test(key)) continue;
-    HMailItem.prototype[key] = (function (level) {
-        return function () {
-            // pass the HMailItem instance to logger
-            const args = [ this ];
-            for (let i=0, l=arguments.length; i<l; i++) {
-                args.push(arguments[i]);
-            }
-            logger[level].apply(logger, args);
-        };
-    })(key);
-}
+logger.add_log_methods(HMailItem)
 
 // MXs must be sorted by priority order, but matched priorities must be
 // randomly shuffled in that list, so this is a bit complex.

@@ -1,11 +1,10 @@
 
+const assert = require('assert')
 const fs   = require('fs')
 const path = require('path')
 
 const Hmail = require('../../outbound/hmail');
 const outbound = require('../../outbound/index');
-
-// const fixtures = path.resolve('tests', 'fixtures');
 
 exports.HMailItem = {
     'normal queue file' (test) {
@@ -72,7 +71,7 @@ exports.HMailItem = {
             test.done();
         })
         this.hmail.on('error', (err) => {
-            console.log(err);
+            console.error(err);
             test.ok(err);
             test.done();
         })
@@ -109,4 +108,38 @@ exports.HMailItem = {
             })
         })
     },
+}
+
+exports.hmail = {
+    setUp: function (done) {
+        this.hmail = new Hmail('1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', 'tests/queue/1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', {});
+        done()
+    },
+    'sort_mx' (test) {
+        const sorted = this.hmail.sort_mx([
+            { exchange: 'mx2.example.com', priority: 5 },
+            { exchange: 'mx1.example.com', priority: 6 },
+        ])
+        assert.equal(sorted[0].exchange, 'mx2.example.com')
+        test.done()
+    },
+    'sort_mx, shuffled' (test) {
+        const sorted = this.hmail.sort_mx([
+            { exchange: 'mx2.example.com', priority: 5 },
+            { exchange: 'mx1.example.com', priority: 6 },
+            { exchange: 'mx3.example.com', priority: 6 },
+        ])
+        assert.equal(sorted[0].exchange, 'mx2.example.com')
+        assert.ok(sorted[1].exchange == 'mx3.example.com' || sorted[1].exchange == 'mx1.example.com')
+        test.done()
+    },
+    'force_tls' (test) {
+        this.hmail.todo = { domain: 'miss.example.com' }
+        this.hmail.obtls.cfg = { force_tls_hosts: ['1.2.3.4', 'hit.example.com'] }
+        assert.equal(this.hmail.get_force_tls({ exchange: '1.2.3.4' }), true)
+        assert.equal(this.hmail.get_force_tls({ exchange: '1.2.3.5' }), false)
+        this.hmail.todo = { domain: 'hit.example.com' }
+        assert.equal(this.hmail.get_force_tls({ exchange: '1.2.3.5' }), true)
+        test.done()
+    }
 }
