@@ -9,9 +9,10 @@ const obc          = require('./config');
 
 exports.name = 'outbound'
 
-function _create_socket (name, port, host, local_addr, is_unix_socket, callback) {
+function _create_socket (name, port, host, localAddress, is_unix_socket, callback) {
 
-    const socket = is_unix_socket ? sock.connect({path: host}) : sock.connect({port, host, localAddress: local_addr});
+    const socketArgs = is_unix_socket ? {path: host} : {port, host, localAddress};
+    const socket = socket.connect(socketArgs);
     socket.name = name;
     socket.__uuid = utils.uuid();
     socket.setTimeout(obc.cfg.connect_timeout * 1000);
@@ -44,7 +45,9 @@ exports.get_client = function (port = 25, host = 'localhost', local_addr, is_uni
 }
 
 exports.release_client = (socket, port, host, local_addr, error) => {
-    logger.debug(exports, `release_client: ${socket.__uuid} ${host}:${port} to ${local_addr}`);
+    let logMsg = `release_client: ${socket.__uuid} ${host}:${port}`
+    if (local_addr) logMsg += ` from ${local_addr}`
+    logger.debug(exports, logMsg);
     socket.removeAllListeners();
     socket.destroy();
 }
