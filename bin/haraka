@@ -396,7 +396,7 @@ else if (parsed.test) {
             msg = fs.readFileSync(parsed.message);
         }
         catch (e) {
-            logger.logcrit(e.message);
+            logger.crit(e.message);
             logger.dump_logs(1);
         }
     }

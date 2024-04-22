@@ -1454,7 +1454,7 @@ class Connection {
         return received_header;
     }
     auth_results (message) {
-        // http://tools.ietf.org/search/rfc7001
+        // https://datatracker.ietf.org/doc/rfc7001/
         const has_tran = !!((this.transaction?.notes));
 
         // initialize connection note
@@ -1784,7 +1784,7 @@ class Connection {
                 });
                 break;
             default:
-                outbound.send_email(this.transaction, (retval2, msg2) => {
+                outbound.send_trans_email(this.transaction, (retval2, msg2) => {
                     if (!msg2) msg2 = this.queue_msg(retval2, msg);
                     switch (retval2) {
                         case constants.ok:
@@ -1895,17 +1895,4 @@ exports.createConnection = (client, server, cfg) => {
     return new Connection(client, server, cfg);
 }
 
-// add logger methods to Connection:
-for (const key in logger) {
-    if (!/^log\w/.test(key)) continue;
-    Connection.prototype[key] = (function (level) {
-        return function () {
-            // pass the connection instance to logger
-            const args = [ this ];
-            for (let i=0, l=arguments.length; i<l; i++) {
-                args.push(arguments[i]);
-            }
-            logger[level].apply(logger, args);
-        };
-    })(key);
-}
+logger.add_log_methods(Connection)

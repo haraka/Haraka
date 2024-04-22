@@ -9,6 +9,7 @@ section of `config/bounce.ini`:
 
 Some features can have rejections disabled in the [reject] section.
 
+    ```ini
     [check]
     reject_all=false
     single_recipient=true
@@ -22,6 +23,7 @@ Some features can have rejections disabled in the [reject] section.
     empty_return_path=true
     bounce_spf=false
     non_local_msgid=false
+    ```
 
 ## Features
 

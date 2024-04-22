@@ -71,7 +71,7 @@ class TimerQueue {
     }
 
     drain () {
-        logger.logdebug(`Draining ${this.queue.length} items from the queue`);
+        logger.debug({ name: 'outbound/timer_queue'}, `Draining ${this.queue.length} items from the queue`);
         while (this.queue.length) {
             const to_run = this.queue.shift();
             if (to_run.cb) to_run.cb();
@@ -84,4 +84,3 @@ class TimerQueue {
 }
 
 module.exports = TimerQueue;
-

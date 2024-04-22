@@ -20,7 +20,7 @@ exports.outbound = {
     'converts \\n and \\r\\n line endings to \\r\\n' : test => {
         test.expect(2);
 
-        ['\n', '\r\n'].forEach(ending => {
+        for (const ending of ['\n', '\r\n']) {
             let contents = lines.join(ending);
             let result = '';
 
@@ -39,17 +39,18 @@ exports.outbound = {
             }
 
             test.deepEqual(lines.join('\r\n'), result);
-        });
+        }
         test.done();
     },
     'log_methods added': test => {
-        test.expect(Object.keys(logger.levels).length);
+        const levels = ['DATA','PROTOCOL','DEBUG','INFO','NOTICE','WARN','ERROR','CRIT','ALERT','EMERG']
+        test.expect(levels.length);
 
         const HMailItem = require('../../outbound/hmail');
 
-        Object.keys(logger.levels).forEach(level => {
+        for (const level of levels) {
             test.ok(HMailItem.prototype[`log${level.toLowerCase()}`], `Log method for level: ${level}`);
-        });
+        }
         test.done();
     },
     'set_temp_fail_intervals coverage': test => {
