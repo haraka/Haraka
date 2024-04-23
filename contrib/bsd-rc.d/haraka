@@ -14,6 +14,8 @@ rcvar="haraka_enable"
 command="/usr/local/bin/haraka"
 pidfile="/var/run/${name}.pid"
 
+haraka_flags=${haraka_flags:="-c /data"}
+
 start_cmd="start"
 status_cmd="status"
 stop_cmd="stop"
@@ -30,7 +32,7 @@ status()
    if [ -f $pidfile ];
    then
        LPID=`cat $pidfile`
-       LPROC=`/bin/ps | grep '^$PID'`
+       LPROC=`/bin/ps -p $PID`
        if [ -n $LPROC ];
        then
            echo "$name is running as $LPID"
