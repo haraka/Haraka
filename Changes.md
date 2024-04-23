@@ -43,6 +43,7 @@
 - smtp_client: pass connect_timeout, maybe fixes #3281
 - style(es6): more for...of loops
 - deps: moved attachment, spf, & dkim into optional deps
+- doc(Plugins.md): update registry
 
 #### Fixed
 
