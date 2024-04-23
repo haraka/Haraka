@@ -74,8 +74,8 @@ class Plugin {
 
         // development mode
         paths = paths.concat(plugin_search_paths(__dirname, name));
-        paths.forEach(pp => {
-            if (this.plugin_path) return;
+        for (const pp of paths) {
+            if (this.plugin_path) continue;
             try {
                 fs.statSync(pp);
                 this.plugin_path = pp;
@@ -84,7 +84,7 @@ class Plugin {
                 }
             }
             catch (ignore) {}
-        });
+        }
     }
 
     _get_config () {
@@ -128,8 +128,7 @@ class Plugin {
         this.hooks[hook_name] = this.hooks[hook_name] || [];
         this.hooks[hook_name].push(method_name);
 
-        logger.debug(`registered hook ${hook_name} to ${this.name}.` +
-                        `${method_name} priority ${priority}`);
+        plugins.logdebug(`registered hook ${hook_name} to ${this.name}.${method_name} priority ${priority}`);
     }
 
     register () {} // noop
@@ -140,12 +139,6 @@ class Plugin {
             if (!this[method]) {
                 this[method] = parent_plugin[method];
             }
-            // else if (method == 'shutdown') {
-            //     Method is in this module, so it exists in the plugin
-            //     if (!this.hasOwnProperty('shutdown')) {
-            //         this[method] = parent_plugin[method];
-            //     }
-            // }
         }
         if (parent_plugin.register) {
             parent_plugin.register.call(this);
@@ -195,7 +188,7 @@ class Plugin {
         }
         catch (err) {
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-                logger.crit(`Loading plugin ${this.name} failed: ${err}`);
+                plugins.logcrit(`Loading ${this.name} failed: ${err}`);
                 return;
             }
             throw `Loading plugin ${this.name} failed: ${err}`;
@@ -231,16 +224,13 @@ class Plugin {
             vm.runInNewContext(code, sandbox, pp);
         }
         catch (err) {
-            logger.crit(`Compiling plugin: ${this.name} failed`);
+            plugins.logcrit(`compiling '${this.name}' failed`);
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-                logger.crit(`Loading plugin ${this.name} failed: `,
-                    `${err.message} - will skip this plugin and continue`);
+                plugins.logcrit(`Loading '${this.name}' failed: ${err.message} - skipping`);
                 return;
             }
             throw err; // default is to re-throw and stop Haraka
         }
-
-        return this;
     }
 }
 
@@ -254,7 +244,7 @@ exports.shutdown_plugins = () => {
 
 process.on('message', msg => {
     if (msg.event && msg.event == 'plugins.shutdown') {
-        logger.info("[plugins] Shutting down plugins");
+        plugins.loginfo("Shutting down");
         exports.shutdown_plugins();
     }
 });
@@ -270,15 +260,15 @@ function plugin_search_paths (prefix, name) {
 function get_timeout (name) {
     let timeout = parseFloat((exports.config.get(`${name}.timeout`)));
     if (isNaN(timeout)) {
-        logger.debug(`no timeout in ${name}.timeout`);
+        plugins.logdebug(`no timeout in ${name}.timeout`);
         timeout = parseFloat(exports.config.get('plugin_timeout'));
     }
     if (isNaN(timeout)) {
-        logger.debug('no timeout in plugin_timeout');
+        plugins.logdebug('no timeout in plugin_timeout');
         timeout = 30;
     }
 
-    logger.debug(`plugin ${name} timeout is: ${timeout}s`);
+    plugins.logdebug(`plugin ${name} timeout is: ${timeout}s`);
     return timeout;
 }
 
@@ -286,10 +276,12 @@ logger.add_log_methods(Plugin)
 
 const plugins = exports;
 
+logger.add_log_methods(plugins, 'plugins')
+
 plugins.Plugin = Plugin;
 
 plugins.load_plugins = override => {
-    logger.info('Loading plugins');
+    plugins.loginfo('Loading');
     let plugin_list;
     if (override) {
         if (!Array.isArray(override)) override = [ override ];
@@ -302,7 +294,7 @@ plugins.load_plugins = override => {
     for (let plugin of plugin_list) {
         if (plugin.startsWith('haraka-plugin-')) plugin = plugin.substr(14)
         if (plugins.deprecated[plugin]) {
-            logger.notice(`the plugin ${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
+            plugins.lognotice(`${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
             plugins.load_plugin(plugins.deprecated[plugin]);
         }
         else {
@@ -313,8 +305,7 @@ plugins.load_plugins = override => {
     plugins.plugin_list = Object.keys(plugins.registered_plugins);
 
     // Sort registered_hooks by priority
-    const hooks = Object.keys(plugins.registered_hooks);
-    for (const hook of hooks) {
+    for (const hook of Object.keys(plugins.registered_hooks)) {
         plugins.registered_hooks[hook].sort((a, b) => {
             if (a.priority < b.priority) return -1;
             if (a.priority > b.priority) return 1;
@@ -330,6 +321,7 @@ plugins.load_plugins = override => {
 }
 
 plugins.deprecated = {
+    'auth/auth_ldap'      : 'auth-ldap',
     'backscatterer'       : 'dns-list',
     'connect.asn'         : 'asn',
     'connect.fcrdns'      : 'fcrdns',
@@ -353,6 +345,8 @@ plugins.deprecated = {
     'rate_limit'          : 'limit',
     'rcpt_to.access'      : 'access',
     'rcpt_to.blocklist'   : 'access',
+    'rcpt_to.ldap'        : 'rcpt-ldap',
+    'rcpt_to.max_count'   : 'limit',
     'rcpt_to.qmail_deliverable' : 'qmail-deliverable',
     'rdns.regexp'         : 'access',
     'relay_acl'           : 'relay',
@@ -361,7 +355,7 @@ plugins.deprecated = {
 }
 
 plugins.load_plugin = name => {
-    logger.info(`Loading plugin: ${name}`);
+    plugins.loginfo(`loading ${name}`);
 
     const plugin = plugins._load_and_compile_plugin(name);
     if (plugin) {
@@ -369,7 +363,6 @@ plugins.load_plugin = name => {
     }
 
     plugins.registered_plugins[name] = plugin;
-    return plugin;
 }
 
 // Set in server.js; initialized to empty object
@@ -381,7 +374,7 @@ plugins._load_and_compile_plugin = name => {
     if (!plugin.plugin_path) {
         const err = `Loading plugin ${plugin.name} failed: No plugin with this name found`;
         if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.crit(err);
+            plugins.logcrit(err);
             return;
         }
         throw err;
@@ -400,8 +393,6 @@ plugins._register_plugin = plugin => {
             plugin.register_hook(result[1], method);
         }
     }
-
-    return plugin;
 }
 
 plugins.run_hooks = (hook, object, params) => {
@@ -572,9 +563,18 @@ function log_run_item (item, hook, retval, object, params, msg) {
             'function'  :  item[1],
             'params'    :  ((params) ? ((typeof params === 'string') ? params : params[0]) : ''),
             'retval'    : constants.translate(retval),
-            'msg'       :  ((msg) ? msg : ''),
+            'msg'       :  sanitize(msg),
         });
     }
+}
+
+function sanitize (msg) {
+    if (!msg) return ''
+    const sanitized = { ...msg }; // copy the message
+    for (const priv of ['password','auth_pass']) {
+        delete sanitized[priv]
+    }
+    return sanitized
 }
 
 function is_deny_retval (val) {
