@@ -281,7 +281,7 @@ logger.add_log_methods(plugins, 'plugins')
 plugins.Plugin = Plugin;
 
 plugins.load_plugins = override => {
-    plugins.loginfo('Loading');
+    plugins.logdebug('Loading');
     let plugin_list;
     if (override) {
         if (!Array.isArray(override)) override = [ override ];

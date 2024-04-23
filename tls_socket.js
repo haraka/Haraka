@@ -107,11 +107,9 @@ class pluggableStream extends stream.Stream {
     }
     clean (data) {
         if (this.targetsocket?.removeAllListeners) {
-            [   'data', 'secure', 'secureConnect', 'secureConnection',
-                'end', 'close', 'error', 'drain'
-            ].forEach((name) => {
+            for (const name of ['data', 'secure', 'secureConnect', 'secureConnection', 'end', 'close', 'error', 'drain']) {
                 this.targetsocket.removeAllListeners(name);
-            })
+            }
         }
         this.targetsocket = {};
         this.targetsocket.write = () => {};

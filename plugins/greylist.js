@@ -10,7 +10,7 @@ const util   = require('util');
 const DSN       = require('haraka-dsn');
 const tlds      = require('haraka-tld');
 const net_utils = require('haraka-net-utils');
-const { Address }   = require('address-rfc2821');
+const { Address } = require('address-rfc2821');
 
 // External NPM modules
 const ipaddr    = require('ipaddr.js');
@@ -23,9 +23,6 @@ exports.register = function (next) {
 
     this.register_hook('init_master', 'init_redis_plugin');
     this.register_hook('init_child',  'init_redis_plugin');
-
-    // redundant - using the special hook_ nomenclature
-    // this.register_hook('rcpt_ok', 'hook_rcpt_ok');
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

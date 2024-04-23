@@ -38,13 +38,10 @@ exports.load_spamassassin_ini = function () {
         this.cfg.main[key] = defaults[key];
     }
 
-    [
-        'reject_threshold', 'relay_reject_threshold',
-        'munge_subject_threshold', 'max_size'
-    ].forEach(item => {
-        if (!this.cfg.main[item]) return;
+    for (const item of ['reject_threshold', 'relay_reject_threshold', 'munge_subject_threshold', 'max_size']) {
+        if (!this.cfg.main[item]) continue;
         this.cfg.main[item] = Number(this.cfg.main[item]);
-    });
+    }
 }
 
 exports.hook_data_post = function (next, connection) {
