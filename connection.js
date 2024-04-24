@@ -132,7 +132,7 @@ class Connection {
         this.last_rcpt_msg = null;
         this.hook = null;
         if (this.cfg.headers.show_version) {
-            this.local.info += utils.getVersion(__dirname);
+            this.local.info += `/${utils.getVersion(__dirname)}`;
         }
         Connection.setupClient(this);
     }
