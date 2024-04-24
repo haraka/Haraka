@@ -44,6 +44,9 @@
 - style(es6): more for...of loops
 - deps: moved attachment, spf, & dkim into optional deps
 - doc(Plugins.md): update registry
+- remove last vestiges of header_hide_version (long ago renamed)
+- server.js: use the local logger methods
+- get Haraka version from utils.getVersion (which includes git id if running from repo)
 
 #### Fixed
 

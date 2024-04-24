@@ -132,8 +132,7 @@ class Connection {
         this.last_rcpt_msg = null;
         this.hook = null;
         if (this.cfg.headers.show_version) {
-            const hpj = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json')));
-            this.local.info += `/${hpj.version}`;
+            this.local.info += utils.getVersion(__dirname);
         }
         Connection.setupClient(this);
     }
