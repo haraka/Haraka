@@ -7,24 +7,24 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+### Describe the bug
 
 A clear and concise description of what the bug is.
 
-**Expected behavior**
+### Expected behavior
 
 A clear and concise description of what you expected to happen.
 
-**Observed behavior**
+### Observed behavior
 
-**Steps To Reproduce**
+### Steps To Reproduce
 
-**System Info:**
+### System Info
 
 Please report your OS, Node version, and Haraka version by running this shell script on your Haraka server and replacing this section with the output.
 
 echo "Haraka | $(haraka -v)"; echo " --- | :--- "; echo "Node | $(node -v)"; echo "OS | $(uname -a)"; echo "openssl | $(openssl version)"
 
-**Additional context**
+### Additional context
 
 Add any other context about the problem here.
