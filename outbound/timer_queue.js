@@ -19,6 +19,7 @@ class TQTimer {
 class TimerQueue {
 
     constructor (interval = 1000) {
+        this.name = 'outbound/timer_queue'
         this.queue = [];
         this.interval_timer = setInterval(() => { this.fire(); }, interval);
         this.interval_timer.unref() // allow server to exit
@@ -72,7 +73,7 @@ class TimerQueue {
     }
 
     drain () {
-        logger.debug({ name: 'outbound/timer_queue'}, `Draining ${this.queue.length} items from the queue`);
+        logger.debug(this, `Draining ${this.queue.length} items from the queue`);
         while (this.queue.length) {
             const to_run = this.queue.shift();
             if (to_run.cb) to_run.cb();

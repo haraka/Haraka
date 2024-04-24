@@ -660,7 +660,6 @@ function getCertFor (host) {
     return certsByHost['*'];  // the default TLS cert
 }
 
-
 function connect (conn_options = {}) {
     // called by outbound/client_pool, smtp_client, plugins/spamassassin,avg,clamd
 

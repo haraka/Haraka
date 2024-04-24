@@ -262,7 +262,7 @@ class HMailItem extends events.EventEmitter {
             return this.bounce(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`);
         }
 
-        // resolves the MX hostnames into IPs
+        // resolves the MX hostnames to IPs
         this.mxlist = await net_utils.resolve_mx_hosts(mxs);
 
         this.try_deliver();

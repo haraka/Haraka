@@ -135,7 +135,7 @@ describe('server', () => {
         })
 
         it('gets a net server object', (done) => {
-            this.server.get_smtp_server(endpoint('0.0.0.0:2501'), 10, (server) => {
+            this.server.get_smtp_server(endpoint('0.0.0.0:2501'), 10).then(server => {
                 if (!server) {
                     console.error('unable to bind to 0.0.0.0:2501');
                     if (process.env.CI) return // can't bind to IP/port (fails on Travis)
@@ -151,7 +151,7 @@ describe('server', () => {
 
         it('gets a TLS net server object', (done) => {
             this.server.cfg.main.smtps_port = 2502;
-            this.server.get_smtp_server(endpoint('0.0.0.0:2502'), 10, (server) => {
+            this.server.get_smtp_server(endpoint('0.0.0.0:2502'), 10).then((server) => {
                 if (!server) {
                     console.error('unable to bind to 0.0.0.0:2502');
                     if (process.env.CI) return // can't bind to IP/port (fails on Travis)

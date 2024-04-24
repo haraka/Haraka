@@ -3,8 +3,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const async = require('async');
-
 exports.register = function () {
     this.outbound = require('../outbound');
     this.queue_dir = require('../outbound/queue').queue_dir;
@@ -82,38 +80,36 @@ exports.pool_list = cb => {
     const result = {};
 
     if (server.notes.pool) {
-        Object.keys(server.notes.pool).forEach(name => {
+        for (const name of Object.keys(server.notes.pool)) {
             const instance = server.notes.pool[name];
 
             result[name] = {
                 inUse: instance.inUseObjectsCount(),
                 size: instance.getPoolSize()
             };
-        });
+        }
     }
 
     cb(null, result);
 }
 
 exports.queue_list = function (cb) {
-    this.outbound.list_queue((err, qlist) => {
-        if (err) cb(err);
-
+    this.outbound.list_queue((err, qlist = []) => {
         const result = [];
 
-        if (qlist) {
-            qlist.forEach((todo) => result.push({
+        for (const todo of qlist) {
+            result.push({
                 file: todo.file,
                 uuid: todo.uuid,
                 queue_time: todo.queue_time,
                 domain: todo.domain,
                 from: todo.mail_from.toString(),
                 to: todo.rcpt_to.map((r) => r.toString())
-            }));
+            })
         }
 
         cb(err, result);
-    });
+    })
 }
 
 exports.queue_stats = function (cb) {
@@ -166,14 +162,14 @@ exports.queue_push = function (file, cb) {
 // cluster IPC
 
 exports.hook_init_master = function (next) {
-    const self = this;
+    const plugin = this;
 
     if (!server.cluster) return next();
 
     function message_handler (sender, msg) {
         if (msg.event !== 'status.request') return;
 
-        self.call_workers(msg, (err, response) => {
+        plugin.call_workers(msg, (response) => {
             msg.result = response.filter((el) => el != null);
             msg.event = 'status.result';
             sender.send(msg);
@@ -215,32 +211,39 @@ exports.call_master = (cmd, cb) => {
 }
 
 exports.call_workers = function (cmd, cb) {
-
-    async.map(server.cluster.workers, (w, done) => {
-        this.call_worker(w, cmd, done);
-    }, cb);
+    Promise.allSettled(
+        Object.values(server.cluster.workers).map(w => this.call_worker(w, cmd))
+    )
+    .then(r => {
+        cb(
+            // r.filter(s => s.status === 'rejected').flatMap(s => s.reason),
+            r.filter(s => s.status === 'fulfilled').flatMap(s => s.value),
+        )
+    })
 }
 
 // sends command to worker and then wait for response or timeout
-exports.call_worker = (worker, cmd, cb) => {
-    let timeout;
+exports.call_worker = (worker, cmd) => {
+    return new Promise((resolve) => {
+        let timeout;
 
-    function message_handler (sender, msg) {
-        if (sender.id !== worker.id) return;
-        if (msg.event !== 'status.response') return;
+        function message_handler (sender, msg) {
+            if (sender.id !== worker.id) return;
+            if (msg.event !== 'status.response') return;
 
-        clearTimeout(timeout);
-        server.cluster.removeListener('message', message_handler);
+            clearTimeout(timeout);
+            server.cluster.removeListener('message', message_handler);
 
-        cb(null, msg.result);
-    }
+            resolve(msg.result);
+        }
 
-    timeout = setTimeout(() => {
-        server.cluster.removeListener('message', message_handler);
-        cb();
-    }, 1000);
+        timeout = setTimeout(() => {
+            server.cluster.removeListener('message', message_handler);
+            resolve();
+        }, 1000);
 
 
-    server.cluster.on('message', message_handler);
-    worker.send(cmd);
+        server.cluster.on('message', message_handler);
+        worker.send(cmd);
+    })
 }

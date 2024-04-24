@@ -58,6 +58,7 @@
   - remove config setting ipv6_enabled #3322
   - remove undocumented use of send_email with arity of 2. #3322
   - encapsulate force_tls logic into get_force_tls #3322
+  - es6(async/promise): pre_send_trans_email_respond, process_delivery
 - queue/lmtp: refactored for DRY and improved readability #3322
 - smtp_client: pass connect_timeout, maybe fixes #3281
 - spamassassin: repackaged as NPM module #3348
@@ -66,6 +67,9 @@
 - doc(Plugins.md): update registry
 - remove last vestiges of header_hide_version (long ago renamed)
 - server.js: use the local logger methods
+  - es6(async): _graceful, get_smtp_server, setup_smtp_listeners
+  - replace async.eachLimit with Promise.all batches
+- status: replace async.map with Promise.allSettled
 - get Haraka version from utils.getVersion (which includes git id if running from repo)
 - tls_socket: remove secureConnection. Fixes #2743
   - getSocketOpts is now async
