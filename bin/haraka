@@ -13,7 +13,7 @@ const os   = require('os');
 const utils   = require('haraka-utils');
 const sprintf = require('sprintf-js').sprintf;
 const base = path.join(__dirname, '..');
-const ver  = JSON.parse(fs.readFileSync(`${base}/package.json`, 'utf8')).version;
+const ver  = utils.getVersion(base)
 const knownOpts = {
     "version":     Boolean,
     "verbose":     Boolean,
