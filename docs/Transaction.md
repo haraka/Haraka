@@ -22,9 +22,9 @@ A node.js Readable Stream object for the message.
 
 You use it like this:
 
-    ```js
-    transaction.message_stream.pipe(WritableStream, options)
-    ```
+```js
+transaction.message_stream.pipe(WritableStream, options)
+```
 
 Where WritableStream is a node.js Writable Stream object such as a net.socket, fs.writableStream, process.stdout/stderr or custom stream.
 
@@ -39,9 +39,9 @@ The options argument should be an object that overrides the following properties
 
 e.g.
 
-    ```js
-    transaction.message_stream.pipe(socket, { dot_stuffing: true, ending_dot: true });
-    ```
+```js
+transaction.message_stream.pipe(socket, { dot_stuffing: true, ending_dot: true });
+```
 
 * transaction.data\_bytes
 
@@ -89,39 +89,39 @@ The stream is a [ReadableStream](http://nodejs.org/api/stream.html)
 
 If you set stream.connection then the stream will apply backpressure to the connection, allowing you to process attachments before the connection has ended. Here is an example which stores attachments in temporary files using the `tmp` library from npm and tells us the size of the file:
 
-    ```js
-    exports.hook_data = function (next, connection) {
-        // enable mail body parsing
-        connection.transaction.attachment_hooks(
-            function (ct, fn, body, stream) {
-                start_att(connection, ct, fn, body, stream)
-            }
-        );
-        next();
-    }
+```js
+exports.hook_data = function (next, connection) {
+    // enable mail body parsing
+    connection.transaction.attachment_hooks(
+        function (ct, fn, body, stream) {
+            start_att(connection, ct, fn, body, stream)
+        }
+    );
+    next();
+}
 
-    function start_att (connection, ct, fn, body, stream) {
-        connection.loginfo(`Got attachment: ${ct}, ${fn} for user id: ${connection.transaction.notes.hubdoc_user.email}`)
-        connection.transaction.notes.attachment_count++
+function start_att (connection, ct, fn, body, stream) {
+    connection.loginfo(`Got attachment: ${ct}, ${fn} for user id: ${connection.transaction.notes.hubdoc_user.email}`)
+    connection.transaction.notes.attachment_count++
 
-        stream.connection = connection; // Allow backpressure
-        stream.pause();
+    stream.connection = connection; // Allow backpressure
+    stream.pause();
 
-        require('tmp').file((err, path, fd) => {
-            connection.loginfo(`Got tempfile: ${path} (${fd})`)
-            const ws = fs.createWriteStream(path)
-            stream.pipe(ws);
-            stream.resume();
-            ws.on('close', () => {
-                connection.loginfo("End of stream reached");
-                fs.fstat(fd, (err, stats) => {
-                    connection.loginfo(`Got data of length: ${stats.size}`);
-                    fs.close(fd, () => {}); // Close the tmp file descriptor
-                });
+    require('tmp').file((err, path, fd) => {
+        connection.loginfo(`Got tempfile: ${path} (${fd})`)
+        const ws = fs.createWriteStream(path)
+        stream.pipe(ws);
+        stream.resume();
+        ws.on('close', () => {
+            connection.loginfo("End of stream reached");
+            fs.fstat(fd, (err, stats) => {
+                connection.loginfo(`Got data of length: ${stats.size}`);
+                fs.close(fd, () => {}); // Close the tmp file descriptor
             });
         });
-    }
-    ```
+    });
+}
+```
 
 * transaction.discard\_data = true|false [default: false]
 
