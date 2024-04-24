@@ -377,7 +377,7 @@ class Connection {
     }
     process_data (data) {
         if (this.state >= states.DISCONNECTING) {
-            this.logwarn(`data after disconnect from ${this.remote.ip}`);
+            this.loginfo(`data after disconnect from ${this.remote.ip}`);
             return;
         }
 
