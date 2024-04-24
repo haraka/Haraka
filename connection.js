@@ -55,36 +55,36 @@ class Connection {
         this.server = server;
         this.cfg = cfg;
 
-        this.local = {           // legacy property locations
-            ip: null,            // c.local_ip
-            port: null,          // c.local_port
+        this.local = {
+            ip: null,
+            port: null,
             host: net_utils.get_primary_host_name(),
             info: 'Haraka',
         };
         this.remote = {
-            ip:   null,          // c.remote_ip
-            port: null,          // c.remote_port
-            host: null,          // c.remote_host
-            info: null,          // c.remote_info
-            closed: false,       // c.remote_closed
+            ip:   null,
+            port: null,
+            host: null,
+            info: null,
+            closed: false,
             is_private: false,
             is_local: false,
         };
         this.hello = {
-            host: null,          // c.hello_host
-            verb: null,          // c.greeting
+            host: null,
+            verb: null,
         };
         this.tls = {
-            enabled: false,      // c.using_tls
-            advertised: false,   // c.notes.tls_enabled
+            enabled: false,
+            advertised: false,
             verified: false,
             cipher: {},
         };
         this.proxy = {
-            allowed: false,      // c.proxy
-            ip: null,            // c.haproxy_ip
+            allowed: false,
+            ip: null,
             type: null,
-            timer: null,         // c.proxy_timer
+            timer: null,
         };
         this.set('tls', 'enabled', (!!server.has_tls));
 

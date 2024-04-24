@@ -43,9 +43,9 @@ function make_test (module_path, test_path, additional_sandbox) {
             exports: {},
             test
         };
-        Object.keys(additional_sandbox).forEach(k => {
+        for (const k of Object.keys(additional_sandbox)) {
             sandbox[k] = additional_sandbox[k];
-        });
+        }
         vm.runInNewContext(code, sandbox);
     };
 }

@@ -262,6 +262,7 @@ logger.log_if_level = (level, key, origin) => function () {
         }
         else if (Object.hasOwn(data, 'name')) { // outbound
             logobj.origin = data.name;
+            if (Object.hasOwn(data, 'uuid')) logobj.uuid = data.uuid;
             if (data.todo?.uuid) logobj.uuid = data.todo.uuid; // outbound/hmail
         }
         else if (
@@ -272,7 +273,7 @@ logger.log_if_level = (level, key, origin) => function () {
             logger.format === logger.formats.JSON && data.constructor === Object) {
             logobj = Object.assign(logobj, data);
         }
-        else if (Object.hasOwn(data, 'uuid')) {
+        else if (Object.hasOwn(data, 'uuid')) { // outbound/client_pool
             logobj.uuid = data.uuid;
         }
         else if (data.constructor === Object) {

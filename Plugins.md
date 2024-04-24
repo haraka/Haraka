@@ -1,13 +1,10 @@
 # Haraka Plugins
 
-To create your own plugin, see:
-- the [plugin template][template] that includes all the boilerplate
-- the [Write a Plugin][write-plugin] tutorial
-- the [Plugins][plugins-doc] section of [the manual](https://haraka.github.io)
+To create your own plugin, see [Write a Plugin][write-plugin].
 
 ## Installing NPM packaged plugins
 
-NPM packaged plugins can be installed in the `npm` directory where Haraka was installed (where depends on your OS platform and whether you specified `-g`) or the Haraka install directory (haraka -i this_path). This example installs _my-great-plugin_ in the Haraka install directory:
+Plugins can be installed in the directory where Haraka was installed (where depends on your OS platform and whether you specified `-g`) or the Haraka install directory (haraka -i this_path). This example installs _my-great-plugin_ in the Haraka install directory:
 
 ````
 cd /etc/haraka
@@ -18,83 +15,101 @@ NPM then installs the plugin and its dependencies in a `node_modules` directory 
 
 ## Plugin Registry
 
-A mostly comprehensive list of plugins known to be working and maintained.
-Create a PR adding yours to this list.
+A comprehensive list of known plugins. Create a PR to add yours to these lists.
 
-| Plugin                     | Description |
+### Auth Plugins
+
+| Name                       | Description |
+| -------------------------  | ------------- |
+| [auth-enc-file][url-authencflat] | Auth against user/pass in an encrypted file |
+| [flat_file][url-authflat]  | Auth against user/pass in a file |
+| [auth_bridge][url-authbridge] | Auth against remote MTA |
+| [auth-imap][url-auth-imap] | Auth against IMAP server |
+| [auth_ldap][url-auth-ldap] | Auth against LDAP |
+| [auth_proxy][url-authproxy] | Auth against remote MTA |
+| [auth_vpopmaild][url-authvpop] | Auth against vpopmaild |
+| [dkim][url-dkim]            | DKIM sign & verify |
+| [dovecot][url-dovecot]      | SMTP AUTH & recipient validation against dovecot |
+| [LDAP][url-ldap]            | Aliases, Auth, and Recipient validation from LDAP |
+| [mailauth][url-mailauth]    | Email Auth (SPF, DKIM, DMARC, ARC, & BIMI) |
+| [opendkim][url-opendkim]    | DKIM sign and verify email messages |
+| [spf][url-spf]              | Perform SPF checks |
+
+### Queue Plugins
+
+| Name                        | Description |
+| --------------------------  | ------------- |
+| [discard][url-qdisc]        | queues messages to /dev/null |
+| [kafka][url-kafka]          | Queue inbound mail to a Kafka topic |
+| [lmtp][url-qlmtp]           | deliver queued messages via LMTP |
+| [mongodb][mongo-url]        | Queue emails to MongoDB |
+| [qmail-queue][url-qmail]    | queue to qmail |
+| [quarantine][url-qquart]    | queue to a quarantine directory |
+| [rabbitmq][url-qrabbit]     | queue to RabbitMQ |
+| [rabbitmq_amqplib][url-qrabbita]  | queue to RabbitMQ using amqplib |
+| [rails][url-qrails]          | queue messages to a Rails app using [Action Mailbox][url-action-mailbox] |
+| [smtp_bridge][url-qbridge]   | Bridge SMTP sessions to another MTA |
+| [smtp_forward][url-qforward] | Forward emails to another MTA |
+| [smtp_proxy][url-qproxy]     | Proxy SMTP connections to another MTA |
+| [wildduck][url-wildduck]     | queue messages to Wild Duck |
+
+### Filtering Plugins
+
+| Name                       | Description |
+| -------------------------  | ------------- |
+| [attachment][url-attach]   | Restrict attachment types |
+| [avg][url-avg]              | AVG antivirus scanner |
+| [clamd][url-clamd]          | Anti-Virus scanning with ClamAV |
+| [data.signatures][url-sigs] | Block emails whose bodies match signatures |
+| [dcc][url-dcc]              | Distributed Checksum Clearinghouse |
+| [esets][url-esets]          | Virus scanning with ESET Mail Security |
+| [messagesniffer][url-msgsniff]    | Anti-spam via [MessageSniffer][url-ms] |
+| [milter][url-milter]              | milter support |
+| [rspamd][url-rspamd]               | Scan emails with rspamd |
+| [spamassassin][url-spamass]        | Scan emails with SpamAssassin |
+| [uribl][url-uribl]          | Block based on URI blacklists |
+
+
+### Every other Plugin
+
+| Name                       | Description |
 | -------------------------  | ------------- |
 | [access][url-access]       | ACLs based on IPs, domains, email addrs, etc. |
 | [accounting_files][url-acc-files] | Retrieve, Store and Archive custom information of outbound traffic |
 | [aliases][url-aliases]     | Email aliases |
 | [ASN][url-asn]             | Get ASN info for remote senders |
-| [attachment][url-attach]   | Restrict attachment types |
-| [auth-enc-file][url-authencflat] | Auth against user/pass in an encrypted file |
-| auth/[flat_file][url-authflat] | Auth against user/pass in a file |
-| auth/[auth_bridge][url-authbridge] | Auth against remote MTA |
-| [auth-imap][url-auth-imap] | Auth against IMAP server |
-| auth/[auth_ldap][url-auth-ldap] | Auth against LDAP |
-| auth/[auth_proxy][url-authproxy] | Auth against remote MTA |
-| auth/[auth_vpopmaild][url-authvpop] | Auth against vpopmaild |
-| [avg][url-avg]              | AVG antivirus scanner |
-| [backscatterer][url-scatter] | Check remote IP against ips.backscatterer.org |
 | [block_me][url-blockme]     | Populate block list via forwarded emails |
 | [bounce][url-bounce]        | Many options for bounce processing |
-| [clamd][url-clamd]          | Anti-Virus scanning with ClamAV |
-| [data.signatures][url-sigs] | Block emails whose bodies match signatures |
-| [uribl][url-uribl]          | Block based on URI blacklists |
-| [dcc][url-dcc]              | Distributed Checksum Clearinghouse |
 | [delay_deny][url-delay]     | Delays all pre-DATA 'deny' results |
-| [dkim][url-dkim]            | DKIM sign & verify |
-| [opendkim][url-opendkim]    | DKIM sign and verify email messages |
-| [dnsbl][url-dnsbl]          | Check remote MTAs against DNS blacklists |
-| [dnswl][url-dnswl]          | Check remote MTAs against DNS whitelists |
+| [dns-list][url-dns-list]    | Check remote MTAs against DNS black, white, and karma lists |
 | [dovecot][url-dovecot]      | Recipient validation & SMTP AUTH against dovecot |
 | [early_talker][url-early]   | Reject remotes that talk early |
-| [esets][url-esets]          | Virus scanning with ESET Mail Security |
 | [fcrdns][url-fcrdns]        | Forward Confirmed reverse DNS |
 | [geoip][url-geoip]          | get geographic information about mail senders |
 | [greylist][url-greylist]    | Greylisting |
 | [headers][url-headers]      | Inspect and verify various email headers |
-| [helo.checks][url-helo]     | Validaty checks of the HELO string |
+| [helo.checks][url-helo]     | Validity checks of the HELO string |
 | [karma][url-karma]          | Dynamic scoring of incoming connections |
 | [known-senders][url-known-senders] | Reward emails from those you send mail to |
 | [LDAP][url-ldap]            | Aliases, Auth, and Recipient validation from LDAP |
 | [Limit][url-limit]          | Apply many types of limits to SMTP connections |
 | [log.elasticsearch][url-elastic]  | Store message metadata in Elasticsearch |
 | [log reader][url-logreader]       | extract log entries from the haraka log file |
-| [mailauth][url-mailauth]          | Email Auth (SPF, DKIM, DMARC, ARC, & BIMI) |
 | [syslog][url-syslog]              | Log to syslog |
 | [mail_from.is_resolvable][url-mfres]  | Verifies the MAIL FROM domain resolves to a MX |
-| [messagesniffer][url-msgsniff]    | Anti-spam via [MessageSniffer][url-ms] |
-| [milter][url-milter]              | milter support |
-| [mongodb][mongo-url]              | Queue emails to MongoDB |
 | [outbound-logger][url-outbound-logger] | JSON logging of outbound email traffic. Logs useful metadata about delivered/bounced emails |
 | [p0f][url-p0f]              | TCP Fingerprinting |
 | [prevent_credential_leaks][url-creds]  | Prevent users from emailing their credentials |
 | [process_title][url-proctitle]    | Populate `ps` output with activity counters |
-| queue/[discard][url-qdisc]        | queues messages to /dev/null |
-| queue/[lmtp][url-qlmtp]           | deliver queued messages via LMTP |
-| queue/[qmail-queue][url-qmail]    | queue to qmail |
-| queue/[quarantine][url-qquart]    | queue to a quarantine directory |
-| queue/[rabbitmq][url-qrabbit]     | queue to RabbitMQ |
-| queue/[rabbitmq_amqplib][url-qrabbita]  | queue to RabbitMQ using amqplib |
-| queue/[rails][url-qrails]          | queue messages to a Rails app using [Action Mailbox][url-action-mailbox] |
-| queue/[smtp_bridge][url-qbridge]   | Bridge SMTP sessions to another MTA |
-| queue/[smtp_forward][url-qforward] | Forward emails to another MTA |
-| queue/[smtp_proxy][url-qproxy]     | Proxy SMTP connections to another MTA |
-| [queue-kafka][url-kafka]           | Queue inbound mail to a Kafka topic |
 | [recipient-routes][url-rroutes]    | Route emails based on their recipient(s) |
 | [redis][url-redis]                 | multi-purpose Redis db connection(s) |
 | [rcpt_to.in_host_list][url-rhost]  | Define local email domains in a file |
 | [rcpt_to.ldap][url-rcpt-ldap]      | Validate recipients against LDAP |
 | [rcpt-postgresql][url-postgres]    | validate recipients against PostgreSQL
-| [rcpt_to.qmail_deliverable][url-rqmd]  | Validate recipients against Qmail-Deliverable |
+| [qmail-deliverable][url-rqmd]      | Validate recipients against Qmail-Deliverable |
 | [record_envelope_addresses][url-recordenv]  | Adds message headers with ENV recips |
 | [relay][url-relay]                 | Manage relay permissions |
 | [reseed_rng][url-rng]              | Reseed the RNG |
-| [rspamd][url-rspamd]               | Scan emails with rspamd |
-| [spamassassin][url-spamass]        | Scan emails with SpamAssassin |
-| [spf][url-spf]                     | Perform SPF checks |
 | [srs][url-srs]                     | Sender Rewriting Scheme |
 | [tarpit][url-tarpit]               | Slow down connections |
 | [tls][url-tls]                     | Implements TLS |
@@ -108,7 +123,6 @@ Create a PR adding yours to this list.
 
 <!-- URLs tucked safely out of the way -->
 
-[template]: https://github.com/haraka/haraka-plugin-template
 [write-plugin]: https://github.com/haraka/Haraka/wiki/Write-a-Plugin
 [plugins-doc]: https://haraka.github.io/core/Plugins
 [url-access]: https://github.com/haraka/haraka-plugin-access
@@ -139,8 +153,7 @@ Create a PR adding yours to this list.
 [url-delay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md
 [url-dkim]: https://github.com/haraka/haraka-plugin-dkim
 [url-opendkim]: https://www.npmjs.com/package/haraka-plugin-opendkim
-[url-dnsbl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnsbl.md
-[url-dnswl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnswl.md
+[url-dns-list]: https://github.com/haraka/haraka-plugin-dns-list
 [url-early]: https://github.com/haraka/Haraka/blob/master/docs/plugins/early_talker.md
 [url-esets]: https://github.com/haraka/Haraka/blob/master/docs/plugins/esets.md
 [url-geoip]: https://github.com/haraka/haraka-plugin-geoip
