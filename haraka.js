@@ -21,12 +21,11 @@ catch (e) {
 }
 
 const fs = require('fs');
+const utils = require('haraka-utils');
 const logger = require('./logger');
 const server = require('./server');
 
-exports.version = JSON.parse(
-    fs.readFileSync(path.join(__dirname, './package.json'), 'utf8')
-).version;
+exports.version = utils.getVersion(__dirname)
 
 process.on('uncaughtException', err => {
     if (err.stack) {
@@ -41,11 +40,9 @@ process.on('uncaughtException', err => {
 let shutting_down = false;
 const signals = ['SIGINT'];
 
-if (process.pid === 1) {
-    signals.push('SIGTERM')
-}
+if (process.pid === 1) signals.push('SIGTERM')
 
-signals.forEach((sig) => {
+for (const sig of signals) {
     process.on(sig, () => {
         if (shutting_down) return process.exit(1);
         shutting_down = true;
@@ -62,7 +59,7 @@ signals.forEach((sig) => {
             }
         });
     });
-});
+}
 
 process.on('SIGHUP', () => {
     logger.notice('Flushing the temp fail queue');
