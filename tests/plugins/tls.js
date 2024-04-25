@@ -1,84 +1,70 @@
 'use strict';
 
+const assert = require('node:assert')
 const path         = require('path');
 
 const fixtures     = require('haraka-test-fixtures');
 const Plugin       = fixtures.plugin;
 
-function _set_up (done) {
-    const plugin = new Plugin('tls');
-    this.plugin = plugin;
+const _set_up = (done) => {
+    this.plugin = new Plugin('tls')
     this.connection = new fixtures.connection.createConnection();
 
     // use tests/config instead of ./config
-    plugin.config = plugin.config.module_config(path.resolve('tests'));
-    plugin.net_utils.config = plugin.net_utils.config.module_config(path.resolve('tests'));
+    this.plugin.config = this.plugin.config.module_config(path.resolve('tests'));
+    this.plugin.net_utils.config = this.plugin.net_utils.config.module_config(path.resolve('tests'));
 
-    plugin.tls_opts = {};
+    this.plugin.tls_opts = {};
     done();
 }
 
-exports.plugin = {
-    setUp : _set_up,
-    'has function register' (test) {
-        test.expect(2);
-        test.ok(this.plugin);
-        test.equal('function', typeof this.plugin.register);
-        test.done();
-    },
-    'has function upgrade_connection' (test) {
-        test.expect(1);
-        test.equal('function', typeof this.plugin.upgrade_connection);
-        test.done();
-    },
-    'has function advertise_starttls' (test) {
-        test.expect(1);
-        test.equal('function', typeof this.plugin.advertise_starttls);
-        test.done();
-    },
-    'has function emit_upgrade_msg' (test) {
-        test.expect(1);
-        test.equal('function', typeof this.plugin.emit_upgrade_msg);
-        test.done();
-    },
-}
+describe('tls', ()=> {
+    beforeEach(_set_up)
 
-exports.register = {
-    setUp (done) {
-        this.plugin = new Plugin('tls');
-        done();
-    },
-    'with certs, should call register_hook()' (test) {
-        test.expect(1);
-        this.plugin.register();
-        test.ok(this.plugin.register_hook.called);
-        // console.log(this.plugin);
-        test.done();
-    },
-}
+    it('has function register', () => {
+        assert.ok(this.plugin);
+        assert.equal('function', typeof this.plugin.register);
+    })
 
-exports.emit_upgrade_msg = {
-    setUp : _set_up,
-    'should emit a log message' (test) {
-        test.expect(1);
-        test.equal(this.plugin.emit_upgrade_msg(this.connection, true, '', {
-            subject: {
-                CN: 'TLS.subject',
-                O: 'TLS.org'
-            },
-        }),
-        'secured: verified=true cn="TLS.subject" organization="TLS.org"');
-        test.done();
-    },
-    'should emit a log message with error' (test) {
-        test.expect(1);
-        test.equal(this.plugin.emit_upgrade_msg(this.connection, true, 'oops', {
-            subject: {
-                CN: 'TLS.subject',
-                O: 'TLS.org'
-            },
-        }),
-        'secured: verified=true error="oops" cn="TLS.subject" organization="TLS.org"');
-        test.done();
-    }
-}
+    it('has function upgrade_connection', () => {
+        assert.equal('function', typeof this.plugin.upgrade_connection);
+    })
+
+    it('has function advertise_starttls', () => {
+        assert.equal('function', typeof this.plugin.advertise_starttls);
+    })
+
+    it('has function emit_upgrade_msg', () => {
+        assert.equal('function', typeof this.plugin.emit_upgrade_msg);
+    })
+
+    describe('register', ()=> {
+        it('with certs, should call register_hook()', () => {
+            this.plugin.register();
+            assert.ok(this.plugin.register_hook.called);
+        })
+    })
+
+    describe('emit_upgrade_msg', ()=> {
+
+        it('should emit a log message', () => {
+            assert.equal(this.plugin.emit_upgrade_msg(this.connection, true, '', {
+                subject: {
+                    CN: 'TLS.subject',
+                    O: 'TLS.org'
+                },
+            }),
+            'secured: verified=true cn="TLS.subject" organization="TLS.org"');
+        })
+
+        it('should emit a log message with error', () => {
+            assert.equal(this.plugin.emit_upgrade_msg(this.connection, true, 'oops', {
+                subject: {
+                    CN: 'TLS.subject',
+                    O: 'TLS.org'
+                },
+            }),
+            'secured: verified=true error="oops" cn="TLS.subject" organization="TLS.org"');
+        })
+    })
+})

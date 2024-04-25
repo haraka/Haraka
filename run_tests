@@ -1,32 +1,5 @@
-#!/usr/bin/env node
+#!/bin/sh
 
-'use strict';
+TESTS=${1:-"tests tests/outbound tests/plugins/auth tests/plugins/queue tests/plugins"}
 
-let reporter;
-try {
-    reporter = require('nodeunit-x').reporters.default;
-}
-catch (e) {
-    console.log(`Error: ${e.message}
-
-Cannot find nodeunit module. Please run the following:
-
-    npm install\n`);
-
-    process.exit();
-}
-
-process.chdir(__dirname);
-
-let tests = [
-    'tests', 'tests/outbound', 'tests/plugins',
-    'tests/plugins/auth', 'tests/plugins/queue'
-];
-
-if (process.argv[2]) {
-    console.log("Running tests: ", process.argv.slice(2));
-    tests = process.argv.slice(2);
-}
-reporter.run(tests, undefined, function (err) {
-    process.exit(((err) ? 1 : 0));
-});
+npx mocha --exit $TESTS

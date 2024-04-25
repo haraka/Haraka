@@ -47,6 +47,7 @@
 - remove last vestiges of header_hide_version (long ago renamed)
 - server.js: use the local logger methods
 - get Haraka version from utils.getVersion (which includes git id if running from repo)
+- test: convert test runner to mocha
 
 #### Fixed
 

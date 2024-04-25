@@ -1,10 +1,11 @@
 'use strict';
+const assert = require('node:assert')
 
 const { Address } = require('address-rfc2821');
-const fixtures     = require('haraka-test-fixtures');
-const utils        = require('haraka-utils');
+const fixtures = require('haraka-test-fixtures');
+const utils = require('haraka-utils');
 
-function _set_up (done) {
+const _set_up = (done) => {
 
     this.plugin = new fixtures.plugin('auth/auth_base');
 
@@ -19,7 +20,7 @@ function _set_up (done) {
     done();
 }
 
-function _set_up_2 (done) {
+const _set_up_2 = (done) => {
 
     this.plugin = new fixtures.plugin('auth/auth_base');
 
@@ -35,7 +36,7 @@ function _set_up_2 (done) {
     done();
 }
 
-function _set_up_custom_pwcb_opts (done) {
+const _set_up_custom_pwcb_opts = (done) => {
     this.plugin = new fixtures.plugin('auth/auth_base');
 
     this.plugin.check_plain_passwd = (connection, user, passwd, pwok_cb) => {
@@ -61,445 +62,423 @@ function _set_up_custom_pwcb_opts (done) {
     done();
 }
 
-exports.hook_capabilities = {
-    setUp : _set_up,
-    'no TLS, no auth' (test) {
-        this.plugin.hook_capabilities((rc, msg) => {
-            test.expect(3);
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.equal(null, this.connection.capabilities);
-            test.done();
-        }, this.connection);
-    },
-    'with TLS, auth is offered' (test) {
-        this.connection.tls.enabled=true;
-        this.connection.capabilities=[];
-        this.plugin.hook_capabilities((rc, msg) => {
-            test.expect(4);
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.ok(this.connection.capabilities.length);
-            test.ok(this.connection.capabilities[0] === 'AUTH PLAIN LOGIN CRAM-MD5');
-            // console.log(this.connection.capabilities);
-            test.done();
-        }, this.connection);
-    },
-}
+describe('auth_base', () => {
 
-exports.get_plain_passwd = {
-    setUp : _set_up,
-    'get_plain_passwd, no result' (test) {
-        this.plugin.get_plain_passwd('user', pass => {
-            test.expect(1);
-            test.equal(pass, null);
-            test.done();
-        });
-    },
-    'get_plain_passwd, test user' (test) {
-        this.plugin.get_plain_passwd('test', pass => {
-            test.expect(1);
-            test.equal(pass, 'testpass');
-            test.done();
-        });
-    },
-}
+    describe('hook_capabilities', () => {
+        beforeEach(_set_up)
 
-exports.check_plain_passwd = {
-    setUp : _set_up,
-    'valid password' (test) {
-        this.plugin.check_plain_passwd(this.connection, 'test', 'testpass', pass => {
-            test.expect(1);
-            test.equal(pass, true);
-            test.done();
-        });
-    },
-    'wrong password' (test) {
-        this.plugin.check_plain_passwd(this.connection, 'test', 'test1pass', pass => {
-            test.expect(1);
-            test.equal(pass, false);
-            test.done();
-        });
-    },
-    'null password' (test) {
-        this.plugin.check_plain_passwd(this.connection, 'test', null, pass => {
-            test.expect(1);
-            test.equal(pass, false);
-            test.done();
-        });
-    },
-}
+        it('no TLS, no auth', (done) => {
+            this.plugin.hook_capabilities((rc, msg) => {
+                assert.equal(undefined, rc);
+                assert.equal(undefined, msg);
+                assert.equal(null, this.connection.capabilities);
+                done();
+            }, this.connection);
+        })
 
-exports.select_auth_method = {
-    setUp : _set_up,
-    'no auth methods yield no result' (test) {
-        this.plugin.select_auth_method((code) => {
-            test.equal(code, null);
-            test.equal(false, this.connection.relaying);
-            test.done();
-        }, this.connection, 'AUTH PLAIN');
-    },
-    'invalid AUTH method, no result' (test) {
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN','CRAM-MD5'];
-        this.plugin.select_auth_method((code) => {
-            test.expect(2);
-            test.equal(code, null);
-            test.equal(false, this.connection.relaying);
-            test.done();
-        }, this.connection, 'AUTH FOO');
-    },
-    'valid AUTH method, valid attempt' (test) {
-        const method = `PLAIN ${utils.base64('discard\0test\0testpass')}`;
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
-        this.plugin.select_auth_method((code) => {
-            test.expect(2);
-            test.equal(code, OK);
-            test.ok(this.connection.relaying);
-            test.done();
-        }, this.connection, method);
-    },
-}
+        it('with TLS, auth is offered', (done) => {
+            this.connection.tls.enabled=true;
+            this.connection.capabilities=[];
+            this.plugin.hook_capabilities((rc, msg) => {
+                assert.equal(undefined, rc);
+                assert.equal(undefined, msg);
+                assert.ok(this.connection.capabilities.length);
+                assert.ok(this.connection.capabilities[0] === 'AUTH PLAIN LOGIN CRAM-MD5');
+                // console.log(this.connection.capabilities);
+                done();
+            }, this.connection);
+        })
+    })
 
-exports.auth_plain = {
-    setUp : _set_up,
-    'params type=string returns OK' (test) {
-        test.expect(2);
-        const next = function () {
-            test.equal(arguments[0], OK);
-            test.equal(false, this.connection.relaying);
-            test.done();
-        }.bind(this);
-        this.plugin.auth_plain(next, this.connection, 'AUTH FOO');
-    },
-    'params type=empty array, returns OK' (test) {
-        const next = function () {
-            test.expect(2);
-            test.equal(arguments[0], OK);
-            test.equal(false, this.connection.relaying);
-            test.done();
-        }.bind(this);
-        this.plugin.auth_plain(next, this.connection, []);
-    },
-    'params type=array, successful auth' (test) {
-        test.expect(2);
-        const method = utils.base64('discard\0test\0testpass');
-        const next = function () {
-            test.equal(arguments[0], OK);
-            test.ok(this.connection.relaying);
-            test.done();
-        }.bind(this);
-        this.plugin.auth_plain(next, this.connection, [method]);
-    },
-    'params type=with two line login' (test) {
-        const next = function () {
-            test.expect(2);
-            test.equal(this.connection.notes.auth_plain_asked_login, true);
-            test.equal(arguments[0], OK);
-            test.done();
-        }.bind(this);
-        this.plugin.auth_plain(next, this.connection, '');
-    },
-}
+    describe('get_plain_passwd', () => {
+        beforeEach(_set_up)
 
-exports.check_user = {
-    setUp : _set_up_2,
-    'bad auth' (test) {
-        const credentials = ['matt','ttam'];
-        this.plugin.check_user((code) => {
-            test.expect(3);
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, false);
-            test.equal(this.connection.notes.auth_custom_note, 'custom_note');
-            test.done();
-        }, this.connection, credentials, 'PLAIN');
-    },
-    'good auth' (test) {
-        const credentials = ['test','testpass'];
-        this.plugin.check_user((code) => {
-            test.expect(3);
-            test.equal(code, OK);
-            test.ok(this.connection.relaying);
-            test.equal(this.connection.notes.auth_custom_note, 'custom_note');
-            test.done();
-        }, this.connection, credentials, 'PLAIN');
-    },
-}
+        it('get_plain_passwd, no result', (done) => {
+            this.plugin.get_plain_passwd('user', pass => {
+                assert.equal(pass, null);
+                done();
+            });
+        })
+        it('get_plain_passwd, test user', (done) => {
+            this.plugin.get_plain_passwd('test', pass => {
+                assert.equal(pass, 'testpass');
+                done();
+            });
+        })
+    })
 
-exports.check_user_custom_opts = {
-    setUp: _set_up_custom_pwcb_opts,
-    'legacyok_nomessage' (test) {
-        this.plugin.check_user((code, msg) => {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, true);
-            test.deepEqual(this.connection.notes.resp_strings, [[ 235, '2.7.0 Authentication successful' ]]);
-            test.done();
-        }, this.connection, ['legacyok_nomessage', 'any'], 'PLAIN');
-    },
-    'legacyfail_nomessage' (test) {
-        this.plugin.check_user((code, msg) => {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, false);
-            test.deepEqual(this.connection.notes.resp_strings, [ [ 535, '5.7.8 Authentication failed' ] ]);
-            test.done();
-        }, this.connection, ['legacyfail_nomessage', 'any'], 'PLAIN');
-    },
-    'legacyok_message' (test) {
-        this.plugin.check_user((code, msg) => {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, true);
-            test.deepEqual(this.connection.notes.resp_strings, [[ 235, 'GREAT SUCCESS' ]]);
-            test.done();
-        }, this.connection, ['legacyok_message', 'any'], 'PLAIN');
-    },
-    'legacyfail_message' (test) {
-        this.plugin.check_user((code, msg) => {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, false);
-            test.deepEqual(this.connection.notes.resp_strings, [[ 535, 'FAIL 123' ]]);
-            test.done();
-        }, this.connection, ['legacyfail_message', 'any'], 'PLAIN');
-    },
-    'newok' (test) {
-        this.plugin.check_user((code, msg) => {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, true);
-            test.deepEqual(this.connection.notes.resp_strings, [[ 215, 'KOKOKO' ]]);
-            test.done();
-        }, this.connection, ['newok', 'any'], 'PLAIN');
-    },
-    'newfail' (test) {
-        this.plugin.check_user((code, msg) => {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, false);
-            test.deepEqual(this.connection.notes.resp_strings, [[ 555, 'OHOHOH' ]]);
-            test.done();
-        }, this.connection, ['newfail', 'any'], 'PLAIN');
-    },
-}
+    describe('check_plain_passwd', () => {
+        beforeEach(_set_up)
 
-exports.auth_notes_are_set = {
-    setUp : _set_up_2,
-    'bad auth: no notes should be set' (test) {
-        const credentials = ['matt','ttam'];
-        this.plugin.check_user((code) => {
-            test.equal(this.connection.notes.auth_user, undefined);
-            test.equal(this.connection.notes.auth_passwd, undefined);
-            test.done();
-        }, this.connection, credentials, 'PLAIN');
-    },
-    'good auth: dont store password' (test) {
-        const creds = ['test','testpass'];
-        this.plugin.blankout_password = true;
-        this.plugin.check_user((code) => {
-            test.equal(this.connection.notes.auth_user, creds[0]);
-            test.equal(this.connection.notes.auth_passwd, undefined);
-            test.done();
-        }, this.connection, creds, 'PLAIN');
-    },
-    'good auth: store password (default)' (test) {
-        const creds = ['test','testpass'];
-        this.plugin.check_user((code) => {
-            test.equal(this.connection.notes.auth_user, creds[0]);
-            test.equal(this.connection.notes.auth_passwd, creds[1]);
-            test.done();
-        }, this.connection, creds, 'PLAIN');
-    },
-}
+        it('valid password', (done) => {
+            this.plugin.check_plain_passwd(this.connection, 'test', 'testpass', pass => {
+                assert.equal(pass, true);
+                done();
+            });
+        })
 
-exports.hook_unrecognized_command = {
-    setUp : _set_up,
-    'AUTH type FOO' (test) {
-        const params = ['AUTH','FOO'];
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
-        this.plugin.hook_unrecognized_command((code) => {
-            test.expect(2);
-            test.equal(code, null);
-            test.equal(this.connection.relaying, false);
-            test.done();
-        }, this.connection, params);
-    },
-    'AUTH PLAIN' (test) {
-        const params = ['AUTH','PLAIN', utils.base64('discard\0test\0testpass')];
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
-        this.plugin.hook_unrecognized_command((code) => {
-            test.expect(2);
-            test.equal(code, OK);
-            test.ok(this.connection.relaying);
-            test.done();
-        }, this.connection, params);
-    },
-    'AUTH PLAIN, authenticating' (test) {
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
-        this.connection.notes.authenticating=true;
-        this.connection.notes.auth_method='PLAIN';
-        this.plugin.hook_unrecognized_command((code) => {
-            test.expect(2);
-            test.equal(code, OK);
-            test.ok(this.connection.relaying);
-            test.done();
-        }, this.connection, [utils.base64('discard\0test\0testpass')]);
-    }
-}
+        it('wrong password', (done) => {
+            this.plugin.check_plain_passwd(this.connection, 'test', 'test1pass', pass => {
+                assert.equal(pass, false);
+                done();
+            });
+        })
 
-exports.auth_login = {
-    setUp : _set_up,
-    'AUTH LOGIN' (test) {
-        test.expect(8);
+        it('null password', (done) => {
+            this.plugin.check_plain_passwd(this.connection, 'test', null, pass => {
+                assert.equal(pass, false);
+                done();
+            });
+        })
+    })
 
-        const next3 = function (code) {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, true);
-            test.done();
-        }.bind(this);
+    describe('select_auth_method', () => {
+        beforeEach(_set_up)
 
-        const next2 = function (code) {
-            test.equal(code, OK);
-            test.equal(this.connection.notes.auth_login_userlogin, 'test');
-            test.equal(this.connection.relaying, false);
-            this.plugin.hook_unrecognized_command(next3, this.connection, [utils.base64('testpass')]);
-        }.bind(this);
+        it('no auth methods yield no result', (done) => {
+            this.plugin.select_auth_method((code) => {
+                assert.equal(code, null);
+                assert.equal(false, this.connection.relaying);
+                done();
+            }, this.connection, 'AUTH PLAIN');
+        })
 
-        const next = function (code) {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, false);
-            test.equal(this.connection.notes.auth_login_asked_login , true);
+        it('invalid AUTH method, no result', (done) => {
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN','CRAM-MD5'];
+            this.plugin.select_auth_method((code) => {
+                assert.equal(code, null);
+                assert.equal(false, this.connection.relaying);
+                done();
+            }, this.connection, 'AUTH FOO');
+        })
 
-            this.plugin.hook_unrecognized_command(next2, this.connection, [utils.base64('test')]);
-        }.bind(this);
+        it('valid AUTH method, valid attempt', (done) => {
+            const method = `PLAIN ${utils.base64('discard\0test\0testpass')}`;
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+            this.plugin.select_auth_method((code) => {
+                assert.equal(code, OK);
+                assert.ok(this.connection.relaying);
+                done();
+            }, this.connection, method);
+        })
+    })
 
-        const params = ['AUTH','LOGIN'];
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
-        this.plugin.hook_unrecognized_command(next, this.connection, params);
-    },
+    describe('auth_plain', () => {
+        beforeEach(_set_up)
 
-    'AUTH LOGIN <username>' (test) {
-        test.expect(6);
+        it('params type=string returns OK', (done) => {
+            this.plugin.auth_plain((rc) => {
+                assert.equal(rc, OK);
+                assert.equal(false, this.connection.relaying);
+                done();
+            }, this.connection, 'AUTH FOO');
+        })
 
-        const next2 = function (code) {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, true);
-            test.done();
-        }.bind(this);
+        it('params type=empty array, returns OK', (done) => {
+            this.plugin.auth_plain((rc) => {
+                assert.equal(rc, OK);
+                assert.equal(false, this.connection.relaying);
+                done();
+            }, this.connection, []);
+        })
 
-        const next = function (code) {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, false);
-            test.equal(this.connection.notes.auth_login_userlogin, 'test');
-            test.equal(this.connection.notes.auth_login_asked_login , true);
+        it('params type=array, successful auth', (done) => {
+            const method = utils.base64('discard\0test\0testpass');
+            this.plugin.auth_plain((rc) => {
+                assert.equal(rc, OK);
+                assert.ok(this.connection.relaying);
+                done();
+            }, this.connection, [method]);
+        })
 
-            this.plugin.hook_unrecognized_command(next2, this.connection, [utils.base64('testpass')]);
-        }.bind(this);
+        it('params type=with two line login', (done) => {
+            this.plugin.auth_plain((rc) => {
+                assert.equal(this.connection.notes.auth_plain_asked_login, true);
+                assert.equal(rc, OK);
+                done();
+            }, this.connection, '');
+        })
+    })
 
-        const params = ['AUTH','LOGIN', utils.base64('test')];
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
-        this.plugin.hook_unrecognized_command(next, this.connection, params);
-    },
+    describe('check_user', () => {
+        beforeEach(_set_up_2)
 
-    'AUTH LOGIN <username>, bad protocol' (test) {
-        test.expect(7);
+        it('bad auth', (done) => {
+            const credentials = ['matt','ttam'];
+            this.plugin.check_user((code) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, false);
+                assert.equal(this.connection.notes.auth_custom_note, 'custom_note');
+                done();
+            }, this.connection, credentials, 'PLAIN');
+        })
 
-        const next2 = function (code, msg) {
-            test.equal(code, DENYDISCONNECT);
-            test.equal(msg, 'bad protocol');
-            test.equal(this.connection.relaying, false);
-            test.done();
-        }.bind(this);
+        it('good auth', (done) => {
+            const credentials = ['test','testpass'];
+            this.plugin.check_user((code) => {
+                assert.equal(code, OK);
+                assert.ok(this.connection.relaying);
+                assert.equal(this.connection.notes.auth_custom_note, 'custom_note');
+                done();
+            }, this.connection, credentials, 'PLAIN');
+        })
+    })
 
-        const next = function (code) {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, false);
-            test.equal(this.connection.notes.auth_login_userlogin, 'test');
-            test.equal(this.connection.notes.auth_login_asked_login , true);
+    describe('check_user_custom_opts', () => {
+        beforeEach(_set_up_custom_pwcb_opts)
 
-            this.plugin.hook_unrecognized_command(next2, this.connection, ['AUTH', 'LOGIN']);
-        }.bind(this);
+        it('legacyok_nomessage', (done) => {
+            this.plugin.check_user((code, msg) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, true);
+                assert.deepEqual(this.connection.notes.resp_strings, [[ 235, '2.7.0 Authentication successful' ]]);
+                done();
+            }, this.connection, ['legacyok_nomessage', 'any'], 'PLAIN');
+        })
 
-        const params = ['AUTH','LOGIN', utils.base64('test')];
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
-        this.plugin.hook_unrecognized_command(next, this.connection, params);
-    },
+        it('legacyfail_nomessage', (done) => {
+            this.plugin.check_user((code, msg) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, false);
+                assert.deepEqual(this.connection.notes.resp_strings, [ [ 535, '5.7.8 Authentication failed' ] ]);
+                done();
+            }, this.connection, ['legacyfail_nomessage', 'any'], 'PLAIN');
+        })
 
+        it('legacyok_message', (done) => {
+            this.plugin.check_user((code, msg) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, true);
+                assert.deepEqual(this.connection.notes.resp_strings, [[ 235, 'GREAT SUCCESS' ]]);
+                done();
+            }, this.connection, ['legacyok_message', 'any'], 'PLAIN');
+        })
 
-    'AUTH LOGIN, reauthentication' (test) {
-        test.expect(9);
+        it('legacyfail_message', (done) => {
+            this.plugin.check_user((code, msg) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, false);
+                assert.deepEqual(this.connection.notes.resp_strings, [[ 535, 'FAIL 123' ]]);
+                done();
+            }, this.connection, ['legacyfail_message', 'any'], 'PLAIN');
+        })
 
-        function next3 (code) {
-            test.equal(code, OK);
+        it('newok', (done) => {
+            this.plugin.check_user((code, msg) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, true);
+                assert.deepEqual(this.connection.notes.resp_strings, [[ 215, 'KOKOKO' ]]);
+                done();
+            }, this.connection, ['newok', 'any'], 'PLAIN');
+        })
 
-            test.done();
-        }
+        it('newfail', (done) => {
+            this.plugin.check_user((code, msg) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, false);
+                assert.deepEqual(this.connection.notes.resp_strings, [[ 555, 'OHOHOH' ]]);
+                done();
+            }, this.connection, ['newfail', 'any'], 'PLAIN');
+        })
+    })
 
-        const next2 = function (code) {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, true);
-            test.equal(this.connection.notes.auth_login_userlogin, null);
-            test.equal(this.connection.notes.auth_login_asked_login , false);
+    describe('auth_notes_are_set', () => {
+        beforeEach(_set_up_2)
 
-            this.plugin.hook_unrecognized_command(next3, this.connection, ['AUTH','LOGIN']);
-        }.bind(this);
+        it('bad auth: no notes should be set', (done) => {
+            const credentials = ['matt','ttam'];
+            this.plugin.check_user((code) => {
+                assert.equal(this.connection.notes.auth_user, undefined);
+                assert.equal(this.connection.notes.auth_passwd, undefined);
+                done();
+            }, this.connection, credentials, 'PLAIN');
+        })
 
-        const next = function (code) {
-            test.equal(code, OK);
-            test.equal(this.connection.relaying, false);
-            test.equal(this.connection.notes.auth_login_userlogin, 'test');
-            test.equal(this.connection.notes.auth_login_asked_login , true);
+        it('good auth: dont store password', (done) => {
+            const creds = ['test','testpass'];
+            this.plugin.blankout_password = true;
+            this.plugin.check_user((code) => {
+                assert.equal(this.connection.notes.auth_user, creds[0]);
+                assert.equal(this.connection.notes.auth_passwd, undefined);
+                done();
+            }, this.connection, creds, 'PLAIN');
+        })
 
-            this.plugin.hook_unrecognized_command(next2, this.connection, [utils.base64('testpass')]);
-        }.bind(this);
+        it('good auth: store password (default)', (done) => {
+            const creds = ['test','testpass'];
+            this.plugin.check_user((code) => {
+                assert.equal(this.connection.notes.auth_user, creds[0]);
+                assert.equal(this.connection.notes.auth_passwd, creds[1]);
+                done();
+            }, this.connection, creds, 'PLAIN');
+        })
+    })
 
-        const params = ['AUTH','LOGIN', utils.base64('test')];
-        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
-        this.plugin.hook_unrecognized_command(next, this.connection, params);
-    }
-}
+    describe('hook_unrecognized_command', () => {
+        beforeEach(_set_up)
 
-exports.hexi = {
-    setUp : _set_up,
-    'hexi' (test) {
-        test.expect(2);
-        test.equal(this.plugin.hexi(512), 200);
-        test.equal(this.plugin.hexi(8), 8);
-        test.done();
-    },
-}
+        it('AUTH type FOO', (done) => {
+            const params = ['AUTH','FOO'];
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+            this.plugin.hook_unrecognized_command((code) => {
+                assert.equal(code, null);
+                assert.equal(this.connection.relaying, false);
+                done();
+            }, this.connection, params);
+        })
 
-exports.constrain_sender = {
-    setUp : _set_up,
-    'constrain_sender, domain match' (test) {
-        this.mfrom = new Address('user@example.com')
-        this.connection.results.add({name: 'auth'}, { user: 'user@example.com' })
-        test.expect(1);
-        this.plugin.constrain_sender((resCode) => {
-                test.equal(resCode, undefined)
-                test.done();
-            },
-            this.connection,
-            [this.mfrom],
-        )
-    },
-    'constrain_sender, domain mismatch' (test) {
-        this.mfrom = new Address('user@example.net')
-        this.connection.results.add({name: 'auth'}, { user: 'user@example.com' })
-        test.expect(2);
-        this.plugin.constrain_sender((resCode, denyMsg) => {
-                test.equal(resCode, DENY)
-                test.ok(denyMsg)
-                test.done();
-            },
-            this.connection,
-            [this.mfrom],
-        )
-    },
-    'constrain_sender, no domain' (test) {
-        this.mfrom = new Address('user@example.com')
-        this.connection.results.add({name: 'auth'}, { user: 'user' })
-        test.expect(1);
-        this.plugin.constrain_sender((resCode) => {
-                test.equal(resCode, undefined)
-                test.done();
-            },
-            this.connection,
-            [this.mfrom],
-        )
-    },
-}
+        it('AUTH PLAIN', (done) => {
+            const params = ['AUTH','PLAIN', utils.base64('discard\0test\0testpass')];
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+            this.plugin.hook_unrecognized_command((code) => {
+                assert.equal(code, OK);
+                assert.ok(this.connection.relaying);
+                done();
+            }, this.connection, params);
+        })
+
+        it('AUTH PLAIN, authenticating', (done) => {
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+            this.connection.notes.authenticating=true;
+            this.connection.notes.auth_method='PLAIN';
+            this.plugin.hook_unrecognized_command((code) => {
+                assert.equal(code, OK);
+                assert.ok(this.connection.relaying);
+                done();
+            }, this.connection, [utils.base64('discard\0test\0testpass')]);
+        })
+    })
+
+    describe('auth_login', () => {
+        beforeEach(_set_up)
+
+        it('AUTH LOGIN', (done) => {
+            const params = ['AUTH','LOGIN'];
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+            this.plugin.hook_unrecognized_command((code) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, false);
+                assert.equal(this.connection.notes.auth_login_asked_login , true);
+
+                this.plugin.hook_unrecognized_command((code) => {
+                    assert.equal(code, OK);
+                    assert.equal(this.connection.notes.auth_login_userlogin, 'test');
+                    assert.equal(this.connection.relaying, false);
+                    this.plugin.hook_unrecognized_command((code) => {
+                        assert.equal(code, OK);
+                        assert.equal(this.connection.relaying, true);
+                        done();
+                    }, this.connection, [utils.base64('testpass')]);
+                }, this.connection, [utils.base64('test')]);
+            }, this.connection, params);
+        })
+
+        it('AUTH LOGIN <username>', (done) => {
+            const params = ['AUTH','LOGIN', utils.base64('test')];
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+            this.plugin.hook_unrecognized_command((code) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, false);
+                assert.equal(this.connection.notes.auth_login_userlogin, 'test');
+                assert.equal(this.connection.notes.auth_login_asked_login , true);
+
+                this.plugin.hook_unrecognized_command((code2) => {
+                    assert.equal(code2, OK);
+                    assert.equal(this.connection.relaying, true);
+                    done();
+                }, this.connection, [utils.base64('testpass')]);
+            }, this.connection, params);
+        })
+
+        it('AUTH LOGIN <username>, bad protocol', (done) => {
+
+            const params = ['AUTH','LOGIN', utils.base64('test')];
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+            this.plugin.hook_unrecognized_command((code) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, false);
+                assert.equal(this.connection.notes.auth_login_userlogin, 'test');
+                assert.equal(this.connection.notes.auth_login_asked_login , true);
+
+                this.plugin.hook_unrecognized_command((code, msg) => {
+                    assert.equal(code, DENYDISCONNECT);
+                    assert.equal(msg, 'bad protocol');
+                    assert.equal(this.connection.relaying, false);
+                    done();
+                }, this.connection, ['AUTH', 'LOGIN']);
+            }, this.connection, params);
+        })
+
+        it('AUTH LOGIN, reauthentication', (done) => {
+            const params = ['AUTH','LOGIN', utils.base64('test')];
+            this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+            this.plugin.hook_unrecognized_command((code) => {
+                assert.equal(code, OK);
+                assert.equal(this.connection.relaying, false);
+                assert.equal(this.connection.notes.auth_login_userlogin, 'test');
+                assert.equal(this.connection.notes.auth_login_asked_login , true);
+
+                this.plugin.hook_unrecognized_command((code) => {
+                    assert.equal(code, OK);
+                    assert.equal(this.connection.relaying, true);
+                    assert.equal(this.connection.notes.auth_login_userlogin, null);
+                    assert.equal(this.connection.notes.auth_login_asked_login , false);
+
+                    this.plugin.hook_unrecognized_command((code) => {
+                        assert.equal(code, OK);
+                        done();
+                    }, this.connection, ['AUTH','LOGIN']);
+                }, this.connection, [utils.base64('testpass')]);
+            }, this.connection, params);
+        })
+    })
+
+    describe('hexi', () => {
+        beforeEach(_set_up)
+
+        it('hexi', () => {
+            assert.equal(this.plugin.hexi(512), 200);
+            assert.equal(this.plugin.hexi(8), 8);
+        })
+    })
+
+    describe('constrain_sender', () => {
+        beforeEach(_set_up)
+
+        it('constrain_sender, domain match', (done) => {
+            this.mfrom = new Address('user@example.com')
+            this.connection.results.add({name: 'auth'}, { user: 'user@example.com' })
+            this.plugin.constrain_sender((resCode) => {
+                    assert.equal(resCode, undefined)
+                    done();
+                },
+                this.connection,
+                [this.mfrom],
+            )
+        })
+
+        it('constrain_sender, domain mismatch', (done) => {
+            this.mfrom = new Address('user@example.net')
+            this.connection.results.add({name: 'auth'}, { user: 'user@example.com' })
+            this.plugin.constrain_sender((resCode, denyMsg) => {
+                    assert.equal(resCode, DENY)
+                    assert.ok(denyMsg)
+                    done();
+                },
+                this.connection,
+                [this.mfrom],
+            )
+        })
+        it('constrain_sender, no domain', (done) => {
+            this.mfrom = new Address('user@example.com')
+            this.connection.results.add({name: 'auth'}, { user: 'user' })
+            this.plugin.constrain_sender((resCode) => {
+                    assert.equal(resCode, undefined)
+                    done();
+                },
+                this.connection,
+                [this.mfrom],
+            )
+        })
+    })
+})

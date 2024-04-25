@@ -1,12 +1,14 @@
 'use strict';
 
+const assert = require('node:assert')
+
 const fixtures = require('haraka-test-fixtures');
 const outbound = require('../../outbound');
 const TimerQueue = require('../../outbound/timer_queue');
 
 const Connection = fixtures.connection;
 
-function _set_up (done) {
+const _set_up = (done) => {
     this.plugin = new fixtures.plugin('status');
     this.plugin.outbound = outbound;
 
@@ -15,124 +17,114 @@ function _set_up (done) {
     done();
 }
 
-exports.register = {
-    setUp : _set_up,
-    'loads the status plugin' (test) {
-        test.expect(1);
-        test.equal('status', this.plugin.name);
-        test.done();
-    },
-}
+describe('status', () => {
 
-exports.access = {
-    setUp : _set_up,
-    'remote' (test) {
+    describe('register', () => {
+        beforeEach(_set_up)
 
-        test.expect(1);
-        function cb (code) {
-            test.equal(DENY, code);
-            test.done();
-        }
+        it('loads the status plugin', () => {
+            assert.equal('status', this.plugin.name);
+        })
+    })
 
-        this.connection.remote.is_local = false;
+    describe('access', () => {
+        beforeEach(_set_up)
 
-        this.plugin.hook_unrecognized_command(cb, this.connection, ['STATUS', 'POOL LIST']);
-    }
-}
+        it('remote', (done) => {
+            this.connection.remote.is_local = false;
+            this.plugin.hook_unrecognized_command((code) => {
+                assert.equal(DENY, code);
+                done();
+            }, this.connection, ['STATUS', 'POOL LIST']);
+        })
+    })
 
-exports.pools = {
-    setUp : _set_up,
-    'list_pools' (test) {
+    describe('pools', () => {
+        beforeEach(_set_up)
 
-        test.expect(1);
-        this.connection.respond = (code, message) => {
-            const data = JSON.parse(message);
-            test.equal('object', typeof data); // there should be one pools array for noncluster and more for cluster
-            test.done();
-        };
-
-        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'POOL LIST']);
-    }
-}
-
-exports.queues = {
-    setUp : _set_up,
-    'inspect_queue' (test) {
-        // should list delivery_queue and temp_fail_queue per cluster children
-        test.expect(2);
-
-        outbound.temp_fail_queue = new TimerQueue(10);
-        outbound.temp_fail_queue.add('file1', 100, () => {});
-        outbound.temp_fail_queue.add('file2', 100, () => {});
-
-        this.connection.respond = (code, message) => {
-            const data = JSON.parse(message);
-            test.equal(0, data.delivery_queue.length);
-            test.equal(2, data.temp_fail_queue.length);
-            test.done();
-        };
-        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE INSPECT']);
-    },
-    'stat_queue' (test) {
-        // should list files only
-        test.expect(1);
-
-        this.connection.respond = (code, message) => {
-            const data = JSON.parse(message);
-            test.ok(/^\d+\/\d+\/\d+$/.test(data));
-            test.done();
-        };
-        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE STATS']);
-    },
-    'list_queue' (test) {
-        // should list files only
-        test.expect(1);
-
-        this.connection.respond = (code, message) => {
-            const data = JSON.parse(message);
-            test.equal(0, data.length);
-            test.done();
-        };
-        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE LIST']);
-    },
-    'discard_from_queue' (test) {
-        const self = this;
-
-        test.expect(1);
-
-        outbound.temp_fail_queue = new TimerQueue(10);
-        outbound.temp_fail_queue.add('file1', 10, () => {
-            test.ok(false, 'This callback should not be called');
-            test.done();
-        });
-        outbound.temp_fail_queue.add('file2', 2000, () => {});
-
-        function res () {
-            self.connection.respond = (code, message) => {
+        it('list_pools', (done) => {
+            this.connection.respond = (code, message) => {
                 const data = JSON.parse(message);
-                test.equal(1, data.temp_fail_queue.length);
-                test.done();
+                assert.equal('object', typeof data); // there should be one pools array for noncluster and more for cluster
+                done();
             };
-            self.plugin.hook_unrecognized_command(() => {}, self.connection, ['STATUS', 'QUEUE INSPECT']);
-        }
+            this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'POOL LIST']);
+        })
+    })
 
-        this.plugin.hook_unrecognized_command(res, this.connection, ['STATUS', 'QUEUE DISCARD file1']);
-    },
-    'push_email_at_queue' (test) {
-        test.expect(1);
+    describe('queues', () => {
+        beforeEach(_set_up)
 
-        const timeout = setTimeout(() => {
-            test.ok(false, 'Timeout');
-            test.done();
-        }, 1000);
+        it('inspect_queue', (done) => {
+            // should list delivery_queue and temp_fail_queue per cluster children
+            outbound.temp_fail_queue = new TimerQueue(10);
+            outbound.temp_fail_queue.add('file1', 100, () => {});
+            outbound.temp_fail_queue.add('file2', 100, () => {});
 
-        outbound.temp_fail_queue.add('file', 1500, () => {
-            clearTimeout(timeout);
+            this.connection.respond = (code, message) => {
+                const data = JSON.parse(message);
+                assert.equal(0, data.delivery_queue.length);
+                assert.equal(2, data.temp_fail_queue.length);
+                done();
+            };
+            this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE INSPECT']);
+        })
 
-            test.ok(true);
-            test.done();
-        });
+        it('stat_queue', (done) => {
+            // should list files only
+            this.connection.respond = (code, message) => {
+                const data = JSON.parse(message);
+                assert.ok(/^\d+\/\d+\/\d+$/.test(data));
+                done();
+            };
+            this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE STATS']);
+        })
 
-        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE PUSH file']);
-    },
-}
+        it('list_queue', (done) => {
+            // should list files only
+            this.connection.respond = (code, message) => {
+                const data = JSON.parse(message);
+                assert.equal(0, data.length);
+                done();
+            };
+            this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE LIST']);
+        })
+
+        it('discard_from_queue', (done) => {
+            const self = this;
+
+            outbound.temp_fail_queue = new TimerQueue(10);
+            outbound.temp_fail_queue.add('file1', 10, () => {
+                assert.ok(false, 'This callback should not be called');
+                done();
+            })
+
+            outbound.temp_fail_queue.add('file2', 2000, () => {});
+
+            this.plugin.hook_unrecognized_command(() => {
+                self.connection.respond = (code, message) => {
+                    const data = JSON.parse(message);
+                    assert.equal(1, data.temp_fail_queue.length);
+                    done();
+                }
+                self.plugin.hook_unrecognized_command(() => {}, self.connection, ['STATUS', 'QUEUE INSPECT']);
+            }, this.connection, ['STATUS', 'QUEUE DISCARD file1']);
+        })
+
+        it('push_email_at_queue', (done) => {
+            const timeout = setTimeout(() => {
+                assert.ok(false, 'Timeout');
+                done();
+            }, 1000);
+
+            outbound.temp_fail_queue.add('file', 1500, () => {
+                clearTimeout(timeout);
+
+                assert.ok(true);
+                done();
+            });
+
+            this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE PUSH file']);
+        })
+    })
+})

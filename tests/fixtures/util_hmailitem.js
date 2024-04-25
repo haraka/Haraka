@@ -1,26 +1,26 @@
 'use strict';
 
-const { Address }     = require('address-rfc2821');
-const fixtures        = require('haraka-test-fixtures');
+const assert = require('node:assert')
 
+const { Address } = require('address-rfc2821');
+const fixtures = require('haraka-test-fixtures');
 
 /**
  * Creates a HMailItem instance, which is passed to callback. Reports error on test param if creation fails.
  *
  * @param outbound_context
- * @param test
  * @param options
  * @param callback
  */
-exports.newMockHMailItem = (outbound_context, test, options, callback) => {
+exports.newMockHMailItem = (outbound_context, done, options, callback) => {
     const opts = options || {};
     exports.createHMailItem(
         outbound_context,
         opts,
         (err, hmail) => {
             if (err) {
-                test.ok(false, `Could not create HMailItem: ${err}`);
-                test.done();
+                assert.ok(false, `Could not create HMailItem: ${err}`);
+                done()
                 return;
             }
             if (!hmail.todo) {
@@ -102,7 +102,7 @@ exports.createHMailItem = (outbound_context, options, callback) => {
  * @param test
  * @param playbook
  */
-exports.playTestSmtpConversation = (hmail, socket, test, playbook, callback) => {
+exports.playTestSmtpConversation = (hmail, socket, done, playbook, callback) => {
     const testmx = {
         bind_helo: "haraka.test",
         exchange: "remote.testhost",
@@ -112,17 +112,17 @@ exports.playTestSmtpConversation = (hmail, socket, test, playbook, callback) => 
     socket.write = line => {
         //console.log('MockSocket.write(' + line.replace(/\n/, '\\n').replace(/\r/, '\\r') + ')');
         if (playbook.length == 0) {
-            test.ok(false, 'missing next playbook entry');
-            test.done();
+            assert.ok(false, 'missing next playbook entry');
+            done()
             return;
         }
         let expected;
         while (false != (expected = getNextEntryFromPlaybook('haraka', playbook))) {
             if (typeof expected.test === 'function') {
-                test.ok(expected.test(line), expected.description || `Expected that line works with func: ${expected.test}`);
+                assert.ok(expected.test(line), expected.description || `Expected that line works with func: ${expected.test}`);
             }
             else {
-                test.equals(`${expected.test}\r\n`, line, expected.description || `Expected that line equals: ${expected.test}`);
+                assert.equal(`${expected.test}\r\n`, line, expected.description || `Expected that line equals: ${expected.test}`);
             }
             if (expected.end_test === true) {
                 setTimeout(() => {
