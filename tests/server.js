@@ -124,8 +124,8 @@ describe('server', () => {
             this.config = this.config.module_config(path.resolve('tests'));
 
             this.server = require('../server');
-            this.server.config = this.config.module_config(path.resolve('tests'));
-            this.server.plugins.config = this.config.module_config(path.resolve('tests'));
+            this.server.config = this.config;
+            this.server.plugins.config = this.config;
 
             this.server.load_default_tls_config(() => {
                 setTimeout(() => {

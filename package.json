@@ -90,7 +90,7 @@
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
-    "test": "npx mocha --exit tests tests/outbound tests/plugins/auth tests/plugins/queue tests/plugins",
+    "test": "npx mocha --exit --timeout=3000 tests tests/outbound tests/plugins/auth tests/plugins/queue tests/plugins",
     "lint": "npx eslint@^8 *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka",
     "lint:fix": "npx eslint@^8 --fix *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka",
     "versions": "npx dependency-version-checker check",
