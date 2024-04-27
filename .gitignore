@@ -8,6 +8,10 @@ bower_components
 coverage
 .nyc_output
 .idea
+config/me
+config/dhparams.pem
+config/tls_cert.pem
+config/tls_key.pem
 tests/node_modules
 tests/queue/plain
 tests/queue/multibyte

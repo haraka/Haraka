@@ -64,13 +64,7 @@ class pluggableStream extends stream.Stream {
             this.emit('secureConnect', a, b);
             this.emit('secure', a, b);
         });
-        this.targetsocket.on('secureConnection', (a, b) => {
-            // investigate this for removal, see #2743
-            this.emit('secureConnection', a, b);
-            this.emit('secure', a, b);
-        });
         this.targetsocket.on('secure', (a, b) => {
-            this.emit('secureConnection', a, b);
             this.emit('secure', a, b);
         });
         this.targetsocket.on('end', () => {
@@ -107,7 +101,7 @@ class pluggableStream extends stream.Stream {
     }
     clean (data) {
         if (this.targetsocket?.removeAllListeners) {
-            for (const name of ['data', 'secure', 'secureConnect', 'secureConnection', 'end', 'close', 'error', 'drain']) {
+            for (const name of ['data', 'secure', 'secureConnect', 'end', 'close', 'error', 'drain']) {
                 this.targetsocket.removeAllListeners(name);
             }
         }

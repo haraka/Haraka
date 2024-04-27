@@ -33,6 +33,7 @@
 - logger: don't load outbound (race condition). Instead, set name property #3322
 - logger: extend add_log_methods to Classes (connection, plugins, hmail) #3322
 - logger: when logging via `logger` methods, use short names #3322
+- logger: check Object.hasOwn to avoid circular deps
 - outbound: delete try_deliver_host. Use net_utils to resolve MX hosts to IPs #3322
 - outbound: remove config setting ipv6_enabled #3322
 - outbound: remove undocumented use of send_email with arity of 2. #3322
@@ -47,6 +48,9 @@
 - remove last vestiges of header_hide_version (long ago renamed)
 - server.js: use the local logger methods
 - get Haraka version from utils.getVersion (which includes git id if running from repo)
+- tls_socket: remove secureConnection. Fixes #2743
+- .gitignore: add config/me and config/*.pem
+
 
 #### Fixed
 
