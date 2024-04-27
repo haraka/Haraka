@@ -24,7 +24,7 @@
     "address-rfc2822": "^2.2.1",
     "async": "^3.2.5",
     "daemon": "~1.1.0",
-    "haraka-config": "^1.2.3",
+    "haraka-config": "^1.2.4",
     "haraka-constants": "^1.0.6",
     "haraka-dsn": "^1.0.5",
     "haraka-email-message": "^1.2.3",
