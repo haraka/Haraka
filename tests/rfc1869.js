@@ -11,7 +11,7 @@ function _check (line, expected) {
     }
 }
 
-describe('basic', () => {
+describe('rfc1869', () => {
     it('MAIL FROM:<>', () => {
         _check('MAIL FROM:<>', ['<>']);
     })
