@@ -220,7 +220,7 @@ Server._graceful = shutdown => {
         if (shutdown) {
             Server.loginfo("Workers closed. Shutting down master process subsystems");
             for (const module of ['outbound', 'cfreader', 'plugins']) {
-                process.emit('message', {event: `${module  }.shutdown`});
+                process.emit('message', {event: `${module}.shutdown`});
             }
             const t2 = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
             return t2.unref();

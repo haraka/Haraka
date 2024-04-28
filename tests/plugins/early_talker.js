@@ -1,9 +1,9 @@
 'use strict';
+const assert = require('node:assert')
 
 const fixtures     = require('haraka-test-fixtures');
 
-function _set_up (done) {
-
+const _set_up = (done) => {
     this.plugin = new fixtures.plugin('early_talker');
     this.plugin.cfg = { main: { reject: true } };
 
@@ -11,105 +11,94 @@ function _set_up (done) {
     done();
 }
 
-function _tear_down (done) { done(); }
+describe('early_talker', () => {
+    beforeEach(_set_up)
 
-exports.early_talker = {
-    setUp : _set_up,
-    tearDown : _tear_down,
-    'no config' (test) {
-        test.expect(2);
-        const next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.done();
-        }.bind(this);
-        this.plugin.early_talker(next, this.connection);
-    },
-    'relaying' (test) {
-        test.expect(2);
-        const next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.done();
-        }.bind(this);
+    it('no config', (done) => {
+        this.plugin.early_talker((rc, msg) => {
+            assert.equal(rc, undefined);
+            assert.equal(msg, undefined);
+            done();
+        }, this.connection);
+    })
+
+    it('relaying', (done) => {
         this.plugin.pause = 1;
         this.connection.relaying = true;
-        this.plugin.early_talker(next, this.connection);
-    },
-    'is an early talker' (test) {
-        test.expect(3);
+        this.plugin.early_talker((rc, msg) => {
+            assert.equal(rc, undefined);
+            assert.equal(msg, undefined);
+            done();
+        }, this.connection);
+    })
+
+    it('is an early talker', (done) => {
         const before = Date.now();
-        const next = function (rc, msg) {
-            test.ok(Date.now() >= before + 1000);
-            test.equal(DENYDISCONNECT, rc);
-            test.equal('You talk too soon', msg);
-            test.done();
-        }.bind(this);
-        this.plugin.pause = 1000;
+        this.plugin.pause = 1001;
         this.connection.early_talker = true;
-        this.plugin.early_talker(next, this.connection);
-    },
-    'is an early talker, reject=false' (test) {
-        test.expect(4);
+        this.plugin.early_talker((rc, msg) => {
+            assert.ok(Date.now() >= before + 1000);
+            assert.equal(rc, DENYDISCONNECT);
+            assert.equal(msg, 'You talk too soon');
+            done();
+        }, this.connection);
+    })
+
+    it('is an early talker, reject=false', (done) => {
         const before = Date.now();
-        const next = function (rc, msg) {
-            test.ok(Date.now() >= before + 1000);
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.ok(this.connection.results.has('early_talker', 'fail', 'early'));
-            test.done();
-        }.bind(this);
         this.plugin.pause = 1001;
         this.plugin.cfg.main.reject = false;
         this.connection.early_talker = true;
-        this.plugin.early_talker(next, this.connection);
-    },
-    'relay whitelisted ip' (test) {
-        test.expect(3);
-        const next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.ok(this.connection.results.has('early_talker', 'skip', 'whitelist'));
-            test.done();
-        }.bind(this);
+        this.plugin.early_talker((rc, msg) => {
+            assert.ok(Date.now() >= before + 1000);
+            assert.equal(undefined, rc);
+            assert.equal(undefined, msg);
+            assert.ok(this.connection.results.has('early_talker', 'fail', 'early'));
+            done();
+        }, this.connection);
+    })
+
+    it('relay whitelisted ip', (done) => {
         this.plugin.pause = 1000;
         this.plugin.whitelist = this.plugin.load_ip_list(['127.0.0.1']);
         this.connection.remote.ip = '127.0.0.1';
         this.connection.early_talker = true;
-        this.plugin.early_talker(next, this.connection);
-    },
-    'relay whitelisted subnet' (test) {
-        test.expect(3);
-        const next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.ok(this.connection.results.has('early_talker', 'skip', 'whitelist'));
-            test.done();
-        }.bind(this);
+        this.plugin.early_talker((rc, msg) => {
+            assert.equal(undefined, rc);
+            assert.equal(undefined, msg);
+            assert.ok(this.connection.results.has('early_talker', 'skip', 'whitelist'));
+            done();
+        }, this.connection);
+    })
+
+    it('relay whitelisted subnet', (done) => {
         this.plugin.pause = 1000;
         this.plugin.whitelist = this.plugin.load_ip_list(['127.0.0.0/16']);
         this.connection.remote.ip = '127.0.0.88';
         this.connection.early_talker = true;
-        this.plugin.early_talker(next, this.connection);
-    },
-    'relay good senders' (test) {
-        test.expect(3);
-        const next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.ok(this.connection.results.has('early_talker', 'skip', '+karma'));
-            test.done();
-        }.bind(this);
+        this.plugin.early_talker((rc, msg) => {
+            assert.equal(undefined, rc);
+            assert.equal(undefined, msg);
+            assert.ok(this.connection.results.has('early_talker', 'skip', 'whitelist'));
+            done();
+        }, this.connection);
+    })
+
+    it('relay good senders', (done) => {
         this.plugin.pause = 1000;
         this.connection.results.add('karma', {good: 10});
         this.connection.early_talker = true;
-        this.plugin.early_talker(next, this.connection);
-    },
-    'test loading ip list' (test) {
+        this.plugin.early_talker((rc, msg) => {
+            assert.equal(undefined, rc);
+            assert.equal(undefined, msg);
+            assert.ok(this.connection.results.has('early_talker', 'skip', '+karma'));
+            done();
+        }, this.connection);
+    })
+
+    it('test loading ip list', () => {
         const whitelist = this.plugin.load_ip_list(['123.123.123.123', '127.0.0.0/16']);
-        test.expect(2);
-        test.equal(whitelist[0][1], 32);
-        test.equal(whitelist[1][1], 16);
-        test.done();
-    },
-}
+        assert.equal(whitelist[0][1], 32);
+        assert.equal(whitelist[1][1], 16);
+    })
+})

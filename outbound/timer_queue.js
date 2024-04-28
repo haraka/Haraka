@@ -21,6 +21,7 @@ class TimerQueue {
     constructor (interval = 1000) {
         this.queue = [];
         this.interval_timer = setInterval(() => { this.fire(); }, interval);
+        this.interval_timer.unref() // allow server to exit
     }
 
     add (id, ms, cb) {

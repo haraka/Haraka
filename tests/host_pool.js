@@ -1,24 +1,21 @@
 "use strict";
 
+const assert = require('node:assert')
+
 const HostPool = require('../host_pool');
 
-exports.HostPool = {
-    "get a host": test => {
-        test.expect(2);
+describe('HostPool', () => {
+    it("get a host", (done) => {
 
         const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
-
         const host = pool.get_host();
 
-        test.ok( /\d\.\d\.\d\.\d/.test(host.host),
-            `'${host.host}' looks like a IP`);
-        test.ok( /\d\d\d\d/.test(host.port),
-            `'${host.port}' looks like a port`);
+        assert.ok( /\d\.\d\.\d\.\d/.test(host.host), `'${host.host}' looks like a IP`);
+        assert.ok( /\d\d\d\d/.test(host.port), `'${host.port}' looks like a port`);
+        done()
+    })
 
-        test.done();
-    },
-    "uses all the list": test => {
-        test.expect(3);
+    it("uses all the list", (done) => {
 
         const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
 
@@ -26,29 +23,24 @@ exports.HostPool = {
         const host2 = pool.get_host();
         const host3 = pool.get_host();
 
-        test.notEqual(host1.host, host2.host);
-        test.notEqual(host3.host, host2.host);
-        test.equal(host3.host, host1.host);
+        assert.notEqual(host1.host, host2.host);
+        assert.notEqual(host3.host, host2.host);
+        assert.equal(host3.host, host1.host);
+        done()
+    })
 
-        test.done();
-    },
-    "default port 25": test => {
-        test.expect(2);
-
+    it("default port 25", (done) => {
         const pool = new HostPool('1.1.1.1, 2.2.2.2');
 
         const host1 = pool.get_host();
         const host2 = pool.get_host();
 
-        test.equal(host1.port, 25, `is port 25: ${host1.port}`);
-        test.equal(host2.port, 25, `is port 25: ${host2.port}`);
+        assert.equal(host1.port, 25, `is port 25: ${host1.port}`);
+        assert.equal(host2.port, 25, `is port 25: ${host2.port}`);
+        done()
+    })
 
-        test.done();
-    },
-
-    "dead host": test => {
-        test.expect(3);
-
+    it("dead host", (done) => {
         const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
 
         pool.failed('1.1.1.1', '1111');
@@ -56,20 +48,18 @@ exports.HostPool = {
         let host;
 
         host = pool.get_host();
-        test.equal(host.host, '2.2.2.2', 'dead host is not returned');
+        assert.equal(host.host, '2.2.2.2', 'dead host is not returned');
         host = pool.get_host();
-        test.equal(host.host, '2.2.2.2', 'dead host is not returned');
+        assert.equal(host.host, '2.2.2.2', 'dead host is not returned');
         host = pool.get_host();
-        test.equal(host.host, '2.2.2.2', 'dead host is not returned');
-
-        test.done();
-    },
+        assert.equal(host.host, '2.2.2.2', 'dead host is not returned');
+        done()
+    })
 
     // if they're *all* dead, we return a host to try anyway, to keep from
     // accidentally DOS'ing ourselves if there's a transient but widespread
     // network outage
-    "they're all dead": test => {
-        test.expect(6);
+    it("they're all dead", (done) => {
 
         let host1;
         let host2;
@@ -82,26 +72,23 @@ exports.HostPool = {
         pool.failed('2.2.2.2', '2222');
 
         host2 = pool.get_host();
-        test.ok (host2, "if they're all dead, try one anyway");
-        test.notEqual(host1.host, host2.host, "rotation continues");
+        assert.ok (host2, "if they're all dead, try one anyway");
+        assert.notEqual(host1.host, host2.host, "rotation continues");
 
         host1 = pool.get_host();
-        test.ok (host1, "if they're all dead, try one anyway");
-        test.notEqual(host1.host, host2.host, "rotation continues");
+        assert.ok (host1, "if they're all dead, try one anyway");
+        assert.notEqual(host1.host, host2.host, "rotation continues");
 
         host2 = pool.get_host();
-        test.ok (host2, "if they're all dead, try one anyway");
-        test.notEqual(host1.host, host2.host, "rotation continues");
-
-        test.done();
-    },
-
+        assert.ok (host2, "if they're all dead, try one anyway");
+        assert.notEqual(host1.host, host2.host, "rotation continues");
+        done()
+    })
 
     // after .01 secs the timer to retry the dead host will fire, and then
     // we connect using this mock socket, whose "connect" always succeeds
     // so the code brings the dead host back to life
-    "host dead checking timer": test => {
-        test.expect(2);
+    it("host dead checking timer", (done) => {
 
         let num_reqs = 0;
         const MockSocket = function MockSocket (pool) {
@@ -144,7 +131,6 @@ exports.HostPool = {
                 }
             };
             this.destroy = () => {};
-
         };
 
         const retry_secs = 0.001; // 1ms
@@ -156,24 +142,23 @@ exports.HostPool = {
         // mark the host as failed and start up the retry timers
         pool.failed('1.1.1.1', '1111');
 
-        test.ok(pool.dead_hosts["1.1.1.1:1111"], 'yes it was marked dead');
+        assert.ok(pool.dead_hosts["1.1.1.1:1111"], 'yes it was marked dead');
 
         // probe_dead_host() will hit two failures and one success (based on
         // num_reqs above). So we wait at least 10s for that to happen:
         const timer = setTimeout(() => {
             clearInterval(interval);
-            test.ok(false, 'probe_dead_host failed');
-            test.done();
+            assert.ok(false, 'probe_dead_host failed');
+            done()
         }, 10 * 1000);
 
         const interval = setInterval(() => {
             if (!pool.dead_hosts["1.1.1.1:1111"]) {
                 clearTimeout(timer);
                 clearInterval(interval);
-                test.ok(true, 'timer un-deaded it');
-                test.done();
+                assert.ok(true, 'timer un-deaded it');
+                done()
             }
         }, retry_secs * 1000 * 3 );
-
-    }
-}
+    })
+})

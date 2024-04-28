@@ -1,61 +1,73 @@
+const assert = require('node:assert')
+
 const { parse } = require('../rfc1869');
 
-function _check (test, line, expected) {
-    test.expect(1 + expected.length);
+function _check (line, expected) {
     const match = /^(MAIL|RCPT)\s+(.*)$/.exec(line);
     const parsed = parse(match[1].toLowerCase(), match[2]);
-    test.equal(parsed.length, expected.length);
+    assert.equal(parsed.length, expected.length);
     for (let x = 0; x < expected.length; x++) {
-        test.equal(parsed[x], expected[x]);
+        assert.equal(parsed[x], expected[x]);
     }
-    test.done();
 }
 
-exports.basic = {
-    'MAIL FROM:<>': test => {
-        _check(test, 'MAIL FROM:<>', ['<>']);
-    },
-    'MAIL FROM:': test => {
-        _check(test, 'MAIL FROM:', ['<>']);
-    },
-    'MAIL FROM:<postmaster>': test => {
-        _check(test, 'MAIL FROM:<postmaster>', ['<postmaster>']);
-    },
-    'MAIL FROM:user': test => {
-        _check(test, 'MAIL FROM:user', ['user']);
-    },
-    'MAIL FROM:user size=1234': test => {
-        _check(test, 'MAIL FROM:user size=1234', ['user', 'size=1234']);
-    },
-    'MAIL FROM:user@domain size=1234': test => {
-        _check(test, 'MAIL FROM:user@domain size=1234',
+describe('rfc1869', () => {
+    it('MAIL FROM:<>', () => {
+        _check('MAIL FROM:<>', ['<>']);
+    })
+
+    it('MAIL FROM:', () => {
+        _check('MAIL FROM:', ['<>']);
+    })
+
+    it('MAIL FROM:<postmaster>', () => {
+        _check('MAIL FROM:<postmaster>', ['<postmaster>']);
+    })
+
+    it('MAIL FROM:user', () => {
+        _check('MAIL FROM:user', ['user']);
+    })
+
+    it('MAIL FROM:user size=1234', () => {
+        _check('MAIL FROM:user size=1234', ['user', 'size=1234']);
+    })
+
+    it('MAIL FROM:user@domain size=1234', () => {
+        _check('MAIL FROM:user@domain size=1234',
             ['user@domain', 'size=1234']);
-    },
-    'MAIL FROM:<user@domain> size=1234': test => {
-        _check(test, 'MAIL FROM:<user@domain> size=1234',
+    })
+
+    it('MAIL FROM:<user@domain> size=1234', () => {
+        _check('MAIL FROM:<user@domain> size=1234',
             ['<user@domain>', 'size=1234']);
-    },
-    'MAIL FROM:<user@domain> somekey': test => {
-        _check(test, 'MAIL FROM:<user@domain> somekey',
+    })
+
+    it('MAIL FROM:<user@domain> somekey', () => {
+        _check('MAIL FROM:<user@domain> somekey',
             ['<user@domain>', 'somekey']);
-    },
-    'MAIL FROM:<user@domain> somekey other=foo': test => {
-        _check(test, 'MAIL FROM:<user@domain> somekey other=foo',
+    })
+
+    it('MAIL FROM:<user@domain> somekey other=foo', () => {
+        _check('MAIL FROM:<user@domain> somekey other=foo',
             ['<user@domain>', 'somekey', 'other=foo']);
-    },
-    'RCPT TO ugly': test => {
-        _check(test, 'RCPT TO: 0@mailblog.biz 0=9 1=9',
+    })
+
+    it('RCPT TO ugly', () => {
+        _check('RCPT TO: 0@mailblog.biz 0=9 1=9',
             ['<0@mailblog.biz>', '0=9', '1=9']);
-    },
-    'RCPT TO:<r86x-ray@emailitin.com> state=1': test => {
-        _check(test, 'RCPT TO:<r86x-ray@emailitin.com> state=1',
+    })
+
+    it('RCPT TO:<r86x-ray@emailitin.com> state=1', () => {
+        _check('RCPT TO:<r86x-ray@emailitin.com> state=1',
             ['<r86x-ray@emailitin.com>', 'state=1']);
-    },
-    'RCPT TO:<user=name@domain.com> foo=bar': test => {
-        _check(test, 'RCPT TO:<user=name@domain.com> foo=bar',
+    })
+
+    it('RCPT TO:<user=name@domain.com> foo=bar', () => {
+        _check('RCPT TO:<user=name@domain.com> foo=bar',
             ['<user=name@domain.com>', 'foo=bar']);
-    },
-    'RCPT TO:<postmaster>': test => {
-        _check(test, 'RCPT TO:<postmaster>', ['<postmaster>']);
-    },
-}
+    })
+
+    it('RCPT TO:<postmaster>', () => {
+        _check('RCPT TO:<postmaster>', ['<postmaster>']);
+    })
+})
