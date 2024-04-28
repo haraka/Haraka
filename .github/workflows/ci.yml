@@ -10,7 +10,7 @@ jobs:
     uses: haraka/.github/.github/workflows/lint.yml@master
 
   test:
-    needs: [ lint, get-lts ]
+    needs: [ get-lts ]
     runs-on: ${{ matrix.os }}
     services:
       redis:
@@ -28,9 +28,7 @@ jobs:
       name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
       with:
         node-version: ${{ matrix.node-version }}
-    - name: Install bsdtar
-      run: sudo apt-get update; sudo apt-get install -y libarchive-tools
-    - run: npm install
+    - run: npm install --omit=optional
     - run: npm run test
 
   # TODO: replace the above with this, after plugin/attachment is split

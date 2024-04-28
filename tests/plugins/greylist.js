@@ -1,10 +1,11 @@
 'use strict';
+const assert = require('node:assert')
 
 const path      = require('path');
 const fixtures  = require('haraka-test-fixtures');
 const ipaddr    = require('ipaddr.js');
 
-const _set_up = function (done) {
+const _set_up = (done) => {
 
     this.plugin = new fixtures.plugin('greylist');
     this.plugin.config.root_path = path.resolve(__dirname, '../../config');
@@ -23,36 +24,30 @@ const _set_up = function (done) {
     this.plugin.list = {"dyndom":["sgvps.net"]};
 
     this.connection = fixtures.connection.createConnection();
-    this.connection.transaction = {
-        results: new fixtures.results(this.connection),
-    };
+    this.connection.init_transaction()
 
     done();
 }
 
-exports.in_list = {
-    setUp : _set_up,
-    'inlist: mail(1)' (test) {
-        test.expect(1);
-        test.ok(this.plugin.addr_in_list('mail', 'josef@example.com'));
-        test.done();
-    },
-    'inlist: rcpt(1)' (test) {
-        test.expect(1);
-        test.ok(this.plugin.addr_in_list('rcpt', 'josef@example.net'));
-        test.done();
-    },
-    'inlist: dyndom(1)' (test) {
-        test.expect(1);
-        test.ok(this.plugin.domain_in_list('dyndom', 'sgvps.net'));
-        test.done();
-    },
-    'inlist: ip(4)' (test) {
-        test.expect(4);
-        test.ok(this.plugin.ip_in_list('123.123.123.234'));
-        test.ok(this.plugin.ip_in_list('123.210.123.234'));
-        test.ok(this.plugin.ip_in_list('2a02:8204:d600:8060:7920:4040:20ee:9680'));
-        test.ok(this.plugin.ip_in_list('2a02:8204:d600:8060:7920:eeee::ff00'));
-        test.done();
-    }
-}
+describe('greylist', () => {
+    beforeEach(_set_up)
+
+    it('inlist: mail(1)', () => {
+        assert.ok(this.plugin.addr_in_list('mail', 'josef@example.com'));
+    })
+
+    it('inlist: rcpt(1)', () => {
+        assert.ok(this.plugin.addr_in_list('rcpt', 'josef@example.net'));
+    })
+
+    it('inlist: dyndom(1)', () => {
+        assert.ok(this.plugin.domain_in_list('dyndom', 'sgvps.net'));
+    })
+
+    it('inlist: ip(4)', () => {
+        assert.ok(this.plugin.ip_in_list('123.123.123.234'));
+        assert.ok(this.plugin.ip_in_list('123.210.123.234'));
+        assert.ok(this.plugin.ip_in_list('2a02:8204:d600:8060:7920:4040:20ee:9680'));
+        assert.ok(this.plugin.ip_in_list('2a02:8204:d600:8060:7920:eeee::ff00'));
+    })
+})

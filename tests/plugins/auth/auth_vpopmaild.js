@@ -1,15 +1,16 @@
 'use strict';
 
-const path         = require('path');
+const assert = require('node:assert')
+const path = require('node:path');
 
-const fixtures     = require('haraka-test-fixtures');
+const fixtures = require('haraka-test-fixtures');
 
-function _set_up (done) {
+const _set_up = (done) => {
     this.backup = {};
 
-    // needed for tests
     this.plugin = new fixtures.plugin('auth/auth_vpopmaild');
     this.plugin.inherits('auth/auth_base');
+
     // reset the config/root_path
     this.plugin.config.root_path = path.resolve(__dirname, '../../../config');
     this.plugin.cfg = this.plugin.config.get('auth_vpopmaild.ini');
@@ -20,72 +21,63 @@ function _set_up (done) {
     done();
 }
 
-exports.hook_capabilities = {
-    setUp : _set_up,
-    'no TLS' (test) {
-        const cb = function (rc, msg) {
-            test.expect(3);
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.equal(null, this.connection.capabilities);
-            test.done();
-        }.bind(this);
-        this.plugin.hook_capabilities(cb, this.connection);
-    },
-    'with TLS' (test) {
-        const cb = function (rc, msg) {
-            test.expect(3);
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.ok(this.connection.capabilities.length);
-            // console.log(this.connection.capabilities);
-            test.done();
-        }.bind(this);
-        this.connection.tls.enabled=true;
-        this.connection.capabilities=[];
-        this.plugin.hook_capabilities(cb, this.connection);
-    },
-    'with TLS, sysadmin' (test) {
-        const cb = function (rc, msg) {
-            test.expect(3);
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.ok(this.connection.capabilities.length);
-            // console.log(this.connection.capabilities);
-            test.done();
-        }.bind(this);
-        this.connection.tls.enabled=true;
-        this.connection.capabilities=[];
-        this.plugin.hook_capabilities(cb, this.connection);
-    },
-}
+describe('hook_capabilities', () => {
+    beforeEach(_set_up)
 
-exports.get_vpopmaild_socket = {
-    setUp : _set_up,
-    'any' (test) {
-        test.expect(1);
+    it('no TLS', (done) => {
+        this.plugin.hook_capabilities((rc, msg) => {
+            assert.equal(undefined, rc);
+            assert.equal(undefined, msg);
+            assert.equal(null, this.connection.capabilities);
+            done();
+        }, this.connection);
+    })
+
+    it('with TLS', (done) => {
+        this.connection.tls.enabled=true;
+        this.connection.capabilities=[];
+        this.plugin.hook_capabilities((rc, msg) => {
+            assert.equal(undefined, rc);
+            assert.equal(undefined, msg);
+            assert.ok(this.connection.capabilities.length);
+            done();
+        }, this.connection);
+    })
+
+    it('with TLS, sysadmin', (done) => {
+        this.connection.tls.enabled=true;
+        this.connection.capabilities=[];
+        this.plugin.hook_capabilities((rc, msg) => {
+            assert.equal(undefined, rc);
+            assert.equal(undefined, msg);
+            assert.ok(this.connection.capabilities.length);
+            done();
+        }, this.connection);
+    })
+})
+
+describe('get_vpopmaild_socket', () => {
+    beforeEach(_set_up)
+
+    it('any', () => {
         const socket = this.plugin.get_vpopmaild_socket('foo@localhost.com');
-        // console.log(socket);
-        test.ok(socket);
+        assert.ok(socket);
         socket.end();
-        test.done();
-    }
-}
+    })
+})
 
-exports.get_plain_passwd = {
-    setUp : _set_up,
-    'matt@example.com' (test) {
-        function cb (pass) {
-            test.expect(1);
-            test.ok(pass);
-            test.done();
-        }
+describe('get_plain_passwd', () => {
+    beforeEach(_set_up)
+
+    it('matt@example.com', (done) => {
         if (this.plugin.cfg['example.com'].sysadmin) {
-            this.plugin.get_plain_passwd('matt@example.com', cb);
+            this.plugin.get_plain_passwd('matt@example.com', (pass) => {
+                assert.ok(pass);
+                done();
+            });
         }
         else {
-            test.expect(0);
-            test.done();
+            done();
         }
-    }
-}
+    })
+})

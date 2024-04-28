@@ -75,7 +75,6 @@ exports.stat_queue = cb => {
 exports.load_queue = pid => {
     // Initialise and load queue
     // This function is called first when not running under cluster,
-    // so we create the queue directory if it doesn't already exist.
     exports.ensure_queue_dir();
     exports.delete_dot_files();
 
@@ -201,7 +200,6 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
 }
 
 exports.stats = () => {
-
     return {
         queue_dir,
         queue_count,
@@ -226,7 +224,7 @@ exports._list_file = (file, cb) => {
                 // we read everything
                 const todo_struct = JSON.parse(todo);
                 todo_struct.rcpt_to = todo_struct.rcpt_to.map(a => new Address (a));
-                todo_struct.mail_from = new Address (todo_struct.mail_from);
+                todo_struct.mail_from = new Address(todo_struct.mail_from);
                 todo_struct.file = file;
                 todo_struct.full_path = path.join(queue_dir, file);
                 const parts = _qfile.parts(file);
@@ -247,12 +245,12 @@ exports.flush_queue = (domain, pid) => {
     if (domain) {
         exports.list_queue((err, qlist) => {
             if (err) return logger.error(exports, `Failed to load queue: ${err}`);
-            qlist.forEach(todo => {
+            for (const todo of qlist) {
                 if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
                 if (pid && todo.pid != pid) return;
                 // console.log("requeue: ", todo);
                 delivery_queue.push(new HMailItem(todo.file, todo.full_path));
-            });
+            }
         })
     }
     else {
@@ -266,7 +264,6 @@ exports.load_pid_queue = pid => {
 }
 
 exports.ensure_queue_dir = () => {
-    // No reason to do this asynchronously
     // this code is only run at start-up.
     if (fs.existsSync(queue_dir)) return;
 
@@ -316,8 +313,7 @@ exports._add_hmail = hmail => {
 exports.scan_queue_pids = cb => {
     const self = exports;
 
-    // Under cluster, this is called first by the master so
-    // we create the queue directory if it doesn't exist.
+    // Under cluster, this is called first by the master
     self.ensure_queue_dir();
     self.delete_dot_files();
 

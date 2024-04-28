@@ -415,7 +415,7 @@ else if (parsed.test) {
             port: 1234,
         },
         destroy () {},
-        on (event, done) {},
+        on (event) {},
         end () {
             process.exit();
         },

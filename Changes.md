@@ -50,7 +50,7 @@
 - get Haraka version from utils.getVersion (which includes git id if running from repo)
 - tls_socket: remove secureConnection. Fixes #2743
 - .gitignore: add config/me and config/*.pem
-
+- test: convert test runner to mocha
 
 #### Fixed
 
