@@ -32,7 +32,6 @@
     "haraka-net-utils": "^1.6.0",
     "haraka-notes": "^1.0.7",
     "haraka-plugin-redis": "^2.0.7",
-    "haraka-plugin-spf": "1.2.5",
     "haraka-results": "^2.2.4",
     "haraka-tld": "^1.2.1",
     "haraka-utils": "^1.1.3",
@@ -52,6 +51,7 @@
     "haraka-plugin-asn": "^2.0.2",
     "haraka-plugin-attachment": "^1.1.2",
     "haraka-plugin-auth-ldap": "^1.1.0",
+    "haraka-plugin-bounce": "1.0.2",
     "haraka-plugin-dcc": "^1.0.2",
     "haraka-plugin-dkim": "^1.0.3",
     "haraka-plugin-dns-list": "^1.2.0",
@@ -68,6 +68,7 @@
     "haraka-plugin-rcpt-ldap": "^1.1.0",
     "haraka-plugin-recipient-routes": "^1.2.0",
     "haraka-plugin-rspamd": "^1.3.1",
+    "haraka-plugin-spf": "1.2.5",
     "haraka-plugin-syslog": "^1.0.6",
     "haraka-plugin-uribl": "^1.0.8",
     "haraka-plugin-watch": "^2.0.4",
@@ -90,7 +91,7 @@
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
-    "test": "npx mocha --exit --timeout=3000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
+    "test": "npx mocha --exit --timeout=4000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
     "lint": "npx eslint@^8 *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "lint:fix": "npx eslint@^8 --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "versions": "npx dependency-version-checker check",

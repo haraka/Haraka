@@ -125,10 +125,10 @@ describe('plugin', () => {
             }
         })
 
-        it('CORE package plugin: spf', () => {
-            const p = new plugin.Plugin('haraka-plugin-spf');
+        it('CORE package plugin: redis', () => {
+            const p = new plugin.Plugin('haraka-plugin-redis');
 
-            assert.equal(p.plugin_path, path.resolve(__dirname, '..', 'node_modules', 'haraka-plugin-spf', 'package.json'));
+            assert.equal(p.plugin_path, path.resolve(__dirname, '..', 'node_modules', 'haraka-plugin-redis', 'package.json'));
             assert.ok(p.hasPackageJson);
         })
 

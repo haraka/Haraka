@@ -7,6 +7,7 @@
 
 #### Changed
 
+- bounce: repackaged plugin as NPM module #3341
 - transaction: init with conn.init_transaction, always pass in cfg #3315
 - check for local_mx only when default route is used #3307
 - dkim: repackaged as NPM module #3311

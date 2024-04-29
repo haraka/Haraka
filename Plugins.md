@@ -110,6 +110,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 | [record_envelope_addresses][url-recordenv]  | Adds message headers with ENV recips |
 | [relay][url-relay]                 | Manage relay permissions |
 | [reseed_rng][url-rng]              | Reseed the RNG |
+| [batv-srs][url-batv]               | BATV & SRS |
 | [srs][url-srs]                     | Sender Rewriting Scheme |
 | [tarpit][url-tarpit]               | Slow down connections |
 | [tls][url-tls]                     | Implements TLS |
@@ -139,9 +140,10 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-authproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_proxy.md
 [url-authvpop]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_vpopmaild.md
 [url-avg]: https://github.com/haraka/Haraka/blob/master/docs/plugins/avg.md
+[url-batv]: https://www.npmjs.com/package/haraka-plugin-batv
 [url-scatter]: https://github.com/haraka/Haraka/blob/master/docs/plugins/backscatterer.md
 [url-blockme]: https://github.com/haraka/Haraka/blob/master/docs/plugins/block_me.md
-[url-bounce]: https://github.com/haraka/Haraka/blob/master/docs/plugins/bounce.md
+[url-bounce]: https://www.npmjs.com/package/haraka-plugin-bounce
 [url-clamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/clamd.md
 [url-dovecot]: https://github.com/haraka/haraka-plugin-dovecot
 [url-fcrdns]: https://github.com/haraka/haraka-plugin-fcrdns
