@@ -3,10 +3,8 @@
 
 // node.js built-in libs
 const dns         = require('dns');
-const fs          = require('fs');
 const net         = require('net');
 const os          = require('os');
-const path        = require('path');
 
 // npm libs
 const ipaddr      = require('ipaddr.js');

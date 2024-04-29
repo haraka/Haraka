@@ -7,6 +7,7 @@
 
 #### Changed
 
+- connection: check remote is connected before queue #3338
 - transaction: init with conn.init_transaction, always pass in cfg #3315
 - check for local_mx only when default route is used #3307
 - dkim: repackaged as NPM module #3311
