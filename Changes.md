@@ -51,6 +51,7 @@
 - tls_socket: remove secureConnection. Fixes #2743
 - .gitignore: add config/me and config/*.pem
 - test: convert test runner to mocha
+- test: rename tests -> test (where test runner expect) #3340
 
 #### Fixed
 

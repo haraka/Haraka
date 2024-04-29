@@ -9,7 +9,7 @@ const outbound = require('../../outbound/index');
 
 describe('outbound/hmail', () => {
     beforeEach((done) => {
-        this.hmail = new Hmail('1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', 'tests/queue/1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', {});
+        this.hmail = new Hmail('1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', 'test/queue/1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', {});
         done()
     })
 
@@ -44,7 +44,7 @@ describe('outbound/hmail', () => {
 
 describe('outbound/hmail.HMailItem', () => {
     it('normal queue file', (done) => {
-        this.hmail = new Hmail('1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', 'tests/queue/1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', {});
+        this.hmail = new Hmail('1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', 'test/queue/1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', {});
         this.hmail.on('ready', () => {
             // console.log(this.hmail);
             assert.ok(this.hmail)
@@ -57,7 +57,7 @@ describe('outbound/hmail.HMailItem', () => {
         })
     })
     it('normal TODO w/multibyte chars loads w/o error', (done) => {
-        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_qfile', 'tests/fixtures/todo_qfile.txt', {});
+        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_qfile', 'test/fixtures/todo_qfile.txt', {});
         this.hmail.on('ready', () => {
             // console.log(this.hmail);
             assert.ok(this.hmail)
@@ -70,7 +70,7 @@ describe('outbound/hmail.HMailItem', () => {
         })
     })
     it('too short TODO length declared', (done) => {
-        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', 'tests/queue/1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', {});
+        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', 'test/queue/1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', {});
         this.hmail.on('ready', () => {
             // console.log(this.hmail);
             assert.ok(this.hmail)
@@ -83,7 +83,7 @@ describe('outbound/hmail.HMailItem', () => {
         })
     })
     it('too long TODO length declared', (done) => {
-        this.hmail = new Hmail('1508269674999_1508269674999_0_34002_socVUF_1_haraka', 'tests/queue/1508269674999_1508269674999_0_34002_socVUF_1_haraka', {});
+        this.hmail = new Hmail('1508269674999_1508269674999_0_34002_socVUF_1_haraka', 'test/queue/1508269674999_1508269674999_0_34002_socVUF_1_haraka', {});
         this.hmail.on('ready', () => {
             // console.log(this.hmail);
             assert.ok(this.hmail)
@@ -96,7 +96,7 @@ describe('outbound/hmail.HMailItem', () => {
         })
     })
     it('zero-length file load skip w/o crash', (done) => {
-        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_zero', 'tests/queue/zero-length', {});
+        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_zero', 'test/queue/zero-length', {});
         this.hmail.on('ready', () => {
             assert.ok(this.hmail)
             done();
@@ -109,7 +109,7 @@ describe('outbound/hmail.HMailItem', () => {
     })
     it('lifecycle, reads and writes a haraka queue file', (done) => {
 
-        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_qfile', 'tests/fixtures/todo_qfile.txt', {});
+        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_qfile', 'test/fixtures/todo_qfile.txt', {});
 
         this.hmail.on('error', (err) => {
             // console.log(err);
@@ -119,7 +119,7 @@ describe('outbound/hmail.HMailItem', () => {
 
         this.hmail.on('ready', () => {
 
-            const tmpfile = path.resolve('tests', 'test-queue', 'delete-me');
+            const tmpfile = path.resolve('test', 'test-queue', 'delete-me');
             const ws = new fs.createWriteStream(tmpfile)
 
             outbound.build_todo(this.hmail.todo, ws, () => {

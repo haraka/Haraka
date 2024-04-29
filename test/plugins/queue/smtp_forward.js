@@ -11,8 +11,8 @@ const OK = 906;
 const _setup = (done) => {
     this.plugin = new fixtures.plugin('queue/smtp_forward');
 
-    // switch config directory to 'tests/config'
-    this.plugin.config = this.plugin.config.module_config(path.resolve('tests'));
+    // switch config directory to 'test/config'
+    this.plugin.config = this.plugin.config.module_config(path.resolve('test'));
 
     this.plugin.register();
     this.hmail = { todo: { notes: new Notes() } };

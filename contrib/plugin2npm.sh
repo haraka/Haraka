@@ -73,39 +73,8 @@ DEPRECATED
     $GIT_CMD add index.js
 fi
 
-
-if [ -f "tests/plugins/$1.js" ]; then
-    echo "copying tests/plugins/$1.js"
-    cp "tests/plugins/$1.js" "$PLUGIN_REPO/test/index.js"
-    git rm "tests/plugins/$1.js"
-    if [ ! -f "$PLUGIN_REPO/run_tests" ]; then
-        tee "$PLUGIN_REPO/run_tests" <<'EO_TEST_RUN'
-#!/usr/bin/env node
-'use strict'
-try {
-    var reporter = require('nodeunit-x').reporters.default;
-}
-catch (e) {
-    console.log(`
-Error: ${e.message}
-
-Cannot find nodeunit. Did you run 'npm install'?
-`)
-    process.exit()
-}
-
-process.chdir(__dirname);
-
-reporter.run([ 'test' ], undefined, (err) => {
-    process.exit(((err) ? 1 : 0));
-});
-EO_TEST_RUN
-
-        sed -i '' \
-            -e 's/"_mocha"/"nodeunit-x"/' \
-            -e 's/"mocha"/"nodeunit-x"/' \
-            "$PLUGIN_REPO/package.json"
-
-        $GIT_CMD add package.json
-    fi
+if [ -f "test/plugins/$1.js" ]; then
+    echo "copying test/plugins/$1.js"
+    cp "test/plugins/$1.js" "$PLUGIN_REPO/test/index.js"
+    git rm "test/plugins/$1.js"
 fi

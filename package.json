@@ -90,9 +90,9 @@
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
-    "test": "npx mocha --exit --timeout=3000 tests tests/outbound tests/plugins/auth tests/plugins/queue tests/plugins",
-    "lint": "npx eslint@^8 *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka",
-    "lint:fix": "npx eslint@^8 --fix *.js outbound plugins plugins/*/*.js tests tests/*/*.js tests/*/*/*.js bin/haraka",
+    "test": "npx mocha --exit --timeout=3000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
+    "lint": "npx eslint@^8 *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
+    "lint:fix": "npx eslint@^8 --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "versions": "npx dependency-version-checker check",
     "versions:fix": "npx dependency-version-checker update && npm run prettier:fix"
   }
