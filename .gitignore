@@ -12,6 +12,10 @@ test/node_modules
 test/queue/plain
 test/queue/multibyte
 test/test-queue
+config/me
+config/dhparams.pem
+config/tls_cert.pem
+config/tls_key.pem
 package-lock.json
 config/dhparams.pem
 config/me
