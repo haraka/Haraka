@@ -17,8 +17,8 @@ describe('smtp_client', () => {
 
         const plugin = new fixtures.plugin('queue/smtp_forward');
 
-        // switch config directory to 'tests/config'
-        plugin.config = plugin.config.module_config(path.resolve('tests'));
+        // switch config directory to 'test/config'
+        plugin.config = plugin.config.module_config(path.resolve('test'));
 
         plugin.register();
 

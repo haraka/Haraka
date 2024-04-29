@@ -7,8 +7,8 @@ const os     = require('os')
 const _setup = (done) => {
     this.socket = require('../tls_socket');
 
-    // use tests/config instead of ./config
-    this.socket.config = this.socket.config.module_config(path.resolve('tests'));
+    // use test/config instead of ./config
+    this.socket.config = this.socket.config.module_config(path.resolve('test'));
     done();
 }
 
@@ -65,8 +65,8 @@ describe('tls_socket', () => {
     describe('get_loud_certs_dir', () => {
         beforeEach(_setup)
 
-        it('loads certs from tests/loud/config/tls', () => {
-            this.socket.config = this.socket.config.module_config(path.resolve('tests', 'loud'));
+        it('loads certs from test/loud/config/tls', () => {
+            this.socket.config = this.socket.config.module_config(path.resolve('test', 'loud'));
             this.socket.get_certs_dir('tls', (err, certs) => {
                 assert.ifError(err);
                 assert.ok(certs);
@@ -77,8 +77,8 @@ describe('tls_socket', () => {
     describe('get_certs_dir', () => {
         beforeEach(_setup)
 
-        it('loads certs from tests/config/tls', () => {
-            this.socket.config = this.socket.config.module_config(path.resolve('tests'));
+        it('loads certs from test/config/tls', () => {
+            this.socket.config = this.socket.config.module_config(path.resolve('test'));
             this.socket.get_certs_dir('tls', (err, certs) => {
                 assert.ifError(err);
                 assert.ok(certs);
@@ -141,7 +141,7 @@ describe('tls_socket', () => {
         })
 
         it('loads tls.ini from test dir', () => {
-            this.socket.config = this.socket.config.module_config(path.resolve('tests'));
+            this.socket.config = this.socket.config.module_config(path.resolve('test'));
             assert.deepEqual(this.socket.load_tls_ini(), {
                 main: {
                     requestCert: true,
@@ -245,7 +245,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
         })
 
         it('returns cert and key from EC pem', () => {
-            const fp = fs.readFileSync(path.join('tests','config','tls','ec.pem'))
+            const fp = fs.readFileSync(path.join('test','config','tls','ec.pem'))
             const res = this.socket.parse_x509(fp.toString())
             assert.deepEqual(
                 res.key.toString().split(os.EOL).join('\n'),

@@ -25,7 +25,7 @@ else if (process.env.HARAKA) {
     queue_dir = path.resolve(process.env.HARAKA, 'queue');
 }
 else {
-    queue_dir = path.resolve('tests', 'test-queue');
+    queue_dir = path.resolve('test', 'test-queue');
 }
 
 exports.queue_dir = queue_dir;

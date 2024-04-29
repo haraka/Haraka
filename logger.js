@@ -330,10 +330,12 @@ logger.add_log_methods = (object, logName) => {
             const fnNames = [`log${level.toLowerCase()}`]
 
             // logger also gets short names
-            if (object.name === 'logger') fnNames.push(level.toLowerCase())
+            if (Object.hasOwn(object, 'name') && object.name === 'logger') {
+                fnNames.push(level.toLowerCase())
+            }
 
             for (const fnName of fnNames) {
-                if (object[fnName]) continue; // already added
+                if (Object.hasOwn(object, fnName)) continue; // already added
                 object[fnName] = logger.log_if_level(level, `LOG${level}`, logName);
             }
         }

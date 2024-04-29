@@ -45,4 +45,4 @@ To submit new_branch as a Pull Request, visit the [Haraka project page](https://
 ## Tests
 
 * run all tests: ./run_tests  (or "npm test")
-* run tests for a single plugin: ./run_tests tests/plugins/bounce.js
+* run tests for a single plugin: ./run_tests test/plugins/bounce.js

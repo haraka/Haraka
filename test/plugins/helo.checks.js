@@ -7,7 +7,7 @@ const fixtures = require('haraka-test-fixtures');
 const _set_up = (done) => {
 
     this.plugin = new fixtures.plugin('helo.checks');
-    this.plugin.config.root_path = path.resolve('tests', 'config');
+    this.plugin.config.root_path = path.resolve('test', 'config');
 
     this.connection = fixtures.connection.createConnection();
     this.connection.remote.ip='208.75.199.19';
