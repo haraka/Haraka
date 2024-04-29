@@ -48,6 +48,7 @@
 - server.js: use the local logger methods
 - get Haraka version from utils.getVersion (which includes git id if running from repo)
 - test: convert test runner to mocha
+- test: rename tests -> test (where test runner expect) #3340
 
 #### Fixed
 
