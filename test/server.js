@@ -12,10 +12,10 @@ const _set_up = (done) => {
 
 const _setupServer = (ip_port, done) => {
     process.env.YES_REALLY_DO_DISCARD=1;   // for queue/discard plugin
-    process.env.HARAKA_TEST_DIR=path.resolve('tests');
+    process.env.HARAKA_TEST_DIR=path.resolve('test');
 
     // test sets the default path for plugin instances to the test dir
-    const test_cfg_path=path.resolve('tests');
+    const test_cfg_path=path.resolve('test');
 
     this.server = require('../server');
     this.config = require('haraka-config').module_config(test_cfg_path);
@@ -121,7 +121,7 @@ describe('server', () => {
     describe('get_smtp_server', () => {
         beforeEach((done) => {
             this.config = require('haraka-config');
-            this.config = this.config.module_config(path.resolve('tests'));
+            this.config = this.config.module_config(path.resolve('test'));
 
             this.server = require('../server');
             this.server.config = this.config;

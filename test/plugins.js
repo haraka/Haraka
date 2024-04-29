@@ -17,7 +17,7 @@ From: https://github.com/haraka/Haraka/pull/1278#issuecomment-172134064
     * Need to test installed mode + core mode
     * Need to test each variation of loading plugins
         INSTALLED MODE
-            * Create tests/installation/ with config/, plugins/, and node_modules
+            * Create test/installation/ with config/, plugins/, and node_modules
             * Plugin in <install_dir>/plugins/<name>.js
             * Plugin in <install_dir>/plugins/<name>/ with package.json
             * Plugin in <install_dir>/node_modules/<name>/ with package.json
@@ -31,10 +31,10 @@ From: https://github.com/haraka/Haraka/pull/1278#issuecomment-172134064
     * Need to test plugin not existing
         * Check <bogus_name_guaranteed_to_not_exist> fails
     * Need to test plugin existing and failing to compile
-        * Create bad plugin in tests/installation/plugins/bad_plugin.js
+        * Create bad plugin in test/installation/plugins/bad_plugin.js
     * Need to test plugin inheritance
-        * Base plugin in tests/installation/plugins/base_plugin.js
-        * Real plugin in tests/installation/plugins/inherits.js
+        * Base plugin in test/installation/plugins/base_plugin.js
+        * Real plugin in test/installation/plugins/inherits.js
         * Check base methods work
         * Check plugin.base.base_plugin is set/correct
     * Plugin timeouts (already tested)
@@ -101,7 +101,7 @@ describe('plugin', () => {
         })
 
         it('INSTALLED override: (tls)', () => {
-            process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+            process.env.HARAKA = path.resolve(__dirname, '..', 'test', 'installation');
 
             const p = new plugin.Plugin('tls');
 
@@ -109,7 +109,7 @@ describe('plugin', () => {
         })
 
         it('INSTALLED node_modules package plugin: (test-plugin)', () => {
-            process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+            process.env.HARAKA = path.resolve(__dirname, '..', 'test', 'installation');
 
             const p = new plugin.Plugin('test-plugin');
 
@@ -133,7 +133,7 @@ describe('plugin', () => {
         })
 
         it('plugins overrides node_modules', () => {
-            process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+            process.env.HARAKA = path.resolve(__dirname, '..', 'test', 'installation');
 
             const p = new plugin.Plugin('load_first');
 
@@ -150,7 +150,7 @@ describe('plugin', () => {
         })
 
         it('INSTALLED plugins folder plugin: (folder_plugin)', () => {
-            process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+            process.env.HARAKA = path.resolve(__dirname, '..', 'test', 'installation');
 
             const p = new plugin.Plugin('folder_plugin');
 
@@ -167,7 +167,7 @@ describe('plugin', () => {
         })
 
         it('Inheritance: (inherits)', () => {
-            process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+            process.env.HARAKA = path.resolve(__dirname, '..', 'test', 'installation');
 
             const p = new plugin.Plugin('inherits');
 
@@ -205,7 +205,7 @@ describe('plugin', () => {
 
         it('INSTALLED override: (tls)', () => {
 
-            process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+            process.env.HARAKA = path.resolve(__dirname, '..', 'test', 'installation');
 
             const p = new plugin.Plugin('tls');
 
@@ -217,7 +217,7 @@ describe('plugin', () => {
 
         it('INSTALLED node_modules package plugin: (test-plugin)', () => {
 
-            process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+            process.env.HARAKA = path.resolve(__dirname, '..', 'test', 'installation');
 
             const p = new plugin.Plugin('test-plugin');
 

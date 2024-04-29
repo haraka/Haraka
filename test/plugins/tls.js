@@ -10,9 +10,9 @@ const _set_up = (done) => {
     this.plugin = new Plugin('tls')
     this.connection = new fixtures.connection.createConnection();
 
-    // use tests/config instead of ./config
-    this.plugin.config = this.plugin.config.module_config(path.resolve('tests'));
-    this.plugin.net_utils.config = this.plugin.net_utils.config.module_config(path.resolve('tests'));
+    // use test/config instead of ./config
+    this.plugin.config = this.plugin.config.module_config(path.resolve('test'));
+    this.plugin.net_utils.config = this.plugin.net_utils.config.module_config(path.resolve('test'));
 
     this.plugin.tls_opts = {};
     done();
