@@ -230,6 +230,7 @@ exports.forward_enabled = function (conn, dom_cfg) {
 
 exports.queue_forward = function (next, connection) {
     const plugin = this;
+    if (connection.remote.closed) return
     const txn = connection?.transaction;
 
     const cfg = plugin.get_config(connection);
