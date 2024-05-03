@@ -7,6 +7,9 @@ assignees: ''
 
 ---
 
+- [ ] I already searched past issues
+- [ ] I already checked the [wiki/TODO](https://github.com/haraka/Haraka/wiki/TODO) page
+
 ### Is your feature request related to a problem? Please describe.
 
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
