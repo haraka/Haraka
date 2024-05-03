@@ -1,25 +1,26 @@
 'use strict';
 
-const utils        = require('haraka-utils');
+const utils = require('haraka-utils');
+const net_utils = require('haraka-net-utils')
 
-const sock         = require('../line_socket');
-const logger       = require('../logger');
-
-const obc          = require('./config');
+const tls_socket = require('../tls_socket');
+const logger = require('../logger');
+const obc  = require('./config');
 
 exports.name = 'outbound'
 
 // Get a socket for the given attributes.
-exports.get_client = function (port = 25, host = 'localhost', localAddress, is_unix_socket, callback) {
+exports.get_client = function (mx, callback) {
+    const socketArgs = mx.path ? { path: mx.path } : { port: mx.port, host: mx.exchange, localAddress: mx.bind };
 
-    const socketArgs = is_unix_socket ? {path: host} : {port, host, localAddress};
-    const socket = sock.connect(socketArgs);
+    const socket = tls_socket.connect(socketArgs);
+    net_utils.add_line_processor(socket);
 
-    socket.name = `outbound::${port}:${host}:${localAddress}`;
+    socket.name = `outbound::${JSON.stringify(socketArgs)}`;
     socket.__uuid = utils.uuid();
     socket.setTimeout(obc.cfg.connect_timeout * 1000);
 
-    logger.debug(exports, `created. host: ${host} port: ${port}`, { uuid: socket.__uuid });
+    logger.debug(exports, `created ${socket.name}`, { uuid: socket.__uuid });
 
     socket.once('connect', () => {
         socket.removeAllListeners('error'); // these get added after callback
@@ -38,13 +39,13 @@ exports.get_client = function (port = 25, host = 'localhost', localAddress, is_u
         socket.end();
         socket.removeAllListeners();
         socket.destroy();
-        callback(`connection timed out to ${host}:${port}`, null);
+        callback(`connection timed out to ${socket.name}`, null);
     })
 }
 
-exports.release_client = (socket, port, host, local_addr, error) => {
-    let logMsg = `release_client: ${socket.__uuid} ${host}:${port}`
-    if (local_addr) logMsg += ` from ${local_addr}`
+exports.release_client = (socket, mx) => {
+    let logMsg = `release_client: ${socket.name}`
+    if (mx.bind) logMsg += ` from ${mx.bind}`
     logger.debug(exports, logMsg);
     socket.removeAllListeners();
     socket.destroy();

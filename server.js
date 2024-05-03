@@ -338,9 +338,9 @@ Server.load_default_tls_config = done => {
         Server.loginfo(`resetting tls_config.config path to ${Server.config.root_path}`);
         tls_socket.config = tls_socket.config.module_config(path.dirname(Server.config.root_path));
     }
-    tls_socket.getSocketOpts('*', (opts) => {
+    tls_socket.getSocketOpts('*').then(opts => {
         done(opts);
-    });
+    })
 }
 
 Server.get_smtp_server = (ep, inactivity_timeout, done) => {
@@ -365,7 +365,7 @@ Server.get_smtp_server = (ep, inactivity_timeout, done) => {
 
     if (ep.port === parseInt(Server.cfg.main.smtps_port, 10)) {
         Server.loginfo('getting SocketOpts for SMTPS server');
-        tls_socket.getSocketOpts('*', opts => {
+        tls_socket.getSocketOpts('*').then(opts => {
             Server.loginfo(`Creating TLS server on ${ep}`);
 
             opts.rejectUnauthorized = tls_socket.get_rejectUnauthorized(opts.rejectUnauthorized, ep.port, tls_socket.cfg.main.requireAuthorized)
@@ -384,7 +384,7 @@ Server.get_smtp_server = (ep, inactivity_timeout, done) => {
     else {
         server = tls_socket.createServer(onConnect);
         server.has_tls = false;
-        tls_socket.getSocketOpts('*', opts => {
+        tls_socket.getSocketOpts('*').then(opts => {
             Server.listeners.push(server);
             done(server);
         })

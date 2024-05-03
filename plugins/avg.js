@@ -1,17 +1,15 @@
 // avg - AVG virus scanner
 'use strict';
 
-// TODO: use pooled connections
+const fs = require('node:fs')
+const net = require('node:net')
+const path = require('node:path')
 
-const fs   = require('fs');
-const path = require('path');
-
-const sock = require('./line_socket');
+const net_utils = require('haraka-net-utils')
 
 const smtp_regexp = /^(\d{3})([ -])(.*)/;
 
 exports.register = function () {
-
     this.load_avg_ini();
 }
 
@@ -49,7 +47,8 @@ exports.hook_data_post = function (next, connection) {
 
     ws.once('close', () => {
         const start_time = Date.now();
-        const socket = new sock.Socket();
+        const socket = new net.Socket();
+        net_utils.add_line_processor(socket)
         socket.setTimeout((plugin.cfg.main.connect_timeout || 10) * 1000);
         let connected = false;
         let command = 'connect';

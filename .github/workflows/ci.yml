@@ -28,6 +28,7 @@ jobs:
       name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
       with:
         node-version: ${{ matrix.node-version }}
+    # - run: openssl x509 -in test/config/tls/ec.pem -noout -enddate -subject -ext subjectAltName
     - run: npm install --omit=optional
     - run: npm run test
 

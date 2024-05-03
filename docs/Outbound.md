@@ -148,28 +148,10 @@ Upon starting delivery the `get_mx` hook is called, with the parameter set to
 the domain in question (for example a mail to `user@example.com` will call the
 `get_mx` hook with `(next, hmail, domain)` as parameters). This is to allow
 you to implement a custom handler to find MX records. For most installations
-there is no reason to implement this hook - Haraka will find the correct MX
-records for you.
+there is no reason to implement this hook - Haraka will find the MX
+records via DNS.
 
-The MX record is sent via next(OK, mx) and can be one of:
-
-* A string of one of the following formats:
-    * hostname
-    * hostname:port
-    * ipaddress
-    * ipaddress:port
-* An MX object of the form: `{priority: 0, exchange: hostname}` with the 
-following optional properies:
-       * `port` to specify an alternate port
-       * `bind` to specify an outbound IP address to bind to
-       * `bind_helo` to specify an outbound helo for IP address to bind to
-       * `using_lmtp` boolean to specify that delivery should be attempted using 
-          LMTP instead of SMTP.
-       *  `auth_user` to specify an AUTH username (required if AUTH is desired)
-       *  `auth_pass` to specify an AUTH password (required if AUTH is desired)
-       *  `auth_type` to specify an AUTH type that should be used with the MX.
-If this is not specified then Haraka will pick an appropriate method.
-* A list of MX objects in an array, each in the same format as above.
+The MX is sent via next(OK, mx). `mx` is a [HarakaMx](https://github.com/haraka/haraka-net-utils?tab=readme-ov-file#harakamx) object, an array of HarakaMx objects, or any suitable HarakaMx input.
 
 ### The deferred hook
 

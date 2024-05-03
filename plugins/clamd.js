@@ -1,7 +1,9 @@
 // clamd
 
-const sock = require('./line_socket');
+const net = require('node:net')
+
 const utils = require('haraka-utils');
+const net_utils = require('haraka-net-utils')
 
 exports.load_excludes = function () {
 
@@ -155,12 +157,11 @@ exports.hook_data = function (next, connection) {
     const txn = connection.transaction;
     txn.parse_body = true;
     txn.attachment_hooks((ctype, filename, body) => {
-        connection.logdebug(this,
-            `found ctype=${ctype}, filename=${filename}`);
+        connection.logdebug(this, `found ctype=${ctype}, filename=${filename}`);
         txn.notes.clamd_found_attachment = true;
     });
 
-    return next();
+    next();
 }
 
 exports.hook_data_post = function (next, connection) {
@@ -197,7 +198,8 @@ exports.hook_data_post = function (next, connection) {
         }
         const host = hosts.shift();
         connection.logdebug(plugin, `trying host: ${host}`);
-        const socket = new sock.Socket();
+        const socket = new net.Socket()
+        net_utils.add_line_processor(socket)
 
         socket.on('timeout', () => {
             socket.destroy();
