@@ -4,7 +4,6 @@ const events       = require('events');
 const fs           = require('fs');
 const dns          = require('dns');
 const path         = require('path');
-const net          = require('net');
 
 const { Address } = require('address-rfc2821');
 const config      = require('haraka-config');
@@ -196,22 +195,14 @@ class HMailItem extends events.EventEmitter {
     get_mx_respond (retval, mx) {
         switch (retval) {
             case constants.ok: {
+                this.logdebug(`MX from Plugin: ${this.todo.domain} => 0 ${JSON.stringify(mx)}`);
                 let mx_list;
                 if (Array.isArray(mx)) {
-                    mx_list = mx;
-                }
-                else if (typeof mx === "object") {
-                    mx_list = [mx];
+                    mx_list = mx.map(m => new net_utils.HarakaMx(m));
                 }
                 else {
-                    // assume string
-                    const matches = /^(.*?)(:(\d+))?$/.exec(mx);
-                    if (!matches) {
-                        throw ("get_mx returned something that doesn't match hostname or hostname:port");
-                    }
-                    mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
+                    mx_list = [new net_utils.HarakaMx(mx)];
                 }
-                this.logdebug(`Got a MX from Plugin: ${this.todo.domain} => 0 ${JSON.stringify(mx)}`);
                 return this.found_mx(mx_list);
             }
             case constants.deny:
@@ -312,10 +303,12 @@ class HMailItem extends events.EventEmitter {
         }
 
         const host = mx.path ? mx.path : mx.exchange;
-        const port = mx.port || 25;
+        const lmtp = mx.using_lmtp ? ' using LMTP' : ''
+        if (!mx.port) mx.port = mx.using_lmtp ? 24 : 25
+        const from_dns = mx.from_dns ? ' (via DNS)' : ''
 
-        this.logdebug(`delivering from: ${mx.bind_helo} to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""}${mx.from_dns ? " (via DNS)" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`)
-        client_pool.get_client(port, host, mx.bind, !!mx.path, (err, socket) => {
+        this.logdebug(`deliver: ${mx.bind_helo} -> ${host}${lmtp}${from_dns} (${delivery_queue.length()}) (${temp_fail_queue.length()})`)
+        client_pool.get_client(mx, (err, socket) => {
             if (err) {
                 if (/connection timed out|connect ECONNREFUSED/.test(err)) {
                     logger.notice(this, `Failed to get socket: ${err}`);
@@ -326,7 +319,7 @@ class HMailItem extends events.EventEmitter {
 
                 return this.try_deliver(); // try next MX
             }
-            this.try_deliver_host_on_socket(mx, host, port, socket);
+            this.try_deliver_host_on_socket(mx, host, mx.port, socket);
         });
     }
 
@@ -335,10 +328,9 @@ class HMailItem extends events.EventEmitter {
         let processing_mail = true;
         let command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
 
-        socket.removeAllListeners('error');
-        socket.removeAllListeners('timeout');
-        socket.removeAllListeners('close');
-        socket.removeAllListeners('end');
+        for (const l of ['error', 'timeout', 'close', 'end']) {
+            socket.removeAllListeners(l);
+        }
 
         socket.once('timeout', function () {
             socket.emit('error', `socket timeout waiting on ${command}`);
@@ -349,7 +341,7 @@ class HMailItem extends events.EventEmitter {
 
             self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`);
             processing_mail = false;
-            client_pool.release_client(socket, port, host, mx.bind, true);
+            client_pool.release_client(socket, mx);
             if (err.source === 'tls') // exception thrown from tls_socket during tls upgrade
                 return obtls.mark_tls_nogo(host, () => { return self.try_deliver(); });
             self.try_deliver(); // try the next MX
@@ -360,18 +352,14 @@ class HMailItem extends events.EventEmitter {
 
             self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`);
             processing_mail = false;
-            client_pool.release_client(socket, port, host, mx.bind, true);
+            client_pool.release_client(socket, mx);
             self.try_deliver();
         });
 
-        let fin_sent = false;
         socket.once('end', () => {
-            fin_sent = true;
             socket.writable = false;
-            if (!processing_mail) {
-                client_pool.release_client(socket, port, host, mx.bind, true);
-            }
-        });
+            if (!processing_mail) client_pool.release_client(socket, mx);
+        })
 
         let response = [];
 
@@ -399,7 +387,7 @@ class HMailItem extends events.EventEmitter {
                 self.logerror("Socket writability went away");
                 if (processing_mail) {
                     processing_mail = false;
-                    client_pool.release_client(socket, port, host, mx.bind, true);
+                    client_pool.release_client(socket, mx);
                     return self.try_deliver();
                 }
                 return;
@@ -408,7 +396,7 @@ class HMailItem extends events.EventEmitter {
                 // For safety against programming mistakes
                 self.logerror("Blocking attempt to send unencrypted data to forced TLS socket. This message indicates a programming error in the software.");
                 processing_mail = false;
-                client_pool.release_client(socket, port, host, mx.bind, true);
+                client_pool.release_client(socket, mx);
                 return;
             }
 
@@ -424,7 +412,7 @@ class HMailItem extends events.EventEmitter {
                     // We may want to release client here - but I want to get this
                     // line of code in before we do that so we might see some logging
                     // in case of errors.
-                    // client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+                    // client_pool.release_client(socket, mx);
                 }
             });
             command = cmd.toLowerCase();
@@ -540,7 +528,7 @@ class HMailItem extends events.EventEmitter {
                     processing_mail = false;
                     socket.write("QUIT\r\n", "utf8");  // courtesy
                     socket.end();
-                    client_pool.release_client(socket, port, host, mx.bind, true);
+                    client_pool.release_client(socket, mx);
                     return self.temp_fail(`No TLS available but required by configuration.`);
                 }
 
@@ -634,7 +622,7 @@ class HMailItem extends events.EventEmitter {
                 self.logerror(`Unrecognized response from upstream server: ${line}`);
                 processing_mail = false;
                 // Release back to the pool and instruct it to terminate this connection
-                client_pool.release_client(socket, port, host, mx.bind, true);
+                client_pool.release_client(socket, mx);
                 self.todo.rcpt_to.forEach(rcpt => {
                     self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command(`Unrecognized response from upstream server: ${line}`));
                 });
@@ -729,8 +717,7 @@ class HMailItem extends events.EventEmitter {
                 else {
                     reason = response.join(' ');
                     self.lognotice(`Error - but not processing mail: ${code} ${((extc) ? `${extc} ` : '')}${reason}`);
-                    // Release back to the pool and instruct it to terminate this connection
-                    return client_pool.release_client(socket, port, host, mx.bind, true);
+                    return client_pool.release_client(socket, mx);
                 }
             }
             else if (code.match(/^5/)) {
@@ -741,7 +728,7 @@ class HMailItem extends events.EventEmitter {
                 }
                 if (command === 'rset') {
                     // Broken server doesn't accept RSET, terminate the connection
-                    return client_pool.release_client(socket, port, host, mx.bind, true);
+                    return client_pool.release_client(socket, mx);
                 }
                 reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
                 if (/^rcpt/.test(command) || command === 'dot_lmtp') {
@@ -817,7 +804,7 @@ class HMailItem extends events.EventEmitter {
                             processing_mail = false;
                             socket.end();
                             self.temp_fail('Host failed TLS verification required by configuration.');
-                            client_pool.release_client(socket, port, host, mx.bind, true);
+                            client_pool.release_client(socket, mx);
                         }
                     });
                     break;
@@ -878,7 +865,7 @@ class HMailItem extends events.EventEmitter {
                     break;
                 case 'quit':
                 case 'rset':
-                    client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+                    client_pool.release_client(socket, mx);
                     break;
                 default:
                     // should never get here - means we did something
@@ -1463,24 +1450,6 @@ module.exports = HMailItem;
 module.exports.obtls = obtls;
 
 logger.add_log_methods(HMailItem)
-
-// MXs must be sorted by priority order, but matched priorities must be
-// randomly shuffled in that list, so this is a bit complex.
-function sort_mx (mx_list) {
-    const sorted = mx_list.sort((a,b) => a.priority - b.priority);
-
-    // This isn't a very good shuffle but it'll do for now.
-    for (let i=0,l=sorted.length-1; i<l; i++) {
-        if (sorted[i].priority === sorted[i+1].priority) {
-            if (Math.round(Math.random())) { // 0 or 1
-                const j = sorted[i];
-                sorted[i] = sorted[i+1];
-                sorted[i+1] = j;
-            }
-        }
-    }
-    return sorted;
-}
 
 const smtp_regexp = /^([2345]\d\d)([ -])#?(?:(\d\.\d\.\d)\s)?(.*)/;
 

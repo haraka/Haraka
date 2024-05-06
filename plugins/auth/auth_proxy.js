@@ -1,7 +1,9 @@
 // Proxy AUTH requests selectively by domain
 
-const sock  = require('./line_socket');
+const net = require('node:net')
+
 const utils = require('haraka-utils');
+const net_utils = require('haraka-net-utils')
 
 const smtp_regexp = /^(\d{3})([ -])(.*)/;
 
@@ -15,7 +17,6 @@ exports.load_tls_ini = function () {
         this.load_tls_ini();
     });
 }
-
 
 exports.hook_capabilities = (next, connection) => {
     if (connection.tls.enabled) {
@@ -54,7 +55,8 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     }
 
     const self = this;
-    const host = hosts.shift();
+    let [ host, port ] = hosts.shift().split(':'); /* eslint prefer-const: 0 */
+    if (!port) port = 25
     let methods = [];
     let auth_complete = false;
     let auth_success = false;
@@ -62,27 +64,27 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     let response = [];
     let secure = false;
 
-    const hostport = host.split(/:/);
-    const socket = sock.connect(((hostport[1]) ? hostport[1] : 25), hostport[0]);
-    connection.logdebug(self, `attempting connection to host=${hostport[0]} port=${(hostport[1]) ? hostport[1] : 25}`);
+    const socket = net.connect({ host, port });
+    net_utils.add_line_processor(socket)
+    connection.logdebug(this, `attempting connection to host=${host} port=${port}`);
     socket.setTimeout(30 * 1000);
     socket.on('connect', () => { });
     socket.on('close', () => {
         if (!auth_complete) {
             // Try next host
-            return self.try_auth_proxy(connection, hosts, user, passwd, cb);
+            return this.try_auth_proxy(connection, hosts, user, passwd, cb);
         }
-        connection.loginfo(self, `AUTH user="${user}" host="${host}" success=${auth_success}`);
-        return cb(auth_success);
+        connection.loginfo(this, `AUTH user="${user}" host="${host}" success=${auth_success}`);
+        cb(auth_success);
     });
     socket.on('timeout', () => {
-        connection.logerror(self, "connection timed out");
+        connection.logerror(this, "connection timed out");
         socket.end();
         // Try next host
-        return self.try_auth_proxy(connection, hosts, user, passwd, cb);
+        this.try_auth_proxy(connection, hosts, user, passwd, cb);
     });
     socket.on('error', err => {
-        connection.logerror(self, `connection failed to host ${host}: ${err}`);
+        connection.logerror(this, `connection failed to host ${host}: ${err}`);
         socket.end();
     });
     socket.send_command = function (cmd, data) {

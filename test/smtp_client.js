@@ -34,7 +34,7 @@ describe('smtp_client', () => {
             upgrade: arg => {
                 upgradeArgs = arg;
             }
-        };
+        }
 
         const client = new smtp_client.smtp_client(getClientOpts(socket));
         client.load_tls_config({ key: Buffer.from('OutboundTlsKeyLoaded')});

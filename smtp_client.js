@@ -16,7 +16,7 @@ const net_utils    = require('haraka-net-utils');
 const utils        = require('haraka-utils');
 
 // haraka libs
-const line_socket = require('./line_socket');
+const tls_socket = require('./tls_socket')
 const logger      = require('./logger');
 const HostPool    = require('./host_pool');
 
@@ -33,7 +33,7 @@ class SMTPClient extends events.EventEmitter {
         super();
         this.uuid = utils.uuid();
         this.connect_timeout = parseInt(opts.connect_timeout) || 30;
-        this.socket = opts.socket || line_socket.connect({ host: opts.host, port: opts.port, timeout: this.connect_timeout });
+        this.socket = opts.socket || this.get_socket(opts)
         this.socket.setTimeout(this.connect_timeout * 1000);
         this.socket.setKeepAlive(true);
         this.state = STATE.IDLE;
@@ -262,6 +262,16 @@ class SMTPClient extends events.EventEmitter {
         connection.logwarn(plugin, "transaction went away, releasing smtp_client");
         this.release();
         return true;
+    }
+
+    get_socket(opts) {
+        const socket = tls_socket.connect({
+            host: opts.host,
+            port: opts.port,
+            timeout: this.connect_timeout,
+        })
+        net_utils.add_line_processor(socket)
+        return socket
     }
 }
 

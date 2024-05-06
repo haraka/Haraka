@@ -4,6 +4,7 @@
 #### Added
 
 - doc: add CONTRIBUTORS #3312
+- tls_socket: `config/tls` dir loading is now recursive
 
 #### Changed
 
@@ -14,7 +15,7 @@
 - dkim: repackaged as NPM module #3311
 - new NPM plugin dns-list, repackages dnsbl, dnswl, backscatterer #3313
 - test: add a connection.response test case with DSN #3305
-- deps: bump all versions to latest #3303
+- deps: bump all versions to latest #3303, #3344
 - when using message-stream, don't send default options #3290
 - auth_base: enable disabling constrain_sender at runtime #3298
 - auth_base: skip constrain_sender when auth user has no domain #3319
@@ -22,24 +23,30 @@
 - connection: support IPv6 when setting remote.is_private #3295
   - in setTLS, replace forEach with for...of
   - NOTE: remove a handful of 3.0 sunset property names #3315
-- outbound/mx_lookup: make it async/await
-- outbound/mx_lookup: deleted. Logic moved into net_utils #3322
-- outbound: emit log message when ignoring local MX #3285
-- outbound: pass in config when initiating txn #3315
-- outbound: minor es6 updates #3315, #3322
-- outbound: logging improvements #3322
-  - was: [-] [core] [outbound] Failed to get socket: Outbound connection error: Error: connect ECONNREFUSED 172.16.16.14:25
-  - now: [A63B62DF-F3B8-4096-8996-8CE83494A188.1.1] [outbound] Failed to get socket: connect ECONNREFUSED 172.16.16.14:25
-  - shorter logger syntax: logger.loginfo -> logger.info
-  - outbound: remove log prefixes of `[outbound] `, no longer needed
+- line_socket: remove unused callback #3344
 - logger: don't load outbound (race condition). Instead, set name property #3322
 - logger: extend add_log_methods to Classes (connection, plugins, hmail) #3322
 - logger: when logging via `logger` methods, use short names #3322
 - logger: check Object.hasOwn to avoid circular deps
-- outbound: delete try_deliver_host. Use net_utils to resolve MX hosts to IPs #3322
-- outbound: remove config setting ipv6_enabled #3322
-- outbound: remove undocumented use of send_email with arity of 2. #3322
-- outbound: encapsulate force_tls logic into get_force_tls #3322
+- outbound
+  - client_pool: use tls_socket directly (shed line_socket)
+  - client_pool: sock.name is now JSON of socket args
+  - client_pool.get_client & release_client: arity of 5 -> 2
+  - mx_lookup: make it async/await
+  - mx_lookup: deleted. Logic moved into net_utils #3322
+  - use net_utils.HarkaMx for get_mx parsing #3344
+  - emit log message when ignoring local MX #3285
+  - pass in config when initiating txn #3315
+  - minor es6 updates #3315, #3322
+  - logging improvements #3322
+    - was: [-] [core] [outbound] Failed to get socket: Outbound connection error: Error: connect ECONNREFUSED 172.16.16.14:25
+    - now: [A63B62DF-F3B8-4096-8996-8CE83494A188.1.1] [outbound] Failed to get socket: connect ECONNREFUSED 172.16.16.14:25
+  - shorter logger syntax: logger.loginfo -> logger.info
+  - remove log prefixes of `[outbound] `, no longer needed
+  - delete try_deliver_host. Use net_utils to resolve MX hosts to IPs #3322
+  - remove config setting ipv6_enabled #3322
+  - remove undocumented use of send_email with arity of 2. #3322
+  - encapsulate force_tls logic into get_force_tls #3322
 - queue/lmtp: refactored for DRY and improved readability #3322
 - mail_from.resolvable: refactored, leaning on improved net_utils #3322
   - fixes haraka/haraka-net-utils#88
@@ -51,6 +58,11 @@
 - server.js: use the local logger methods
 - get Haraka version from utils.getVersion (which includes git id if running from repo)
 - tls_socket: remove secureConnection. Fixes #2743
+  - getSocketOpts is now async
+  - parse_x509 is now async
+  - shed dependency on caolin/async & openssl-wrapper
+  - get_certs_dir is now async
+    - completely refactored.
 - .gitignore: add config/me and config/*.pem
 - test: convert test runner to mocha
 - test: rename tests -> test (where test runner expect) #3340

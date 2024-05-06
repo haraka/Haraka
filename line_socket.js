@@ -37,17 +37,16 @@ function setup_line_processor (socket) {
 exports.Socket = Socket;
 
 // New interface - uses TLS
-exports.connect = (port, host, cb) => {
+exports.connect = (port, host) => {
     let options = {};
     if (typeof port === 'object') {
         options = port;
-        cb = host;
     }
     else {
         options.port = port;
         options.host = host;
     }
-    const sock = tls_socket.connect(options, cb);
+    const sock = tls_socket.connect(options);
     setup_line_processor(sock);
     return sock;
 }

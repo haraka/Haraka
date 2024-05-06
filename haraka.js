@@ -20,7 +20,6 @@ catch (e) {
     require('module')._initPaths(); // Horrible hack
 }
 
-const fs = require('fs');
 const utils = require('haraka-utils');
 const logger = require('./logger');
 const server = require('./server');

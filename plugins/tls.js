@@ -123,7 +123,7 @@ exports.upgrade_connection = function (next, connection, params) {
 
             connection.results.add(plugin, connection.tls);
             plugin.emit_upgrade_msg(connection, verified, verifyErr, cert, cipher);
-            return next(OK);  // Return OK as we responded to the client
+            next(OK);
         })
     })
 }
@@ -132,7 +132,7 @@ exports.hook_disconnect = (next, connection) => {
     if (connection.notes.cleanUpDisconnect) {
         connection.notes.cleanUpDisconnect(true);
     }
-    return next();
+    next();
 }
 
 exports.emit_upgrade_msg = function (conn, verified, verifyErr, cert, cipher) {

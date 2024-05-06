@@ -1,8 +1,10 @@
 'use strict';
 // Call spamassassin via spamd
 
-const sock  = require('./line_socket');
+const net = require('node:net')
+
 const utils = require('haraka-utils');
+const net_utils = require('haraka-net-utils')
 
 exports.register = function () {
     this.load_spamassassin_ini();
@@ -264,10 +266,9 @@ exports.get_spamd_socket = function (next, conn, headers) {
     const plugin = this;
     const txn = conn.transaction;
 
-    // TODO: support multiple spamd backends
-
-    const socket = new sock.Socket();
+    const socket = new net.Socket();
     socket.is_connected = false;
+    net_utils.add_line_processor(socket)
     const results_timeout = parseInt(plugin.cfg.main.results_timeout) || 300;
 
     socket.on('connect', function () {
