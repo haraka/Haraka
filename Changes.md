@@ -8,6 +8,7 @@
 
 #### Changed
 
+- avg: repackaged as NPM module #3347
 - bounce: repackaged plugin as NPM module #3341
 - connection: check remote is connected before queue #3338
 - transaction: init with conn.init_transaction, always pass in cfg #3315
