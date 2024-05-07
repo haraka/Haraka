@@ -51,6 +51,7 @@
 - mail_from.resolvable: refactored, leaning on improved net_utils #3322
   - fixes haraka/haraka-net-utils#88
 - smtp_client: pass connect_timeout, maybe fixes #3281
+- spamassassin: repackaged as NPM module #3348
 - style(es6): more for...of loops
 - deps: moved attachment, spf, & dkim into optional deps
 - doc(Plugins.md): update registry
