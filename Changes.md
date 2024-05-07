@@ -19,6 +19,7 @@
   - NOTE: remove a handful of 3.0 sunset property names #3315
 - deps: bump all versions to latest #3303, #3344
 - dkim: repackaged as NPM module #3311
+- greylist: repackaged as NPM module
 - new NPM plugin dns-list, repackages dnsbl, dnswl, backscatterer #3313
 - when using message-stream, don't send default options #3290
 - rcpt_to.host_list: add connection ID to log messages #3322

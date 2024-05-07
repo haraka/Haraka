@@ -139,7 +139,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-auth-ldap]: https://github.com/haraka/haraka-plugin-auth-ldap
 [url-authproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_proxy.md
 [url-authvpop]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_vpopmaild.md
-[url-avg]: https://github.com/haraka/Haraka/blob/master/docs/plugins/avg.md
+[url-avg]: https://github.com/haraka/haraka-plugin-avg
 [url-batv]: https://www.npmjs.com/package/haraka-plugin-batv
 [url-scatter]: https://github.com/haraka/Haraka/blob/master/docs/plugins/backscatterer.md
 [url-blockme]: https://github.com/haraka/Haraka/blob/master/docs/plugins/block_me.md
@@ -160,7 +160,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-esets]: https://github.com/haraka/Haraka/blob/master/docs/plugins/esets.md
 [url-geoip]: https://github.com/haraka/haraka-plugin-geoip
 [url-graph]: https://github.com/haraka/haraka-plugin-graph
-[url-greylist]: https://github.com/haraka/Haraka/blob/master/docs/plugins/greylist.md
+[url-greylist]: https://github.com/haraka/haraka-plugin-greylist
 [url-helo]: https://github.com/haraka/Haraka/blob/master/docs/plugins/helo.checks.md
 [url-karma]: https://github.com/haraka/haraka-plugin-karma
 [url-known-senders]: https://github.com/haraka/haraka-plugin-known-senders
@@ -195,7 +195,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-relay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/relay.md
 [url-rng]: https://github.com/haraka/Haraka/blob/master/docs/plugins/reseed_rng.md
 [url-rspamd]: https://github.com/haraka/haraka-plugin-rspamd
-[url-spamass]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spamassassin.md
+[url-spamass]: https://github.com/haraka/haraka-plugin-spamassassin
 [url-spf]: https://github.com/haraka/haraka-plugin-spf
 [url-srs]: https://github.com/swerter/haraka-plugins/blob/master/plugins/srs.js
 [url-tarpit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tarpit.md
