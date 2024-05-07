@@ -11,6 +11,7 @@
 - .gitignore: add config/me and config/*.pem
 - auth_base: enable disabling constrain_sender at runtime #3298
 - auth_base: skip constrain_sender when auth user has no domain #3319
+- avg: repackaged as NPM module #3347
 - bounce: repackaged plugin as NPM module #3341
 - connection: check remote is connected before queue #3338
   - support IPv6 when setting remote.is_private #3295
