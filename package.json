@@ -50,6 +50,7 @@
     "haraka-plugin-asn": "^2.0.2",
     "haraka-plugin-attachment": "^1.1.2",
     "haraka-plugin-auth-ldap": "^1.1.0",
+    "haraka-plugin-avg": "^1.1.0",
     "haraka-plugin-bounce": "1.0.2",
     "haraka-plugin-dcc": "^1.0.2",
     "haraka-plugin-dkim": "^1.0.3",
