@@ -1701,7 +1701,12 @@ class Connection {
         });
     }
     queue_msg (retval, msg) {
-        if (msg) return msg;
+        if (msg) {
+            if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
+                return msg.reply
+            }
+            return msg;
+        }
 
         switch (retval) {
             case constants.ok:
@@ -1737,7 +1742,7 @@ class Connection {
     }
     queue_outbound_respond (retval, msg) {
         if (this.remote.closed) return;
-        if (!msg) msg = this.queue_msg(retval, msg) || 'Message Queued';
+        msg = this.queue_msg(retval, msg) || 'Message Queued';
         this.store_queue_result(retval, msg);
         msg = `${msg} (${this.transaction.uuid})`;
         if (retval !== constants.ok) {
@@ -1813,7 +1818,7 @@ class Connection {
         }
     }
     queue_respond (retval, msg) {
-        if (!msg) msg = this.queue_msg(retval, msg);
+        msg = this.queue_msg(retval, msg);
         this.store_queue_result(retval, msg);
         msg = `${msg} (${this.transaction.uuid})`;
 
