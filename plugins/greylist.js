@@ -2,9 +2,8 @@
 
 // version 0.1.4
 
-// node builtins
-const net    = require('net');
-const util   = require('util');
+const net    = require('node:net');
+const util   = require('node:util');
 
 // Haraka modules
 const DSN       = require('haraka-dsn');
@@ -16,7 +15,7 @@ const { Address } = require('address-rfc2821');
 const ipaddr    = require('ipaddr.js');
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-exports.register = function (next) {
+exports.register = function () {
     this.inherits('haraka-plugin-redis');
 
     this.load_config();
@@ -207,7 +206,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
                 ctr.add(this, {
                     pass : 'whitelisted'
                 });
-                return this.invoke_outcome_cb(next, true);
+                this.invoke_outcome_cb(next, true);
             }
         })
     })
@@ -267,7 +266,7 @@ exports.check_and_update_white = function (connection, cb) {
             return this.update_white_record(key, record, cb);
         }
 
-        return cb(null, false);
+        cb(null, false);
     });
 }
 
@@ -278,7 +277,7 @@ exports.invoke_outcome_cb = function (next, is_whitelisted) {
 
     const text = this.cfg.main.text || '';
 
-    return next(DENYSOFT, DSN.sec_unauthorized(text, '451'));
+    next(DENYSOFT, DSN.sec_unauthorized(text, '451'));
 }
 
 // Should we skip greylisting invokation altogether?
@@ -446,8 +445,8 @@ exports.craft_hostid = function (connection) {
 exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
     const multi = this.db.multi();
 
-    multi.hgetall(rcpt_key);
-    multi.hgetall(sender_key);
+    multi.hGetAll(rcpt_key);
+    multi.hGetAll(sender_key);
 
     multi.exec((err, result) => {
         if (err) {
@@ -475,12 +474,12 @@ exports.update_grey = function (key, create, cb) {
             tried : 1
         };
 
-        multi.hmset(key, new_record);
+        multi.hmSet(key, new_record);
         multi.expire(key, lifetime);
     }
     else {
-        multi.hincrby(key, 'tried', 1);
-        multi.hmset(key, {
+        multi.hIncrBy(key, 'tried', 1);
+        multi.hmSet(key, {
             updated : ts_now
         });
     }
@@ -514,7 +513,7 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
     const white_key = this.craft_white_key(connection);
     if (!white_key) return;
 
-    return this.db.hmset(white_key, white_rec, (err, result) => {
+    return this.db.hmSet(white_key, white_rec, (err, result) => {
         if (err) {
             this.lognotice(`DB error: ${util.inspect(err)}`);
             err.what = 'db_error';
@@ -536,8 +535,8 @@ exports.update_white_record = function (key, record, cb) {
     const ts_now = Math.round(Date.now() / 1000);
 
     // { first_connect: TS, whitelisted: TS, updated: TS, lifetime: TTL, tried: Integer, tried_when_greylisted: Integer }
-    multi.hincrby(key, 'tried', 1);
-    multi.hmset(key, {
+    multi.hIncrBy(key, 'tried', 1);
+    multi.hmSet(key, {
         updated : ts_now
     });
     multi.expire(key, record.lifetime);
@@ -556,7 +555,7 @@ exports.update_white_record = function (key, record, cb) {
 
 exports.db_lookup = function (key, cb) {
 
-    this.db.hgetall(key, (err, result) => {
+    this.db.hGetAll(key, (err, result) => {
         if (err) {
             this.lognotice(`DB error: ${util.inspect(err)}`, key);
         }
