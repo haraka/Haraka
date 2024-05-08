@@ -4,7 +4,7 @@
 // and passes back any errors seen on the ongoing server to the
 // originating server.
 
-const url = require('url');
+const url = require('node:url');
 
 const smtp_client_mod = require('./smtp_client');
 

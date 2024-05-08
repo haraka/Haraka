@@ -8,17 +8,20 @@
 
 #### Changed
 
+- prefix node libs with 'node:' #3359
 - .gitignore: add config/me and config/*.pem
 - auth_base: enable disabling constrain_sender at runtime #3298
 - auth_base: skip constrain_sender when auth user has no domain #3319
 - avg: repackaged as NPM module #3347
 - bounce: repackaged plugin as NPM module #3341
 - clamd: repackaged plugin as NPM module
+- config/plugins: consistent formatting #3359
 - connection: check remote is connected before queue #3338
   - improve log message for queue* hooks, fixes #2998
   - support IPv6 when setting remote.is_private #3295
   - in setTLS, replace forEach with for...of
   - NOTE: remove a handful of 3.0 sunset property names #3315
+- contrib/plugin2npm.sh: fix path to package.json #3359
 - deps: bump all versions to latest #3303, #3344
 - dkim: repackaged as NPM module #3311
 - esets: repackaged as NPM module #3353

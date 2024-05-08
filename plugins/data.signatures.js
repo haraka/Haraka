@@ -3,9 +3,7 @@
 
 exports.hook_data = (next, connection) => {
     // enable mail body parsing
-    if (!connection?.transaction) return next();
-
-    connection.transaction.parse_body = true;
+    if (connection?.transaction) connection.transaction.parse_body = true;
     next();
 }
 
@@ -17,7 +15,7 @@ exports.hook_data_post = function (next, connection) {
     if (check_sigs(sigs, connection.transaction.body)) {
         return next(DENY, "Mail matches a known spam signature");
     }
-    return next();
+    next();
 }
 
 function check_sigs (sigs, body) {

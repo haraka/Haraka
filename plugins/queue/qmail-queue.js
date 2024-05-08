@@ -1,7 +1,7 @@
 // Queue to qmail-queue
 
-const childproc = require('child_process');
-const fs        = require('fs');
+const childproc = require('node:child_process');
+const fs        = require('node:fs');
 
 exports.register = function () {
 

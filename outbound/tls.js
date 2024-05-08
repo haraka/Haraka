@@ -1,11 +1,12 @@
 'use strict';
 
-const net          = require('net')
+const net          = require('node:net')
+
+const config       = require('haraka-config');
+const hkredis      = require('haraka-plugin-redis');
 
 const logger       = require('../logger');
 const tls_socket   = require('../tls_socket');
-const config       = require('haraka-config');
-const hkredis      = require('haraka-plugin-redis');
 
 const inheritable_opts = [
     'key', 'cert', 'ciphers', 'minVersion', 'dhparam',

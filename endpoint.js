@@ -1,7 +1,7 @@
 'use strict';
 // Socket address parser/formatter and server binding helper
 
-const fs = require('fs');
+const fs = require('node:fs');
 const sockaddr = require('sockaddr');
 
 module.exports = function endpoint (addr, defaultPort) {

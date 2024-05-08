@@ -2,8 +2,9 @@
 //
 // documentation via: haraka -h relay
 
+const net = require('node:net');
+
 const ipaddr = require('ipaddr.js');
-const net    = require('net');
 
 exports.register = function () {
 
@@ -89,11 +90,9 @@ exports.acl = function (next, connection) {
 }
 
 exports.pass_relaying = (next, connection) => {
-    if (connection.relaying) {
-        return next(OK);
-    }
+    if (connection.relaying) return next(OK);
 
-    return next();
+    next();
 }
 
 exports.is_acl_allowed = function (connection) {
@@ -172,7 +171,7 @@ exports.dest_domains = function (next, connection, params) {
     }
 
     transaction.results.add(this, {fail: 'relay_dest_domain'});
-    return next(DENY, "Mail for that recipient is not accepted here.");
+    next(DENY, "Mail for that recipient is not accepted here.");
 }
 
 exports.force_routing = function (next, hmail, domain) {
@@ -196,7 +195,7 @@ exports.force_routing = function (next, hmail, domain) {
     }
 
     this.logdebug(this, `using ${nexthop} for: ${domain}`);
-    return next(OK, nexthop);
+    next(OK, nexthop);
 }
 
 exports.all = function (next, connection, params) {

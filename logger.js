@@ -1,8 +1,8 @@
 'use strict';
 // Log class
 
-const util      = require('util');
-const tty       = require('tty');
+const util      = require('node:util');
+const tty       = require('node:tty');
 
 const config    = require('haraka-config');
 const constants = require('haraka-constants');

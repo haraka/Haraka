@@ -1,10 +1,10 @@
 'use strict';
 
 const assert = require('node:assert')
-const path         = require('path');
+const path = require('node:path');
 
-const fixtures     = require('haraka-test-fixtures');
-const Plugin       = fixtures.plugin;
+const fixtures = require('haraka-test-fixtures');
+const Plugin = fixtures.plugin;
 
 const _set_up = (done) => {
     this.plugin = new Plugin('tls')

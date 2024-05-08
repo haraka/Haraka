@@ -1,6 +1,6 @@
 'use strict';
 
-const net    = require('net');
+const net    = require('node:net');
 const utils  = require('haraka-utils');
 
 /* HostPool:

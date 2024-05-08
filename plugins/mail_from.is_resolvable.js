@@ -1,7 +1,7 @@
 'use strict';
 
 // Check MAIL FROM domain is resolvable to an MX
-const net = require('net');
+const net = require('node:net');
 
 const net_utils = require('haraka-net-utils');
 

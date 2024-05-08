@@ -3,13 +3,13 @@
 // this script takes inspiration from:
 // https://github.com/tnantoka/LooseLeaf/blob/master/bin/looseleaf
 
-const child = require('child_process');
-const fs   = require('fs');
-const net  = require('net');
-const nopt = require('nopt');
-const path = require('path');
-const os   = require('os');
+const child = require('node:child_process');
+const fs   = require('node:fs');
+const net  = require('node:net');
+const path = require('node:path');
+const os   = require('node:os');
 
+const nopt = require('nopt');
 const utils   = require('haraka-utils');
 const sprintf = require('sprintf-js').sprintf;
 const base = path.join(__dirname, '..');

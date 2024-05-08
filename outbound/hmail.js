@@ -1,9 +1,9 @@
 'use strict';
 
-const events       = require('events');
-const fs           = require('fs');
-const dns          = require('dns');
-const path         = require('path');
+const events       = require('node:events');
+const fs           = require('node:fs');
+const dns          = require('node:dns');
+const path         = require('node:path');
 
 const { Address } = require('address-rfc2821');
 const config      = require('haraka-config');

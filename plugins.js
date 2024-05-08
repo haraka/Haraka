@@ -2,9 +2,9 @@
 // load all defined plugins
 
 // node built-ins
-const fs          = require('fs');
-const path        = require('path');
-const vm          = require('vm');
+const fs          = require('node:fs');
+const path        = require('node:path');
+const vm          = require('node:vm');
 
 // npm modules
 exports.config    = require('haraka-config');
@@ -480,10 +480,8 @@ plugins.run_next_hook = (hook, object, params) => {
 
         const respond_method = `${hook}_respond`;
         if (item && is_deny_retval(retval) && hook.substr(0,5) !== 'init_') {
-            object.deny_respond =
-                get_denyfn(object, hook, params, retval, msg, respond_method);
-            plugins.run_hooks('deny', object,
-                [retval, msg, item[0].name, item[1], params, hook]);
+            object.deny_respond = get_denyfn(object, hook, params, retval, msg, respond_method);
+            plugins.run_hooks('deny', object, [retval, msg, item[0].name, item[1], params, hook]);
         }
         else {
             object.hooks_to_run = [];
@@ -570,11 +568,16 @@ function log_run_item (item, hook, retval, object, params, msg) {
 
 function sanitize (msg) {
     if (!msg) return ''
-    const sanitized = { ...msg }; // copy the message
-    for (const priv of ['password','auth_pass']) {
-        delete sanitized[priv]
+    if (typeof msg === 'string') return msg
+    if (typeof msg === 'object') {
+        if (msg.constructor.name === 'DSN') return msg.reply
+        const sanitized = { ...msg }; // copy the message
+        for (const priv of ['password','auth_pass']) {
+            delete sanitized[priv]
+        }
+        return JSON.stringify(sanitized)
     }
-    return sanitized
+    logger.logerror(`what is ${msg} (typeof ${typeof msg})?`)
 }
 
 function is_deny_retval (val) {

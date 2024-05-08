@@ -1,6 +1,6 @@
 // Auth against vpopmaild
 
-const net = require('net');
+const net = require('node:net');
 
 exports.register = function () {
     this.inherits('auth/auth_base');

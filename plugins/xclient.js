@@ -1,9 +1,10 @@
 // Implementation of XCLIENT protocol
 // See http://www.postfix.org/XCLIENT_README.html
 
+const net = require('node:net');
+
 const utils = require('haraka-utils');
 const DSN = require('haraka-dsn');
-const net = require('net');
 let allowed_hosts = {};
 
 exports.register = function () {
@@ -119,5 +120,5 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     connection.xclient = true;
     if (!xclient.name) return next(NEXT_HOOK, 'lookup_rdns');
 
-    return next(NEXT_HOOK, 'connect');
+    next(NEXT_HOOK, 'connect');
 }

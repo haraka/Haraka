@@ -7,18 +7,15 @@
 // than a bunch of connections to a single host from the configuration values
 // in "host" and "port" (see host_pool.js).
 
-// node.js builtins
-const events       = require('events');
+const events = require('node:events');
 
-// npm deps
-const ipaddr       = require('ipaddr.js');
-const net_utils    = require('haraka-net-utils');
-const utils        = require('haraka-utils');
+const ipaddr    = require('ipaddr.js');
+const net_utils = require('haraka-net-utils');
+const utils     = require('haraka-utils');
 
-// haraka libs
 const tls_socket = require('./tls_socket')
-const logger      = require('./logger');
-const HostPool    = require('./host_pool');
+const logger     = require('./logger');
+const HostPool   = require('./host_pool');
 
 const smtp_regexp = /^(\d{3})([ -])(.*)/;
 const STATE = {

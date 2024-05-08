@@ -1,6 +1,6 @@
 'use strict';
 
-const events   = require('events');
+const events   = require('node:events');
 const fixtures = require('haraka-test-fixtures');
 const { stub } = fixtures.stub;
 

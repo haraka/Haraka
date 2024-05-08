@@ -1,6 +1,6 @@
 const assert = require('node:assert')
+const path = require('node:path');
 
-const path = require('path');
 const endpoint = require('../endpoint');
 const message = require('haraka-email-message')
 
