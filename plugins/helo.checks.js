@@ -36,10 +36,6 @@ exports.register = function () {
         this.register_hook('ehlo', c);
     }
 
-    // Always emit a log entry
-    this.register_hook('helo', 'emit_log');
-    this.register_hook('ehlo', 'emit_log');
-
     // IP literal that doesn't match remote IP
     this.register_hook('helo', 'literal_mismatch');
     this.register_hook('ehlo', 'literal_mismatch');
@@ -47,6 +43,10 @@ exports.register = function () {
     this.cfg.check.literal_mismatch = this.cfg.check.literal_mismatch ?? 2;
     this.cfg.reject.literal_mismatch = this.cfg.reject.literal_mismatch ?? false;
 
+    // Always emit a log entry
+    this.register_hook('helo', 'emit_log');
+    this.register_hook('ehlo', 'emit_log');
+        
     if (this.cfg.check.match_re) {
         const load_re_file = () => {
             const regex_list = utils.valid_regexes(this.config.get('helo.checks.regexps', 'list', load_re_file));
@@ -110,7 +110,7 @@ exports.init = function (next, connection, helo) {
 }
 
 exports.should_skip = function (connection, test_name) {
-    if (connection.results.has('helo.checks', '_skip_hooks', test_name)) {
+    if (connection.hello.host && connection.results.has('helo.checks', '_skip_hooks', test_name)) {
         this.logdebug(connection, `SKIPPING: ${test_name}`);
         return true;
     }

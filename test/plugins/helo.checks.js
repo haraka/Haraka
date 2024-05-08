@@ -301,8 +301,12 @@ describe('helo.checks', () => {
             this.plugin.cfg.reject.big_company=true;
             this.plugin.big_company((rc) => {
                 assert.equal(rc, DENY);
-                assert.ok(this.connection.results.get('helo.checks').fail.length);
-                done();
+                assert.equal(this.connection.results.get('helo.checks').fail.length, 1);
+                this.plugin.big_company((rc) => {
+                    assert.equal(rc, DENY);
+                    assert.ok(this.connection.results.get('helo.checks').fail.length, 2);
+                    done();
+                }, this.connection, test_helo);
             }, this.connection, test_helo);
         })
     })
