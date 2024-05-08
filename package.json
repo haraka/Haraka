@@ -61,6 +61,7 @@
     "haraka-plugin-graph": "^1.0.5",
     "haraka-plugin-greylist": "^1.0.0",
     "haraka-plugin-headers": "^1.0.4",
+    "haraka-plugin-helo.checks": "^1.0.0",
     "haraka-plugin-karma": "^2.1.5",
     "haraka-plugin-known-senders": "^1.1.0",
     "haraka-plugin-limit": "^1.2.3",
