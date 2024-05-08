@@ -20,6 +20,7 @@
   - NOTE: remove a handful of 3.0 sunset property names #3315
 - deps: bump all versions to latest #3303, #3344
 - dkim: repackaged as NPM module #3311
+- esets: repackaged as NPM module #3353
 - greylist: repackaged as NPM module
 - helo.checks: require a successful HELO/EHLO #3352
 - new NPM plugin dns-list, repackages dnsbl, dnswl, backscatterer #3313
