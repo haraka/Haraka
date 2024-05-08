@@ -161,7 +161,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-geoip]: https://github.com/haraka/haraka-plugin-geoip
 [url-graph]: https://github.com/haraka/haraka-plugin-graph
 [url-greylist]: https://github.com/haraka/haraka-plugin-greylist
-[url-helo]: https://github.com/haraka/Haraka/blob/master/docs/plugins/helo.checks.md
+[url-helo]: https://github.com/haraka/haraka-plugin-helo.checks
 [url-karma]: https://github.com/haraka/haraka-plugin-karma
 [url-known-senders]: https://github.com/haraka/haraka-plugin-known-senders
 [url-elastic]: https://github.com/haraka/haraka-plugin-elasticsearch/
