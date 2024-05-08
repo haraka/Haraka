@@ -144,7 +144,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-scatter]: https://github.com/haraka/Haraka/blob/master/docs/plugins/backscatterer.md
 [url-blockme]: https://github.com/haraka/Haraka/blob/master/docs/plugins/block_me.md
 [url-bounce]: https://www.npmjs.com/package/haraka-plugin-bounce
-[url-clamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/clamd.md
+[url-clamd]: https://github.com/haraka/haraka-plugin-clamd
 [url-dovecot]: https://github.com/haraka/haraka-plugin-dovecot
 [url-fcrdns]: https://github.com/haraka/haraka-plugin-fcrdns
 [url-p0f]: https://github.com/haraka/haraka-plugin-p0f
