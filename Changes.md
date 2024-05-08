@@ -14,6 +14,7 @@
 - avg: repackaged as NPM module #3347
 - bounce: repackaged plugin as NPM module #3341
 - connection: check remote is connected before queue #3338
+  - improve log message for queue* hooks, fixes #2998
   - support IPv6 when setting remote.is_private #3295
   - in setTLS, replace forEach with for...of
   - NOTE: remove a handful of 3.0 sunset property names #3315
