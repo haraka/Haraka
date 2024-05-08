@@ -64,6 +64,7 @@
     "haraka-plugin-karma": "^2.1.5",
     "haraka-plugin-known-senders": "^1.1.0",
     "haraka-plugin-limit": "^1.2.3",
+    "haraka-plugin-messagesniffer": "^1.0.0",
     "haraka-plugin-p0f": "^1.0.9",
     "haraka-plugin-qmail-deliverable": "^1.2.3",
     "haraka-plugin-rcpt-ldap": "^1.1.0",

@@ -171,7 +171,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-logreader]: https://github.com/haraka/haraka-plugin-log-reader
 [url-milter]: https://github.com/haraka/haraka-plugin-milter
 [url-mfres]: https://github.com/haraka/Haraka/blob/master/docs/plugins/mail_from.is_resolvable.md
-[url-msgsniff]: https://github.com/haraka/Haraka/blob/master/docs/plugins/messagesniffer.md
+[url-msgsniff]: https://github.com/haraka/haraka-plugin-messagesniffer
 [url-ms]: http://www.armresearch.com/Products/
 [url-creds]: https://github.com/haraka/Haraka/blob/master/docs/plugins/prevent_credential_leaks.md
 [url-postgres]: https://github.com/haraka/haraka-plugin-rcpt-postgresql

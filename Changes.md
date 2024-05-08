@@ -30,6 +30,9 @@
 - logger: extend add_log_methods to Classes (connection, plugins, hmail) #3322
 - logger: when logging via `logger` methods, use short names #3322
 - logger: check Object.hasOwn to avoid circular deps
+- mail_from.resolvable: refactored, leaning on improved net_utils #3322
+  - fixes haraka/haraka-net-utils#88
+- messagesniffer: repackaged as NPM module
 - outbound
   - check for local_mx only when default route is used #3307
   - client_pool: use tls_socket directly (shed line_socket)
@@ -51,8 +54,6 @@
   - remove undocumented use of send_email with arity of 2. #3322
   - encapsulate force_tls logic into get_force_tls #3322
 - queue/lmtp: refactored for DRY and improved readability #3322
-- mail_from.resolvable: refactored, leaning on improved net_utils #3322
-  - fixes haraka/haraka-net-utils#88
 - smtp_client: pass connect_timeout, maybe fixes #3281
 - spamassassin: repackaged as NPM module #3348
 - style(es6): more for...of loops
