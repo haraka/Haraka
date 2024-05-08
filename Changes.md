@@ -8,28 +8,29 @@
 
 #### Changed
 
+- .gitignore: add config/me and config/*.pem
+- auth_base: enable disabling constrain_sender at runtime #3298
+- auth_base: skip constrain_sender when auth user has no domain #3319
+- avg: repackaged as NPM module #3347
 - bounce: repackaged plugin as NPM module #3341
 - connection: check remote is connected before queue #3338
   - improve log message for queue* hooks, fixes #2998
-- transaction: init with conn.init_transaction, always pass in cfg #3315
-- check for local_mx only when default route is used #3307
-- dkim: repackaged as NPM module #3311
-- new NPM plugin dns-list, repackages dnsbl, dnswl, backscatterer #3313
-- test: add a connection.response test case with DSN #3305
-- deps: bump all versions to latest #3303, #3344
-- when using message-stream, don't send default options #3290
-- auth_base: enable disabling constrain_sender at runtime #3298
-- auth_base: skip constrain_sender when auth user has no domain #3319
-- rcpt_to.host_list: add connection ID to log messages #3322
-- connection: support IPv6 when setting remote.is_private #3295
+  - support IPv6 when setting remote.is_private #3295
   - in setTLS, replace forEach with for...of
   - NOTE: remove a handful of 3.0 sunset property names #3315
+- deps: bump all versions to latest #3303, #3344
+- dkim: repackaged as NPM module #3311
+- greylist: repackaged as NPM module
+- new NPM plugin dns-list, repackages dnsbl, dnswl, backscatterer #3313
+- when using message-stream, don't send default options #3290
+- rcpt_to.host_list: add connection ID to log messages #3322
 - line_socket: remove unused callback #3344
 - logger: don't load outbound (race condition). Instead, set name property #3322
 - logger: extend add_log_methods to Classes (connection, plugins, hmail) #3322
 - logger: when logging via `logger` methods, use short names #3322
 - logger: check Object.hasOwn to avoid circular deps
 - outbound
+  - check for local_mx only when default route is used #3307
   - client_pool: use tls_socket directly (shed line_socket)
   - client_pool: sock.name is now JSON of socket args
   - client_pool.get_client & release_client: arity of 5 -> 2
@@ -52,6 +53,7 @@
 - mail_from.resolvable: refactored, leaning on improved net_utils #3322
   - fixes haraka/haraka-net-utils#88
 - smtp_client: pass connect_timeout, maybe fixes #3281
+- spamassassin: repackaged as NPM module #3348
 - style(es6): more for...of loops
 - deps: moved attachment, spf, & dkim into optional deps
 - doc(Plugins.md): update registry
@@ -64,7 +66,8 @@
   - shed dependency on caolin/async & openssl-wrapper
   - get_certs_dir is now async
     - completely refactored.
-- .gitignore: add config/me and config/*.pem
+- transaction: init with conn.init_transaction, always pass in cfg #3315
+- test: add a connection.response test case with DSN #3305
 - test: convert test runner to mocha
 - test: rename tests -> test (where test runner expect) #3340
 
