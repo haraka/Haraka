@@ -56,6 +56,7 @@
     "haraka-plugin-dkim": "^1.0.3",
     "haraka-plugin-dns-list": "^1.2.0",
     "haraka-plugin-elasticsearch": "^8.0.2",
+    "haraka-plugin-esets": "^1.0.0",
     "haraka-plugin-fcrdns": "^1.1.0",
     "haraka-plugin-geoip": "^1.1.0",
     "haraka-plugin-graph": "^1.0.5",

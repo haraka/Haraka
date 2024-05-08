@@ -157,7 +157,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-opendkim]: https://www.npmjs.com/package/haraka-plugin-opendkim
 [url-dns-list]: https://github.com/haraka/haraka-plugin-dns-list
 [url-early]: https://github.com/haraka/Haraka/blob/master/docs/plugins/early_talker.md
-[url-esets]: https://github.com/haraka/Haraka/blob/master/docs/plugins/esets.md
+[url-esets]: https://github.com/haraka/haraka-plugin-esets
 [url-geoip]: https://github.com/haraka/haraka-plugin-geoip
 [url-graph]: https://github.com/haraka/haraka-plugin-graph
 [url-greylist]: https://github.com/haraka/haraka-plugin-greylist
