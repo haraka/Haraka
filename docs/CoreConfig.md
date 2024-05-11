@@ -7,9 +7,9 @@ The Haraka core reads some configuration files to determine a few actions:
 
 * smtp.yaml or smtp.json
 
-If either of these files exist then they are loaded first after log.ini.
+If either of these files exist then they are loaded first.
 This file is designed to use the JSON/YAML file overrides documented in
-Config.md to optionally provide the entire configuration in a single file.
+[haraka-config](https://github.com/haraka/haraka-config) to optionally provide the entire configuration in a single file.
 
 * databytes
 
