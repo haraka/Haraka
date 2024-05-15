@@ -293,13 +293,8 @@ class HMailItem extends events.EventEmitter {
         }
 
         // Allow transaction notes to set outbound IP helo
-        if (!mx.bind_helo){
-            if (this.todo.notes.outbound_helo) {
-                mx.bind_helo = this.todo.notes.outbound_helo;
-            }
-            else {
-                mx.bind_helo = net_utils.get_primary_host_name();
-            }
+        if (this.todo.notes.outbound_helo) {
+            mx.bind_helo = this.todo.notes.outbound_helo;
         }
 
         const host = mx.path ? mx.path : mx.exchange;
