@@ -1,7 +1,7 @@
 'use strict';
 
 // Check MAIL FROM domain is resolvable to an MX
-const net = require('net');
+const net = require('node:net');
 
 const net_utils = require('haraka-net-utils');
 
@@ -70,7 +70,7 @@ exports.hook_mail = function (next, connection, params) {
 
     function mxErr (err) {
         if (!connection.transaction) return;
-        results.add(this, {err: `${domain}:${err.message}`});
+        results.add(plugin, {err: `${domain}:${err.message}`});
         mxDone(DENYSOFT, `Temp. resolver error (${err.code})`);
     }
 

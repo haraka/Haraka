@@ -1,8 +1,8 @@
 'use strict';
 
-const child_process = require('child_process');
-const fs          = require('fs');
-const path        = require('path');
+const child_process = require('node:child_process');
+const fs          = require('node:fs');
+const path        = require('node:path');
 
 const async       = require('async');
 const { Address } = require('address-rfc2821');

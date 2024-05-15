@@ -32,7 +32,8 @@ if grep template "$PLUGIN_REPO/README.md"; then
         -e "s/template\.ini/$1.ini/" \
         "$PLUGIN_REPO/test/index.js"
 
-    sed -i '' -e "s/template/${1}/g" package.json
+    sed -i '' -e "s/template/${1}/g" "$PLUGIN_REPO/package.json"
+
     sed -i '' \
         -e "s/_template/_${1}/g" \
         -e "s/template\.ini/$1.ini/" \

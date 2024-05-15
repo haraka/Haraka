@@ -1,8 +1,8 @@
 'use strict';
 const assert = require('node:assert')
+const dns = require('node:dns');
 
 const fixtures  = require('haraka-test-fixtures');
-const dns       = require('dns');
 const Address   = require('address-rfc2821').Address
 
 const _set_up = (done) => {

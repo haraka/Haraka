@@ -1,7 +1,7 @@
 'use strict';
 // A subclass of Socket which reads data by line
 
-const net   = require('net');
+const net   = require('node:net');
 const utils = require('haraka-utils');
 
 const tls_socket = require('./tls_socket');

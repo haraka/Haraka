@@ -1,7 +1,7 @@
 'use strict';
 // An SMTP Transaction
 
-const util   = require('util');
+const util   = require('node:util');
 
 const Notes  = require('haraka-notes');
 const utils  = require('haraka-utils');

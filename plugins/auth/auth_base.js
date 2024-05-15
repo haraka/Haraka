@@ -4,7 +4,7 @@
 
 // Note: You can disable setting `connection.notes.auth_passwd` by `plugin.blankout_password = true`
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 const tlds   = require('haraka-tld')
 const utils  = require('haraka-utils');

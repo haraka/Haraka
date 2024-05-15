@@ -1,7 +1,8 @@
 // This plugin checks for clients that talk before we sent a response
 
+const { isIPv6 } = require('node:net');
+
 const ipaddr = require('ipaddr.js');
-const { isIPv6 } = require('net');
 
 exports.register = function () {
     this.load_config();

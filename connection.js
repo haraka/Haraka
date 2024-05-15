@@ -1,10 +1,9 @@
 'use strict';
 // a single connection
 
-// node.js built-in libs
-const dns         = require('dns');
-const net         = require('net');
-const os          = require('os');
+const dns         = require('node:dns');
+const net         = require('node:net');
+const os          = require('node:os');
 
 // npm libs
 const ipaddr      = require('ipaddr.js');
@@ -959,7 +958,6 @@ class Connection {
         })
     }
     mail_respond (retval, msg) {
-        const self = this;
         if (!this.transaction) {
             this.logerror("mail_respond found no transaction!");
             return;
@@ -974,12 +972,12 @@ class Connection {
             }
         );
 
-        function store_results (action) {
+        const store_results = (action) => {
             let addr = sender.format();
             if (addr.length > 2) {  // all but null sender
                 addr = addr.substr(1, addr.length -2); // trim off < >
             }
-            self.transaction.results.add({name: 'mail_from'}, {
+            this.transaction.results.add({name: 'mail_from'}, {
                 action,
                 code: constants.translate(retval),
                 address: addr,
@@ -990,25 +988,25 @@ class Connection {
             case constants.deny:
                 this.respond(550, msg || `${dmsg} denied`, () => {
                     store_results('reject');
-                    self.reset_transaction();
+                    this.reset_transaction();
                 });
                 break;
             case constants.denydisconnect:
                 this.respond(550, msg ||  `${dmsg} denied`, () => {
                     store_results('reject');
-                    self.disconnect();
+                    this.disconnect();
                 });
                 break;
             case constants.denysoft:
                 this.respond(450, msg || `${dmsg} denied`, () => {
                     store_results('tempfail');
-                    self.reset_transaction();
+                    this.reset_transaction();
                 });
                 break;
             case constants.denysoftdisconnect:
                 this.respond(450, msg || `${dmsg} denied`, () => {
                     store_results('tempfail');
-                    self.disconnect();
+                    this.disconnect();
                 });
                 break;
             default:

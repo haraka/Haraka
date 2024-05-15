@@ -64,13 +64,13 @@ describe('endpoint', () => {
                 },
             };
 
-            mock('fs', this.mockfs);
+            mock('node:fs', this.mockfs);
             this.endpoint = mock.reRequire('../endpoint');
             done();
         })
 
         afterEach((done) => {
-            mock.stop('fs');
+            mock.stop('node:fs');
             done();
         })
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const os = require('os');
+const os = require('node:os');
 const platform_dot = `${(['win32','win64'].includes(process.platform)) ? '' : '__tmp__'}.`;
 
 let QFILECOUNTER = 0;

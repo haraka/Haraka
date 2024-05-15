@@ -12,8 +12,8 @@
 //   * or, in case of 4XX: that temp_fail is called and dsn vars are available)
 
 const assert = require('node:assert')
-const fs          = require('fs');
-const path        = require('path');
+const fs          = require('node:fs');
+const path        = require('node:path');
 
 const util_hmailitem = require('./fixtures/util_hmailitem');
 const TODOItem    = require('../outbound/todo');
