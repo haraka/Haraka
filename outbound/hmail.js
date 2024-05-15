@@ -287,9 +287,9 @@ class HMailItem extends events.EventEmitter {
 
         this.force_tls = this.get_force_tls(mx)
 
-        // Allow transaction notes to set outbound IP
-        if (!mx.bind && this.todo.notes.outbound_ip) {
-            mx.bind = this.todo.notes.outbound_ip;
+        if (this.todo.notes.outbound_ip) {
+            this.logerror(`notes.outbound_ip is deprecated. Use get_mx.bind instead!`);
+            if (!mx.bind) mx.bind = this.todo.notes.outbound_ip;
         }
 
         // Allow transaction notes to set outbound IP helo
