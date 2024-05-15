@@ -65,6 +65,7 @@
 - style(es6): more for...of loops
 - deps: moved attachment, spf, & dkim into optional deps
 - doc(Plugins.md): update registry
+- doc(Outbound.md): improve GHFM formatting
 - remove last vestiges of header_hide_version (long ago renamed)
 - server.js: use the local logger methods
   - es6(async): _graceful, get_smtp_server, setup_smtp_listeners
