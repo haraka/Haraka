@@ -3,7 +3,6 @@
 const fs          = require('node:fs');
 const path        = require('node:path');
 
-const async       = require('async');
 const { Address } = require('address-rfc2821');
 const config      = require('haraka-config');
 const constants   = require('haraka-constants');
@@ -232,75 +231,76 @@ exports.send_trans_email = function (transaction, next) {
         transaction.results = new ResultStore(connection);
     }
 
-    connection.pre_send_trans_email_respond = retval => {
+    connection.pre_send_trans_email_respond = async (retval) => {
         const deliveries = get_deliveries(transaction);
         const hmails = [];
         const ok_paths = [];
 
         let todo_index = 1;
 
-        async.forEachSeries(deliveries, (deliv, cb) => {
-            const todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
-            todo.uuid = `${todo.uuid}.${todo_index}`;
-            todo_index++;
-            this.process_delivery(ok_paths, todo, hmails, cb);
-        },
-        (err) => {
-            if (err) {
-                for (let i=0, l=ok_paths.length; i<l; i++) {
-                    fs.unlink(ok_paths[i], () => {});
-                }
-                transaction.results.add({ name: 'outbound'}, { err });
-                if (next) next(constants.denysoft, err);
-                return;
+        try {
+            for (const deliv of deliveries) {
+                const todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
+                todo.uuid = `${todo.uuid}.${todo_index}`;
+                todo_index++;
+                await this.process_delivery(ok_paths, todo, hmails);
             }
+        }
+        catch (err) {
+            for (let i=0, l=ok_paths.length; i<l; i++) {
+                fs.unlink(ok_paths[i], () => {});
+            }
+            transaction.results.add({ name: 'outbound'}, { err });
+            if (next) next(constants.denysoft, err);
+            return;
+        }
 
-            for (const hmail of hmails) {
-                delivery_queue.push(hmail);
-            }
+        for (const hmail of hmails) {
+            delivery_queue.push(hmail);
+        }
 
-            transaction.results.add({ name: 'outbound'}, { pass: "queued" });
-            if (next) {
-                next(constants.ok, `Message Queued (${transaction.uuid})`);
-            }
-        });
+        transaction.results.add({ name: 'outbound'}, { pass: "queued" });
+        if (next) next(constants.ok, `Message Queued (${transaction.uuid})`);
     }
 
     plugins.run_hooks('pre_send_trans_email', connection);
 }
 
-exports.process_delivery = function (ok_paths, todo, hmails, cb) {
-    logger.info(exports, `Transaction delivery for domain: ${todo.domain}`);
-    const fname = _qfile.name();
-    const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
-    const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
+exports.process_delivery = function (ok_paths, todo, hmails) {
+    return new Promise((resolve, reject) => {
 
-    ws.on('close', () => {
-        const dest_path = path.join(queue_dir, fname);
-        fs.rename(tmp_path, dest_path, err => {
-            if (err) {
-                logger.error(exports, `Unable to rename tmp file!: ${err}`);
-                fs.unlink(tmp_path, () => {});
-                cb("Queue error");
-            }
-            else {
-                hmails.push(new HMailItem (fname, dest_path, todo.notes));
-                ok_paths.push(dest_path);
-                cb();
-            }
+        logger.info(exports, `Transaction delivery for domain: ${todo.domain}`);
+        const fname = _qfile.name();
+        const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
+        const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
+
+        ws.on('close', () => {
+            const dest_path = path.join(queue_dir, fname);
+            fs.rename(tmp_path, dest_path, err => {
+                if (err) {
+                    logger.error(exports, `Unable to rename tmp file!: ${err}`);
+                    fs.unlink(tmp_path, () => {});
+                    reject("Queue error");
+                }
+                else {
+                    hmails.push(new HMailItem (fname, dest_path, todo.notes));
+                    ok_paths.push(dest_path);
+                    resolve();
+                }
+            })
         })
-    })
 
-    ws.on('error', err => {
-        logger.error(exports, `Unable to write queue file (${fname}): ${err}`);
-        ws.destroy();
-        fs.unlink(tmp_path, () => {});
-        cb("Queueing failed");
-    })
+        ws.on('error', err => {
+            logger.error(exports, `Unable to write queue file (${fname}): ${err}`);
+            ws.destroy();
+            fs.unlink(tmp_path, () => {});
+            reject("Queueing failed");
+        })
 
-    this.build_todo(todo, ws, () => {
-        todo.message_stream.pipe(ws, { dot_stuffing: true });
-    });
+        this.build_todo(todo, ws, () => {
+            todo.message_stream.pipe(ws, { dot_stuffing: true });
+        });
+    })
 }
 
 exports.build_todo = (todo, ws, write_more) => {

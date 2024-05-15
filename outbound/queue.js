@@ -86,16 +86,15 @@ exports.load_queue = pid => {
 }
 
 exports._load_cur_queue = (pid, iteratee, cb) => {
-    const self = exports;
     logger.info(exports, "Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, (err, files) => {
         if (err) {
             return logger.error(exports, `Failed to load queue directory (${queue_dir}): ${err}`);
         }
 
-        self.cur_time = new Date(); // set once so we're not calling it a lot
+        this.cur_time = new Date(); // set once so we're not calling it a lot
 
-        self.load_queue_files(pid, files, iteratee, cb);
+        this.load_queue_files(pid, files, iteratee, cb);
     });
 }
 
