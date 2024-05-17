@@ -850,7 +850,7 @@ class Connection {
             default:
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message}`);
+                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}, ${this.ehlo_hello_message}`);
         }
     }
     ehlo_respond (retval, msg) {
@@ -883,7 +883,7 @@ class Connection {
                 // Hostname/domain should appear after 250
 
                 const response = [
-                    `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message}`,
+                    `${this.local.host} Hello ${this.get_remote('host')}, ${this.ehlo_hello_message}`,
                     "PIPELINING",
                     "8BITMIME",
                 ];
