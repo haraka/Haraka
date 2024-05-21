@@ -52,7 +52,7 @@ class Endpoint {
         const mode = this.mode ? parseInt(this.mode, 8) : false;
         if (this.path) {
             opts.path = this.path;
-            fs.rm(this.path, { force: true });
+            fs.rm(opts.path, { force: true });
         }
         else {
             opts.host = this.host;
