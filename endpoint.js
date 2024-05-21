@@ -46,21 +46,24 @@ class Endpoint {
     }
 
     // Make server listen on this endpoint, w/optional options
-    bind (server, opts) {
-        let done;
-        opts = Object.assign({}, opts || {});
+    async bind (server, opts) {
+        opts = {...opts};
+
+        const mode = this.mode ? parseInt(this.mode, 8) : false;
         if (this.path) {
-            const path = opts.path = this.path;
-            const mode = this.mode ? parseInt(this.mode, 8) : false;
-            if (mode) {
-                done = () => fs.chmodSync(path, mode);
-            }
+            opts.path = this.path;
             if (fs.existsSync(path)) fs.unlinkSync(path);
-        }
-        else {
+        } else {
             opts.host = this.host;
             opts.port = this.port;
         }
-        server.listen(opts, done);
+        
+        return await new Promise((resolve, reject) => {
+            server.listen(opts, (err) => {
+                if(err) return reject(err);
+                if (mode) fs.chmodSync(opts.path, mode);
+                resolve()
+            });
+        });
     }
 }
