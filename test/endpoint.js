@@ -75,7 +75,7 @@ describe('endpoint', () => {
         })
 
         it('IP socket', async () => {
-            await this.endpoint('10.0.a0.3:42').bind(this.server, {backlog:19});
+            await this.endpoint('10.0.0.3:42').bind(this.server, {backlog:19});
             assert.deepEqual(
                 this.log, [
                     ['listen', {host: '10.0.0.3', port: 42, backlog: 19}],
