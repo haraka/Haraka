@@ -52,7 +52,7 @@ class Endpoint {
         const mode = this.mode ? parseInt(this.mode, 8) : false;
         if (this.path) {
             opts.path = this.path;
-            if (fs.existsSync(path)) fs.unlinkSync(path);
+            if (fs.existsSync(opts.path)) fs.unlinkSync(opts.path);
         } else {
             opts.host = this.host;
             opts.port = this.port;
