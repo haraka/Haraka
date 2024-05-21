@@ -74,16 +74,16 @@ describe('endpoint', () => {
             done();
         })
 
-        it('IP socket', () => {
-            this.endpoint('10.0.0.3:42').bind(this.server, {backlog:19});
+        it('IP socket', async () => {
+            await this.endpoint('10.0.0.3:42').bind(this.server, {backlog:19});
             assert.deepEqual(
                 this.log, [
                     ['listen', {host: '10.0.0.3', port: 42, backlog: 19}],
                 ]);
         })
 
-        it('Unix socket', () => {
-            this.endpoint('/foo/bar.sock').bind(this.server, {readableAll:true});
+        it('Unix socket', async () => {
+            await this.endpoint('/foo/bar.sock').bind(this.server, {readableAll:true});
             assert.deepEqual(
                 this.log, [
                     ['existsSync', '/foo/bar.sock'],
@@ -91,9 +91,9 @@ describe('endpoint', () => {
                 ]);
         })
 
-        it('Unix socket (pre-existing)', () => {
+        it('Unix socket (pre-existing)', async () => {
             this.modes['/foo/bar.sock'] = 0o755;
-            this.endpoint('/foo/bar.sock').bind(this.server);
+            await this.endpoint('/foo/bar.sock').bind(this.server);
             assert.deepEqual(
                 this.log, [
                     ['existsSync', '/foo/bar.sock'],
@@ -102,8 +102,8 @@ describe('endpoint', () => {
                 ]);
         })
 
-        it('Unix socket w/mode', () => {
-            this.endpoint('/foo/bar.sock:764').bind(this.server);
+        it('Unix socket w/mode', async () => {
+            await this.endpoint('/foo/bar.sock:764').bind(this.server);
             assert.deepEqual(
                 this.log, [
                     ['existsSync', '/foo/bar.sock'],
