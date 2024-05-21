@@ -505,7 +505,7 @@ Server.setup_http_listeners = async () => {
             Server.logerror(e);
         })
 
-        ep.bind(Server.http.server, {backlog: 0});
+        await ep.bind(Server.http.server, {backlog: 0});
     }
 
     Server.plugins.run_hooks('init_http', Server);
