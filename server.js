@@ -446,7 +446,7 @@ Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
                 Server.logerror(e)
             })
 
-        ep.bind(server, {backlog: 0});
+        await ep.bind(server, {backlog: 0});
     }
 
     if (errors.length) {
@@ -459,7 +459,7 @@ Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
     plugins2.run_hooks(`init_${type}`, Server);
 }
 
-Server.setup_http_listeners = () => {
+Server.setup_http_listeners = async () => {
     if (!Server.http?.cfg?.listen) return;
 
     const listeners = Server.get_listen_addrs(Server.http.cfg, 80);
@@ -505,7 +505,7 @@ Server.setup_http_listeners = () => {
             Server.logerror(e);
         })
 
-        ep.bind(Server.http.server, {backlog: 0});
+        await ep.bind(Server.http.server, {backlog: 0});
     }
 
     Server.plugins.run_hooks('init_http', Server);
