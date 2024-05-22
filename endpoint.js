@@ -1,7 +1,7 @@
 'use strict';
 // Socket address parser/formatter and server binding helper
 
-const fs = require('node:fs');
+const fs = require('node:fs/promises');
 const sockaddr = require('sockaddr');
 
 module.exports = function endpoint (addr, defaultPort) {
@@ -46,21 +46,24 @@ class Endpoint {
     }
 
     // Make server listen on this endpoint, w/optional options
-    bind (server, opts) {
-        let done;
-        opts = Object.assign({}, opts || {});
+    async bind (server, opts) {
+        opts = {...opts};
+
+        const mode = this.mode ? parseInt(this.mode, 8) : false;
         if (this.path) {
-            const path = opts.path = this.path;
-            const mode = this.mode ? parseInt(this.mode, 8) : false;
-            if (mode) {
-                done = () => fs.chmodSync(path, mode);
-            }
-            if (fs.existsSync(path)) fs.unlinkSync(path);
-        }
-        else {
+            opts.path = this.path;
+            await fs.rm(this.path, { force: true }); // errors are ignored when force is true
+        } else {
             opts.host = this.host;
             opts.port = this.port;
         }
-        server.listen(opts, done);
+        
+        return new Promise((resolve, reject) => {
+            server.listen(opts, async (err) => {
+                if(err) return reject(err);
+                if (mode) await fs.chmod(opts.path, mode);
+                resolve()
+            });
+        });
     }
 }
