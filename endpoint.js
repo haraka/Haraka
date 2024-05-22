@@ -52,7 +52,7 @@ class Endpoint {
         const mode = this.mode ? parseInt(this.mode, 8) : false;
         if (this.path) {
             opts.path = this.path;
-            if (await fs.exists(opts.path)) await fs.unlink(opts.path);
+            await fs.rm(this.path, { force: true }); // errors are ignored when force is true
         } else {
             opts.host = this.host;
             opts.port = this.port;
