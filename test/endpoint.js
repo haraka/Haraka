@@ -45,16 +45,16 @@ describe('endpoint', () => {
             }
 
             this.mockfs = {
-                existsSync (path, ...args) {
-                    log.push(['existsSync', path, ...args]);
+                exists (path, ...args) {
+                    log.push(['exists', path, ...args]);
                     return ('undefined' !== typeof modes[path]);
                 },
-                chmodSync (path, mode, ...args) {
-                    log.push(['chmodSync', path, mode, ...args]);
+                chmod (path, mode, ...args) {
+                    log.push(['chmod', path, mode, ...args]);
                     modes[path] = mode;
                 },
-                unlinkSync (path, ...args) {
-                    log.push(['unlinkSync', path, ...args]);
+                unlink (path, ...args) {
+                    log.push(['unlink', path, ...args]);
                     if ('undefined' !== typeof modes[path]) {
                         delete modes[path];
                     }
@@ -64,13 +64,13 @@ describe('endpoint', () => {
                 },
             };
 
-            mock('node:fs', this.mockfs);
+            mock('node:fs/promises', this.mockfs);
             this.endpoint = mock.reRequire('../endpoint');
             done();
         })
 
         afterEach((done) => {
-            mock.stop('node:fs');
+            mock.stop('node:fs/promises');
             done();
         })
 
@@ -86,7 +86,7 @@ describe('endpoint', () => {
             await this.endpoint('/foo/bar.sock').bind(this.server, {readableAll:true});
             assert.deepEqual(
                 this.log, [
-                    ['existsSync', '/foo/bar.sock'],
+                    ['exists', '/foo/bar.sock'],
                     ['listen', {path: '/foo/bar.sock', readableAll: true}],
                 ]);
         })
@@ -96,8 +96,8 @@ describe('endpoint', () => {
             await this.endpoint('/foo/bar.sock').bind(this.server);
             assert.deepEqual(
                 this.log, [
-                    ['existsSync', '/foo/bar.sock'],
-                    ['unlinkSync', '/foo/bar.sock'],
+                    ['exists', '/foo/bar.sock'],
+                    ['unlink', '/foo/bar.sock'],
                     ['listen', {path: '/foo/bar.sock'}],
                 ]);
         })
@@ -106,9 +106,9 @@ describe('endpoint', () => {
             await this.endpoint('/foo/bar.sock:764').bind(this.server);
             assert.deepEqual(
                 this.log, [
-                    ['existsSync', '/foo/bar.sock'],
+                    ['exists', '/foo/bar.sock'],
                     ['listen', {path: '/foo/bar.sock'}],
-                    ['chmodSync', '/foo/bar.sock', 0o764],
+                    ['chmod', '/foo/bar.sock', 0o764],
                 ]);
         })
     })
