@@ -45,22 +45,12 @@ describe('endpoint', () => {
             }
 
             this.mockfs = {
-                exists (path, ...args) {
-                    log.push(['exists', path, ...args]);
-                    return ('undefined' !== typeof modes[path]);
-                },
                 chmod (path, mode, ...args) {
                     log.push(['chmod', path, mode, ...args]);
                     modes[path] = mode;
                 },
-                unlink (path, ...args) {
-                    log.push(['unlink', path, ...args]);
-                    if ('undefined' !== typeof modes[path]) {
-                        delete modes[path];
-                    }
-                    else {
-                        log.push(['unlink without existing socket']);
-                    }
+                rm (path, ...args) {
+                    log.push(['rm', path, ...args]);
                 },
             };
 
@@ -86,19 +76,8 @@ describe('endpoint', () => {
             await this.endpoint('/foo/bar.sock').bind(this.server, {readableAll:true});
             assert.deepEqual(
                 this.log, [
-                    ['exists', '/foo/bar.sock'],
+                    ['rm', '/foo/bar.sock', {force:true}],
                     ['listen', {path: '/foo/bar.sock', readableAll: true}],
-                ]);
-        })
-
-        it('Unix socket (pre-existing)', async () => {
-            this.modes['/foo/bar.sock'] = 0o755;
-            await this.endpoint('/foo/bar.sock').bind(this.server);
-            assert.deepEqual(
-                this.log, [
-                    ['exists', '/foo/bar.sock'],
-                    ['unlink', '/foo/bar.sock'],
-                    ['listen', {path: '/foo/bar.sock'}],
                 ]);
         })
 
@@ -106,7 +85,7 @@ describe('endpoint', () => {
             await this.endpoint('/foo/bar.sock:764').bind(this.server);
             assert.deepEqual(
                 this.log, [
-                    ['exists', '/foo/bar.sock'],
+                    ['rm', '/foo/bar.sock', {force:true}],
                     ['listen', {path: '/foo/bar.sock'}],
                     ['chmod', '/foo/bar.sock', 0o764],
                 ]);
