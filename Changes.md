@@ -97,6 +97,7 @@
 - fix(outbound): don't send SNI servername when connecting to an IP
 - fix(outbound): chown queue dir after creation #3291
 - fix(server): async endpoint.bind() and await in server.js #3366
+- fix(outbound): get_mx DNS error handling #3376
 
 ### [3.0.3] - 2024-02-07
 
