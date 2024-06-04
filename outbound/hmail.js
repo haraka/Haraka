@@ -221,7 +221,7 @@ class HMailItem extends events.EventEmitter {
 
         // none of the above return codes, drop through to DNS
         try {
-            let exchanges = await net_utils.get_mx(this.todo.domain);
+            const exchanges = await net_utils.get_mx(this.todo.domain);
         
             if (exchanges.length) {
                 this.found_mx(this.sort_mx(exchanges))
