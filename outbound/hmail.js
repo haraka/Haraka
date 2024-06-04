@@ -192,7 +192,7 @@ class HMailItem extends events.EventEmitter {
         plugins.run_hooks('get_mx', this, domain);
     }
 
-    get_mx_respond (retval, mx) {
+    async get_mx_respond (retval, mx) {
         switch (retval) {
             case constants.ok: {
                 this.logdebug(`MX from Plugin: ${this.todo.domain} => 0 ${JSON.stringify(mx)}`);
@@ -220,18 +220,21 @@ class HMailItem extends events.EventEmitter {
         }
 
         // none of the above return codes, drop through to DNS
-        net_utils.get_mx(this.todo.domain).then(exchanges => {
+        try {
+            const exchanges = await net_utils.get_mx(this.todo.domain);
+        
             if (exchanges.length) {
                 this.found_mx(this.sort_mx(exchanges))
             }
             else {
                 for (const rcpt of this.todo.rcpt_to) {
-                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Nowhere to deliver mail to for domain: ${this.todo.domain}`));
+                    this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Nowhere to deliver mail to for domain: ${this.todo.domain}`))
                 }
                 this.bounce(`Nowhere to deliver mail to for domain: ${this.todo.domain}`);
             }
-        })
-        .catch(this.get_mx_err)
+        } catch (e) {
+            this.get_mx_error(e);
+        }
     }
 
     get_mx_error (err) {
