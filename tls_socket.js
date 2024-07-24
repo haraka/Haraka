@@ -428,7 +428,7 @@ exports.get_certs_dir = async (tlsDir) => {
 
         // all opts are applied, generate TLS context
         try {
-            ctxByHost[cn] = tls.createSecureContext(certsByHost.get(cn));
+            ctxByHost[cn] = tls.createSecureContext(certsByHost.get([cn]));
         }
         catch (err) {
             log.error(`CN '${cn}' loading got: ${err.message}`)
