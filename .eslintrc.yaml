@@ -6,7 +6,7 @@ env:
 extends: ['@haraka']
 
 rules:
-  semi-style: [ error, last ]
-  prefer-template: "warn"
+  semi-style: [error, last]
+  prefer-template: 'warn'
   no-unneeded-ternary: 1
   no-unused-vars: 0

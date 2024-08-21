@@ -1,6 +1,6 @@
 name: CI
 
-on: [ pull_request, push ]
+on: [pull_request, push]
 
 env:
   CI: true
@@ -10,7 +10,7 @@ jobs:
     uses: haraka/.github/.github/workflows/lint.yml@master
 
   test:
-    needs: [ get-lts ]
+    needs: [get-lts]
     runs-on: ${{ matrix.os }}
     services:
       redis:
@@ -19,18 +19,18 @@ jobs:
           - 6379:6379
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ubuntu-latest]
         node-version: ${{ fromJson(needs.get-lts.outputs.active) }}
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
-      with:
-        node-version: ${{ matrix.node-version }}
-    # - run: openssl x509 -in test/config/tls/ec.pem -noout -enddate -subject -ext subjectAltName
-    - run: npm install --omit=optional
-    - run: npm run test
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
+        with:
+          node-version: ${{ matrix.node-version }}
+      # - run: openssl x509 -in test/config/tls/ec.pem -noout -enddate -subject -ext subjectAltName
+      - run: npm install --omit=optional
+      - run: npm run test
 
   # TODO: replace the above with this, after plugin/attachment is split
   # ubuntu:
@@ -38,15 +38,15 @@ jobs:
   #   uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
   windows:
-    needs: [ lint ]
+    needs: [lint]
     uses: haraka/.github/.github/workflows/windows.yml@master
 
   get-lts:
-     runs-on: ubuntu-latest
-     steps:
-       - id: get
-         uses: msimerson/node-lts-versions@v1
-     outputs:
-       active: ${{ steps.get.outputs.active }}
-       lts:    ${{ steps.get.outputs.lts }}
-       min:    ${{ steps.get.outputs.min }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: get
+        uses: msimerson/node-lts-versions@v1
+    outputs:
+      active: ${{ steps.get.outputs.active }}
+      lts: ${{ steps.get.outputs.lts }}
+      min: ${{ steps.get.outputs.min }}

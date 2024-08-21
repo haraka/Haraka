@@ -30,19 +30,19 @@ To submit new_branch as a Pull Request, visit the [Haraka project page](https://
 
 ### General Guidelines
 
-* New features **must** be documented
-* New features **should** include tests
+- New features **must** be documented
+- New features **should** include tests
 
 ### Style conventions
 
-* 4 spaces for indentation (no tabs)
-* Semi-colons on the end of statements are preferred
-* Use whitespace between operators - we prefer `if (foo > bar)` over `if(foo>bar)`
-* Don't comment out lines of code, remove them as they will be in the revision history.
-* Use boolean true/false instead of numeric 0/1
-* See [Editor Settings](Editor-Settings)
+- 4 spaces for indentation (no tabs)
+- Semi-colons on the end of statements are preferred
+- Use whitespace between operators - we prefer `if (foo > bar)` over `if(foo>bar)`
+- Don't comment out lines of code, remove them as they will be in the revision history.
+- Use boolean true/false instead of numeric 0/1
+- See [Editor Settings](Editor-Settings)
 
 ## Tests
 
-* run all tests: ./run_tests  (or "npm test")
-* run tests for a single plugin: ./run_tests test/plugins/bounce.js
+- run all tests: ./run_tests (or "npm test")
+- run tests for a single plugin: ./run_tests test/plugins/bounce.js

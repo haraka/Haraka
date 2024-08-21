@@ -4,7 +4,6 @@ about: Suggest an idea for this project
 title: ''
 labels: ''
 assignees: ''
-
 ---
 
 - [ ] I already searched past issues
