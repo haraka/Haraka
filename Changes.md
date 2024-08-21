@@ -22,7 +22,7 @@
   - in setTLS, replace forEach with for...of
   - NOTE: remove a handful of 3.0 sunset property names #3315
 - contrib/plugin2npm.sh: fix path to package.json #3359
-- deps: bump all versions to latest #3303, #3344
+- deps: bump all versions to latest #3303, #3344, #3391
 - dkim: repackaged as NPM module #3311
 - esets: repackaged as NPM module #3353
 - greylist: repackaged as NPM module
