@@ -1,6 +1,8 @@
 
 ### Unreleased
 
+### [3.0.4] - 2024-08-21
+
 #### Added
 
 - doc: add CONTRIBUTORS #3312
@@ -1495,6 +1497,7 @@
 
 
 [3.0.0]: https://github.com/haraka/Haraka/releases/tag/3.0.0
-[3.0.1]: https://github.com/haraka/Haraka/releases/tag/3.0.1
-[3.0.2]: https://github.com/haraka/Haraka/releases/tag/3.0.2
-[3.0.3]: https://github.com/haraka/Haraka/releases/tag/3.0.3
+[3.0.1]: https://github.com/haraka/Haraka/releases/tag/v3.0.1
+[3.0.2]: https://github.com/haraka/Haraka/releases/tag/v3.0.2
+[3.0.3]: https://github.com/haraka/Haraka/releases/tag/v3.0.3
+[3.0.4]: https://github.com/haraka/Haraka/releases/tag/3.0.4
