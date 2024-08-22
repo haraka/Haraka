@@ -202,7 +202,7 @@
 - dep(haraka-plugin-redis)!: 1.0 -> 2.0 #3038
 - dep(redis)!: 3.1 -> 4.1 #3058
 - dep(generic-pool): remove pooling from outbound #3115
-- smtp_client: remove smtp_* pooling support in #3113
+- smtp_client: remove smtp_\* pooling support in #3113
 - dep: bump plugin versions #3063
 - dep: bump haraka-plugin-asn from 1.0.9 to 2.0.0 #3062
 - dep(redis): 3.1 -> 4.1 #3058
