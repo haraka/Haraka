@@ -5,21 +5,21 @@
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: 'npm' # See documentation for possible values
+    directory: '/' # Location of package manifests
     schedule:
-      interval: "monthly"
+      interval: 'monthly'
     allow:
       - dependency-type: production
     groups:
       production-dependencies:
-        dependency-type: "production"
+        dependency-type: 'production'
       development-dependencies:
-        dependency-type: "development"
+        dependency-type: 'development'
 
-  - package-ecosystem: "docker"
+  - package-ecosystem: 'docker'
     # Look for a `Dockerfile` in the `root` directory
-    directory: "/"
+    directory: '/'
     # Check for updates once a month
     schedule:
-      interval: "monthly"
+      interval: 'monthly'

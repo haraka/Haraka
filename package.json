@@ -9,7 +9,7 @@
     "server",
     "email"
   ],
-  "version": "3.0.3",
+  "version": "3.0.4",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -97,9 +97,12 @@
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
-    "test": "npx mocha --exit --timeout=4000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
+    "format": "npm run prettier:fix && npm run lint:fix",
     "lint": "npx eslint@^8 *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "lint:fix": "npx eslint@^8 --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
+    "prettier": "npx prettier . --check",
+    "prettier:fix": "npx prettier . --write --log-level=warn",
+    "test": "npx mocha --exit --timeout=4000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
     "versions": "npx dependency-version-checker check",
     "versions:fix": "npx dependency-version-checker update && npm run prettier:fix"
   }
