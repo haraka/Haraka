@@ -46,7 +46,7 @@
   - client_pool.get_client & release_client: arity of 5 -> 2
   - mx_lookup: make it async/await
   - mx_lookup: deleted. Logic moved into net_utils #3322
-  - use net_utils.HarkaMx for get_mx parsing #3344
+  - use net_utils.HarakaMx for get_mx parsing #3344
   - emit log message when ignoring local MX #3285
   - pass in config when initiating txn #3315
   - minor es6 updates #3315, #3322
