@@ -1,5 +1,11 @@
 ### Unreleased
 
+
+#### Changed
+
+- removed dependency on ldap plugins #3399
+
+
 ### [3.0.4] - 2024-08-21
 
 #### Added
