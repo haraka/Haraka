@@ -109,6 +109,14 @@ If needed, add this section to the `config/tls.ini` file and list any IP ranges 
 172.16.0.0/16
 ```
 
+Note: `[no_tls_hosts]` section applies to inbound only. For outbound mail, this feature is implemented as an array like `force_tls_hosts`:
+
+```ini
+[outbound]
+no_tls_hosts[]=192.168.1.3
+no_tls_hosts[]=172.16.0.0/16
+```
+
 The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information about the following options.
 
 ### no_starttls_ports

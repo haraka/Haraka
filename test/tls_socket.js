@@ -152,7 +152,10 @@ describe('tls_socket', () => {
                     no_starttls_ports: [2525],
                 },
                 redis: { disable_for_failed_hosts: false },
-                no_tls_hosts: {},
+                no_tls_hosts: {
+                    '192.168.1.1': undefined,
+                    '172.16.0.0/16': undefined,
+                },
                 mutual_auth_hosts: {},
                 mutual_auth_hosts_exclude: {},
                 outbound: {
@@ -165,6 +168,7 @@ describe('tls_socket', () => {
                     requestCert: false,
                     honorCipherOrder: false,
                     force_tls_hosts: ['first.example.com', 'second.example.net'],
+                    no_tls_hosts: ['127.0.0.2', '192.168.31.1/24'],
                 }
             })
         })

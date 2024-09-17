@@ -109,7 +109,7 @@ describe('outbound', () => {
                 requestCert: false,
                 honorCipherOrder: false,
                 redis: { disable_for_failed_hosts: false },
-                no_tls_hosts: [],
+                no_tls_hosts: ['127.0.0.2', '192.168.31.1/24'],
                 force_tls_hosts: ['first.example.com', 'second.example.net']
             })
         })
