@@ -1,5 +1,13 @@
 ### Unreleased
 
+
+#### Changed
+
+- removed dependency on ldap plugins #3399
+- doc(tls.md): add note for no_tls_hosts for outbound
+- test(tls): add tests for no_tls_hosts for inbound & outbound
+
+
 ### [3.0.4] - 2024-08-21
 
 #### Added
