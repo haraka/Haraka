@@ -228,7 +228,7 @@ const plugin_doc = [
 
 
 function getHooks () {   // see haraka/Haraka#3306
-    fs.readFileSync('docs/Plugins.md').toString()
+    return fs.readFileSync('docs/Plugins.md').toString()
         .split('## Available Hooks')[1]    // discard everything before this string
         .split('### rcpt')[0]              // discard everything after this string
         .match(/\*\s(\S+)/gm)              // grab the first word of lines starting with '* '
