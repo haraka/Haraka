@@ -554,6 +554,7 @@ else if (parsed.install) {
     for (const d of ['plugins', 'docs', 'config']) {
         utils.mkDir(path.join(pa, d));
     }
+    utils.copyFile(path.join(base, 'docs', 'Plugins.md'), path.join(pa, 'docs', 'Plugins.md'));
     utils.createFile(path.join(pa, 'README'), readme, {}, parsed.force);
     utils.createFile(path.join(pa, 'package.json'), packageJson, {}, parsed.force);
     const bytes = require('crypto').randomBytes(32);
