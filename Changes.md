@@ -3,6 +3,7 @@
 
 #### Changed
 
+- fix: revert a refactoring error in queue/lmtp, #3407
 - removed dependency on ldap plugins #3399
 - doc(tls.md): add note for no_tls_hosts for outbound
 - test(tls): add tests for no_tls_hosts for inbound & outbound
