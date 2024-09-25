@@ -37,7 +37,9 @@ exports.hook_queue = (next, connection) => {
     const txn = connection?.transaction;
     if (!txn) return next();
 
-    if (txn.notes.get('queue.wants') !== 'lmtp') return next();
+    const q_wants = txn.notes.get('queue.wants');
+
+    if (q_wants && q_wants !== 'lmtp') return next();
 
     txn.notes.using_lmtp = true;
     outbound.send_trans_email(txn, next);
