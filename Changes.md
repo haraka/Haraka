@@ -3,7 +3,7 @@
 
 #### Changed
 
-- dep(haraka-email-message): 1.2.3 -> 1.2.4
+- dep(haraka-email-message): bump 1.2.3 -> 1.2.4
 - fix: revert a refactoring error in queue/lmtp, #3407
 - removed dependency on ldap plugins #3399
 - doc(tls.md): add note for no_tls_hosts for outbound
