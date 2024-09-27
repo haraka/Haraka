@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 #### Changed
 
+- lint: remove deprecated semi-style rule
 - dep(haraka-email-message): bump 1.2.3 -> 1.2.4, #3408
 - removed dependency on ldap plugins #3399
 - doc(tls.md): add note for no_tls_hosts for outbound
