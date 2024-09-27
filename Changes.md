@@ -18,10 +18,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 #### Changed
 
 - lint: remove deprecated semi-style rule
-- dep(haraka-email-message): bump 1.2.3 -> 1.2.4, #3408
 - removed dependency on ldap plugins #3399
 - doc(tls.md): add note for no_tls_hosts for outbound
 - test(tls): add tests for no_tls_hosts for inbound & outbound
+- dep version bumps:
+  - haraka-email-message: 1.2.4, #3408
+  - tld: 1.2.2
+  - plugin-dkim: 1.0.7
+  - plugin-dns-list: 1.2.1
+  - plugin-elastisearch: 8.0.3
+  - nodemailer: 6.9.15
+  - test-fixtures: 1.3.8
 
 
 ### [3.0.4] - 2024-08-21
