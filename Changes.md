@@ -1,14 +1,26 @@
+# Changelog
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
 ### Unreleased
 
+### [3.0.5] - 2024-09-27
+
+#### Fixed
+
+- fix(q/lmtp): revert a refactoring error #3407
+- fix: install Plugins.md when haraka -i #3406
+- fix(haraka -h): add missing return for plugin list #3405
+- fix `no_tls_hosts` related docs & tests #3404
+- fix: install docs/Plugins.md when haraka -i installed
+- fix(changes): spelling correction #3397
 
 #### Changed
 
-- dep(haraka-email-message): bump 1.2.3 -> 1.2.4
-- fix: revert a refactoring error in queue/lmtp, #3407
+- dep(haraka-email-message): bump 1.2.3 -> 1.2.4, #3408
 - removed dependency on ldap plugins #3399
 - doc(tls.md): add note for no_tls_hosts for outbound
 - test(tls): add tests for no_tls_hosts for inbound & outbound
-- fix: install docs/Plugins.md when haraka -i installed
 
 
 ### [3.0.4] - 2024-08-21
@@ -1563,3 +1575,94 @@
 [3.0.2]: https://github.com/haraka/Haraka/releases/tag/v3.0.2
 [3.0.3]: https://github.com/haraka/Haraka/releases/tag/v3.0.3
 [3.0.4]: https://github.com/haraka/Haraka/releases/tag/3.0.4
+[3.0.5]: https://github.com/haraka/Haraka/releases/tag/v3.0.5
+[2.7.3]: https://github.com/haraka/Haraka/releases/tag/2.7.3
+[2.8.10]: https://github.com/haraka/Haraka/releases/tag/2.8.10
+[2.8.11]: https://github.com/haraka/Haraka/releases/tag/2.8.11
+[2.8.12]: https://github.com/haraka/Haraka/releases/tag/2.8.12
+[2.8.13]: https://github.com/haraka/Haraka/releases/tag/2.8.13
+[2.8.15]: https://github.com/haraka/Haraka/releases/tag/2.8.15
+[2.8.16]: https://github.com/haraka/Haraka/releases/tag/2.8.16
+[2.8.17]: https://github.com/haraka/Haraka/releases/tag/2.8.17
+[2.8.18]: https://github.com/haraka/Haraka/releases/tag/2.8.18
+[2.8.20]: https://github.com/haraka/Haraka/releases/tag/2.8.20
+[2.8.22]: https://github.com/haraka/Haraka/releases/tag/2.8.22
+[2.8.24]: https://github.com/haraka/Haraka/releases/tag/2.8.24
+[2.8.25]: https://github.com/haraka/Haraka/releases/tag/2.8.25
+[2.8.26]: https://github.com/haraka/Haraka/releases/tag/2.8.26
+[2.8.27]: https://github.com/haraka/Haraka/releases/tag/2.8.27
+[2.8.28]: https://github.com/haraka/Haraka/releases/tag/2.8.28
+[2.8.3]: https://github.com/haraka/Haraka/releases/tag/2.8.3
+[de-2.6.2-4]: https://github.com/haraka/Haraka/releases/tag/dev-2.6.2-4
+[release-2.8.21]: https://github.com/haraka/Haraka/releases/tag/release-2.8.21
+[untagged-59c7da99d6a80276e58d]: https://github.com/haraka/Haraka/releases/tag/untagged-59c7da99d6a80276e58d
+[0.2]: https://github.com/haraka/Haraka/releases/tag/v0.2
+[0.3]: https://github.com/haraka/Haraka/releases/tag/v0.3
+[0.4]: https://github.com/haraka/Haraka/releases/tag/v0.4
+[0.5]: https://github.com/haraka/Haraka/releases/tag/v0.5
+[0.5.10]: https://github.com/haraka/Haraka/releases/tag/v0.5.10
+[0.5.11]: https://github.com/haraka/Haraka/releases/tag/v0.5.11
+[0.5.2]: https://github.com/haraka/Haraka/releases/tag/v0.5.2
+[0.5.3]: https://github.com/haraka/Haraka/releases/tag/v0.5.3
+[0.5.4]: https://github.com/haraka/Haraka/releases/tag/v0.5.4
+[0.5.5]: https://github.com/haraka/Haraka/releases/tag/v0.5.5
+[0.5.6]: https://github.com/haraka/Haraka/releases/tag/v0.5.6
+[0.5.7]: https://github.com/haraka/Haraka/releases/tag/v0.5.7
+[0.5.8]: https://github.com/haraka/Haraka/releases/tag/v0.5.8
+[0.5.9]: https://github.com/haraka/Haraka/releases/tag/v0.5.9
+[0.6.0]: https://github.com/haraka/Haraka/releases/tag/v0.6.0
+[0.6.1]: https://github.com/haraka/Haraka/releases/tag/v0.6.1
+[0.7.0]: https://github.com/haraka/Haraka/releases/tag/v0.7.0
+[0.7.1]: https://github.com/haraka/Haraka/releases/tag/v0.7.1
+[0.7.2]: https://github.com/haraka/Haraka/releases/tag/v0.7.2
+[0.8.0]: https://github.com/haraka/Haraka/releases/tag/v0.8.0
+[0.9.0]: https://github.com/haraka/Haraka/releases/tag/v0.9.0
+[1.0.1]: https://github.com/haraka/Haraka/releases/tag/v1.0.1
+[1.0.2]: https://github.com/haraka/Haraka/releases/tag/v1.0.2
+[1.1.0]: https://github.com/haraka/Haraka/releases/tag/v1.1.0
+[1.2.0]: https://github.com/haraka/Haraka/releases/tag/v1.2.0
+[1.2.1]: https://github.com/haraka/Haraka/releases/tag/v1.2.1
+[1.3.0]: https://github.com/haraka/Haraka/releases/tag/v1.3.0
+[1.3.1]: https://github.com/haraka/Haraka/releases/tag/v1.3.1
+[1.3.2]: https://github.com/haraka/Haraka/releases/tag/v1.3.2
+[1.3.3]: https://github.com/haraka/Haraka/releases/tag/v1.3.3
+[1.4.0]: https://github.com/haraka/Haraka/releases/tag/v1.4.0
+[2.0.0]: https://github.com/haraka/Haraka/releases/tag/v2.0.0
+[2.0.3]: https://github.com/haraka/Haraka/releases/tag/v2.0.3
+[2.0.4]: https://github.com/haraka/Haraka/releases/tag/v2.0.4
+[2.0.5]: https://github.com/haraka/Haraka/releases/tag/v2.0.5
+[2.1.0]: https://github.com/haraka/Haraka/releases/tag/v2.1.0
+[2.1.1]: https://github.com/haraka/Haraka/releases/tag/v2.1.1
+[2.1.2]: https://github.com/haraka/Haraka/releases/tag/v2.1.2
+[2.1.3]: https://github.com/haraka/Haraka/releases/tag/v2.1.3
+[2.1.4]: https://github.com/haraka/Haraka/releases/tag/v2.1.4
+[2.1.5]: https://github.com/haraka/Haraka/releases/tag/v2.1.5
+[2.1.6]: https://github.com/haraka/Haraka/releases/tag/v2.1.6
+[2.2.0]: https://github.com/haraka/Haraka/releases/tag/v2.2.0
+[2.2.1]: https://github.com/haraka/Haraka/releases/tag/v2.2.1
+[2.2.2]: https://github.com/haraka/Haraka/releases/tag/v2.2.2
+[2.2.3]: https://github.com/haraka/Haraka/releases/tag/v2.2.3
+[2.2.4]: https://github.com/haraka/Haraka/releases/tag/v2.2.4
+[2.2.5]: https://github.com/haraka/Haraka/releases/tag/v2.2.5
+[2.2.6]: https://github.com/haraka/Haraka/releases/tag/v2.2.6
+[2.2.7]: https://github.com/haraka/Haraka/releases/tag/v2.2.7
+[2.2.8]: https://github.com/haraka/Haraka/releases/tag/v2.2.8
+[2.3.0]: https://github.com/haraka/Haraka/releases/tag/v2.3.0
+[2.3.1]: https://github.com/haraka/Haraka/releases/tag/v2.3.1
+[2.4.0]: https://github.com/haraka/Haraka/releases/tag/v2.4.0
+[2.5.0]: https://github.com/haraka/Haraka/releases/tag/v2.5.0
+[2.6.0]: https://github.com/haraka/Haraka/releases/tag/v2.6.0
+[2.6.1]: https://github.com/haraka/Haraka/releases/tag/v2.6.1
+[2.7.0]: https://github.com/haraka/Haraka/releases/tag/v2.7.0
+[2.7.1]: https://github.com/haraka/Haraka/releases/tag/v2.7.1
+[2.7.2]: https://github.com/haraka/Haraka/releases/tag/v2.7.2
+[2.8.0]: https://github.com/haraka/Haraka/releases/tag/v2.8.0
+[2.8.1]: https://github.com/haraka/Haraka/releases/tag/v2.8.1
+[2.8.14]: https://github.com/haraka/Haraka/releases/tag/v2.8.14
+[2.8.19]: https://github.com/haraka/Haraka/releases/tag/v2.8.19
+[2.8.4]: https://github.com/haraka/Haraka/releases/tag/v2.8.4
+[2.8.5]: https://github.com/haraka/Haraka/releases/tag/v2.8.5
+[2.8.6]: https://github.com/haraka/Haraka/releases/tag/v2.8.6
+[2.8.7]: https://github.com/haraka/Haraka/releases/tag/v2.8.7
+[2.8.8]: https://github.com/haraka/Haraka/releases/tag/v2.8.8
+[2.8.9]: https://github.com/haraka/Haraka/releases/tag/v2.8.9
