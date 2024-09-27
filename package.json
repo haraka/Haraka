@@ -33,7 +33,7 @@
     "haraka-notes": "^1.1.0",
     "haraka-plugin-redis": "^2.0.7",
     "haraka-results": "^2.2.4",
-    "haraka-tld": "^1.2.1",
+    "haraka-tld": "^1.2.2",
     "haraka-utils": "^1.1.3",
     "ipaddr.js": "~2.2.0",
     "node-gyp": "^10.2.0",
@@ -53,9 +53,9 @@
     "haraka-plugin-bounce": "1.0.2",
     "haraka-plugin-clamd": "1.0.1",
     "haraka-plugin-dcc": "^1.0.2",
-    "haraka-plugin-dkim": "^1.0.4",
-    "haraka-plugin-dns-list": "^1.2.0",
-    "haraka-plugin-elasticsearch": "^8.0.2",
+    "haraka-plugin-dkim": "^1.0.7",
+    "haraka-plugin-dns-list": "^1.2.1",
+    "haraka-plugin-elasticsearch": "^8.0.3",
     "haraka-plugin-esets": "^1.0.0",
     "haraka-plugin-fcrdns": "^1.1.0",
     "haraka-plugin-geoip": "^1.1.0",
@@ -84,7 +84,7 @@
     "haraka-test-fixtures": "^1.3.7",
     "mocha": "^10.7.3",
     "mock-require": "^3.0.3",
-    "nodemailer": "^6.9.14"
+    "nodemailer": "^6.9.15"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
