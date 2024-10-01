@@ -1,14 +1,35 @@
+# Changelog
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
 ### Unreleased
 
+### [3.0.5] - 2024-09-27
+
+#### Fixed
+
+- fix(q/lmtp): revert a refactoring error #3407
+- fix: install Plugins.md when haraka -i #3406
+- fix(haraka -h): add missing return for plugin list #3405
+- fix `no_tls_hosts` related docs & tests #3404
+- fix: install docs/Plugins.md when haraka -i installed
+- fix(changes): spelling correction #3397
 
 #### Changed
 
-- dep(haraka-email-message): bump 1.2.3 -> 1.2.4
-- fix: revert a refactoring error in queue/lmtp, #3407
+- lint: remove deprecated semi-style rule
 - removed dependency on ldap plugins #3399
 - doc(tls.md): add note for no_tls_hosts for outbound
 - test(tls): add tests for no_tls_hosts for inbound & outbound
-- fix: install docs/Plugins.md when haraka -i installed
+- dep version bumps:
+  - haraka-email-message: 1.2.4, #3408
+  - nodemailer: 6.9.15
+  - nopt: 8.0.0
+  - tld: 1.2.2
+  - plugin-dkim: 1.0.7
+  - plugin-dns-list: 1.2.1
+  - plugin-elastisearch: 8.0.3
+  - test-fixtures: 1.3.8
 
 
 ### [3.0.4] - 2024-08-21
@@ -1563,3 +1584,4 @@
 [3.0.2]: https://github.com/haraka/Haraka/releases/tag/v3.0.2
 [3.0.3]: https://github.com/haraka/Haraka/releases/tag/v3.0.3
 [3.0.4]: https://github.com/haraka/Haraka/releases/tag/3.0.4
+[3.0.5]: https://github.com/haraka/Haraka/releases/tag/v3.0.5

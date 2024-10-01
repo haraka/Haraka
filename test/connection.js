@@ -216,7 +216,7 @@ describe('connection', () => {
 
     })
 
-    describe('local_info', () => {
+    describe('local.info', () => {
         beforeEach(_set_up)
 
         it('is Haraka/version', () => {
