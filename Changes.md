@@ -23,11 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - test(tls): add tests for no_tls_hosts for inbound & outbound
 - dep version bumps:
   - haraka-email-message: 1.2.4, #3408
+  - nodemailer: 6.9.15
+  - nopt: 8.0.0
   - tld: 1.2.2
   - plugin-dkim: 1.0.7
   - plugin-dns-list: 1.2.1
   - plugin-elastisearch: 8.0.3
-  - nodemailer: 6.9.15
   - test-fixtures: 1.3.8
 
 
