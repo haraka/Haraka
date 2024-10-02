@@ -598,10 +598,10 @@ class HMailItem extends events.EventEmitter {
             if (success) {
                 const reason = response.join(' ');
 
-		let hostname = mx.exchange
-		if (net.isIP(hostname) && mx.from_dns && !net.isIP(mx.from_dns)) {
-			hostname = mx.from_dns
-		}
+                let hostname = mx.exchange
+                if (net.isIP(hostname) && mx.from_dns && !net.isIP(mx.from_dns)) {
+                    hostname = mx.from_dns
+                }
 
                 self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), hostname,
                     reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
