@@ -3,6 +3,7 @@
 const events       = require('node:events');
 const fs           = require('node:fs');
 const dns          = require('node:dns');
+const net          = require('node:net');
 const path         = require('node:path');
 
 const { Address } = require('address-rfc2821');
@@ -596,7 +597,13 @@ class HMailItem extends events.EventEmitter {
             processing_mail = false;
             if (success) {
                 const reason = response.join(' ');
-                self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange,
+
+                let hostname = mx.exchange
+                if (net.isIP(hostname) && mx.from_dns && !net.isIP(mx.from_dns)) {
+                    hostname = mx.from_dns
+                }
+
+                self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), hostname,
                     reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
             }
             else {
