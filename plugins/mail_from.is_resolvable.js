@@ -122,7 +122,7 @@ exports.hook_mail = function (next, connection, params) {
                     }
 
                     mxDone(
-                        ((this.cfg.main.reject_no_mx) ? DENY : DENYSOFT),
+                        ((this.cfg.reject.no_mx) ? DENY : DENYSOFT),
                         'No valid MX for your FROM address'
                     );
                 })
