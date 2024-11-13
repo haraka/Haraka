@@ -29,9 +29,9 @@
     "haraka-dsn": "^1.1.0",
     "haraka-email-message": "^1.2.4",
     "haraka-message-stream": "^1.2.2",
-    "haraka-net-utils": "^1.7.0",
+    "haraka-net-utils": "^1.7.1",
     "haraka-notes": "^1.1.0",
-    "haraka-plugin-redis": "^2.0.7",
+    "haraka-plugin-redis": "^2.0.8",
     "haraka-results": "^2.2.4",
     "haraka-tld": "^1.2.2",
     "haraka-utils": "^1.1.3",
@@ -45,7 +45,7 @@
     "sprintf-js": "~1.1.3"
   },
   "optionalDependencies": {
-    "haraka-plugin-access": "^1.1.6",
+    "haraka-plugin-access": "^1.1.8",
     "haraka-plugin-aliases": "^1.0.2",
     "haraka-plugin-asn": "^2.0.3",
     "haraka-plugin-attachment": "^1.1.2",
@@ -53,7 +53,7 @@
     "haraka-plugin-bounce": "1.0.2",
     "haraka-plugin-clamd": "1.0.1",
     "haraka-plugin-dcc": "^1.0.2",
-    "haraka-plugin-dkim": "^1.0.7",
+    "haraka-plugin-dkim": "^1.0.8",
     "haraka-plugin-dns-list": "^1.2.1",
     "haraka-plugin-elasticsearch": "^8.0.3",
     "haraka-plugin-esets": "^1.0.0",
@@ -62,8 +62,8 @@
     "haraka-plugin-graph": "^1.0.5",
     "haraka-plugin-greylist": "^1.0.0",
     "haraka-plugin-headers": "^1.0.4",
-    "haraka-plugin-helo.checks": "^1.0.0",
-    "haraka-plugin-karma": "^2.1.5",
+    "haraka-plugin-helo.checks": "^1.0.1",
+    "haraka-plugin-karma": "^2.1.6",
     "haraka-plugin-known-senders": "^1.1.0",
     "haraka-plugin-limit": "^1.2.5",
     "haraka-plugin-messagesniffer": "^1.0.0",
@@ -75,16 +75,16 @@
     "haraka-plugin-spf": "1.2.8",
     "haraka-plugin-syslog": "^1.0.6",
     "haraka-plugin-uribl": "^1.0.8",
-    "haraka-plugin-watch": "^2.0.4",
+    "haraka-plugin-watch": "^2.0.6",
     "ocsp": "~1.2.0",
     "tmp": "~0.2.3"
   },
   "devDependencies": {
     "@haraka/eslint-config": "^1.1.5",
     "haraka-test-fixtures": "^1.3.8",
-    "mocha": "^10.7.3",
+    "mocha": "^11.0.0",
     "mock-require": "^3.0.3",
-    "nodemailer": "^6.9.15"
+    "nodemailer": "^6.9.16"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
@@ -102,6 +102,6 @@
     "prettier:fix": "npx prettier . --write --log-level=warn",
     "test": "npx mocha --exit --timeout=4000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
     "versions": "npx dependency-version-checker check",
-    "versions:fix": "npx dependency-version-checker update && npm run prettier:fix"
+    "versions:fix": "npx dependency-version-checker update"
   }
 }
