@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- deps(various): bump to latest versions
 - fix(outbound): in outbound hook_delivered, when mx.exchange contains
   an IP, use mx.from_dns
 - fix(bin/haraka): fix for finding path to config/docs/Plugins.md
