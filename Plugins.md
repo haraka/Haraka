@@ -92,7 +92,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 | [known-senders][url-known-senders]         | Reward emails from those you send mail to                                                   |
 | [LDAP][url-ldap]                           | Aliases, Auth, and Recipient validation from LDAP                                           |
 | [Limit][url-limit]                         | Apply many types of limits to SMTP connections                                              |
-| [log.elasticsearch][url-elastic]           | Store message metadata in Elasticsearch                                                     |
+| [elasticsearch][url-elastic]               | Store message metadata in Elasticsearch                                                     |
 | [log reader][url-logreader]                | extract log entries from the haraka log file                                                |
 | [syslog][url-syslog]                       | Log to syslog                                                                               |
 | [mail_from.is_resolvable][url-mfres]       | Verifies the MAIL FROM domain resolves to a MX                                              |
