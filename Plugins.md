@@ -189,7 +189,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-rqmd]: https://github.com/haraka/haraka-plugin-qmail-deliverable
 [url-rroutes]: https://github.com/haraka/haraka-plugin-recipient-routes
 [url-recordenv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/record_envelope_addresses.md
-[url-relay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/relay.md
+[url-relay]: https://github.com/haraka/haraka-plugin-relay
 [url-rng]: https://github.com/haraka/Haraka/blob/master/docs/plugins/reseed_rng.md
 [url-rspamd]: https://github.com/haraka/haraka-plugin-rspamd
 [url-spamass]: https://github.com/haraka/haraka-plugin-spamassassin
