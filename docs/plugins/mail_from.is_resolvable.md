@@ -1,11 +1,9 @@
-mail\_from.is\_resolvable
-=======================
+# mail\_from.is\_resolvable
 
 This plugin checks that the domain used in MAIL FROM is resolvable to an MX
 record.
 
-Configuration
--------------
+## Configuration
 
 This plugin uses the INI-style file format and accepts the following options:
 

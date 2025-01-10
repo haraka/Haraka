@@ -1,5 +1,4 @@
-reseed\_rng
-==========
+# reseed\_rng
 
 The V8 that ships with node 0.4.x uses an unsophisticated method of
 seeding its random number generator- it simply uses the current time

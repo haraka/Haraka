@@ -1,5 +1,4 @@
-aliases
-=======
+# aliases
 
 This plugin allows one to configure aliases that may perform an action or
 change the RCPT address in a number of ways.  All aliases are specified in
@@ -12,8 +11,7 @@ that run on hook_rcpt
 
 WARNING: DO NOT USE THIS PLUGIN WITH queue/smtp\_proxy.
 
-Configuration
--------------
+## Configuration
 
 * aliases
 
@@ -135,8 +133,8 @@ Configuration
             aliases on a single domain that map to other local parts at the
             same domain.
 
-Example Configuration
----------------------
+### Example Configuration
+
 {
     "test1" : { "action" : "drop" },
     "test2" : { "action" : "drop" },
