@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- deps(eslint): update to v9
 - docs(plugins/*.md): use to indicate heading levels
 - deps(various): bump to latest versions
 - fix(outbound): in outbound hook_delivered, when mx.exchange contains
