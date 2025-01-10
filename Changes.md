@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- deps(eslint): update to v9
+- docs(plugins/\*.md): use \# to indicate heading levels
 - deps(various): bump to latest versions
 - fix(outbound): in outbound hook_delivered, when mx.exchange contains
   an IP, use mx.from_dns
@@ -688,7 +690,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - plugins/spf #2266
   - plugins/toobusy #2186
   - plugins/xclient #2159
-  - rfc1869 #2159
+  - rfc1869 #2160
   - smtp_client #2129, #2208
   - tests/host_pool #2159
 - use es6 destructuring (#2075) in:

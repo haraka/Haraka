@@ -1,5 +1,4 @@
-record\_envelope\_addresses
-=========================
+# record\_envelope\_addresses
 
 This plugin adds two new header lines.
 
@@ -10,14 +9,12 @@ It is useful if you need to know the exact addresses used to send an email, e.g.
 the email was sent to you as BCC or if it is a newsletter. In both cases the recipient
 address is normally not recorded in the headers.
 
-Caveats
--------
+## Caveats
 
 If you enable this plugin you may introduce a possible information leak, i.e. disclosure
 of BCC recipients. So you never want to use this on an outgoing mail server and maybe also
 not if this server is used as a relay.
 
-Configuration
--------------
+## Configuration
 
 This plugin has no configuration.

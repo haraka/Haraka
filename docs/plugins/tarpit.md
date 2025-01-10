@@ -1,5 +1,4 @@
-tarpit
-======
+# tarpit
 
 This plugin is designed to introduce deliberate delays on the response
 of every hook in order to slow down a connection.  It has no
@@ -10,8 +9,8 @@ that accept recipients or that return OK) but must be loaded *after*
 any plugins that wish to use it.
 
 
-Usage
---------------
+## Usage
+
 To use this plugin in another plugin set:
 
     connection.notes.tarpit = <seconds to delay>;
@@ -21,8 +20,7 @@ or
     connection.transaction.notes.tarpit = <seconds to delay>;
 
 
-Configuration
---------------
+## Configuration
 
 The configuration file for tarpit is config/tarpit.ini.
 
@@ -34,8 +32,7 @@ The configuration file for tarpit is config/tarpit.ini.
 hooks\_to\_delay=connect,helo,ehlo,mail,rcpt,data,data\_post,queue,unrecognized\_command,vrfy,noop,rset,quit
 
 
-Plugin Timeout
---------------
+## Plugin Timeout
 
 config/tarpit.timeout (Default: 0)
 
@@ -51,7 +48,7 @@ The solution is to set the contents of config/tarpit.timeout to zero or
 **seconds to delay** + 1.
 
 
-Logging
---------------
+## Logging
+
 When tarpitting a command it will log 'tarpitting response for Ns' to
 the INFO facility where N is the number of seconds.

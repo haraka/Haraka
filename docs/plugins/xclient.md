@@ -1,5 +1,4 @@
-xclient
-=======
+# xclient
 
 Implements the [XCLIENT](http://www.postfix.org/XCLIENT_README.html) protocol.
 

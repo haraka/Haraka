@@ -1,5 +1,4 @@
-early\_talker
-============
+# early\_talker
 
 Early talkers are violators of the SMTP specification, which require that
 clients must wait for certain responses before sending the next command.
@@ -10,8 +9,7 @@ and after the DATA command for Haraka to detect if it talks early.
 If an early talker is detected at connection or DATA, then a DENY is
 returned with the message 'You talk too soon'.
 
-Configuration
--------------
+## Configuration
 
 The config file early\_talker.ini has two options:
 
