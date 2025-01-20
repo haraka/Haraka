@@ -7,7 +7,7 @@ const DSN          = require('haraka-dsn')
 const connection   = require('../connection');
 const Server       = require('../server');
 
-// huge hack here, but plugin tests need constants
+// hack alert, but plugin tests need constants
 constants.import(global);
 
 const _set_up = (done) => {
