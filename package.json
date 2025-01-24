@@ -85,7 +85,8 @@
     "haraka-test-fixtures": "^1.3.8",
     "mocha": "^11.1.0",
     "mock-require": "^3.0.3",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.9.16",
+    "sinon": "^19.0.2"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
