@@ -1,206 +1,224 @@
-'use strict';
-const assert = require('node:assert')
-const sinon = require('sinon')
+'use strict'
+const assert        = require('node:assert')
+const sinon         = require('sinon')
 
-const fixtures  = require('haraka-test-fixtures');
-const Address   = require('address-rfc2821').Address
-const net_utils = require('haraka-net-utils');
+const fixtures      = require('haraka-test-fixtures')
+const Address       = require('address-rfc2821').Address
+const net_utils     = require('haraka-net-utils')
 
-const _set_up = (done) => {
+const dnsPromises   = require('node:dns').promises
+const { Resolver }  = dnsPromises
 
-    this.plugin = new fixtures.plugin('mail_from.is_resolvable');
-    this.plugin.register();
+describe('mail_from.is_resolvable', function() {
+  beforeEach(function() {
+    this.plugin = new fixtures.plugin('mail_from.is_resolvable')
+    this.plugin.register()
 
-    this.connection = fixtures.connection.createConnection();
+    this.connection = fixtures.connection.createConnection()
     this.connection.init_transaction()
 
-    done();
-}
+    this.txt = this.connection.transaction
 
-describe('mail_from.is_resolvable', () => {
-  beforeEach((done) => {
-    _set_up(() => {
+    this.get_mx_spy = sinon.stub(net_utils, 'get_mx')
 
-    this.get_mx_Spy = sinon.stub(net_utils, 'get_mx')
-    this.resolve_mx_hosts_Spy = sinon.stub(net_utils, 'resolve_mx_hosts')
+    this.next = sinon.stub()
 
-      done()
-    })
+    this.domain = 'example.com'
   })
 
-  afterEach(() => {
+  afterEach(function() {
     sinon.restore()
   })
 
-    describe('hook_mail', () => {
+  describe('hook_mail', function() {
+    it('Allow - mail_from without host', async function() {
+      await this.plugin.hook_mail(this.next, this.connection, [{}])
 
-        it('Allow - mail_from without host', async () => {
-            await this.plugin.hook_mail((code, msg) => {
-                sinon.assert.notCalled(this.get_mx_Spy)
-                sinon.assert.notCalled(this.resolve_mx_hosts_Spy)
-
-                assert.equal(
-                  this.connection.transaction.results.get(this.plugin).skip,
-                  'null host',
-                )
-                assert.strictEqual(code, undefined)
-                assert.strictEqual(msg, undefined)
-            },
-            this.connection, 
-            [{}]
-            )
-        })
-
-        it('DENY - No MX for your FROM address', async () => {
-            this.get_mx_Spy.resolves([])
-            await this.plugin.hook_mail((code, msg) => {
-                sinon.assert.calledOnce(this.get_mx_Spy)
-                sinon.assert.notCalled(this.resolve_mx_hosts_Spy)
-                assert.ok(
-                    this.connection.transaction.results.has(
-                          this.plugin,
-                          'fail',
-                          'has_fwd_dns',
-                    )
-                )
-                assert.strictEqual(code, DENY)
-                assert.strictEqual(msg, 'No MX for your FROM address')
-            },
-            this.connection, 
-            [new Address('<jeff@example.com>')]
-            )
-        })
-
-        it('DENYSOFT - No valid MX for your FROM address', async () => {
-            this.plugin.cfg.reject.no_mx = false
-            this.get_mx_Spy.resolves([{"exchange":"64.233.186.26"}])
-
-            await this.plugin.hook_mail((code, msg) => {
-                sinon.assert.calledOnce(this.get_mx_Spy)
-                sinon.assert.notCalled(this.resolve_mx_hosts_Spy)
-                assert.ok(
-                    !this.connection.transaction.results.has(
-                          this.plugin,
-                          'fail',
-                          'has_fwd_dns',
-                    )
-                )
-                assert.strictEqual(code, DENYSOFT)
-                assert.strictEqual(msg, 'No valid MX for your FROM address')
-            },
-            this.connection, 
-            [new Address('<jeff@topview.video>')]
-            )
-        })
-
-        it('DENY - No valid MX for your FROM address', async () => {
-            this.get_mx_Spy.resolves([{"exchange":"64.233.186.26"}])
-
-            await this.plugin.hook_mail((code, msg) => {
-                sinon.assert.calledOnce(this.get_mx_Spy)
-                sinon.assert.notCalled(this.resolve_mx_hosts_Spy)
-                assert.ok(
-                    !this.connection.transaction.results.has(
-                          this.plugin,
-                          'fail',
-                          'has_fwd_dns',
-                    )
-                )
-                assert.strictEqual(code, DENY)
-                assert.strictEqual(msg, 'No valid MX for your FROM address')
-            },
-            this.connection, 
-            [new Address('<jeff@topview.video>')]
-            )
-        })
-
-        it('Allow - No MX for your FROM address', async () => {
-            this.plugin.cfg.reject.no_mx = false
-            this.get_mx_Spy.resolves([])
-
-            await this.plugin.hook_mail((code, msg) => {
-                sinon.assert.calledOnce(this.get_mx_Spy)
-                sinon.assert.notCalled(this.resolve_mx_hosts_Spy)
-                assert.ok(
-                    this.connection.transaction.results.has(
-                          this.plugin,
-                          'fail',
-                          'has_fwd_dns',
-                    )
-                )
-                assert.strictEqual(code, DENYSOFT)
-                assert.strictEqual(msg, 'No MX for your FROM address')
-            },
-            this.connection, 
-            [new Address('<jeff@topview.video>')]
-            )
-        })
-
-        it('Allow - MX is IP address', async () => {
-            this.get_mx_Spy.resolves([{"exchange":"64.233.186.26"}])
-
-            this.plugin.cfg.main.allow_mx_ip = true
-            await this.plugin.hook_mail((code, msg) => {
-                sinon.assert.calledOnce(this.get_mx_Spy)
-                sinon.assert.notCalled(this.resolve_mx_hosts_Spy)
-                assert.ok(
-                    this.connection.transaction.results.has(
-                          this.plugin,
-                          'pass',
-                          'implicit_mx',
-                    )
-                )
-                assert.strictEqual(code, undefined)
-                assert.strictEqual(msg, undefined)
-            },
-            this.connection, 
-            [new Address('<test@example.com>')]
-            )
-        })
-
-        it('Allow - valid MX hostname with IPv6', async () => {
-            this.get_mx_Spy.resolves([{"exchange":"alt4.gmail-smtp-in.l.google.com"}])
-            this.resolve_mx_hosts_Spy.resolves([{"exchange":"2800:3f0:4003:c00::1a"}])
-
-            await this.plugin.hook_mail((code, msg) => {
-                sinon.assert.calledOnce(this.get_mx_Spy)
-                sinon.assert.calledOnce(this.resolve_mx_hosts_Spy)
-                assert.ok(
-                    this.connection.transaction.results.has(
-                          this.plugin,
-                          'pass',
-                          'has_fwd_dns',
-                    )
-                )
-                assert.strictEqual(code, undefined)
-                assert.strictEqual(msg, undefined)
-            },
-            this.connection, 
-            [new Address('<test@gmail.com>')]
-            )
-        })
-
-        it('Allow - valid MX hostname with IPv4', async () => {
-            this.get_mx_Spy.resolves([{"exchange":"alt4.gmail-smtp-in.l.google.com"}])
-            this.resolve_mx_hosts_Spy.resolves([{"exchange":"64.233.186.26"}])
-
-            await this.plugin.hook_mail((code, msg) => {
-                sinon.assert.calledOnce(this.get_mx_Spy)
-                sinon.assert.calledOnce(this.resolve_mx_hosts_Spy)
-                assert.ok(
-                    this.connection.transaction.results.has(
-                          this.plugin,
-                          'pass',
-                          'has_fwd_dns',
-                    )
-                )
-                assert.strictEqual(code, undefined)
-                assert.strictEqual(msg, undefined)
-            },
-            this.connection, 
-            [new Address('<test@gmail.com>')]
-            )
-        })
-
+      assert.equal(this.txt.results.get(this.plugin).skip, 'null host')
+      sinon.assert.notCalled(this.get_mx_spy)
+      sinon.assert.calledOnce(this.next)
+      assert.strictEqual(this.next.getCall(0).args.length, 0)
     })
+
+    it('DENYSOFT - get_mx timeout', async function() {
+     // Configure the stub to simulate a timeout
+      const timeoutError = new Error('DNS request timed out')
+      timeoutError.code = dnsPromises.TIMEOUT
+
+      this.get_mx_spy.rejects(timeoutError)
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      assert.ok(this.txt.results.has(this.plugin, 'err', `${this.domain}:DNS request timed out`))
+      sinon.assert.calledOnceWithExactly(this.get_mx_spy, this.domain)
+      sinon.assert.calledWith(this.next, DENYSOFT, `Temp. resolver error (${dnsPromises.TIMEOUT})`)
+    })
+
+    it('DENYSOFT - resolveMx timeout', async function() {
+      this.plugin.cfg.reject.no_mx = true
+
+      this.get_mx_spy.restore()
+
+      const timeoutError = new Error('DNS request timed out')
+      timeoutError.code = dnsPromises.TIMEOUT
+
+      this.resolveMx_stub = sinon.stub(Resolver.prototype, 'resolveMx')
+      this.resolveMx_stub.rejects(timeoutError)
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      assert.ok(this.txt.results.has(this.plugin, 'err', `${this.domain}:DNS request timed out`))
+      sinon.assert.calledOnceWithExactly(this.resolveMx_stub, this.domain)
+      sinon.assert.calledWith(this.next, DENYSOFT, `Temp. resolver error (${dnsPromises.TIMEOUT})`)
+    })
+
+    it('DENY - No MX for your FROM address', async function() {
+      this.get_mx_spy.resolves([])
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      assert.ok(this.txt.results.has(this.plugin, 'fail', 'has_fwd_dns'))
+      sinon.assert.calledOnceWithExactly(this.get_mx_spy, this.domain)
+      sinon.assert.calledOnce(this.next)
+      sinon.assert.calledWith(this.next, DENY, 'No MX for your FROM address')
+    })
+
+    it('DENYSOFT - No MX for your FROM address', async function() {
+      this.plugin.cfg.reject.no_mx = false
+      this.get_mx_spy.resolves([])
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      assert.ok(this.txt.results.has(this.plugin, 'fail', 'has_fwd_dns'))
+      sinon.assert.calledOnceWithExactly(this.get_mx_spy, this.domain)
+      sinon.assert.calledOnce(this.next)
+      sinon.assert.calledWith(this.next, DENYSOFT, 'No MX for your FROM address')
+    })
+
+    it('Allow - MX is IP address', async function() {
+      this.get_mx_spy.resolves([{"exchange":"64.233.186.26"}])
+
+      this.plugin.cfg.main.allow_mx_ip = true
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      assert.ok(this.txt.results.has(this.plugin, 'pass', 'implicit_mx'))
+      sinon.assert.calledOnceWithExactly(this.get_mx_spy, this.domain)
+      sinon.assert.calledOnce(this.next)
+      assert.strictEqual(this.next.getCall(0).args.length, 0)
+    })
+
+    it('DENY - resolve4 and resolve6 both timeout', async function() {
+      this.plugin.cfg.reject.no_mx = true
+
+      this.get_mx_spy.resolves([{"exchange":`mx.${this.domain}`}])
+
+      this.resolveMx_stub = sinon.stub(Resolver.prototype, 'resolveMx')
+      this.resolveMx_stub.resolves([])
+
+      const timeoutError = new Error('DNS request timed out')
+      timeoutError.code = dnsPromises.TIMEOUT
+
+      this.resolve4_spy = sinon.stub(Resolver.prototype, 'resolve4')
+      this.resolve4_spy.rejects(timeoutError)
+
+      this.resolve6_spy = sinon.stub(Resolver.prototype, 'resolve6')
+      this.resolve6_spy.rejects(timeoutError)
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      sinon.assert.calledOnceWithExactly(this.resolve6_spy, `mx.${this.domain}`)
+      sinon.assert.calledOnceWithExactly(this.resolve4_spy, `mx.${this.domain}`)
+      sinon.assert.calledOnce(this.next)
+      sinon.assert.calledWith(this.next, DENY, 'No valid MX for your FROM address')
+    })
+
+    it('DENY - DNS server failure', async function() {
+      this.plugin.cfg.reject.no_mx = true
+
+      this.get_mx_spy.resolves([{"exchange":`mx.${this.domain}`}])
+
+      const timeoutError = new Error('DNS Server Failure')
+      timeoutError.code = dnsPromises.SERVFAIL
+
+      this.resolve4_spy = sinon.stub(Resolver.prototype, 'resolve4')
+      this.resolve4_spy.rejects(timeoutError)
+
+      this.resolve6_spy = sinon.stub(Resolver.prototype, 'resolve6')
+      this.resolve6_spy.rejects(timeoutError)
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      sinon.assert.calledOnceWithExactly(this.resolve6_spy, `mx.${this.domain}`)
+      sinon.assert.calledOnceWithExactly(this.resolve4_spy, `mx.${this.domain}`)
+      sinon.assert.calledOnce(this.next)
+      sinon.assert.calledWith(this.next, DENY, 'No valid MX for your FROM address')
+    })
+
+    it('DENYSOFT - No valid MX for the FROM address', async function() {
+      this.plugin.cfg.reject.no_mx = false
+      this.get_mx_spy.resolves([{"exchange":"64.233.186.26"}])
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      assert.ok(this.txt.results.has(this.plugin, 'fail', 'has_fwd_dns'))
+      sinon.assert.calledOnceWithExactly(this.get_mx_spy, this.domain)
+      sinon.assert.calledOnce(this.next)
+      sinon.assert.calledWith(this.next, DENYSOFT, 'No valid MX for your FROM address')
+    })
+
+    it('DENY - No valid MX for the FROM address', async function() {
+      this.get_mx_spy.resolves([{"exchange":"64.233.186.26"}])
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      assert.ok(this.txt.results.has(this.plugin, 'fail', 'has_fwd_dns'))
+      sinon.assert.calledOnceWithExactly(this.get_mx_spy, this.domain)
+      sinon.assert.calledOnce(this.next)
+      sinon.assert.calledWith(this.next, DENY, 'No valid MX for your FROM address')
+    })
+
+    it('Allow - valid MX hostname resolved to IPv6', async function() {
+      this.resolve_mx_hosts_spy = sinon.stub(net_utils, 'resolve_mx_hosts')
+
+      this.get_mx_spy.resolves([{"exchange":"gmail-smtp-in.l.google.com"}])
+      this.resolve_mx_hosts_spy.resolves([{"exchange":"2607:f8b0:4001:c2f::1a"}])
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@gmail.com>`)])
+
+      sinon.assert.calledOnceWithExactly(this.get_mx_spy, 'gmail.com')
+      sinon.assert.calledOnce(this.resolve_mx_hosts_spy)
+      sinon.assert.calledOnce(this.next)
+      assert.strictEqual(this.next.getCall(0).args.length, 0)
+    })
+
+    it('Allow - valid MX hostname resolved to IPv4', async function() {
+      this.resolve_mx_hosts_spy = sinon.stub(net_utils, 'resolve_mx_hosts')
+
+      this.get_mx_spy.resolves([{"exchange":"gmail-smtp-in.l.google.com"}])
+      this.resolve_mx_hosts_spy.resolves([{"exchange":"64.233.186.26"}])
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address('<test@gmail.com>')])
+
+      assert.ok(this.txt.results.has(this.plugin, 'pass', 'has_fwd_dns'))
+      sinon.assert.calledOnceWithExactly(this.get_mx_spy, 'gmail.com')
+      sinon.assert.calledOnceWithExactly(this.resolve_mx_hosts_spy, [{"exchange":"gmail-smtp-in.l.google.com"}])
+      sinon.assert.calledOnce(this.next)
+      assert.strictEqual(this.next.getCall(0).args.length, 0)
+    })
+
+    it('DENY - MX hostname does not resolve', async function() {
+      this.resolve_mx_hosts_spy = sinon.stub(net_utils, 'resolve_mx_hosts')
+
+      this.get_mx_spy.resolves([{"exchange":"mx.${this.domain}"}])
+      this.resolve_mx_hosts_spy.resolves([])
+
+      await this.plugin.hook_mail(this.next, this.connection, [new Address(`<test@${this.domain}>`)])
+
+      sinon.assert.calledOnce(this.get_mx_spy)
+      sinon.assert.calledOnce(this.resolve_mx_hosts_spy)
+      sinon.assert.calledOnce(this.next)
+      sinon.assert.calledWith(this.next, DENY, 'No valid MX for your FROM address')
+    })
+  })
 })
