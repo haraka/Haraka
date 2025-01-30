@@ -66,6 +66,7 @@
     "haraka-plugin-karma": "^2.1.6",
     "haraka-plugin-known-senders": "^1.1.0",
     "haraka-plugin-limit": "^1.2.5",
+    "haraka-plugin-mail_from.is_resolvable": "^1.0.2",
     "haraka-plugin-messagesniffer": "^1.0.0",
     "haraka-plugin-p0f": "^1.0.9",
     "haraka-plugin-qmail-deliverable": "^1.2.3",
