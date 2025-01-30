@@ -4,9 +4,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+#### BREAKING, ACTION REQUIRED
+
+- connection.ini: new config file, replaces haproxy_hosts, ehlo_hello_message, connection_close_message, banner_includes_uuid, deny_includes_uuid, databytes, max_mime_parts, max_line_length, max_data_line_length, and smtpgreeting. To upgrade, apply any localized settings to the new connection.ini file.
+- moved the following settings from smtp.ini to connection.ini:
+  - headers.*
+  - main.smtp_utf8
+  - main.strict_rfc1869
+- early_talker.pause, removed support, use earlytalker.ini
+
+#### Changes
+
 - deps(eslint): update to v9
 - docs(plugins/\*.md): use \# to indicate heading levels
 - deps(various): bump to latest versions
+- docs(CoreConfig): removed incorrect early_talker.delay reference (hasn't worked in years).
+
+#### Fixes
+
 - fix(outbound): in outbound hook_delivered, when mx.exchange contains
   an IP, use mx.from_dns
 - fix(bin/haraka): fix for finding path to config/docs/Plugins.md

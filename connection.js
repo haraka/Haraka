@@ -24,33 +24,33 @@ const outbound    = require('./outbound');
 
 const states      = constants.connection.state;
 
-// Load HAProxy hosts into an object for fast lookups
-// as this list is checked on every new connection.
-let haproxy_hosts_ipv4 = [];
-let haproxy_hosts_ipv6 = [];
-function loadHAProxyHosts () {
-    const hosts = config.get('haproxy_hosts', 'list', loadHAProxyHosts);
-    const new_ipv4_hosts = [];
-    const new_ipv6_hosts = [];
-    for (let i=0; i<hosts.length; i++) {
-        const host = hosts[i].split(/\//);
-        if (net.isIPv6(host[0])) {
-            new_ipv6_hosts[i] = [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
-        }
-        else {
-            new_ipv4_hosts[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
-        }
+const cfg = config.get('connection.ini', {
+    booleans: [
+        '-main.strict_rfc1869',
+        '+main.smtputf8',
+        '+headers.add_received',
+        '+headers.show_version',
+        '+headers.clean_auth_results',
+    ]
+});
+
+const haproxy_hosts_ipv4 = [];
+const haproxy_hosts_ipv6 = [];
+
+for (const ip of cfg.haproxy.hosts) {
+    if (!ip) continue;
+    if (net.isIPv6(ip.split('/')[0])) {
+        haproxy_hosts_ipv6.push([ipaddr.IPv6.parse(ip.split('/')[0]), parseInt(ip.split('/')[1] || 64)]);
     }
-    haproxy_hosts_ipv4 = new_ipv4_hosts;
-    haproxy_hosts_ipv6 = new_ipv6_hosts;
+    else {
+        haproxy_hosts_ipv4.push([ipaddr.IPv4.parse(ip.split('/')[0]), parseInt(ip.split('/')[1] || 32)]);
+    }
 }
-loadHAProxyHosts();
 
 class Connection {
-    constructor (client, server, cfg) {
+    constructor (client, server, smtp_cfg) {
         this.client = client;
         this.server = server;
-        this.cfg = cfg;
 
         this.local = {
             ip: null,
@@ -97,10 +97,6 @@ class Connection {
         this.transaction = null;
         this.tran_count = 0;
         this.capabilities = null;
-        this.ehlo_hello_message = config.get('ehlo_hello_message') || 'Haraka is at your service.';
-        this.connection_close_message = config.get('connection_close_message') || 'closing connection. Have a jolly good day.';
-        this.banner_includes_uuid = !!config.get('banner_includes_uuid');
-        this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
         this.pipelining = false;
         this._relaying = false;
@@ -109,8 +105,6 @@ class Connection {
         this.hooks_to_run = [];
         this.start_time = Date.now();
         this.last_reject = '';
-        this.max_bytes = parseInt(config.get('databytes')) || 0;
-        this.max_mime_parts = parseInt(config.get('max_mime_parts')) || 1000;
         this.totalbytes = 0;
         this.rcpt_count = {
             accept:   0,
@@ -122,13 +116,11 @@ class Connection {
             tempfail: 0,
             reject:   0,
         };
-        this.max_line_length = parseInt(config.get('max_line_length')) || 512;
-        this.max_data_line_length = parseInt(config.get('max_data_line_length')) || 992;
         this.results = new ResultStore(this);
         this.errors = 0;
         this.last_rcpt_msg = null;
         this.hook = null;
-        if (this.cfg.headers.show_version) {
+        if (cfg.headers.show_version) {
             this.local.info += `/${utils.getVersion(__dirname)}`;
         }
         Connection.setupClient(this);
@@ -200,7 +192,6 @@ class Connection {
         });
 
         const ha_list = net.isIPv6(self.remote.ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4;
-
         if (ha_list.some((element, index, array) => {
             return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
         })) {
@@ -401,10 +392,10 @@ class Connection {
 
         let maxlength;
         if (this.state === states.PAUSE_DATA || this.state === states.DATA) {
-            maxlength = this.max_data_line_length;
+            maxlength = cfg.max.data_line_length;
         }
         else {
-            maxlength = this.max_line_length;
+            maxlength = cfg.max.line_length;
         }
 
         let offset;
@@ -535,10 +526,10 @@ class Connection {
 
         if (code >= 400) {
             this.last_reject = `${code} ${messages.join(' ')}`;
-            if (this.deny_includes_uuid) {
+            if (cfg.uuid.deny_chars) {
                 uuid = (this.transaction || this).uuid;
-                if (this.deny_includes_uuid > 1) {
-                    uuid = uuid.substr(0, this.deny_includes_uuid);
+                if (cfg.uuid.deny_chars > 1) {
+                    uuid = uuid.substr(0, cfg.uuid.deny_chars);
                 }
             }
         }
@@ -649,7 +640,7 @@ class Connection {
     }
     init_transaction (cb) {
         this.reset_transaction(() => {
-            this.transaction = trans.createTransaction(this.tran_uuid(), this.cfg);
+            this.transaction = trans.createTransaction(this.tran_uuid(), cfg);
             // Catch any errors from the message_stream
             this.transaction.message_stream.on('error', (err) => {
                 this.logcrit(`message_stream error: ${err.message}`);
@@ -792,19 +783,19 @@ class Connection {
                 });
                 break;
             default: {
-                let greeting = config.get('smtpgreeting', 'list');
-                if (greeting.length) {
+                let greeting = cfg.message.greeting;
+                if (greeting?.length) {
                     // RFC5321 section 4.2
                     // Hostname/domain should appear after the 220
                     greeting[0] = `${this.local.host} ESMTP ${greeting[0]}`;
-                    if (this.banner_includes_uuid) {
-                        greeting[0] += ` (${this.uuid})`;
+                    if (cfg.uuid.banner_chars) {
+                        greeting[0] += ` (${this.uuid.substr(0, cfg.uuid.banner_chars)})`;
                     }
                 }
                 else {
                     greeting = `${this.local.host} ESMTP ${this.local.info} ready`;
-                    if (this.banner_includes_uuid) {
-                        greeting += ` (${this.uuid})`;
+                    if (cfg.uuid.banner_chars) {
+                        greeting += ` (${this.uuid.substr(0, cfg.uuid.banner_chars)})`;
                     }
                 }
                 this.respond(220, msg || greeting);
@@ -850,7 +841,7 @@ class Connection {
             default:
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}, ${this.ehlo_hello_message}`);
+                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}, ${cfg.message.helo}`);
         }
     }
     ehlo_respond (retval, msg) {
@@ -883,16 +874,14 @@ class Connection {
                 // Hostname/domain should appear after 250
 
                 const response = [
-                    `${this.local.host} Hello ${this.get_remote('host')}, ${this.ehlo_hello_message}`,
+                    `${this.local.host} Hello ${this.get_remote('host')}, ${cfg.message.helo}`,
                     "PIPELINING",
                     "8BITMIME",
                 ];
 
-                if (this.cfg.main.smtputf8) {
-                    response.push("SMTPUTF8");
-                }
+                if (cfg.main.smtputf8) response.push("SMTPUTF8");
 
-                response.push(`SIZE ${this.max_bytes}`);
+                response.push(`SIZE ${cfg.max.bytes}`);
 
                 this.capabilities = response;
 
@@ -905,7 +894,7 @@ class Connection {
         this.respond(250, this.capabilities);
     }
     quit_respond (retval, msg) {
-        this.respond(221, msg || `${this.local.host} ${this.connection_close_message}`, () => {
+        this.respond(221, msg || `${this.local.host} ${cfg.message.close}`, () => {
             this.disconnect();
         });
     }
@@ -1314,7 +1303,7 @@ class Connection {
 
         let results;
         try {
-            results = rfc1869.parse('mail', line, this.cfg.main.strict_rfc1869 && !this.relaying);
+            results = rfc1869.parse('mail', line, (!this.relaying && cfg.main.strict_rfc1869));
         }
         catch (err) {
             this.errors++;
@@ -1356,7 +1345,7 @@ class Connection {
 
         // Handle SIZE extension
         if (params?.SIZE && params.SIZE > 0) {
-            if (this.max_bytes > 0 && params.SIZE > this.max_bytes) {
+            if (cfg.max.bytes > 0 && params.SIZE > cfg.max.bytes) {
                 return this.respond(550, 'Message too big!');
             }
         }
@@ -1378,7 +1367,7 @@ class Connection {
 
         let results;
         try {
-            results = rfc1869.parse('rcpt', line, this.cfg.main.strict_rfc1869 && !this.relaying);
+            results = rfc1869.parse('rcpt', line, cfg.main.strict_rfc1869 && !this.relaying);
         }
         catch (err) {
             this.errors++;
@@ -1512,7 +1501,7 @@ class Connection {
             return this.respond(503, "RCPT required first");
         }
 
-        if (this.cfg.headers.add_received) {
+        if (cfg.headers.add_received) {
             this.accumulate_data(`Received: ${this.received_line()}\r\n`);
         }
         plugins.run_hooks('data', this);
@@ -1577,11 +1566,11 @@ class Connection {
         }
 
         // Stop accumulating data as we're going to reject at dot.
-        if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
+        if (cfg.max.bytes && this.transaction.data_bytes > cfg.max.bytes) {
             return;
         }
 
-        if (this.transaction.mime_part_count >= this.max_mime_parts) {
+        if (this.transaction.mime_part_count >= cfg.max.mime_parts) {
             this.logcrit("Possible DoS attempt - too many MIME parts");
             this.respond(554, "Transaction failed due to too many MIME parts", () => {
                 this.disconnect();
@@ -1596,13 +1585,13 @@ class Connection {
         this.totalbytes += this.transaction.data_bytes;
 
         // Check message size limit
-        if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
-            this.lognotice(`Incoming message exceeded databytes size of ${this.max_bytes}`);
+        if (cfg.max.bytes && this.transaction.data_bytes > cfg.max.bytes) {
+            this.lognotice(`Incoming message exceeded max size of ${cfg.max.bytes}`);
             return plugins.run_hooks('max_data_exceeded', this);
         }
 
         // Check max received headers count
-        if (this.transaction.header.get_all('received').length > this.cfg.headers.max_received) {
+        if (this.transaction.header.get_all('received').length > cfg.headers.max_received) {
             this.logerror("Incoming message had too many Received headers");
             this.respond(550, "Too many received headers - possible mail loop", () => {
                 this.reset_transaction();
@@ -1611,11 +1600,11 @@ class Connection {
         }
 
         // Warn if we hit the maximum parsed header lines limit
-        if (this.transaction.header_lines.length >= this.cfg.headers.max_lines) {
-            this.logwarn(`Incoming message reached maximum parsing limit of ${this.cfg.headers.max_lines} header lines`);
+        if (this.transaction.header_lines.length >= cfg.headers.max_lines) {
+            this.logwarn(`Incoming message reached maximum parsing limit of ${cfg.headers.max_lines} header lines`);
         }
 
-        if (this.cfg.headers.clean_auth_results) {
+        if (cfg.headers.clean_auth_results) {
             this.auth_results_clean();   // rename old A-R headers
         }
         const ar_field = this.auth_results();  // assemble new one

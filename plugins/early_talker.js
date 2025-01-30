@@ -28,11 +28,6 @@ exports.load_config = function () {
         this.pause = this.cfg.main.pause * 1000;
         return;
     }
-
-    // config/early_talker.pause is in milliseconds
-    this.pause = this.config.get('early_talker.pause', () => {
-        this.load_config();
-    });
 }
 
 exports.early_talker = function (next, connection) {
