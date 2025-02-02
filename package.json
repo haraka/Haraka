@@ -55,6 +55,7 @@
     "haraka-plugin-dcc": "^1.0.2",
     "haraka-plugin-dkim": "^1.0.8",
     "haraka-plugin-dns-list": "^1.2.2",
+    "haraka-plugin-early_talker": "^1.0.2",
     "haraka-plugin-elasticsearch": "^8.0.3",
     "haraka-plugin-esets": "^1.0.0",
     "haraka-plugin-fcrdns": "^1.1.0",
