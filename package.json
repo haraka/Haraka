@@ -28,7 +28,7 @@
     "haraka-constants": "^1.0.7",
     "haraka-dsn": "^1.1.0",
     "haraka-email-message": "^1.2.5",
-    "haraka-message-stream": "^1.2.2",
+    "haraka-message-stream": "^1.2.3",
     "haraka-net-utils": "^1.7.2",
     "haraka-notes": "^1.1.1",
     "haraka-plugin-redis": "^2.0.9",
@@ -40,7 +40,7 @@
     "nopt": "^8.1.0",
     "npid": "~0.4.0",
     "redis": "~4.7.0",
-    "semver": "^7.7.0",
+    "semver": "^7.7.1",
     "sockaddr": "^1.0.1",
     "sprintf-js": "~1.1.3"
   },
@@ -56,7 +56,7 @@
     "haraka-plugin-dkim": "^1.0.10",
     "haraka-plugin-dns-list": "^1.2.3",
     "haraka-plugin-early_talker": "^1.0.2",
-    "haraka-plugin-elasticsearch": "^8.0.3",
+    "haraka-plugin-elasticsearch": "^8.1.1",
     "haraka-plugin-esets": "^1.0.1",
     "haraka-plugin-fcrdns": "^1.1.1",
     "haraka-plugin-geoip": "^1.1.1",
@@ -79,7 +79,7 @@
     "haraka-plugin-syslog": "^1.0.7",
     "haraka-plugin-uribl": "^1.0.10",
     "haraka-plugin-watch": "^2.0.7",
-    "ocsp": "~1.2.0",
+    "@techteamer/ocsp": "^1.0.1",
     "tmp": "~0.2.3"
   },
   "devDependencies": {
