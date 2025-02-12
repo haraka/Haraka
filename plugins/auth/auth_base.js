@@ -105,7 +105,6 @@ exports.check_user = function (next, connection, credentials, method) {
         if (valid) {
             connection.relaying = true;
             connection.results.add({name:'relay'}, {pass: plugin.name});
-            connection.results.add(plugin, {pass: method});
 
             connection.results.add({name:'auth'}, {
                 pass: plugin.name,
