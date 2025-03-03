@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(outbound): in outbound hook_delivered, when mx.exchange contains
   an IP, use mx.from_dns
 - fix(bin/haraka): fix for finding path to config/docs/Plugins.md
+- fix(connections): fix for infinitely expanding greeting when using a custom greeting
+  in connections.ini
 
 ### [3.0.5] - 2024-09-27
 
