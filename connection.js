@@ -783,10 +783,11 @@ class Connection {
                 });
                 break;
             default: {
-                let greeting = cfg.message.greeting;
-                if (greeting?.length) {
+                let greeting;
+                if (cfg.message.greeting?.length) {
                     // RFC5321 section 4.2
                     // Hostname/domain should appear after the 220
+                    greeting = [...cfg.message.greeting];
                     greeting[0] = `${this.local.host} ESMTP ${greeting[0]}`;
                     if (cfg.uuid.banner_chars) {
                         greeting[0] += ` (${this.uuid.substr(0, cfg.uuid.banner_chars)})`;
