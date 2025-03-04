@@ -1,5 +1,5 @@
 
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
 
 const constants    = require('haraka-constants');
 const DSN          = require('haraka-dsn')
@@ -229,16 +229,27 @@ describe('connection', () => {
 
         it('sets and gets', () => {
             assert.equal(this.connection.relaying, false);
-            assert.ok(this.connection.relaying = 'alligators');
+
+            this.connection.set('relaying', 'crocodiles');
+            assert.equal(this.connection.get('relaying'), 'crocodiles');
+            assert.equal(this.connection.relaying, 'crocodiles');
+            assert.equal(this.connection._relaying, 'crocodiles');
+
+            this.connection.relaying = 'alligators';
+            assert.equal(this.connection.get('relaying'), 'alligators');
             assert.equal(this.connection.relaying, 'alligators');
+            assert.equal(this.connection._relaying, 'alligators');
         })
 
         it('sets and gets in a transaction', () => {
             assert.equal(this.connection.relaying, false);
-            this.connection.transaction = {};
-            assert.ok(this.connection.relaying = 'crocodiles');
-            assert.equal(this.connection.transaction._relaying, 'crocodiles');
-            assert.equal(this.connection.relaying, 'crocodiles');
+
+            this.connection.transaction = {}
+            this.connection.set('relaying', 'txn-only'); // sets txn.relaying
+
+            assert.equal(this.connection.get('relaying'), 'txn-only')
+            assert.equal(this.connection._relaying, false);
+            assert.equal(this.connection.transaction._relaying, 'txn-only');
         })
     })
 
