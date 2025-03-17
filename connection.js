@@ -211,6 +211,7 @@ class Connection {
         this.set('hello', 'host', undefined);
         this.set('tls',   'enabled', true);
         for (const t of ['cipher','verified','verifyError','peerCertificate']) {
+            if (obj[t] === undefined) continue;
             this.set('tls', t, obj[t]);
         }
         // prior to 2017-07, authorized and verified were both used. Verified
