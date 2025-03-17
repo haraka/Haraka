@@ -4,28 +4,58 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-#### BREAKING, ACTION REQUIRED
+### [3.1.0] - 2025-01-30
 
-- connection.ini: new config file, replaces haproxy_hosts, ehlo_hello_message, connection_close_message, banner_includes_uuid, deny_includes_uuid, databytes, max_mime_parts, max_line_length, max_data_line_length, and smtpgreeting. To upgrade, apply any localized settings to the new connection.ini file.
-- moved the following settings from smtp.ini to connection.ini:
+#### Changes
+
+##### BREAKING CHANGE
+
+`connection.ini` replaces the following config files:
+
+| old file | connection.ini setting |
+| ------ | ------ |
+| haproxy_hosts | [haproxy] hosts |
+| smtpgreeting | [message] greeting |
+| ehlo_hello_message | [message] helo |
+| connection_close_message | [message] close |
+| banner_includes_uuid | [uuid] banner_chars |
+| deny_includes_uuid | [uuid] deny_chars |
+| databytes | [max] bytes |
+| max_mime_parts | [max] mime_parts |
+| max_line_length | [max] line_length |
+| max_data_line_length | [max] data_line_length |
+
+AND 
+
+- moves the following settings from smtp.ini to connection.ini:
   - headers.*
   - main.smtp_utf8
   - main.strict_rfc1869
 - early_talker.pause, removed support, use earlytalker.ini
 
-#### Changes
+To upgrade, apply any localized settings from the old config files to
+the new `connection.ini` file. For tidiness, delete the deprecated
+config files.
 
-- deps(eslint): update to v9
-- docs(plugins/\*.md): use \# to indicate heading levels
+- feat(queue/test): Append UUID to E-Mails (avoid overwrite) #3449
+- repackage p/early_talker as plugin #3443
+- repackage p/mail_from.is_resolvable as plugin #3439
+- repackage p/relay as haraka-plugin-relay #3432
+- ci(cov): update codecov to v5
+- deps(eslint): update to v9 #3433
+- doc(plugins/\*.md): use \# to indicate heading levels
 - deps(various): bump to latest versions
-- docs(CoreConfig): removed incorrect early_talker.delay reference (hasn't worked in years).
+- doc(CoreConfig): removed incorrect early_talker.delay reference (hasn't worked in years).
+- doc(LICENSE) fix copyright year #3424
+- doc(access, backscatterer, & data.headers): deprecated plugin docs
 
 #### Fixes
 
-- fix(outbound): in outbound hook_delivered, when mx.exchange contains
-  an IP, use mx.from_dns
-- fix(bin/haraka): fix for finding path to config/docs/Plugins.md
-- fix(connections): fix for infinitely expanding custom greeting #3446
+- fix(conn): always add connection.notes.tls properties #3450
+- fix(conn): cumulative greeting message for custom greetings #3446
+- fix(mail_from.is_resolvable): use correct config var path #3416
+- fix(bin/haraka): fix for finding path to config/docs/Plugins.md #3414
+- fix(outbound): in outbound, when mx.exchange contains an IP, use mx.from_dns #3413
 
 ### [3.0.5] - 2024-09-27
 
@@ -670,7 +700,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
   - plugins/graph -> haraka-plugin-graph #2185
 - config: replace ./config.js with haraka-config #2119
-- Replace concatenated strings with template literals (#2129) in:
+- Replace concatenated strings with template literals #2129 in:
   - attachment #2260
   - bin/spf #2129
   - bin/dkimverify #2278
@@ -1045,11 +1075,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - The delay_deny plugin now has a whitelist mode (vs blacklist). #1564
 - Don't show the private key in logs for dkim_sign. #1565
-- update geoip for compat with newer ES (#1622)
-- drop node 0.10 testing / official support (#1621)
-- watch plugin displays UUIDs as URL (#1624)
+- update geoip for compat with newer ES #1622
+- drop node 0.10 testing / official support #1621
+- watch plugin displays UUIDs as URL #1624
 - Catch errors on header decode in rfc2231 #1599
-- Attachment plugin updates (#1606)
+- Attachment plugin updates #1606
 - add outbound.ini pool_timeout example setting #1584
 
 #### Fixes
@@ -1061,14 +1091,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - outbound issues #1615, #1603
 - Fixed adding/removing headers in rspamd plugin. #1562
 - Fixed process_title not shutting down. #1560
-- fix a spurious error emitted by p0f (#1623)
-- fix header version hiding (#1617)
-- messagestream returns destination (#1610)
-- plugins.getdenyfn now passed 3rd params arg (#1591)
-- Fix scope of spf logdebug (#1598)
-- fix rabbitmq deliveryMode bug (#1594)
-- fix dkim_sign TypeError with null mail_from.host (#1592)
-- fix dkim_sign attempting to lower an undefined (#1587)
+- fix a spurious error emitted by p0f #1623
+- fix header version hiding #1617
+- messagestream returns destination #1610
+- plugins.getdenyfn now passed 3rd params arg #1591
+- Fix scope of spf logdebug #1598
+- fix rabbitmq deliveryMode bug #1594
+- fix dkim_sign TypeError with null mail_from.host #1592
+- fix dkim_sign attempting to lower an undefined #1587
 
 ### 2.8.8 - Jul 20, 2016
 
@@ -1099,18 +1129,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 #### Improvements
 
 - Allow alias plugin to explode to a list of aliases
-- Support IPv6 literals in HELO tests (#1507 thanks @gramakri)
-- Make ldap plugin use the modified address if a rcpt hook
-  changes it (#1501 thanks @darkpixel)
+- Support IPv6 literals in HELO tests #1507
+- Make ldap plugin use the modified address if a rcpt hook changes it #1501
 
 #### Fixes
 
-- Fix loading plugins as npm modules (#1513)
-- More DKIM fixes (#1506 thanks @zllovesuki)
-- Fix the long failing host-pool-timer test (#1508)
-- Fix clean shutdown of redis with new shutdown code
-  (#1504 and #1502 thanks @darkpixel)
-- More fixes to clean shutdown (#1503)
+- Fix loading plugins as npm modules #1513
+- More DKIM fixes #1506
+- Fix the long failing host-pool-timer test #1508
+- Fix clean shutdown of redis with new shutdown code, #1504 and #1502
+- More fixes to clean shutdown #1503
 
 ### 2.8.6 - Jun 06, 2016
 
@@ -1136,9 +1164,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 #### Fixes
 
-- Bind maxmind version to ignore API change (#1492)
-- Fix encodings when banners are used (#1477)
-- Various DKIM fixes (#1495)
+- Bind maxmind version to ignore API change #1492
+- Fix encodings when banners are used #1477
+- Various DKIM fixes #1495
 
 ### 2.8.4 - May 24, 2016
 
@@ -1600,7 +1628,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Throw exception with set_banner as it is now non-functional. Will be returned in a future version.
 - Small fixes to data.uribl
 
-### 1.4.0 -
 
 [3.0.0]: https://github.com/haraka/Haraka/releases/tag/3.0.0
 [3.0.1]: https://github.com/haraka/Haraka/releases/tag/v3.0.1
@@ -1608,3 +1635,98 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [3.0.3]: https://github.com/haraka/Haraka/releases/tag/v3.0.3
 [3.0.4]: https://github.com/haraka/Haraka/releases/tag/3.0.4
 [3.0.5]: https://github.com/haraka/Haraka/releases/tag/v3.0.5
+[3.0.6]: https://github.com/haraka/Haraka/releases/tag/v3.0.6
+
+[2.8.0]: https://github.com/haraka/Haraka/releases/tag/v2.8.0
+[2.8.1]: https://github.com/haraka/Haraka/releases/tag/v2.8.1
+[2.8.3]: https://github.com/haraka/Haraka/releases/tag/v2.8.3
+[2.8.4]: https://github.com/haraka/Haraka/releases/tag/v2.8.4
+[2.8.5]: https://github.com/haraka/Haraka/releases/tag/v2.8.5
+[2.8.6]: https://github.com/haraka/Haraka/releases/tag/v2.8.6
+[2.8.7]: https://github.com/haraka/Haraka/releases/tag/v2.8.7
+[2.8.8]: https://github.com/haraka/Haraka/releases/tag/v2.8.8
+[2.8.9]: https://github.com/haraka/Haraka/releases/tag/v2.8.9
+[2.8.10]: https://github.com/haraka/Haraka/releases/tag/2.8.10
+[2.8.11]: https://github.com/haraka/Haraka/releases/tag/2.8.11
+[2.8.12]: https://github.com/haraka/Haraka/releases/tag/2.8.12
+[2.8.13]: https://github.com/haraka/Haraka/releases/tag/2.8.13
+[2.8.14]: https://github.com/haraka/Haraka/releases/tag/v2.8.14
+[2.8.15]: https://github.com/haraka/Haraka/releases/tag/2.8.15
+[2.8.16]: https://github.com/haraka/Haraka/releases/tag/2.8.16
+[2.8.17]: https://github.com/haraka/Haraka/releases/tag/2.8.17
+[2.8.18]: https://github.com/haraka/Haraka/releases/tag/2.8.18
+[2.8.19]: https://github.com/haraka/Haraka/releases/tag/v2.8.19
+[2.8.20]: https://github.com/haraka/Haraka/releases/tag/2.8.20
+[release-2.8.21]: https://github.com/haraka/Haraka/releases/tag/release-2.8.21
+[2.8.22]: https://github.com/haraka/Haraka/releases/tag/2.8.22
+[2.8.24]: https://github.com/haraka/Haraka/releases/tag/2.8.24
+[2.8.25]: https://github.com/haraka/Haraka/releases/tag/2.8.25
+[2.8.26]: https://github.com/haraka/Haraka/releases/tag/2.8.26
+[2.8.27]: https://github.com/haraka/Haraka/releases/tag/2.8.27
+[2.8.28]: https://github.com/haraka/Haraka/releases/tag/2.8.28
+
+[2.7.3]: https://github.com/haraka/Haraka/releases/tag/v2.7.3
+[2.7.2]: https://github.com/haraka/Haraka/releases/tag/v2.7.2
+[2.7.1]: https://github.com/haraka/Haraka/releases/tag/v2.7.1
+[2.7.0]: https://github.com/haraka/Haraka/releases/tag/v2.7.0
+
+[2.6.0]: https://github.com/haraka/Haraka/releases/tag/v2.6.0
+[2.6.1]: https://github.com/haraka/Haraka/releases/tag/v2.6.1
+[2.5.0]: https://github.com/haraka/Haraka/releases/tag/v2.5.0
+[2.4.0]: https://github.com/haraka/Haraka/releases/tag/v2.4.0
+[2.3.1]: https://github.com/haraka/Haraka/releases/tag/v2.3.1
+[2.3.0]: https://github.com/haraka/Haraka/releases/tag/v2.3.0
+[2.2.0]: https://github.com/haraka/Haraka/releases/tag/v2.2.0
+[2.2.1]: https://github.com/haraka/Haraka/releases/tag/v2.2.1
+[2.2.2]: https://github.com/haraka/Haraka/releases/tag/v2.2.2
+[2.2.3]: https://github.com/haraka/Haraka/releases/tag/v2.2.3
+[2.2.4]: https://github.com/haraka/Haraka/releases/tag/v2.2.4
+[2.2.5]: https://github.com/haraka/Haraka/releases/tag/v2.2.5
+[2.2.6]: https://github.com/haraka/Haraka/releases/tag/v2.2.6
+[2.2.7]: https://github.com/haraka/Haraka/releases/tag/v2.2.7
+[2.2.8]: https://github.com/haraka/Haraka/releases/tag/v2.2.8
+[2.1.0]: https://github.com/haraka/Haraka/releases/tag/v2.1.0
+[2.1.1]: https://github.com/haraka/Haraka/releases/tag/v2.1.1
+[2.1.2]: https://github.com/haraka/Haraka/releases/tag/v2.1.2
+[2.1.3]: https://github.com/haraka/Haraka/releases/tag/v2.1.3
+[2.1.4]: https://github.com/haraka/Haraka/releases/tag/v2.1.4
+[2.1.5]: https://github.com/haraka/Haraka/releases/tag/v2.1.5
+[2.1.6]: https://github.com/haraka/Haraka/releases/tag/v2.1.6
+
+[2.0.0]: https://github.com/haraka/Haraka/releases/tag/v2.0.0
+[2.0.3]: https://github.com/haraka/Haraka/releases/tag/v2.0.3
+[2.0.4]: https://github.com/haraka/Haraka/releases/tag/v2.0.4
+[2.0.5]: https://github.com/haraka/Haraka/releases/tag/v2.0.5
+
+[1.0.1]: https://github.com/haraka/Haraka/releases/tag/v1.0.1
+[1.0.2]: https://github.com/haraka/Haraka/releases/tag/v1.0.2
+[1.1.0]: https://github.com/haraka/Haraka/releases/tag/v1.1.0
+[1.2.0]: https://github.com/haraka/Haraka/releases/tag/v1.2.0
+[1.2.1]: https://github.com/haraka/Haraka/releases/tag/v1.2.1
+[1.3.0]: https://github.com/haraka/Haraka/releases/tag/v1.3.0
+[1.3.1]: https://github.com/haraka/Haraka/releases/tag/v1.3.1
+[1.3.2]: https://github.com/haraka/Haraka/releases/tag/v1.3.2
+[1.3.3]: https://github.com/haraka/Haraka/releases/tag/v1.3.3
+[1.4.0]: https://github.com/haraka/Haraka/releases/tag/v1.4.0
+
+[0.9.0]: https://github.com/haraka/Haraka/releases/tag/v0.9.0
+[0.8.0]: https://github.com/haraka/Haraka/releases/tag/v0.8.0
+[0.7.2]: https://github.com/haraka/Haraka/releases/tag/v0.7.2
+[0.7.1]: https://github.com/haraka/Haraka/releases/tag/v0.7.1
+[0.7.0]: https://github.com/haraka/Haraka/releases/tag/v0.7.0
+[0.6.1]: https://github.com/haraka/Haraka/releases/tag/v0.6.1
+[0.6.0]: https://github.com/haraka/Haraka/releases/tag/v0.6.0
+[0.5.11]: https://github.com/haraka/Haraka/releases/tag/v0.5.11
+[0.5.10]: https://github.com/haraka/Haraka/releases/tag/v0.5.10
+[0.5.9]: https://github.com/haraka/Haraka/releases/tag/v0.5.9
+[0.5.8]: https://github.com/haraka/Haraka/releases/tag/v0.5.8
+[0.5.7]: https://github.com/haraka/Haraka/releases/tag/v0.5.7
+[0.5.6]: https://github.com/haraka/Haraka/releases/tag/v0.5.6
+[0.5.5]: https://github.com/haraka/Haraka/releases/tag/v0.5.5
+[0.5.4]: https://github.com/haraka/Haraka/releases/tag/v0.5.4
+[0.5.3]: https://github.com/haraka/Haraka/releases/tag/v0.5.3
+[0.5.2]: https://github.com/haraka/Haraka/releases/tag/v0.5.2
+[0.5]: https://github.com/haraka/Haraka/releases/tag/v0.5
+[0.4]: https://github.com/haraka/Haraka/releases/tag/v0.4
+[0.3]: https://github.com/haraka/Haraka/releases/tag/v0.3
+[0.2]: https://github.com/haraka/Haraka/releases/tag/v0.2

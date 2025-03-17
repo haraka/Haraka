@@ -51,8 +51,7 @@ Default: false. By default, outbound to a local IP is disabled, to avoid creatin
 
 * `temp_fail_intervals`
 
-Set this to specify the delay intervals to use between trying to re-send an email that has a temporary failure condition.  The setting is a comma separated list of time spans and multipliers.  The time span is a number followed by `s`, `m`, `h`, or `d` to represent seconds, minutes, hours, and days, respectively.  The multiplier is an asterisk followed by an integer representing the number of times to repeat the interval. For example, the entry `1m, 5m*2, 1h*3` results in an array of delay times of
-`[60,300,300,3600,3600,3600]` in seconds.  The email will be bounced when the array runs out of intervals (the 7th failure in this case).  Set this to `none` to bounce the email on the first temporary failure.
+Set this to specify the delay intervals to use between trying to re-send an email that has a temporary failure condition. The setting is a comma separated list of time spans and multipliers. The time span is a number followed by `s`, `m`, `h`, or `d` to represent seconds, minutes, hours, and days, respectively. The multiplier is an asterisk followed by an integer representing the number of times to repeat the interval. For example, the entry `1m, 5m*2, 1h*3` results in an array of delay times of `[60,300,300,3600,3600,3600]` in seconds. The email will be bounced when the array runs out of intervals (the 7th failure in this case). Set this to `none` to bounce the email on the first temporary failure.
 
 ### outbound.bounce\_message
 
@@ -137,11 +136,11 @@ Parameters: `next, hmail, params`
 Params is a list of: `[host, ip, response, delay, port, mode, ok_recips, secured]`
 
 When mails are successfully delivered to the remote end then the `delivered` hook is called. The return codes from this hook have no effect, so it is only useful for logging the fact that a successful delivery occurred.
- 
+
 * `host` - Hostname of the MX that the message was delivered to,
 * `ip` - IP address of the host that the message was delivered to,
 * `response` - Variable contains the SMTP response text returned by the host that received the message and will typically contain the remote queue ID and
-* `delay` - Time taken between the queue file being created and the  message being delivered.
+* `delay` - Time taken between the queue file being created and the message being delivered.
 * `port` - Port number that the message was delivered to.
 * `mode` - Shows whether SMTP or LMTP was used to deliver the mail.
 * `ok_recips` - an `Address`<sup>[1](#fn1)</sup> array containing all of the recipients that were successfully delivered to.
@@ -149,7 +148,7 @@ When mails are successfully delivered to the remote end then the `delivered` hoo
 
 ## Outbound IP address
 
-Normally the OS will decide which IP address will be used for outbound  connections using the IP routing table.  
+Normally the OS will decide which IP address will be used for outbound connections using the IP routing table.
 
 There are instances where you may want to separate outbound traffic on different IP addresses based on sender, domain or some other identifier. To do this, the IP address that you want to use *must* be bound to an interface (or alias) on the local system.
 
@@ -235,9 +234,9 @@ Where `options` is a Object that may contain the following keys:
 |------------------------|-------------|
 | `dot_stuffed: true`    | Use this if you are passing your content dot-stuffed (a dot at the start of a line is doubled, like it is in SMTP conversation, see [RFC 2821][url-rfc2821].|
 | `notes: { key: value}` | In case you need notes in the new transaction that `send_email()` creates. |
-| `remove_msgid: true`   | Remove any Message-Id header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Message-Id header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
-| `remove_date: true`    | Remove any Date header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Date header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
-| `origin: Object`       | Adds object as argument to logger.log calls inside outbound.send_email. Useful for tracking which Plugin/Connection/HMailItem object generated email. | 
+| `remove_msgid: true`   | Remove any Message-Id header found in the message. If you are reading a message in from the filesystem and you want to ensure that a generated Message-Id header is used in preference over the original. This is useful if you are releasing mail from a quarantine. |
+| `remove_date: true`    | Remove any Date header found in the message. If you are reading a message in from the filesystem and you want to ensure that a generated Date header is used in preference over the original. This is useful if you are releasing mail from a quarantine. |
+| `origin: Object`       | Adds object as argument to logger.log calls inside outbound.send_email. Useful for tracking which Plugin/Connection/HMailItem object generated email. |
 
 
 ```js
