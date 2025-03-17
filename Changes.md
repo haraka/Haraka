@@ -37,21 +37,25 @@ To upgrade, apply any localized settings from the old config files to
 the new `connection.ini` file. For tidiness, delete the deprecated
 config files.
 
-- repackage plugins/mail_from.is_resolvable as plugin (#3439)
-- repackage plugins/relay as haraka-plugin-relay (#3432)
+- feat(queue/test): Append UUID to E-Mails (avoid overwrite) #3449
+- repackage p/early_talker as plugin #3443
+- repackage p/mail_from.is_resolvable as plugin #3439
+- repackage p/relay as haraka-plugin-relay #3432
 - ci(cov): update codecov to v5
-- deps(eslint): update to v9 (#3433)
+- deps(eslint): update to v9 #3433
 - doc(plugins/\*.md): use \# to indicate heading levels
 - deps(various): bump to latest versions
 - doc(CoreConfig): removed incorrect early_talker.delay reference (hasn't worked in years).
-- doc(LICENSE) fix copyright year (#3424)
+- doc(LICENSE) fix copyright year #3424
 - doc(access, backscatterer, & data.headers): deprecated plugin docs
 
 #### Fixes
 
-- fix(mail_from.is_resolvable): use correct config var path (#3416)
-- fix(outbound): in outbound, when mx.exchange contains an IP, use mx.from_dns (#3413)
-- fix(bin/haraka): fix for finding path to config/docs/Plugins.md (#3414)
+- fix(conn): always add connection.notes.tls properties #3450
+- fix(conn): cumulative greeting message for custom greetings #3446
+- fix(mail_from.is_resolvable): use correct config var path #3416
+- fix(bin/haraka): fix for finding path to config/docs/Plugins.md #3414
+- fix(outbound): in outbound, when mx.exchange contains an IP, use mx.from_dns #3413
 
 ### [3.0.5] - 2024-09-27
 
@@ -696,7 +700,7 @@ config files.
   - plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
   - plugins/graph -> haraka-plugin-graph #2185
 - config: replace ./config.js with haraka-config #2119
-- Replace concatenated strings with template literals (#2129) in:
+- Replace concatenated strings with template literals #2129 in:
   - attachment #2260
   - bin/spf #2129
   - bin/dkimverify #2278
@@ -1071,11 +1075,11 @@ config files.
 
 - The delay_deny plugin now has a whitelist mode (vs blacklist). #1564
 - Don't show the private key in logs for dkim_sign. #1565
-- update geoip for compat with newer ES (#1622)
-- drop node 0.10 testing / official support (#1621)
-- watch plugin displays UUIDs as URL (#1624)
+- update geoip for compat with newer ES #1622
+- drop node 0.10 testing / official support #1621
+- watch plugin displays UUIDs as URL #1624
 - Catch errors on header decode in rfc2231 #1599
-- Attachment plugin updates (#1606)
+- Attachment plugin updates #1606
 - add outbound.ini pool_timeout example setting #1584
 
 #### Fixes
@@ -1087,14 +1091,14 @@ config files.
 - outbound issues #1615, #1603
 - Fixed adding/removing headers in rspamd plugin. #1562
 - Fixed process_title not shutting down. #1560
-- fix a spurious error emitted by p0f (#1623)
-- fix header version hiding (#1617)
-- messagestream returns destination (#1610)
-- plugins.getdenyfn now passed 3rd params arg (#1591)
-- Fix scope of spf logdebug (#1598)
-- fix rabbitmq deliveryMode bug (#1594)
-- fix dkim_sign TypeError with null mail_from.host (#1592)
-- fix dkim_sign attempting to lower an undefined (#1587)
+- fix a spurious error emitted by p0f #1623
+- fix header version hiding #1617
+- messagestream returns destination #1610
+- plugins.getdenyfn now passed 3rd params arg #1591
+- Fix scope of spf logdebug #1598
+- fix rabbitmq deliveryMode bug #1594
+- fix dkim_sign TypeError with null mail_from.host #1592
+- fix dkim_sign attempting to lower an undefined #1587
 
 ### 2.8.8 - Jul 20, 2016
 
@@ -1125,18 +1129,16 @@ config files.
 #### Improvements
 
 - Allow alias plugin to explode to a list of aliases
-- Support IPv6 literals in HELO tests (#1507 thanks @gramakri)
-- Make ldap plugin use the modified address if a rcpt hook
-  changes it (#1501 thanks @darkpixel)
+- Support IPv6 literals in HELO tests #1507
+- Make ldap plugin use the modified address if a rcpt hook changes it #1501
 
 #### Fixes
 
-- Fix loading plugins as npm modules (#1513)
-- More DKIM fixes (#1506 thanks @zllovesuki)
-- Fix the long failing host-pool-timer test (#1508)
-- Fix clean shutdown of redis with new shutdown code
-  (#1504 and #1502 thanks @darkpixel)
-- More fixes to clean shutdown (#1503)
+- Fix loading plugins as npm modules #1513
+- More DKIM fixes #1506
+- Fix the long failing host-pool-timer test #1508
+- Fix clean shutdown of redis with new shutdown code, #1504 and #1502
+- More fixes to clean shutdown #1503
 
 ### 2.8.6 - Jun 06, 2016
 
@@ -1162,9 +1164,9 @@ config files.
 
 #### Fixes
 
-- Bind maxmind version to ignore API change (#1492)
-- Fix encodings when banners are used (#1477)
-- Various DKIM fixes (#1495)
+- Bind maxmind version to ignore API change #1492
+- Fix encodings when banners are used #1477
+- Various DKIM fixes #1495
 
 ### 2.8.4 - May 24, 2016
 
