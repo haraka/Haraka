@@ -116,16 +116,9 @@ logger.dump_logs = cb => {
     return true;
 }
 
-if (!util.isFunction) {
-    util.isFunction = functionToCheck => {
-        const getType = {};
-        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
-    };
-}
-
 logger.dump_and_exit = function (code) {
     this.dump_logs(() => {
-        if (util.isFunction(code)) return code();
+        if (typeof code === 'function') return code();
         process.exit(code);
     });
 }
