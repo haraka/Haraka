@@ -32,11 +32,6 @@ function stringify (obj) {
     return str.trim();
 }
 
-function isFunction (functionToCheck) {
-    const getType = {};
-    return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
-};
-
 const logger = exports;
 
 logger.levels = {
@@ -123,7 +118,7 @@ logger.dump_logs = cb => {
 
 logger.dump_and_exit = function (code) {
     this.dump_logs(() => {
-        if (isFunction(code)) return code();
+        if (typeof code === 'function') return code();
         process.exit(code);
     });
 }
