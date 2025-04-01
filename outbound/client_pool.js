@@ -1,5 +1,7 @@
 'use strict';
 
+const util = require('node:util');
+
 const utils = require('haraka-utils');
 const net_utils = require('haraka-net-utils')
 
@@ -32,7 +34,12 @@ exports.get_client = function (mx, callback) {
         socket.end();
         socket.removeAllListeners();
         socket.destroy();
-        callback(err.message, null);
+        const errMsg = err.message ?
+            err.message :
+            err instanceof AggregateError ?
+                err.map(e => e.message).join(', ') :
+                util.inspect(err, { depth: 3 });
+        callback(errMsg, null);
     })
 
     socket.once('timeout', () => {
