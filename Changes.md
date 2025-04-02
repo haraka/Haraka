@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(outbound): in outbound, fix a crash when socket connection errors #3456
+
 ### [3.1.0] - 2025-01-30
 
 #### Changes
