@@ -143,6 +143,7 @@ function setupHostname (confPath) {
 }
 
 function setupBaseConfig (confPath) {
+    utils.copyFile(path.join(base, 'config', 'connection.ini'), path.join(confPath, 'connection.ini'));
     utils.copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'));
     utils.copyFile(path.join(base, 'config', 'log.ini'),  path.join(confPath, 'log.ini'));
     utils.copyFile(path.join(base, 'config', 'plugins'),  path.join(confPath, 'plugins'));
