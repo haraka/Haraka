@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.1.1] - 2025-05-19
+
+- Fix: install connection.ini with base configuration on install #3458
 - fix(outbound): in outbound, fix a crash when socket connection errors #3456
 
 ### [3.1.0] - 2025-01-30
@@ -1732,3 +1735,5 @@ config files.
 [0.4]: https://github.com/haraka/Haraka/releases/tag/v0.4
 [0.3]: https://github.com/haraka/Haraka/releases/tag/v0.3
 [0.2]: https://github.com/haraka/Haraka/releases/tag/v0.2
+[3.1.1]: https://github.com/haraka/Haraka/releases/tag/v3.1.1
+[3.1.0]: https://github.com/haraka/Haraka/releases/tag/v3.1.0
