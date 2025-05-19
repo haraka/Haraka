@@ -9,7 +9,7 @@
     "server",
     "email"
   ],
-  "version": "3.1.0",
+  "version": "3.1.1",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -105,6 +105,11 @@
     "prettier:fix": "npx prettier . --write --log-level=warn",
     "test": "npx mocha --exit --timeout=4000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
     "versions": "npx dependency-version-checker check",
-    "versions:fix": "npx dependency-version-checker update"
+    "versions:fix": "npx dependency-version-checker update",
+    "format": "npm run prettier:fix && npm run lint:fix"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "semi": false
   }
 }
