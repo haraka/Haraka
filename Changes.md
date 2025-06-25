@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- feat(rabbitmq_amqplib): configurable optional exchange arguments #3472
+- feat(rabbitmq_amqplib): configurable message priority #3472
+
 ### [3.1.1] - 2025-05-19
 
 - Fix: install connection.ini with base configuration on install #3458

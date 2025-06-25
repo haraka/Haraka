@@ -5,6 +5,7 @@ const amqp = require("amqplib/callback_api");
 let channel;
 let queue;
 let deliveryMode;
+let priority;
 
 exports.register = function () {
     this.init_amqp_connection();
@@ -14,7 +15,11 @@ exports.rabbitmq_queue = function (next, connection) {
     if (!connection?.transaction) return next();
 
     connection.transaction.message_stream.get_data(str => {
-        if (channel?.sendToQueue(queue, str, {deliveryMode})) {
+        const sendOptions = {deliveryMode};
+        if (priority != null) {
+            sendOptions.priority = priority;
+        }
+        if (channel?.sendToQueue(queue, str, sendOptions)) {
             return next(OK);
         }
         else {
@@ -40,6 +45,7 @@ exports.init_amqp_connection = function () {
     // var confirm = cfg.confirm === "true" || true;
     const autoDelete = cfg.autoDelete === "true" || false;
     deliveryMode = cfg.deliveryMode || 2;
+    priority = cfg.priority;
 
     amqp.connect(`${protocol}://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}${vhost}`, (err, conn) => {
         if (err) {
@@ -52,7 +58,7 @@ exports.init_amqp_connection = function () {
                 this.logerror(`Error creating rabbitmq channel: ${err2}`);
                 return conn.close();
             }
-            ch.assertExchange(exchangeName, exchangeType, {durable}, (err3, ok) => {
+            ch.assertExchange(exchangeName, exchangeType, {durable, arguments: this.config.get('rabbitmq.ini').exchange_args}, (err3, ok) => {
                 if (err3) {
                     this.logerror(`Error asserting rabbitmq exchange: ${err3}`);
                     return conn.close();
