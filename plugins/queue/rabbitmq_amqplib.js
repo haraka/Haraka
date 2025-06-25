@@ -58,7 +58,7 @@ exports.init_amqp_connection = function () {
                 this.logerror(`Error creating rabbitmq channel: ${err2}`);
                 return conn.close();
             }
-            ch.assertExchange(exchangeName, exchangeType, {durable}, (err3, ok) => {
+            ch.assertExchange(exchangeName, exchangeType, {durable, arguments: this.config.get('rabbitmq.ini').exchange_args}, (err3, ok) => {
                 if (err3) {
                     this.logerror(`Error asserting rabbitmq exchange: ${err3}`);
                     return conn.close();
