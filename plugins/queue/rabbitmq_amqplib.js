@@ -17,7 +17,7 @@ exports.rabbitmq_queue = function (next, connection) {
     connection.transaction.message_stream.get_data(str => {
         const sendOptions = {deliveryMode};
         if (priority != null) {
-        sendOptions.priority = priority;
+            sendOptions.priority = priority;
         }
         if (channel?.sendToQueue(queue, str, sendOptions)) {
             return next(OK);
