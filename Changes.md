@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- change: finish renaming dot_stuffing to dot_stuffed
 - feat(rabbitmq_amqplib): configurable optional exchange arguments #3472
 - feat(rabbitmq_amqplib): configurable message priority #3472
 
