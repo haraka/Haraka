@@ -115,7 +115,7 @@ exports.send_email = function (from, to, contents, next, options = {}) {
         while ((match = utils.line_regexp.exec(contents))) {
             let line = match[1];
             line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
-            if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
+            if (dot_stuffed === false && line.length >= 3 && line[0] === '.') {
                 line = `.${line}`;
             }
             transaction.add_data(Buffer.from(line));
@@ -298,7 +298,7 @@ exports.process_delivery = function (ok_paths, todo, hmails) {
         })
 
         this.build_todo(todo, ws, () => {
-            todo.message_stream.pipe(ws, { dot_stuffing: true });
+            todo.message_stream.pipe(ws);
         });
     })
 }

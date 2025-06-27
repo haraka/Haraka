@@ -212,7 +212,7 @@ class SMTPClient extends events.EventEmitter {
     start_data (data) {
         this.response = [];
         this.command = 'dot';
-        data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, end: false });
+        data.pipe(this.socket, { ending_dot: true, end: false });
     }
 
     release () {
