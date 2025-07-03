@@ -115,7 +115,7 @@ exports.send_email = function (from, to, contents, next, options = {}) {
         while ((match = utils.line_regexp.exec(contents))) {
             let line = match[1];
             line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
-            if (dot_stuffed === false && line.length >= 3 && line[0] === '.') {
+            if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
                 line = `.${line}`;
             }
             transaction.add_data(Buffer.from(line));
