@@ -298,7 +298,8 @@ exports.process_delivery = function (ok_paths, todo, hmails) {
         })
 
         this.build_todo(todo, ws, () => {
-            todo.message_stream.pipe(ws, { dot_stuffing: true });
+            // SUNSET: dot_stuffing was renamed to dot_stuffed, remove it after 2026-01
+            todo.message_stream.pipe(ws, { dot_stuffing: true, dot_stuffed: false });
         });
     })
 }

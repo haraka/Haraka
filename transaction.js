@@ -95,7 +95,7 @@ class Transaction {
             const run_end = (next_dot !== -1 && (next_lf === -1 || next_dot < next_lf))
                 ? next_dot : next_lf;
 
-            // Copy up till whichever comes first, '.' or '\n' (but don't
+            // Copy up to whichever comes first, '.' or '\n' (but don't
             // copy the '.' or '\n' itself).
             data.copy(output, output_pos, input_pos, run_end);
             output_pos += run_end - input_pos;
