@@ -298,7 +298,7 @@ exports.process_delivery = function (ok_paths, todo, hmails) {
         })
 
         this.build_todo(todo, ws, () => {
-            todo.message_stream.pipe(ws);
+            todo.message_stream.pipe(ws, { dot_stuffed: false });
         });
     })
 }
