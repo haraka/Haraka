@@ -1,4 +1,5 @@
 'use strict';
+/* global server */
 
 const fs = require('node:fs');
 const path = require('node:path');

@@ -2,6 +2,8 @@
 // TLS is built into Haraka. This plugin conditionally advertises STARTTLS.
 // see 'haraka -h tls' for help
 
+/* global server */
+
 const tls_socket = require('./tls_socket');
 
 // exported so tests can override config dir
