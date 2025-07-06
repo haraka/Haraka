@@ -128,7 +128,7 @@ describe('outbound/hmail.HMailItem', () => {
                 // assert.equals(this.hmail.todo.message_stream.headers.length, 22);
 
                 const ds = this.hmail.data_stream()
-                ds.pipe(ws, { dot_stuffing: true });
+                ds.pipe(ws);
 
                 ws.on('close', () => {
                     // console.log(this.hmail.todo)

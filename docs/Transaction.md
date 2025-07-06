@@ -31,7 +31,7 @@ Where WritableStream is a node.js Writable Stream object such as a net.socket, f
 The options argument should be an object that overrides the following properties:
 
     * line_endings (default: "\r\n")
-    * dot_stuffing (default: false)
+    * dot_stuffed  (default: true)
     * ending_dot   (default: false)
     * end          (default: true)
     * buffer_size  (default: 65535)
@@ -40,7 +40,7 @@ The options argument should be an object that overrides the following properties
 e.g.
 
 ```js
-transaction.message_stream.pipe(socket, { dot_stuffing: true, ending_dot: true });
+transaction.message_stream.pipe(socket, { ending_dot: true });
 ```
 
 * transaction.data\_bytes

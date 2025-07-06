@@ -70,7 +70,7 @@ data received.  If you were writing the data to a socket then you had to handle 
 
 In v2.x this now becomes:
 
-    connection.transaction.message_stream.pipe(socket, {dot_stuffing: true, ending_dot: true});
+    connection.transaction.message_stream.pipe(socket, {ending_dot: true});
 
 This automatically chunks the data, handles backpressure and will apply any 
 necessary format changes.  See `docs/Transaction.md` for the full details.
