@@ -26,7 +26,7 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git checkout -B release
-          git add package-lock.json
+          git add -f package-lock.json
           git commit -m "Update package-lock.json [auto]" || echo "No changes to commit"
 
       - name: Push to release branch
