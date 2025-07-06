@@ -1,0 +1,34 @@
+name: Release branch with package-lock
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  update-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm install --package-lock-only
+
+      - name: Commit package-lock.json
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -B release
+          git add package-lock.json
+          git commit -m "Update package-lock.json [auto]" || echo "No changes to commit"
+
+      - name: Push to release branch
+        run: git push origin release --force
+
