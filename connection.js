@@ -1429,7 +1429,7 @@ class Connection {
 \tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}\r
 \tenvelope-from ${this.transaction.mail_from.format()}`;
 
-        if (sslheader)       received_header += `\r\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+        if (sslheader) received_header += `\r\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
 
         // Does not follow RFC 5321 section 4.4 grammar
         if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
