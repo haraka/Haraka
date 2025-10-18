@@ -129,7 +129,7 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [3]: http://en.wikipedia.org/wiki/Message_transfer_agent
 [4]: https://github.com/haraka/Haraka/blob/master/Plugins.md
 [5]: http://en.wikipedia.org/wiki/Mail_submission_agent
-[6]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
+[6]: https://github.com/haraka/haraka-plugin-dkim
 [7]: https://en.wikipedia.org/wiki/Mail_delivery_agent
 [8]: mailto:haraka-sub@harakamail.com
 [9]: https://haraka.github.io/plugins/spamassassin
