@@ -1296,8 +1296,11 @@ class Connection {
             this.errors++;
             return this.respond(503, 'Use EHLO/HELO before MAIL');
         }
-        // Require authentication on ports 587 & 465
-        if (!this.relaying && [587,465].includes(this.local.port)) {
+
+        // 25 is used for incoming emails and usually doesn't require authentication
+        const allow_no_auth_ports = this.server.cfg?.main?.allow_no_auth_ports || [25];
+        // Require authentication by default
+        if (!(this.relaying || allow_no_auth_ports.includes(this.local.port))) {
             this.errors++;
             return this.respond(550, 'Authentication required');
         }
