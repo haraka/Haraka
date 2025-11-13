@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - feat(rabbitmq_amqplib): configurable optional exchange arguments #3472
 - feat(rabbitmq_amqplib): configurable message priority #3472
 - add save-sent to Plugins.md
+- Make ports to allow no authentication a whitelist configurable in smtp.ini
+- Make ports to allow no tls a whitelist configurable in smtp.ini
 
 ### [3.1.1] - 2025-05-19
 
@@ -37,7 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 | max_line_length | [max] line_length |
 | max_data_line_length | [max] data_line_length |
 
-AND 
+AND
 
 - moves the following settings from smtp.ini to connection.ini:
   - headers.*
