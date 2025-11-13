@@ -118,6 +118,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 | [watch][url-watch]                         | Watch live SMTP traffic in a web interface                                                  |
 | [wildduck][url-wildduck]                   | provides recipient checks against Wild Duck                                                 |
 | [xclient][url-xclient]                     | Implements XCLIENT                                                                          |
+| [save-sent][url-save-sent]                 | Save sent emails on the serverside to a mailbox of the sender                               |
 
 <!-- URLs tucked safely out of the way -->
 
@@ -206,3 +207,4 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-outbound-logger]: https://github.com/mr-karan/haraka-plugin-outbound-logger
 [url-kafka]: https://github.com/benjamonnguyen/haraka-plugin-queue-kafka
 [url-mailauth]: https://www.npmjs.com/package/haraka-plugin-mailauth
+[url-save-sent]: https://github.com/AprilGrimoire/haraka-plugin-save-sent
