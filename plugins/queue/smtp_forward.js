@@ -61,6 +61,10 @@ exports.get_config = function (conn) {
         if (!conn.transaction.mail_from) return this.cfg.main;
         dom = conn.transaction.mail_from.host;
     }
+    else if (this.cfg.main.domain_selector === 'mail_from_address') {
+        if (!conn.transaction.mail_from) return this.cfg.main;
+        dom = conn.transaction.mail_from.address();
+    }
     else {
         if (!conn.transaction.rcpt_to[0]) return this.cfg.main;
         dom = conn.transaction.rcpt_to[0].host;

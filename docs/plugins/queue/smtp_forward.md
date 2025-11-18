@@ -75,6 +75,8 @@ When `domain_selector` is set to `rcpt_to` (the default), more specific routes a
 
 When `domain_selector` is set to `mail_from`, the domain of the MAIL FROM address is used.
 
+When `domain_selector` is set to `mail_from_address`, the complete address of the MAIL FROM address and domain is used, like user@domain.tld, if not found will be setted like `mail_from`.
+
 enable\_outbound can be set or unset on a per-domain level to enable or disable forwarding for specific domains.
 
     # default SMTP host
@@ -97,6 +99,12 @@ enable\_outbound can be set or unset on a per-domain level to enable or disable 
 
     [example4.com]
     enable\_outbound=false
+
+    [user@domain.com]
+    host=1.2.3.5
+    # auth_type=plain
+    # auth_user=user
+    # auth_pass=pass
 
 # Split host forward routing
 
