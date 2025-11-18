@@ -128,7 +128,7 @@ exports.init_rabbitmq_server = function () {
                 connQueue.bind(connExchange, routing);
                 const key = exchangeName + queueName;
 
-                //Save the variables for publising later.
+                //Save the variables for publishing later.
                 if (!exports.exchangeMapping[key]) {
                     exports.exchangeMapping[key] = [];
                 }
