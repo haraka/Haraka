@@ -73,7 +73,7 @@ More specific forward routes for domains can be defined. The domain is chosen ba
 
 When `domain_selector` is set to `rcpt_to` (the default), more specific routes are only honored for SMTP connections with a single recipient or SMTP connections where every recipient host is identical.
 
-When `domain_selector` is set to `mail_from`, the domain of the MAIL FROM address is used.
+When `domain_selector` is set to `mail_from`, it first searches for configuration using the complete email address, falls back to the domain if not found, then to main configuration.
 
 enable\_outbound can be set or unset on a per-domain level to enable or disable forwarding for specific domains.
 
@@ -84,6 +84,12 @@ enable\_outbound can be set or unset on a per-domain level to enable or disable 
     # auth_user=pass
 
     [example1.com]
+    host=1.2.3.5
+    # auth_type=plain
+    # auth_user=user
+    # auth_pass=pass
+
+    [email@example1.com]
     host=1.2.3.5
     # auth_type=plain
     # auth_user=user
