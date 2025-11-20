@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - feat(rabbitmq_amqplib): configurable message priority #3472
 - add save-sent to Plugins.md
 - deferred hook is now passed the failed recips list and mx info
+- outbound: skip mxes for which no local address family is bound #3503
 
 ### [3.1.1] - 2025-05-19
 
