@@ -174,7 +174,7 @@ These are the hook and their parameters (next excluded):
 * reset\_transaction - called before the transaction is reset (via RSET, or MAIL)
 * deny - called when a plugin returns DENY, DENYSOFT or DENYDISCONNECT
 * get\_mx (hmail, domain) - called by outbound to resolve the MX record
-* deferred (hmail, params) - called when an outbound message is deferred
+* deferred (hmail, {err, delay, fail_recips, mx} ) - called when an outbound message is deferred. `err` is an error message. `delay` is the seconds after which the delivery will be retried. `fail_recips` ([Address]) and `mx` are only present when the failure happenned during delivery of the addresses to `mx`.
 * bounce (hmail, err) - called when an outbound message bounces
 * delivered (hmail, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]) - called when outbound mail is delivered
 * send\_email (hmail) - called when outbound is about to be sent
