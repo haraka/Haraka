@@ -4,19 +4,19 @@ An SMTP transaction is valid from MAIL FROM time until RSET or "final-dot".
 
 ## API
 
-* transaction.uuid
+- transaction.uuid
 
 A unique UUID for this transaction. Is equal to the connection.uuid + '.N' where N increments for each transaction on this connection.
 
-* transaction.mail\_from
+- transaction.mail_from
 
 The value of the MAIL FROM command is an `Address`[1] object.
 
-* transaction.rcpt\_to
+- transaction.rcpt_to
 
 An Array of `Address`[1] objects of recipients from the RCPT TO command.
 
-* transaction.message\_stream
+- transaction.message_stream
 
 A node.js Readable Stream object for the message.
 
@@ -40,46 +40,46 @@ The options argument should be an object that overrides the following properties
 e.g.
 
 ```js
-transaction.message_stream.pipe(socket, { ending_dot: true });
+transaction.message_stream.pipe(socket, { ending_dot: true })
 ```
 
-* transaction.data\_bytes
+- transaction.data_bytes
 
 The number of bytes in the email after DATA.
 
-* transaction.add\_data(line)
+- transaction.add_data(line)
 
 Adds a line of data to the email. Note this is RAW email - it isn't useful for adding banners to the email.
 
-* transaction.notes
+- transaction.notes
 
 A safe place to store transaction specific values. See also [haraka-results](https://github.com/haraka/haraka-results) and [haraka-notes](https://github.com/haraka/haraka-notes).
 
-* transaction.add\_leading\_header(key, value)
+- transaction.add_leading_header(key, value)
 
-Adds a header to the top of the header list.  This should only be used in very specific cases. Most cases will use `add_header()` instead.
+Adds a header to the top of the header list. This should only be used in very specific cases. Most cases will use `add_header()` instead.
 
-* transaction.add\_header(key, value)
+- transaction.add_header(key, value)
 
 Adds a header to the email.
 
-* transaction.remove\_header(key)
+- transaction.remove_header(key)
 
 Deletes a header from the email.
 
-* transaction.header
+- transaction.header
 
 The header of the email. See `Header Object`.
 
-* transaction.parse\_body = true|false [default: false]
+- transaction.parse_body = true|false [default: false]
 
-Set to `true` to enable parsing of the mail body. Make sure you set this in hook\_data or before. Storing a transaction hook (with transaction.attachment\_hooks) will set this to true.
+Set to `true` to enable parsing of the mail body. Make sure you set this in hook_data or before. Storing a transaction hook (with transaction.attachment_hooks) will set this to true.
 
-* transaction.body
+- transaction.body
 
 The body of the email if you set `parse_body` above. See `Body Object`.
 
-* transaction.attachment\_hooks(start)
+- transaction.attachment_hooks(start)
 
 Sets a callback for when we see an attachment.
 
@@ -91,51 +91,49 @@ If you set stream.connection then the stream will apply backpressure to the conn
 
 ```js
 exports.hook_data = function (next, connection) {
-    // enable mail body parsing
-    connection.transaction.attachment_hooks(
-        function (ct, fn, body, stream) {
-            start_att(connection, ct, fn, body, stream)
-        }
-    );
-    next();
+  // enable mail body parsing
+  connection.transaction.attachment_hooks(function (ct, fn, body, stream) {
+    start_att(connection, ct, fn, body, stream)
+  })
+  next()
 }
 
-function start_att (connection, ct, fn, body, stream) {
-    connection.loginfo(`Got attachment: ${ct}, ${fn} for user id: ${connection.transaction.notes.hubdoc_user.email}`)
-    connection.transaction.notes.attachment_count++
+function start_att(connection, ct, fn, body, stream) {
+  connection.loginfo(`Got attachment: ${ct}, ${fn} for user id: ${connection.transaction.notes.hubdoc_user.email}`)
+  connection.transaction.notes.attachment_count++
 
-    stream.connection = connection; // Allow backpressure
-    stream.pause();
+  stream.connection = connection // Allow backpressure
+  stream.pause()
 
-    require('tmp').file((err, path, fd) => {
-        connection.loginfo(`Got tempfile: ${path} (${fd})`)
-        const ws = fs.createWriteStream(path)
-        stream.pipe(ws);
-        stream.resume();
-        ws.on('close', () => {
-            connection.loginfo("End of stream reached");
-            fs.fstat(fd, (err, stats) => {
-                connection.loginfo(`Got data of length: ${stats.size}`);
-                fs.close(fd, () => {}); // Close the tmp file descriptor
-            });
-        });
-    });
+  require('tmp').file((err, path, fd) => {
+    connection.loginfo(`Got tempfile: ${path} (${fd})`)
+    const ws = fs.createWriteStream(path)
+    stream.pipe(ws)
+    stream.resume()
+    ws.on('close', () => {
+      connection.loginfo('End of stream reached')
+      fs.fstat(fd, (err, stats) => {
+        connection.loginfo(`Got data of length: ${stats.size}`)
+        fs.close(fd, () => {}) // Close the tmp file descriptor
+      })
+    })
+  })
 }
 ```
 
-* transaction.discard\_data = true|false [default: false]
+- transaction.discard_data = true|false [default: false]
 
-Set this flag to true to discard all data as it arrives and not store in memory or on disk (in the message\_stream property). You can still access the attachments and body if you set parse\_body to true. This is useful for systems which do not need the full email, just the attachments or mail text.
+Set this flag to true to discard all data as it arrives and not store in memory or on disk (in the message_stream property). You can still access the attachments and body if you set parse_body to true. This is useful for systems which do not need the full email, just the attachments or mail text.
 
-* transaction.set\_banner(text, html)
+- transaction.set_banner(text, html)
 
 Sets a banner to be added to the end of the email. If the html part is not given (optional) then the text part will have each line ending replaced with `<br/>` when being inserted into HTML parts.
 
-* transaction.add\_body\_filter(ct_match, filter)
+- transaction.add_body_filter(ct_match, filter)
 
-Adds a filter to be applied to body parts in the email. ct\_match should be a regular expression to match against the full content-type line, or a string to match at the start, e.g. `/^text\/html/` or `'text/plain'`. filter will be called when each body part matching ct_match is complete.  It receives three parameters: the content-type line, the encoding name, and a buffer with the full body part. It should return a buffer with the desired contents of the body in the same encoding.
+Adds a filter to be applied to body parts in the email. ct_match should be a regular expression to match against the full content-type line, or a string to match at the start, e.g. `/^text\/html/` or `'text/plain'`. filter will be called when each body part matching ct_match is complete. It receives three parameters: the content-type line, the encoding name, and a buffer with the full body part. It should return a buffer with the desired contents of the body in the same encoding.
 
-* transaction.results
+- transaction.results
 
 Store [results](https://github.com/haraka/haraka-results) of processing in a structured format.
 

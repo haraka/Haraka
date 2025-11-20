@@ -3,7 +3,7 @@
 Most aspects of receiving an email in Haraka are controlled by plugins. Mail cannot even be received unless at least a 'rcpt' and 'queue' plugin are
 enabled.
 
-Recipient (*rcpt*) plugins determine if a particular recipient is allowed to be relayed or received for. A *queue* plugin queues the message somewhere - normally to disk or to an another SMTP server.
+Recipient (_rcpt_) plugins determine if a particular recipient is allowed to be relayed or received for. A _queue_ plugin queues the message somewhere - normally to disk or to an another SMTP server.
 
 ## Plugin Lists
 
@@ -19,14 +19,13 @@ Display the help text for a plugin by running:
 
 ## Overview
 
-
 ## Anatomy of a Plugin
 
 Plugins in Haraka are JS files in the `plugins` directory (legacy) and npm
-modules in the node\_modules directory. See "Plugins as Modules" below.
+modules in the node_modules directory. See "Plugins as Modules" below.
 
 Plugins can be installed in the Haraka global directory (default:
-/$os/$specific/lib/node\_modules/Haraka) or in the Haraka install directory
+/$os/$specific/lib/node_modules/Haraka) or in the Haraka install directory
 (whatever you chose when you typed `haraka -i`. Example: `haraka -i /etc/haraka`
 
 To enable a plugin, add its name to `config/plugins`. For npm packaged plugins, the name does not include the `haraka-plugin` prefix.
@@ -37,27 +36,27 @@ Register is the only plugin function that is syncronous and receives no argument
 
 ### Register a Hook
 
-There are two ways for plugins to register hooks. Both examples register a function on the *rcpt* hook:
+There are two ways for plugins to register hooks. Both examples register a function on the _rcpt_ hook:
 
 1. The `register_hook` function in register():
 
 ```js
 exports.register = function () {
-    this.register_hook('rcpt', 'my_rcpt_validate')
-};
+  this.register_hook('rcpt', 'my_rcpt_validate')
+}
 
 exports.my_rcpt_validate = function (next, connection, params) {
-    // do processing
-    next()
-};
+  // do processing
+  next()
+}
 ```
 
-2. The hook_[$name] syntax:
+2. The hook\_[$name] syntax:
 
 ```js
 exports.hook_rcpt = function (next, connection, params) {
-    // do processing
-    next()
+  // do processing
+  next()
 }
 ```
 
@@ -74,28 +73,28 @@ To register the same hook more than once, call `register_hook()` multiple times 
 
 ```js
 exports.register = function () {
-    this.register_hook('queue', 'try_queue_my_way')
-    this.register_hook('queue', 'try_queue_highway')
-};
+  this.register_hook('queue', 'try_queue_my_way')
+  this.register_hook('queue', 'try_queue_highway')
+}
 ```
 
-When `try_queue_my_way()` calls `next()`, the next function registered on hook *queue* will be called, in this case, `try_queue_highway()`.
+When `try_queue_my_way()` calls `next()`, the next function registered on hook _queue_ will be called, in this case, `try_queue_highway()`.
 
 #### Determine hook name
 
 When a single function runs on multiple hooks, the function can check the
-*hook* property of the *connection* or *hmail* argument to determine which hook it is running on:
+_hook_ property of the _connection_ or _hmail_ argument to determine which hook it is running on:
 
 ```js
 exports.register = function () {
-    this.register_hook('rcpt',    'my_rcpt')
-    this.register_hook('rcpt_ok', 'my_rcpt')
-};
- 
+  this.register_hook('rcpt', 'my_rcpt')
+  this.register_hook('rcpt_ok', 'my_rcpt')
+}
+
 exports.my_rcpt = function (next, connection, params) {
-    const hook_name = connection.hook; // rcpt or rcpt_ok
-    // email address is in params[0]
-    // do processing
+  const hook_name = connection.hook // rcpt or rcpt_ok
+  // email address is in params[0]
+  // do processing
 }
 ```
 
@@ -113,20 +112,20 @@ After registering a hook, functions are called with that hooks arguments (see **
 These constants are in your plugin when it is loaded, you do not
 need to define them:
 
-* CONT
+- CONT
 
   Continue and let other plugins handle this particular hook. This is the
   default. These are identical: `next()` and `next(CONT)`;
 
-* DENY - Reject with a 5xx error.
+- DENY - Reject with a 5xx error.
 
-* DENYSOFT - Reject with a 4xx error.
+- DENYSOFT - Reject with a 4xx error.
 
-* DENYDISCONNECT - Reject with a 5xx error and immediately disconnect.
+- DENYDISCONNECT - Reject with a 5xx error and immediately disconnect.
 
-* DISCONNECT - Immediately disconnect
+- DISCONNECT - Immediately disconnect
 
-* OK
+- OK
 
   Required by `rcpt` plugins to accept a recipient and `queue` plugins when the queue was successful.
 
@@ -134,11 +133,11 @@ need to define them:
 
   Exceptions to next(OK):
 
-    * connect_init and disconnect hooks are **always called**.
+  - connect_init and disconnect hooks are **always called**.
 
-    * On the deny hook, `next(OK)` overrides the default CONT.
+  - On the deny hook, `next(OK)` overrides the default CONT.
 
-* HOOK\_NEXT
+- HOOK_NEXT
 
   HOOK_NEXT is only available on the `unrecognized_command` hook. It instructs Haraka to run a different plugin hook. The `msg` argument must be set to the name of the hook to be run. Ex: `next(HOOK_NEXT, 'rcpt_ok');`
 
@@ -146,49 +145,49 @@ need to define them:
 
 These are the hook and their parameters (next excluded):
 
-* init\_master - called when the main (master) process is started
-* init\_child - in cluster, called when a child process is started
-* init\_http - called when Haraka is started.
-* init_wss - called after init_http
-* connect\_init - used to init data structures, called for *every* connection
-* lookup\_rdns - called to look up the rDNS - return the rDNS via `next(OK, rdns)`
-* connect - called after we got rDNS
-* capabilities - called to get the ESMTP capabilities (such as STARTTLS)
-* unrecognized\_command - called when the remote end sends a command we don't recognise
-* disconnect - called upon disconnect
-* helo (hostname)
-* ehlo (hostname)
-* quit
-* vrfy
-* noop
-* rset
-* mail ([from, esmtp\_params])
-* rcpt ([to,   esmtp\_params])
-* rcpt\_ok (to)
-* data - called at the DATA command
-* data\_post - called at the end-of-data marker
-* max\_data\_exceeded - called when the message exceeds connection.max\_bytes
-* queue - called to queue the mail
-* queue\_outbound - called to queue the mail when connection.relaying is set
-* queue\_ok - called when a mail has been queued successfully
-* reset\_transaction - called before the transaction is reset (via RSET, or MAIL)
-* deny - called when a plugin returns DENY, DENYSOFT or DENYDISCONNECT
-* get\_mx (hmail, domain) - called by outbound to resolve the MX record
-* deferred (hmail, {err, delay, fail_recips, mx} ) - called when an outbound message is deferred. `err` is an error message. `delay` is the seconds after which the delivery will be retried. `fail_recips` ([Address]) and `mx` are only present when the failure happenned during delivery of the addresses to `mx`.
-* bounce (hmail, err) - called when an outbound message bounces
-* delivered (hmail, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]) - called when outbound mail is delivered
-* send\_email (hmail) - called when outbound is about to be sent
-* pre\_send\_trans\_email (fake_connection) - called just before an email is queued to disk with a faked connection object
+- init_master - called when the main (master) process is started
+- init_child - in cluster, called when a child process is started
+- init_http - called when Haraka is started.
+- init_wss - called after init_http
+- connect*init - used to init data structures, called for \_every* connection
+- lookup_rdns - called to look up the rDNS - return the rDNS via `next(OK, rdns)`
+- connect - called after we got rDNS
+- capabilities - called to get the ESMTP capabilities (such as STARTTLS)
+- unrecognized_command - called when the remote end sends a command we don't recognise
+- disconnect - called upon disconnect
+- helo (hostname)
+- ehlo (hostname)
+- quit
+- vrfy
+- noop
+- rset
+- mail ([from, esmtp\_params])
+- rcpt ([to, esmtp\_params])
+- rcpt_ok (to)
+- data - called at the DATA command
+- data_post - called at the end-of-data marker
+- max_data_exceeded - called when the message exceeds connection.max_bytes
+- queue - called to queue the mail
+- queue_outbound - called to queue the mail when connection.relaying is set
+- queue_ok - called when a mail has been queued successfully
+- reset_transaction - called before the transaction is reset (via RSET, or MAIL)
+- deny - called when a plugin returns DENY, DENYSOFT or DENYDISCONNECT
+- get_mx (hmail, domain) - called by outbound to resolve the MX record
+- deferred (hmail, params) - called when an outbound message is deferred
+- bounce (hmail, err) - called when an outbound message bounces
+- delivered (hmail, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]) - called when outbound mail is delivered
+- send_email (hmail) - called when outbound is about to be sent
+- pre_send_trans_email (fake_connection) - called just before an email is queued to disk with a faked connection object
 
 ### rcpt
 
-The *rcpt* hook is slightly special.
+The _rcpt_ hook is slightly special.
 
-When **connection.relaying == false** (the default, to avoid being an open relay), a rcpt plugin MUST return `next(OK)` or the sender will receive the error message "I cannot deliver for that user". The default *rcpt* plugin  is **rcpt_to.in_host_list**, which lists the domains for which to accept email.
+When **connection.relaying == false** (the default, to avoid being an open relay), a rcpt plugin MUST return `next(OK)` or the sender will receive the error message "I cannot deliver for that user". The default _rcpt_ plugin is **rcpt_to.in_host_list**, which lists the domains for which to accept email.
 
-After a *rcpt* plugin calls `next(OK)`, the *rcpt_ok* hook is run.
+After a _rcpt_ plugin calls `next(OK)`, the _rcpt_ok_ hook is run.
 
-If a plugin prior to the *rcpt* hook sets **connection.relaying = true**, then it is not necessary for a rcpt plugin to call `next(OK)`.
+If a plugin prior to the _rcpt_ hook sets **connection.relaying = true**, then it is not necessary for a rcpt plugin to call `next(OK)`.
 
 ### connect_init
 
@@ -202,11 +201,11 @@ If http listeners are are enabled in http.ini and the express module loaded, the
 
 If express loaded, an attempt is made to load [ws](https://www.npmjs.com/package/ws), the websocket server. If it succeeds, the wss server will be located at Server.http.wss. Because of how websockets work, only one websocket plugin will work at a time. One plugin using wss is [watch](https://github.com/haraka/Haraka/tree/master/plugins/watch).
 
-### pre\_send\_trans\_email (next, fake_connection)
+### pre_send_trans_email (next, fake_connection)
 
 The `fake` connection here is a holder for a new transaction object. It only has the log methods and a `transaction` property
 so don't expect it to behave like a a real connection object. This hook is designed so you can add headers and modify mails
-sent via `outbound.send_email()`, see the dkim_sign plugin for an example.
+sent via `outbound.send_email()`, see the dkim plugin for an example.
 
 ## Hook Order
 
@@ -217,18 +216,14 @@ The ordering of hooks is determined by the SMTP protocol. Knowledge of [RFC 5321
 - hook_connect_init
 - hook_lookup_rdns
 - hook_connect
-- hook_helo **OR** hook_ehlo (EHLO is sent when ESMTP is desired which allows extensions
-such as STARTTLS, AUTH, SIZE etc.)
-    - hook_helo
-    - hook_ehlo
-      - hook_capabilities
-      - *hook_unrecognized_command* is run for each ESMTP extension the client requests
-e.g. STARTTLS, AUTH etc.)
+- hook*helo **OR** hook_ehlo (EHLO is sent when ESMTP is desired which allows extensions
+  such as STARTTLS, AUTH, SIZE etc.) - hook_helo - hook_ehlo - hook_capabilities - \_hook_unrecognized_command* is run for each ESMTP extension the client requests
+  e.g. STARTTLS, AUTH etc.)
   - hook_mail
   - hook_rcpt (once per-recipient)
   - hook_rcpt_ok (for every recipient that hook_rcpt returned `next(OK)` for)
   - hook_data
-  - *[attachment hooks]*
+  - _[attachment hooks]_
   - hook_data_post
   - hook_queue **OR** hook_queue_outbound
   - hook_queue_ok (called if hook_queue or hook_queue_outbound returns `next(OK)`)
@@ -239,16 +234,16 @@ e.g. STARTTLS, AUTH etc.)
 ##### Typical Outbound mail
 
 By 'outbound' we mean messages using Haraka's built-in queue and delivery
-mechanism. The Outbound queue is used when `connection.relaying = true` is set during the  transaction and `hook_queue_outbound` is called to queue the message.
+mechanism. The Outbound queue is used when `connection.relaying = true` is set during the transaction and `hook_queue_outbound` is called to queue the message.
 
 The Outbound hook ordering mirrors the Inbound hook order above until after `hook_queue_outbound`, which is followed by:
 
 - hook_send_email
 - hook_get_mx
 - at least one of:
-  - hook_delivered  (once per delivery domain with at least one successful recipient)
-  - hook_deferred  (once per delivery domain where at least one recipient or connection was deferred)
-  - hook_bounce  (once per delivery domain where the recipient(s) or message was rejected by the destination)
+  - hook_delivered (once per delivery domain with at least one successful recipient)
+  - hook_deferred (once per delivery domain where at least one recipient or connection was deferred)
+  - hook_bounce (once per delivery domain where the recipient(s) or message was rejected by the destination)
 
 ## Plugin Run Order
 
@@ -256,11 +251,11 @@ Plugins are run on each hook in the order that they are specified in `config/plu
 
 This is important as some plugins might rely on `results` or `notes` that have been set by plugins that need to run before them. This should be noted in the plugins documentation. Make sure to read it.
 
-If you are writing a complex plugin, you may have to split it into multiple plugins to run in a specific order e.g. you want hook_deny to run last after all other plugins and hook_lookup_rdns to run first, then you can explicitly register your hooks and provide a `priority` value which is an integer between -100 (highest priority) to 100 (lowest priority) which defaults to 0 (zero) if not supplied.  You can apply a priority to your hook in the following way:
+If you are writing a complex plugin, you may have to split it into multiple plugins to run in a specific order e.g. you want hook_deny to run last after all other plugins and hook_lookup_rdns to run first, then you can explicitly register your hooks and provide a `priority` value which is an integer between -100 (highest priority) to 100 (lowest priority) which defaults to 0 (zero) if not supplied. You can apply a priority to your hook in the following way:
 
 ```js
 exports.register = function () {
-    this.register_hook('connect',  'do_connect_stuff', -100);
+  this.register_hook('connect', 'do_connect_stuff', -100)
 }
 ```
 
@@ -274,21 +269,21 @@ Check the order that the plugins will run on each hook by running:
 
 ## Skipping Plugins
 
-Plugins can be skipped at runtime by pushing the name of the plugin into the `skip_plugins` array in `transaction.notes`.  This array is reset for every transaction and once a plugin is added to the list, it will not run any hooks in that plugin for the remainder of the transaction.  For example, one could create a whitelist plugin that skipped `spamassassin` if the sender was in a whitelist.
+Plugins can be skipped at runtime by pushing the name of the plugin into the `skip_plugins` array in `transaction.notes`. This array is reset for every transaction and once a plugin is added to the list, it will not run any hooks in that plugin for the remainder of the transaction. For example, one could create a whitelist plugin that skipped `spamassassin` if the sender was in a whitelist.
 
 ## Logging
 
 Plugins inherit all the logging methods of `logger.js`, which are:
 
-* logprotocol
-* logdebug
-* loginfo
-* lognotice
-* logwarn
-* logerror
-* logcrit
-* logalert
-* logemerg
+- logprotocol
+- logdebug
+- loginfo
+- lognotice
+- logwarn
+- logerror
+- logcrit
+- logalert
+- logemerg
 
 If plugins throw an exception when in a hook, the exception will be caught
 and generate a logcrit level error. However, exceptions will not be caught
@@ -298,16 +293,16 @@ log the error, and run your next() function appropriately.
 ## Sharing State
 
 There are several cases where you might need to share information between
-plugins.  This is done using `notes` - there are three types available:
+plugins. This is done using `notes` - there are three types available:
 
-* server.notes
+- server.notes
 
-  Available in all plugins.  This is created at PID start-up and is shared
+  Available in all plugins. This is created at PID start-up and is shared
   amongst all plugins on the same PID and listener.
   Typical uses for notes at this level would be to share database
   connections between multiple plugins or connection pools etc.
 
-* connection.notes
+- connection.notes
 
   Available on any hook that passes 'connection' as a function parameter.
   This is shared amongst all plugins for a single connection and is
@@ -316,17 +311,17 @@ plugins.  This is done using `notes` - there are three types available:
   about the connected client e.g. rDNS names, HELO/EHLO, white/black
   list status etc.
 
-* connection.transaction.notes
+- connection.transaction.notes
 
   Available on any hook that passes 'connection' as a function parameter
-  between hook\_mail and hook\_data\_post.
+  between hook_mail and hook_data_post.
   This is shared amongst all plugins for this transaction (e.g. MAIL FROM
   through until a message is received or the connection is reset).
   Typical uses for notes at this level would be to store information
   on things like greylisting which uses client, sender and recipient
   information etc.
 
-* hmail.todo.notes
+- hmail.todo.notes
 
   Available on any outbound hook that passes `hmail` as a function parameter.
   This is the same object as 'connection.transaction.notes', so anything
@@ -377,7 +372,7 @@ e.g.
 
 ```js
 exports.shutdown = function () {
-    clearInterval(this._interval);
+  clearInterval(this._interval)
 }
 ```
 
@@ -389,9 +384,7 @@ Note: This only applies when running with a `nodes=...` value in smtp.ini.
 
 ## See also, [Results](Results.md)
 
-
-Further Reading
---------------
+## Further Reading
 
 Read about the [Connection](Connection.md) object.
 

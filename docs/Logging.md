@@ -2,14 +2,13 @@
 
 Haraka has built-in logging (see API docs below) and support for log plugins.
 
-* log.ini
+- log.ini
 
 Contains settings for log level, timestamps, and format. See the example log.ini file for examples.
 
-* loglevel
+- loglevel
 
 The loglevel file provides a finger-friendly way to change the loglevel on the CLI. Use it like so: `echo DEBUG > config/loglevel`. When the level in log.ini is set and the loglevel file is present, the loglevel file wins. During runtime, whichever was edited most recently wins.
-
 
 ## Logging API
 
@@ -61,7 +60,12 @@ Here's an example of a log line generated with `logfmt`:
 And the same line formatted as JSON:
 
 ```json
-{"level":"PROTOCOL","uuid":"9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1","source":"core","message":"S: 354 go ahead, make my day"}
+{
+  "level": "PROTOCOL",
+  "uuid": "9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1",
+  "source": "core",
+  "message": "S: 354 go ahead, make my day"
+}
 ```
 
 Any objects passed to the log methods will also have their properties included in the log line. For example, using `logfmt`:
@@ -71,5 +75,25 @@ Any objects passed to the log methods will also have their properties included i
 And using JSON:
 
 ```json
-{"level":"NOTICE","uuid":"9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1","source":"core","message":"disconnect","ip":"127.0.0.1","rdns":"Unknown","helo":"3h2dnz8a0if","relay":"N","early":"N","esmtp":"N","tls":"N","pipe":"N","errors":0,"txns":1,"rcpts":"1/0/0","msgs":"1/0/0","bytes":222,"lr":"","time":0.052}
+{
+  "level": "NOTICE",
+  "uuid": "9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1",
+  "source": "core",
+  "message": "disconnect",
+  "ip": "127.0.0.1",
+  "rdns": "Unknown",
+  "helo": "3h2dnz8a0if",
+  "relay": "N",
+  "early": "N",
+  "esmtp": "N",
+  "tls": "N",
+  "pipe": "N",
+  "errors": 0,
+  "txns": 1,
+  "rcpts": "1/0/0",
+  "msgs": "1/0/0",
+  "bytes": 222,
+  "lr": "",
+  "time": 0.052
+}
 ```

@@ -6,7 +6,6 @@ matching these signatures will be blocked.
 
 ## Configuration
 
-* data.signatures
+- data.signatures
 
   This file contains a list of strings (one per line) that will be matched.
-

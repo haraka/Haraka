@@ -1,3 +1,3 @@
-"use strict";
+'use strict'
 
-exports.check_the_base = () => "base"
+exports.check_the_base = () => 'base'

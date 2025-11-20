@@ -10,7 +10,7 @@ jobs:
     uses: haraka/.github/.github/workflows/lint.yml@master
 
   ubuntu:
-    needs: [ lint ]
+    needs: [lint]
     uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
   windows:

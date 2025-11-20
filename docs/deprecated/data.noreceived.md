@@ -1,5 +1,4 @@
-data.noreceived
-===============
+# data.noreceived
 
 NOTICE: this plugin is deprecated. Use data.headers instead.
 

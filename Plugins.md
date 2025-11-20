@@ -4,7 +4,7 @@ To create your own plugin, see [Write a Plugin][write-plugin].
 
 ## Installing NPM packaged plugins
 
-Plugins can be installed in the directory where Haraka was installed (where depends on your OS platform and whether you specified `-g`) or the Haraka install directory (haraka -i this\_path). This example installs _my-great-plugin_ in the Haraka install directory:
+Plugins can be installed in the directory where Haraka was installed (where depends on your OS platform and whether you specified `-g`) or the Haraka install directory (haraka -i this_path). This example installs _my-great-plugin_ in the Haraka install directory:
 
 ```
 cd /etc/haraka

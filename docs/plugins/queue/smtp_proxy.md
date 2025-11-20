@@ -1,4 +1,5 @@
-# queue/smtp\_proxy
+# queue/smtp_proxy
+
 ================
 
 This plugin delivers to another mail server. This is a common setup when you want to have a mail server with a solid pedigree of outbound delivery to other hosts, and inbound delivery to users.
@@ -8,52 +9,52 @@ In comparison to `queue/smtp_forward`, this plugin makes a connection at MAIL FR
 Be aware that other than connect and HELO-time filtering, you will have as many connections to your ongoing SMTP server as you have to Haraka.
 
 ## Configuration
--------------
 
-Configuration is stored in smtp\_proxy.ini in the following keys:
+---
 
-  * enable\_outbound=[true]
+Configuration is stored in smtp_proxy.ini in the following keys:
 
-    SMTP proxy outbound messages (set to false to enable Haraka's
-    separate Outbound mail routing (MX based delivery)).
+- enable_outbound=[true]
 
-  * host=HOST
-    
-    The host to connect to.
+  SMTP proxy outbound messages (set to false to enable Haraka's
+  separate Outbound mail routing (MX based delivery)).
 
-  * port=PORT
+- host=HOST
 
-    The port to connect to.
+  The host to connect to.
 
-  * connect\_timeout=SECONDS
+- port=PORT
 
-    The maximum amount of time to wait when creating a new connection
-    to the host.  Default if unspecified is 30 seconds.
+  The port to connect to.
 
-  * timeout=SECONDS
+- connect_timeout=SECONDS
 
-    The amount of seconds to let a backend connection live idle in the
-    proxy pool.  This should always be less than the global plugin timeout,
-    which should in turn be less than the connection timeout.
+  The maximum amount of time to wait when creating a new connection
+  to the host. Default if unspecified is 30 seconds.
 
-  * max\_connections=NUMBER
+- timeout=SECONDS
 
-    Maximum number of connections to create at any given time.
+  The amount of seconds to let a backend connection live idle in the
+  proxy pool. This should always be less than the global plugin timeout,
+  which should in turn be less than the connection timeout.
 
-  * enable\_tls=[true|yes|1]
+- max_connections=NUMBER
 
-    Enable TLS with the forward host (if supported). TLS uses options from
-    the tls plugin.
+  Maximum number of connections to create at any given time.
 
-  * auth\_type=[plain|login]
+- enable_tls=[true|yes|1]
 
-    Enable PLAIN or LOGIN SMTP AUTH.  This is required to enable AUTH.
+  Enable TLS with the forward host (if supported). TLS uses options from
+  the tls plugin.
 
-  * auth\_user=USERNAME
+- auth_type=[plain|login]
 
-    SMTP AUTH username to use.
+  Enable PLAIN or LOGIN SMTP AUTH. This is required to enable AUTH.
 
-  * auth\_pass=PASSWORD
+- auth_user=USERNAME
 
-    SMTP AUTH password to use.
+  SMTP AUTH username to use.
 
+- auth_pass=PASSWORD
+
+  SMTP AUTH password to use.
