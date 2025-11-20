@@ -46,8 +46,9 @@ exports.advertise_starttls = function (next, connection) {
     // check if local port is excluded from starttls advertisement
     if (tls_socket.cfg.main.no_starttls_ports.includes(connection.local.port)) return next();
 
-    // exclude port 587 from NO-GO
-    if (connection.local.port === 587) return enable_tls();
+    const allow_no_tls_ports = this.server.cfg.main.enable_tls_ports || [25];
+    // exclude ports from NO-GO
+    if (!allow_no_tls_ports.includes(connection.local.port)) return enable_tls();
 
     if (!tls_socket.cfg.redis || !server.notes.redis) {
         return enable_tls();
