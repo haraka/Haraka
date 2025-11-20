@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - feat(rabbitmq_amqplib): configurable optional exchange arguments #3472
 - feat(rabbitmq_amqplib): configurable message priority #3472
 - add save-sent to Plugins.md
+- deferred hook is now passed the failed recips list and mx info
 
 ### [3.1.1] - 2025-05-19
 
