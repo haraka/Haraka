@@ -4,6 +4,7 @@ const events       = require('node:events');
 const fs           = require('node:fs');
 const dns          = require('node:dns');
 const net          = require('node:net');
+const os           = require('node:os');
 const path         = require('node:path');
 
 const { Address } = require('address-rfc2821');
@@ -220,7 +221,7 @@ class HMailItem extends events.EventEmitter {
                 return this.temp_fail(`Temporary MX lookup error for ${this.todo.domain}`);
         }
 
-        // none of the above return codes, drop through to DNS
+        // none of the above return codes, use DNS
         try {
             const exchanges = await net_utils.get_mx(this.todo.domain);
         
@@ -268,6 +269,20 @@ class HMailItem extends events.EventEmitter {
 
         // resolves the MX hostnames to IPs
         this.mxlist = await net_utils.resolve_mx_hosts(mxs);
+
+        if (! this.has_addr_family('IPv6') && this.mxlist.some(mx => net.isIPv6(mx.exchange))) {
+            this.loginfo(`Dropping IPv6 mxes since I have no IPv6 address`)
+            this.mxlist = this.mxlist.filter(mx => {
+                !net.isIP(mx.exchange) || net.isIPv4(mx.exchange)
+            })
+        }
+
+        if (! this.has_addr_family('IPv4') && this.mxlist.some(mx => net.isIPv4(mx.exchange))) {
+            this.loginfo(`Dropping IPv4 mxes since I have no IPv4 address`)
+            this.mxlist = this.mxlist.filter(mx => {
+                !net.isIP(mx.exchange) || net.isIPv6(mx.exchange)
+            })
+        }
 
         this.try_deliver();
     }
@@ -320,6 +335,20 @@ class HMailItem extends events.EventEmitter {
             }
             this.try_deliver_host_on_socket(mx, host, mx.port, socket);
         });
+    }
+
+    has_addr_family (version) {
+      if (!['IPv4', 'IPv6'].includes(version)) {
+        this.logerror(`invalid arg to has_addr_family`)
+      }
+
+      for (const [ifName, ifInfo] of Object.entries(os.networkInterfaces())) {
+        for (const info of ifInfo) {
+          if (info.family === version) return true;
+        }
+      }
+
+      return false;
     }
 
     try_deliver_host_on_socket (mx, host, port, socket) {
