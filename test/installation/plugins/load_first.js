@@ -1,4 +1,3 @@
-exports.register = () => {
-}
+exports.register = () => {}
 
-exports.loaded_first = true;
+exports.loaded_first = true

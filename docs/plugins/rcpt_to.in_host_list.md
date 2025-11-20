@@ -1,4 +1,4 @@
-# rcpt\_to.in\_host\_list
+# rcpt_to.in_host_list
 
 This plugin is the mainstay of an inbound Haraka server. It should list the
 domains that are local to the host. Mails that have RCPT TO not matching
@@ -7,20 +7,20 @@ hook accepts the connection, it will be rejected.
 
 ## Configuration
 
-* host\_list
+- host_list
 
   Specifies the list of hosts that are local to this server.
 
-* host\_list\_regex
+- host_list_regex
 
-  Specifies the list of regexes that are local to this server.  Note
+  Specifies the list of regexes that are local to this server. Note
   all these regexes are anchored with ^regex$. One can choose not to
   anchor with .\*. There is the potential for bad regexes to be
   too permissive if we don't anchor.
 
-* host\_list.anti\_spoof
+- host_list.anti_spoof
 
-  When enabled, this will cause Haraka to reject any MAIL FROM where 
+  When enabled, this will cause Haraka to reject any MAIL FROM where
   the host appears within the host list but the connected host is not
   a relay, e.g. connection.relaying is not set either by SMTP AUTH or
   another plugin like 'relay'.

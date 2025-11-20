@@ -1,5 +1,3 @@
-exports.register = () => {
+exports.register = () => {}
 
-}
-
-exports.core_override = true;
+exports.core_override = true

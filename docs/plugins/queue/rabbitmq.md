@@ -1,17 +1,14 @@
-queue/rabbitmq
-========
+# queue/rabbitmq
 
 This plugin delivers mails to rabbitmq queue for further processing.
 
-Configuration
--------------
+## Configuration
 
-* `config/rabbitmq.ini`
-    This config file provides server address and port of rabbitmq server to deliver with other configs of queues and exchange.
-    
-    Example:
+- `config/rabbitmq.ini`
+  This config file provides server address and port of rabbitmq server to deliver with other configs of queues and exchange.
 
-    
+  Example:
+
         [rabbitmq]
         ; This is name of exchange.
         exchangeName  = emailMessages
@@ -33,5 +30,5 @@ Configuration
         autoDelete = false
         ; type of the exchange
         exchangeType = direct
-    
- More information about rabbitmq can be found at https://www.rabbitmq.com/
+
+More information about rabbitmq can be found at https://www.rabbitmq.com/

@@ -1,5 +1,4 @@
-auth/auth\_bridge
-===============
+# auth/auth_bridge
 
 This plugin allows you to authenticate users to remote SMTP servers
 bridging the original user and password to the remote server,
@@ -13,8 +12,7 @@ the domain is the configuration file. This plugins simply takes
 the original user and password and tries to authenticate it in the
 remote SMTP server.
 
-Configuration
--------------
+## Configuration
 
 Configuration is stored in `config/smtp_bridge.ini` and uses the INI
 style formatting.
@@ -26,11 +24,11 @@ The configuration of this plugin is simple:
     #auth_type=
     #priority=10
 
-* host: the host where you will be authenticating and posting,
-for example `smtp.host.tld`. This is the only setting required.
+- host: the host where you will be authenticating and posting,
+  for example `smtp.host.tld`. This is the only setting required.
 
 If needed you can also set
 
-* port: default to empty and Haraka will use 25.
+- port: default to empty and Haraka will use 25.
 
 The options `auth_type` and `priority` will be used by `queue/smtp_bridge`

@@ -1,4 +1,3 @@
-"use strict";
+'use strict'
 
-exports.register = () => {
-}
+exports.register = () => {}
