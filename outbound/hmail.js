@@ -1346,7 +1346,7 @@ class HMailItem extends events.EventEmitter {
 
         const delay = obc.cfg.temp_fail_intervals[this.num_failures - 1]
 
-        plugins.run_hooks('deferred', this, {delay, err, ...(extra || {})})
+        plugins.run_hooks('deferred', this, { delay, err, ...(extra || {}) })
     }
 
     deferred_respond(retval, msg, params) {
