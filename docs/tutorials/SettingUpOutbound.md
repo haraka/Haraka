@@ -1,19 +1,17 @@
-Configuring Haraka For Outbound Email
-=====================================
+# Configuring Haraka For Outbound Email
 
 It is trivially easy to configure Haraka as an outbound email server. But
 first there are external things you may want to sort out:
 
-* Get your DNS PTR record working - make sure it matches the A record of the
+- Get your DNS PTR record working - make sure it matches the A record of the
   host you are sending from.
-* Consider implementing an SPF record. I don't personally do this, but some
+- Consider implementing an SPF record. I don't personally do this, but some
   people seem to think it helps.
 
 There's lots of information elsewhere on the internet about getting these
 things working, and they are specific to your network and your DNS hosting.
 
-First Some Background
----------------------
+## First Some Background
 
 Sending outbound mail through Haraka is called "relaying", and that is the
 term the internals use. The process is simple - if a plugin in Haraka tells
@@ -25,8 +23,7 @@ address used when connecting to Haraka. If that address also bounces then
 it is considered a "double bounce" and Haraka will log an error and drop it
 on the floor.
 
-The Setup
----------
+## The Setup
 
 Outbound mail servers should run on port 587 and enforce authentication. This
 is slightly different from the "old" model where there would simply be a
@@ -52,7 +49,7 @@ and password:
 
     vi config/auth_flat_file.ini
 
-See the documentation in docs/plugins/auth/flat\_file.md for information about
+See the documentation in docs/plugins/auth/flat_file.md for information about
 what can go in that file.
 
 Now you can start Haraka. That's all the configuration you need.

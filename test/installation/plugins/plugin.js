@@ -1,3 +1,1 @@
-exports.register = () => {
-
-}
+exports.register = () => {}

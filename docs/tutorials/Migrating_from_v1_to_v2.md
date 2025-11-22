@@ -1,47 +1,26 @@
-Migrating from Haraka v1.x to v2.x
-==================================
+# Migrating from Haraka v1.x to v2.x
 
-Haraka v2.x contains two significant changes to the v1.x API related to
-streams.
+Haraka v2.x contains two significant changes to the v1.x API related to streams.
 
-Streams are an abstraction over a data flow that is provided by Node core
-and is used throughout node to "pipe" data between two places or more. This
-makes programming very easy, and is hence why we started using them in Haraka
-starting with version 2.0.0.
+Streams are an abstraction over a data flow that is provided by Node core and is used throughout node to "pipe" data between two places or more. This makes programming very easy, and is hence why we started using them in Haraka starting with version 2.0.0.
 
-For more information about the Stream API, see 
-http://nodejs.org/api/stream.html
+For more information about the Stream API, see http://nodejs.org/api/stream.html
 
-It's important to note that if you are using standard Haraka plugins then
-it's very unlikely you will need to change anything. Though you may want
-to configure `spool_dir` and `spool_after` in `config/smtp.ini`. However if
-you have written custom plugins, continue reading.
+Note that when using bundled Haraka plugins, it's very unlikely you will need to change anything. Though you may want to configure `spool_dir` and `spool_after` in `config/smtp.ini`. If you have custom plugins, continue reading.
 
-Changes To Look For
--------------------
+## Changes To Look For
 
-Firstly, the incoming data in an email (the email body) is now stored in an
-object which you can treat as a ReadableStream. To find if this is relevant
-for you, look for instances of `data_lines` in your plugins.
+Firstly, the incoming data in an email (the email body) is now stored in an object which you can treat as a ReadableStream. To find if this is relevant for you, look for instances of `data_lines` in your plugins.
 
-Secondly, if you parse the mail body, attachments are now provided as a
-stream, rather than custom start/data/end events. To find if this is relevant
-for you, look for instances of `attachment_hooks` in your plugins.
+Secondly, if you parse the mail body, attachments are now provided as a stream, rather than custom start/data/end events. To find if this is relevant for you, look for instances of `attachment_hooks` in your plugins.
 
-Fixing data\_lines plugins
--------------------------
+## Fixing data_lines plugins
 
-Any plugins now working on each line of data will need to change to using a
-stream. The stream is called `transaction.message_stream`.
+Any plugins now working on each line of data will need to change to using a stream. The stream is called `transaction.message_stream`.
 
-These changes may be complicated if you are iterating over each line and
-doing something with the strings therein. However if you are piping the data
-to an application or over a network, your code will become significantly
-simpler (and a lot faster).
+These changes may be complicated if you are iterating over each line and doing something with the strings therein. However if you are piping the data to an application or over a network, your code will become significantly simpler (and a lot faster).
 
-In v1.x Haraka populated the `transaction.data_lines` array for each line of 
-data received.  If you were writing the data to a socket then you had to handle backpressure manually by checking the return of `write()` and adding 
-`on('drain')` handlers like so:
+In v1.x Haraka populated the `transaction.data_lines` array for each line of data received. If you were writing the data to a socket then you had to handle backpressure manually by checking the return of `write()` and adding `on('drain')` handlers like so:
 
     var data_marker = 0;
     var in_data = false;
@@ -72,16 +51,15 @@ In v2.x this now becomes:
 
     connection.transaction.message_stream.pipe(socket, {ending_dot: true});
 
-This automatically chunks the data, handles backpressure and will apply any 
-necessary format changes.  See `docs/Transaction.md` for the full details.
+This automatically chunks the data, handles backpressure and will apply any
+necessary format changes. See `docs/Transaction.md` for the full details.
 
-If you need to handle the input data by line, then you will need to create 
-your own writable stream and then pipe the message to the stream and then 
-extract the lines from the stream of data.  See `plugins/dkim_sign.js` for 
+If you need to handle the input data by line, then you will need to create
+your own writable stream and then pipe the message to the stream and then
+extract the lines from the stream of data. See the `dkim` plugin for
 an example.
 
-Fixing attachment\_hooks plugins
--------------------------------
+## Fixing attachment_hooks plugins
 
 For v1.x you passed in functions to `transaction.attachment_hooks()` as
 follows:

@@ -31,4 +31,3 @@ jobs:
 
       - name: Push to release branch
         run: git push origin release --force
-

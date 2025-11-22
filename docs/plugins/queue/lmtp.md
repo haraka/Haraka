@@ -1,5 +1,4 @@
-queue/lmtp
-========
+# queue/lmtp
 
 This plugin delivers inbound mail via LMTP.
 
@@ -23,4 +22,3 @@ port=2400
 ; Using unix domain sockets
 path = /tmp/blah_com_socket
 ```
-

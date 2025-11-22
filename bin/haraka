@@ -3,56 +3,56 @@
 // this script takes inspiration from:
 // https://github.com/tnantoka/LooseLeaf/blob/master/bin/looseleaf
 
-const child = require('node:child_process');
-const fs   = require('node:fs');
-const net  = require('node:net');
-const path = require('node:path');
-const os   = require('node:os');
+const child = require('node:child_process')
+const fs = require('node:fs')
+const net = require('node:net')
+const path = require('node:path')
+const os = require('node:os')
 
-const nopt = require('nopt');
-const utils   = require('haraka-utils');
-const sprintf = require('sprintf-js').sprintf;
-const base = path.join(__dirname, '..');
-const ver  = utils.getVersion(base)
+const nopt = require('nopt')
+const utils = require('haraka-utils')
+const sprintf = require('sprintf-js').sprintf
+const base = path.join(__dirname, '..')
+const ver = utils.getVersion(base)
 const knownOpts = {
-    "version":     Boolean,
-    "verbose":     Boolean,
-    "help":        [String, null],
-    "configs":     path,
-    "install":     path,
-    "list":        Boolean,
-    "plugin":      Array,
-    "force":       Boolean,
-    "qlist":       Boolean,
-    "qstat":       Boolean,
-    "qempty":      Boolean,
-    "qunstick":    [String, null],
-    "graceful":    Boolean,
-    "order":       Boolean,
-    "test":        [String, Array],
-    "ip":          String,
-    "helo":        String,
-    "ehlo":        String,
-    "envfrom":     String,
-    "envrcpt":     [String, Array],
-    "message":     path,
-    "dump-mime":   Boolean,
-    "dump-stream": Boolean,
-    "skip-deny":   Boolean,
-    "set-relay":   Boolean,
+  version: Boolean,
+  verbose: Boolean,
+  help: [String, null],
+  configs: path,
+  install: path,
+  list: Boolean,
+  plugin: Array,
+  force: Boolean,
+  qlist: Boolean,
+  qstat: Boolean,
+  qempty: Boolean,
+  qunstick: [String, null],
+  graceful: Boolean,
+  order: Boolean,
+  test: [String, Array],
+  ip: String,
+  helo: String,
+  ehlo: String,
+  envfrom: String,
+  envrcpt: [String, Array],
+  message: path,
+  'dump-mime': Boolean,
+  'dump-stream': Boolean,
+  'skip-deny': Boolean,
+  'set-relay': Boolean,
 }
 const shortHands = {
-    "v": ["--version"],
-    "h": ["--help"],
-    "c": ["--configs"],
-    "i": ["--install"],
-    "l": ["--list"],
-    "p": ["--plugin"],
-    "f": ["--force"],
-    "o": ["--order"],
-    "t": ["--test"],
+  v: ['--version'],
+  h: ['--help'],
+  c: ['--configs'],
+  i: ['--install'],
+  l: ['--list'],
+  p: ['--plugin'],
+  f: ['--force'],
+  o: ['--order'],
+  t: ['--test'],
 }
-const parsed = nopt(knownOpts, shortHands, process.argv, 2);
+const parsed = nopt(knownOpts, shortHands, process.argv, 2)
 
 const usage = `\x1B[32;40mHaraka.js\x1B[0m — A Node.js Email Server project
 Usage: haraka [options] [path]
@@ -81,90 +81,90 @@ Options:
     --dump-stream \t\tDump the MessageStream to stdout
     --skip-deny   \t\tContinue running hooks after DENY/DENYSOFT
     --set-relay   \t\tSet connection.relaying
-`;
+`
 
-function listPlugins (b, dir = 'plugins/') {
+function listPlugins(b, dir = 'plugins/') {
+  const inital_dir = path.join(b ?? base, dir)
+  const plugin_dirs = [inital_dir]
 
-    const inital_dir = path.join((b ?? base), dir);
-    const plugin_dirs = [ inital_dir ]
-
-    for (const d of fs.readdirSync(inital_dir)) {
-        if (fs.statSync(path.join(inital_dir, d)).isDirectory()) {
-            plugin_dirs.push(path.join(inital_dir, d));
-        }
+  for (const d of fs.readdirSync(inital_dir)) {
+    if (fs.statSync(path.join(inital_dir, d)).isDirectory()) {
+      plugin_dirs.push(path.join(inital_dir, d))
     }
+  }
 
-    let plugin_list = ``
-    for (const pd of plugin_dirs) {
-        plugin_list += `\n${pd.match(/plugins.*$/)[0]}\n`;
+  let plugin_list = ``
+  for (const pd of plugin_dirs) {
+    plugin_list += `\n${pd.match(/plugins.*$/)[0]}\n`
 
-        for (const d of fs.readdirSync(pd)) {
-            if (fs.statSync(path.join(pd, d)).isFile() && ~d.search('.js')) {
-                plugin_list += `\t${d.replace('.js', '')}\n`;
-            }
-        }
+    for (const d of fs.readdirSync(pd)) {
+      if (fs.statSync(path.join(pd, d)).isFile() && ~d.search('.js')) {
+        plugin_list += `\t${d.replace('.js', '')}\n`
+      }
     }
+  }
 
-    plugin_list += `\nNPM packages (${b ?? base})\n`
-    const npm_plugins = []
-    for (const entry of fs.readdirSync(path.join(b ?? base, 'node_modules'))) {
-        if (!/^haraka-plugin-/.test(entry)) continue
-        npm_plugins.push(entry.split('-').slice(2).join('-'))
-    }
-    plugin_list += `\t${npm_plugins.join('\n\t')}\n`
+  plugin_list += `\nNPM packages (${b ?? base})\n`
+  const npm_plugins = []
+  for (const entry of fs.readdirSync(path.join(b ?? base, 'node_modules'))) {
+    if (!/^haraka-plugin-/.test(entry)) continue
+    npm_plugins.push(entry.split('-').slice(2).join('-'))
+  }
+  plugin_list += `\t${npm_plugins.join('\n\t')}\n`
 
-    return plugin_list;
+  return plugin_list
 }
 
 // Warning messsage
-function warning (msg) {
-    console.error(`\x1b[31mwarning\x1b[0m: ${msg}`);
+function warning(msg) {
+  console.error(`\x1b[31mwarning\x1b[0m: ${msg}`)
 }
 
-function fail (msg) {
-    console.error(`\x1b[31merror\x1b[0m: ${msg}`);
-    process.exit(-1);
+function fail(msg) {
+  console.error(`\x1b[31merror\x1b[0m: ${msg}`)
+  process.exit(-1)
 }
 
-function setupHostname (confPath) {
-    utils.mkDir(confPath);
+function setupHostname(confPath) {
+  utils.mkDir(confPath)
 
-    const hostname = `${os.hostname()}${os.EOL}`;
+  const hostname = `${os.hostname()}${os.EOL}`
 
-    ['me','host_list'].forEach(f => {
-        const cfPath = path.join(confPath, f);
+  ;['me', 'host_list'].forEach((f) => {
+    const cfPath = path.join(confPath, f)
 
-        try { if (fs.statSync(cfPath).isFile()) return; }
-        catch (ignore) { }
-
-        try { fs.writeFileSync(cfPath, hostname); }
-        catch (err) { warning(`Unable to write to config/${f}: ${err.message}`); }
-    })
-}
-
-function setupBaseConfig (confPath) {
-    utils.copyFile(path.join(base, 'config', 'connection.ini'), path.join(confPath, 'connection.ini'));
-    utils.copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'));
-    utils.copyFile(path.join(base, 'config', 'log.ini'),  path.join(confPath, 'log.ini'));
-    utils.copyFile(path.join(base, 'config', 'plugins'),  path.join(confPath, 'plugins'));
-}
-
-function setupRequire () {
-
-    process.env.HARAKA = parsed.configs;
     try {
-        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
+      if (fs.statSync(cfPath).isFile()) return
+    } catch (ignore) {}
+
+    try {
+      fs.writeFileSync(cfPath, hostname)
+    } catch (err) {
+      warning(`Unable to write to config/${f}: ${err.message}`)
     }
-    catch (e) {
-        process.env.NODE_PATH = process.env.NODE_PATH ?
-            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
-            :
-            (path.join(process.env.HARAKA, 'node_modules'));
-        require('module')._initPaths(); // Horrible hack
-    }
+  })
 }
 
-function noop () {}
+function setupBaseConfig(confPath) {
+  utils.copyFile(path.join(base, 'config', 'connection.ini'), path.join(confPath, 'connection.ini'))
+  utils.copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'))
+  utils.copyFile(path.join(base, 'config', 'log.ini'), path.join(confPath, 'log.ini'))
+  utils.copyFile(path.join(base, 'config', 'plugins'), path.join(confPath, 'plugins'))
+}
+
+function setupRequire() {
+  process.env.HARAKA = parsed.configs
+  try {
+    require.paths.push(path.join(process.env.HARAKA, 'node_modules'))
+  } catch (e) {
+    process.env.NODE_PATH = process.env.NODE_PATH
+      ? `${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`
+      : path.join(process.env.HARAKA, 'node_modules')
+    require('module')._initPaths() // Horrible hack
+  }
+}
+
+function noop() {}
 
 const readme = `Haraka
 
@@ -193,402 +193,398 @@ is either the name of a plugin (without the .js extension) or the name of
 a core Haraka module, such as 'Connection' or 'Transaction'.
 
 To get documentation on writing a plugin type 'haraka -h Plugins'.
-`;
+`
 
-const packageJson = JSON.stringify({
-    "name": "haraka_local",
-    "description": "An SMTP Server",
-    "version": "0.0.1",
-    "dependencies": {},
-    "repository": "",
-    "license": "MIT"
-}, null, 2);
+const packageJson = JSON.stringify(
+  {
+    name: 'haraka_local',
+    description: 'An SMTP Server',
+    version: '0.0.1',
+    dependencies: {},
+    repository: '',
+    license: 'MIT',
+  },
+  null,
+  2,
+)
 
 const plugin_src = [
-    "// %plugin%",
-    "",
-    "// documentation via: haraka -c %config% -h plugins/%plugin%",
-    "",
-    "// Put your plugin code here",
-    "// type: `haraka -h Plugins` for documentation on how to create a plugin",
-    "",
-].join("\n");
+  '// %plugin%',
+  '',
+  '// documentation via: haraka -c %config% -h plugins/%plugin%',
+  '',
+  '// Put your plugin code here',
+  '// type: `haraka -h Plugins` for documentation on how to create a plugin',
+  '',
+].join('\n')
 
 const plugin_doc = [
-    "%plugin%",
-    "========",
-    "",
-    "Describe what your plugin does here.",
-    "",
-    "Configuration",
-    "-------------",
-    "",
-    "* `config/some_file` - describe what effect this config file has",
-    "",
-].join("\n");
+  '%plugin%',
+  '========',
+  '',
+  'Describe what your plugin does here.',
+  '',
+  'Configuration',
+  '-------------',
+  '',
+  '* `config/some_file` - describe what effect this config file has',
+  '',
+].join('\n')
 
-
-function getHooks () {   // see haraka/Haraka#3306
-    const pi_path = path.resolve(parsed.configs, 'docs', 'Plugins.md')
-    return fs.readFileSync(pi_path).toString()
-        .split('## Available Hooks')[1]    // discard everything before this string
-        .split('### rcpt')[0]              // discard everything after this string
-        .match(/\*\s(\S+)/gm)              // grab the first word of lines starting with '* '
-        .map(a => a.replace(/^\* /, '').replace(/\\/g, '')) // strip list prefix and escapes
+function getHooks() {
+  // see haraka/Haraka#3306
+  const pi_path = path.resolve(parsed.configs, 'docs', 'Plugins.md')
+  return fs
+    .readFileSync(pi_path)
+    .toString()
+    .split('## Available Hooks')[1] // discard everything before this string
+    .split('### rcpt')[0] // discard everything after this string
+    .match(/[*\-]\s(\S+)/gm) // grab the first word of lines starting with '* ' or '- '
+    .map((a) => a.replace(/^\* /, '').replace(/\\/g, '')) // strip list prefix and escapes
 }
 
-let config;
-let logger;
-let outbound;
-let plugins;
+let config
+let logger
+let outbound
+let plugins
 if (parsed.version) {
-    console.log(`\x1B[32;40mHaraka.js\x1B[0m — Version: ${ver}`);
-}
-else if (parsed.list) {
-    console.log(`\x1B[32;40m*global\x1B[0m\n${ listPlugins() }`);
-    if (parsed.configs) {
-        console.log(`\x1B[32;40m*local\x1B[0m\n${ listPlugins(parsed.configs) }`);
-    }
-}
-else if (parsed.help) {
-    if (parsed.help === 'true') {
-        console.log(usage);
-        return
-    }
+  console.log(`\x1B[32;40mHaraka.js\x1B[0m — Version: ${ver}`)
+} else if (parsed.list) {
+  console.log(`\x1B[32;40m*global\x1B[0m\n${listPlugins()}`)
+  if (parsed.configs) {
+    console.log(`\x1B[32;40m*local\x1B[0m\n${listPlugins(parsed.configs)}`)
+  }
+} else if (parsed.help) {
+  if (parsed.help === 'true') {
+    console.log(usage)
+    return
+  }
 
-    let md_path;
-    const md_paths = [
-        path.join(base, 'docs', `${parsed.help}.md`),
-        path.join(base, 'docs', 'plugins', `${parsed.help}.md`),
-        path.join(base, 'docs', 'deprecated', `${parsed.help}.md`),
-        path.join(base, 'node_modules', `haraka-plugin-${parsed.help}`, 'README.md'),
-    ];
-    if (parsed.configs) {
-        md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', `${parsed.help}.md`));
-        md_paths.unshift(path.join(parsed.configs, 'docs', `${parsed.help}.md`));
+  let md_path
+  const md_paths = [
+    path.join(base, 'docs', `${parsed.help}.md`),
+    path.join(base, 'docs', 'plugins', `${parsed.help}.md`),
+    path.join(base, 'docs', 'deprecated', `${parsed.help}.md`),
+    path.join(base, 'node_modules', `haraka-plugin-${parsed.help}`, 'README.md'),
+  ]
+  if (parsed.configs) {
+    md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', `${parsed.help}.md`))
+    md_paths.unshift(path.join(parsed.configs, 'docs', `${parsed.help}.md`))
+  }
+  for (let i = 0, j = md_paths.length; i < j; i++) {
+    const _md_path = md_paths[i]
+    if (fs.existsSync(_md_path)) {
+      md_path = [_md_path]
+      break
     }
-    for (let i=0, j=md_paths.length; i<j; i++) {
-        const _md_path = md_paths[i];
-        if (fs.existsSync(_md_path)) {
-            md_path = [_md_path];
-            break;
-        }
-    }
-    if (!md_path) {
-        warning(`No documentation found for: ${parsed.help}`);
-        process.exit();
-    }
-    let pager = 'less';
-    if (process.env.PAGER) {
-        const pager_split = process.env.PAGER.split(/ +/);
-        pager = pager_split.shift();
-        md_path = pager_split.concat(md_path);
-    }
+  }
+  if (!md_path) {
+    warning(`No documentation found for: ${parsed.help}`)
+    process.exit()
+  }
+  let pager = 'less'
+  if (process.env.PAGER) {
+    const pager_split = process.env.PAGER.split(/ +/)
+    pager = pager_split.shift()
+    md_path = pager_split.concat(md_path)
+  }
 
-    const less  = child.spawn( pager, md_path, { stdio: 'inherit' } );
-    less.on('exit', function () {
-        process.exit(0);
-    });
-}
-else if (parsed.configs && parsed.plugin) {
-    const js_path = path.join(parsed.configs, 'plugins', `${parsed.plugin}.js`);
-    utils.createFile(js_path, plugin_src, { plugin: parsed.plugin, config: parsed.configs}, parsed.force);
+  const less = child.spawn(pager, md_path, { stdio: 'inherit' })
+  less.on('exit', function () {
+    process.exit(0)
+  })
+} else if (parsed.configs && parsed.plugin) {
+  const js_path = path.join(parsed.configs, 'plugins', `${parsed.plugin}.js`)
+  utils.createFile(js_path, plugin_src, { plugin: parsed.plugin, config: parsed.configs }, parsed.force)
 
-    const doc_path = path.join(parsed.configs, 'docs', 'plugins', `${parsed.plugin}.md`);
-    utils.createFile(doc_path, plugin_doc, { plugin: parsed.plugin, config: parsed.configs}, parsed.force);
+  const doc_path = path.join(parsed.configs, 'docs', 'plugins', `${parsed.plugin}.md`)
+  utils.createFile(doc_path, plugin_doc, { plugin: parsed.plugin, config: parsed.configs }, parsed.force)
 
-    console.log(`Plugin ${parsed.plugin} created`);
-    console.log(`Now edit javascript in:    ${js_path}`);
-    console.log(`Add the plugin to config:  ${path.join(parsed.configs, 'config', 'plugins')}`);
-    console.log(`And edit documentation in: ${doc_path}`);
-}
-else if (parsed.qlist) {
-    if (!parsed.configs) fail("qlist option requires config path");
-    process.env.HARAKA = parsed.configs;
-    logger = require(path.join(base, 'logger'));
-    if (!parsed.verbose) logger.log = noop // disable logging
-    outbound = require(path.join(base, 'outbound'));
-    outbound.list_queue(function (err, qlist) {
-        for (const todo of qlist) {
-            console.log(sprintf("Q: %s rcpt:%d from:%s domain:%s", todo.file, todo.rcpt_to.length, todo.mail_from.toString(), todo.domain));
-        }
-        process.exit();
+  console.log(`Plugin ${parsed.plugin} created`)
+  console.log(`Now edit javascript in:    ${js_path}`)
+  console.log(`Add the plugin to config:  ${path.join(parsed.configs, 'config', 'plugins')}`)
+  console.log(`And edit documentation in: ${doc_path}`)
+} else if (parsed.qlist) {
+  if (!parsed.configs) fail('qlist option requires config path')
+  process.env.HARAKA = parsed.configs
+  logger = require(path.join(base, 'logger'))
+  if (!parsed.verbose) logger.log = noop // disable logging
+  outbound = require(path.join(base, 'outbound'))
+  outbound.list_queue(function (err, qlist) {
+    for (const todo of qlist) {
+      console.log(
+        sprintf(
+          'Q: %s rcpt:%d from:%s domain:%s',
+          todo.file,
+          todo.rcpt_to.length,
+          todo.mail_from.toString(),
+          todo.domain,
+        ),
+      )
+    }
+    process.exit()
+  })
+} else if (parsed.qstat) {
+  if (!parsed.configs) fail('qstat option requires config path')
+
+  process.env.HARAKA = parsed.configs
+  logger = require(path.join(base, 'logger'))
+  if (!parsed.verbose) logger.log = noop // disable logging
+  outbound = require(path.join(base, 'outbound'))
+  outbound.stat_queue(function (err, stats) {
+    console.log(stats)
+    process.exit()
+  })
+} else if (parsed.qunstick) {
+  if (!parsed.configs) fail('qunstick option requires config path')
+  const domain = parsed.qunstick.toLowerCase()
+  process.env.HARAKA = parsed.configs
+  logger = require(path.join(base, 'logger'))
+  if (!parsed.verbose) logger.log = noop // disable logging
+  const cb = function () {
+    process.exit()
+  }
+  if (domain == 'true') {
+    send_internal_command('flushQueue', cb)
+  } else {
+    send_internal_command(`flushQueue ${domain}`, cb)
+  }
+} else if (parsed.graceful) {
+  if (!parsed.configs) fail('graceful option requires config path')
+
+  process.env.HARAKA = parsed.configs
+  logger = require(path.join(base, 'logger'))
+  if (!parsed.verbose) logger.log = noop // disable logging
+  config = require('haraka-config')
+  if (!config.get('smtp.ini').main.nodes) {
+    console.log('Graceful restart not possible without `nodes` value in smtp.ini')
+    process.exit()
+  } else {
+    send_internal_command('gracefulRestart', () => {
+      process.exit()
     })
-}
-else if (parsed.qstat) {
-    if (!parsed.configs) fail("qstat option requires config path");
+  }
+} else if (parsed.qempty) {
+  if (!parsed.configs) fail('qempty option requires config path')
+  fail('qempty is unimplemented')
+} else if (parsed.order) {
+  if (!parsed.configs) fail('order option requires config path')
+  setupRequire()
+  logger = require(path.join(base, 'logger'))
+  if (!parsed.verbose) logger.log = noop // disable logging
+  plugins = require(path.join(base, 'plugins'))
+  plugins.load_plugins()
+  console.log('')
+  for (const hook of getHooks()) {
+    if (!plugins.registered_hooks[hook]) continue
+    console.log(sprintf("%'--80s", `Hook: ${hook} `))
+    console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'))
+    console.log(sprintf("%'-80s", ''))
+    for (let p = 0; p < plugins.registered_hooks[hook].length; p++) {
+      const item = plugins.registered_hooks[hook][p]
+      console.log(sprintf('%-35s %-35s %4d %3d', item.plugin, item.method, item.priority, item.timeout))
+    }
+    console.log('')
+  }
+  process.exit()
+} else if (parsed.test) {
+  if (!parsed.configs) fail('test option requires config path')
 
-    process.env.HARAKA = parsed.configs;
-    logger = require(path.join(base, "logger"));
-    if (!parsed.verbose) logger.log = noop // disable logging
-    outbound = require(path.join(base, "outbound"));
-    outbound.stat_queue(function (err, stats) {
-        console.log(stats);
-        process.exit();
-    });
-}
-else if (parsed.qunstick) {
-    if (!parsed.configs) fail('qunstick option requires config path');
-    const domain = parsed.qunstick.toLowerCase();
-    process.env.HARAKA = parsed.configs;
-    logger = require(path.join(base, 'logger'));
-    if (!parsed.verbose) logger.log = noop // disable logging
-    const cb = function () { process.exit(); }
-    if (domain == 'true') {
-        send_internal_command('flushQueue', cb);
-    }
-    else {
-        send_internal_command(`flushQueue ${domain}`, cb);
-    }
-}
-else if (parsed.graceful) {
-    if (!parsed.configs) fail("graceful option requires config path");
+  setupRequire()
 
-    process.env.HARAKA = parsed.configs;
-    logger = require(path.join(base, 'logger'));
-    if (!parsed.verbose) logger.log = noop // disable logging
-    config = require('haraka-config');
-    if (!config.get("smtp.ini").main.nodes) {
-        console.log("Graceful restart not possible without `nodes` value in smtp.ini");
-        process.exit();
-    }
-    else {
-        send_internal_command('gracefulRestart', () => {
-            process.exit();
-        });
-    }
-}
-else if (parsed.qempty) {
-    if (!parsed.configs) fail('qempty option requires config path');
-    fail('qempty is unimplemented');
-}
-else if (parsed.order) {
-    if (!parsed.configs) fail('order option requires config path');
-    setupRequire();
-    logger = require(path.join(base, 'logger'));
-    if (!parsed.verbose) logger.log = noop // disable logging
-    plugins = require(path.join(base, 'plugins'));
-    plugins.load_plugins();
-    console.log('');
-    for (const hook of getHooks()) {
-        if (!plugins.registered_hooks[hook]) continue;
-        console.log(sprintf('%\'--80s', `Hook: ${hook} `));
-        console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'));
-        console.log(sprintf("%'-80s",''));
-        for (let p=0; p<plugins.registered_hooks[hook].length; p++) {
-            const item = plugins.registered_hooks[hook][p];
-            console.log(sprintf('%-35s %-35s %4d %3d', item.plugin, item.method, item.priority, item.timeout));
-        }
-        console.log('');
-    }
-    process.exit();
-}
-else if (parsed.test) {
-    if (!parsed.configs) fail("test option requires config path");
+  logger = require(path.join(base, 'logger'))
+  logger.loglevel = logger.levels.PROTOCOL
 
-    setupRequire();
+  // Attempt to load message early
+  let msg
+  if (parsed.message) {
+    try {
+      msg = fs.readFileSync(parsed.message)
+    } catch (e) {
+      logger.crit(e.message)
+      logger.dump_logs(1)
+    }
+  }
 
-    logger = require(path.join(base, 'logger'));
-    logger.loglevel = logger.levels.PROTOCOL;
+  plugins = require(path.join(base, 'plugins'))
+  plugins.server = { notes: {} }
+  plugins.load_plugins(parsed.test && parsed.test[0] !== 'all' ? parsed.test : null)
+  const Connection = require(path.join(base, 'connection'))
+  // var Transaction = require(path.join(base, "transaction"));
+  const Address = require('address-rfc2821').Address
+  const Notes = require('haraka-notes')
+  const constants = require('haraka-constants')
+  const client = {
+    remote: {
+      address: parsed.ip ? parsed.ip : '1.2.3.4',
+      port: 1234,
+    },
+    destroy() {},
+    on(event) {},
+    end() {
+      process.exit()
+    },
+    write(buf) {},
+    resume() {},
+    pause() {},
+  }
+  const server = {
+    address() {
+      return { port: 25, family: 'ipv4', address: '127.0.0.1' }
+    },
+    cfg: require('haraka-config').get('smtp.ini'),
+    notes: new Notes(),
+  }
+  const connection = Connection.createConnection(client, server, server.cfg)
+  if (parsed['set-relay']) connection.relaying = true
 
-    // Attempt to load message early
-    let msg;
-    if (parsed.message) {
-        try {
-            msg = fs.readFileSync(parsed.message);
-        }
-        catch (e) {
-            logger.crit(e.message);
-            logger.dump_logs(1);
-        }
+  const run_next_hook = function () {
+    const args = Array.prototype.slice.call(arguments)
+    const code = args.shift()
+    if (!parsed['skip-deny'] && code !== constants.ok && code !== constants.cont) {
+      plugins.run_hooks('quit', connection)
+    } else {
+      plugins.run_hooks.apply(this, args)
     }
+  }
 
-    plugins = require(path.join(base, "plugins"));
-    plugins.server = { notes: {} };
-    plugins.load_plugins((parsed.test && parsed.test[0] !== 'all') ? parsed.test : null);
-    const Connection = require(path.join(base, "connection"));
-    // var Transaction = require(path.join(base, "transaction"));
-    const Address = require('address-rfc2821').Address;
-    const Notes = require('haraka-notes');
-    const constants = require('haraka-constants');
-    const client = {
-        remote: {
-            address: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
-            port: 1234,
-        },
-        destroy () {},
-        on (event) {},
-        end () {
-            process.exit();
-        },
-        write (buf) {},
-        resume () {},
-        pause () {},
+  connection.connect_respond = function () {
+    let helo = 'test.example.com'
+    let mode = 'ehlo'
+    if (parsed.ehlo) {
+      helo = parsed.ehlo
+    } else if (parsed.helo) {
+      helo = parsed.helo
+      mode = 'helo'
     }
-    const server = {
-        address () {
-            return { port: 25, family: 'ipv4', address: '127.0.0.1' };
-        },
-        cfg  : require('haraka-config').get('smtp.ini'),
-        notes: new Notes(),
+    connection.hello.host = helo
+    run_next_hook(arguments[0], mode, connection, helo)
+  }
+  connection.helo_respond = connection.ehlo_respond = function () {
+    const args = arguments
+    const mail = new Address(parsed.envfrom ? parsed.envfrom : 'test@example.com')
+    connection.init_transaction(function () {
+      connection.transaction.mail_from = mail
+      run_next_hook(args[0], 'mail', connection, [mail, null])
+    })
+  }
+  connection.mail_respond = function () {
+    const rcpt = new Address(parsed.envrcpt ? parsed.envrcpt : 'test@example.com')
+    this.transaction.rcpt_to.push(rcpt)
+    run_next_hook(arguments[0], 'rcpt', connection, [rcpt, null])
+  }
+  connection.rcpt_respond = function () {
+    connection.transaction.parse_body = true
+    run_next_hook(arguments[0], 'data', connection)
+  }
+  connection.data_respond = function () {
+    const args = arguments
+    // Add data to stream
+    if (msg) {
+      let buf = msg
+      let offset
+      while ((offset = utils.indexOfLF(buf)) !== -1) {
+        const line = buf.slice(0, offset + 1)
+        if (buf.length > offset) {
+          buf = buf.slice(offset + 1)
+        }
+        connection.transaction.add_data(line)
+        connection.transaction.data_bytes += line.length
+      }
+    } else {
+      // Add empty data to initialize message_stream
+      connection.transaction.add_data('')
     }
-    const connection = Connection.createConnection(client, server, server.cfg);
-    if (parsed['set-relay']) connection.relaying = true;
+    connection.data_done(function () {
+      run_next_hook(args[0], 'data_post', connection)
+    })
+  }
+  connection.data_post_respond = function () {
+    const args = arguments
+    // Dump MIME structure and decoded body text?
+    function dump_mime_structure(body) {
+      console.log(`Found MIME part ${body.ct}`)
+      console.log(body.bodytext)
+      for (let m = 0, l = body.children.length; m < l; m++) {
+        dump_mime_structure(body.children[m])
+      }
+    }
+    if (parsed['dump-mime']) {
+      dump_mime_structure(connection.transaction.body)
+    }
+    if (parsed['dump-stream']) {
+      console.log('STREAM:')
+      connection.transaction.message_stream.on('end', function () {
+        run_next_hook(args[0], 'queue', connection)
+      })
+      connection.transaction.message_stream.pipe(process.stdout)
+    } else {
+      run_next_hook(args[0], 'queue', connection)
+    }
+  }
+  connection.queue_respond = function () {
+    run_next_hook(arguments[0], 'queue_ok', connection)
+  }
+  connection.queue_ok_respond = function () {
+    run_next_hook(arguments[0], 'quit', connection)
+  }
+} else if (parsed.configs) {
+  const haraka_path = path.join(base, 'haraka.js')
 
-    const run_next_hook = function () {
-        const args = Array.prototype.slice.call(arguments);
-        const code = args.shift();
-        if (!parsed['skip-deny'] && code !== constants.ok && code !== constants.cont) {
-            plugins.run_hooks('quit', connection);
-        }
-        else {
-            plugins.run_hooks.apply(this, args);
-        }
-    }
+  const base_dir = process.argv[3]
+  const err_msg = `Did you install a Haraka config? (haraka -i ${base_dir})`
+  if (!fs.existsSync(base_dir)) {
+    fail(`No such directory: ${base_dir}\n${err_msg}`)
+  }
 
-    connection.connect_respond = function () {
-        let helo = 'test.example.com';
-        let mode = 'ehlo';
-        if (parsed.ehlo) {
-            helo = parsed.ehlo;
-        }
-        else if (parsed.helo) {
-            helo = parsed.helo;
-            mode = 'helo';
-        }
-        connection.hello.host = helo;
-        run_next_hook(arguments[0], mode, connection, helo);
-    }
-    connection.helo_respond = connection.ehlo_respond = function () {
-        const args = arguments;
-        const mail = new Address(((parsed.envfrom) ? parsed.envfrom : 'test@example.com'));
-        connection.init_transaction(function () {
-            connection.transaction.mail_from = mail;
-            run_next_hook(args[0], 'mail', connection, [mail, null]);
-        });
-    }
-    connection.mail_respond = function () {
-        const rcpt = new Address(((parsed.envrcpt) ? parsed.envrcpt : 'test@example.com'));
-        this.transaction.rcpt_to.push(rcpt);
-        run_next_hook(arguments[0], 'rcpt', connection, [rcpt, null]);
-    }
-    connection.rcpt_respond = function () {
-        connection.transaction.parse_body = true;
-        run_next_hook(arguments[0], 'data', connection);
-    }
-    connection.data_respond = function () {
-        const args = arguments;
-        // Add data to stream
-        if (msg) {
-            let buf = msg;
-            let offset;
-            while ((offset = utils.indexOfLF(buf)) !== -1) {
-                const line = buf.slice(0, offset+1);
-                if (buf.length > offset) {
-                    buf = buf.slice(offset+1);
-                }
-                connection.transaction.add_data(line);
-                connection.transaction.data_bytes += line.length;
-            }
-        }
-        else {
-            // Add empty data to initialize message_stream
-            connection.transaction.add_data('');
-        }
-        connection.data_done(function () {
-            run_next_hook(args[0], 'data_post', connection);
-        });
-    }
-    connection.data_post_respond = function () {
-        const args = arguments;
-        // Dump MIME structure and decoded body text?
-        function dump_mime_structure (body) {
-            console.log(`Found MIME part ${body.ct}`);
-            console.log(body.bodytext);
-            for (let m=0,l=body.children.length; m < l; m++) {
-                dump_mime_structure(body.children[m]);
-            }
-        }
-        if (parsed['dump-mime']) {
-            dump_mime_structure(connection.transaction.body);
-        }
-        if (parsed['dump-stream']) {
-            console.log('STREAM:');
-            connection.transaction.message_stream.on('end', function () {
-                run_next_hook(args[0], 'queue', connection);
-            });
-            connection.transaction.message_stream.pipe(process.stdout);
-        }
-        else {
-            run_next_hook(args[0], 'queue', connection);
-        }
-    }
-    connection.queue_respond = function () {
-        run_next_hook(arguments[0], 'queue_ok', connection);
-    }
-    connection.queue_ok_respond = function () {
-        run_next_hook(arguments[0], 'quit', connection);
-    }
-}
-else if (parsed.configs) {
-    const haraka_path = path.join(base, 'haraka.js');
+  const smtp_ini_path = path.join(base_dir, 'config', 'smtp.ini')
+  const smtp_json = path.join(base_dir, 'config', 'smtp.json')
+  const smtp_yaml = path.join(base_dir, 'config', 'smtp.yaml')
+  if (!fs.existsSync(smtp_ini_path) && !fs.existsSync(smtp_json) && !fs.existsSync(smtp_yaml)) {
+    fail(`No smtp.ini at: ${smtp_ini_path}\n${err_msg}`)
+  }
 
-    const base_dir = process.argv[3];
-    const err_msg = `Did you install a Haraka config? (haraka -i ${base_dir })`;
-    if (!fs.existsSync(base_dir)) {
-        fail( `No such directory: ${base_dir}\n${err_msg}` );
-    }
-
-    const smtp_ini_path = path.join(base_dir,'config','smtp.ini');
-    const smtp_json = path.join(base_dir,'config','smtp.json');
-    const smtp_yaml = path.join(base_dir,'config','smtp.yaml');
-    if (!fs.existsSync(smtp_ini_path) && !fs.existsSync(smtp_json) && !fs.existsSync(smtp_yaml)) {
-        fail( `No smtp.ini at: ${smtp_ini_path}\n${err_msg}` );
-    }
-
-    process.argv[1] = haraka_path;
-    process.env.HARAKA = parsed.configs;
-    require(haraka_path);
-}
-else if (parsed.install) {
-    const pa = parsed.install;
-    utils.mkDir(parsed.install);
-    for (const d of ['plugins', 'docs', 'config']) {
-        utils.mkDir(path.join(pa, d));
-    }
-    utils.copyFile(path.join(base, 'docs', 'Plugins.md'), path.join(pa, 'docs', 'Plugins.md'));
-    utils.createFile(path.join(pa, 'README'), readme, {}, parsed.force);
-    utils.createFile(path.join(pa, 'package.json'), packageJson, {}, parsed.force);
-    const bytes = require('crypto').randomBytes(32);
-    utils.createFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'), {}, parsed.force);
-    setupHostname(path.join(pa, 'config'));
-    setupBaseConfig(path.join(pa, 'config'));
-}
-else {
-    console.log("\033[31;40mError\033[0m: Undefined or erroneous arguments\n");
-    console.log(usage);
+  process.argv[1] = haraka_path
+  process.env.HARAKA = parsed.configs
+  require(haraka_path)
+} else if (parsed.install) {
+  const pa = parsed.install
+  utils.mkDir(parsed.install)
+  for (const d of ['plugins', 'docs', 'config']) {
+    utils.mkDir(path.join(pa, d))
+  }
+  utils.copyFile(path.join(base, 'docs', 'Plugins.md'), path.join(pa, 'docs', 'Plugins.md'))
+  utils.createFile(path.join(pa, 'README'), readme, {}, parsed.force)
+  utils.createFile(path.join(pa, 'package.json'), packageJson, {}, parsed.force)
+  const bytes = require('crypto').randomBytes(32)
+  utils.createFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'), {}, parsed.force)
+  setupHostname(path.join(pa, 'config'))
+  setupBaseConfig(path.join(pa, 'config'))
+} else {
+  console.log('\033[31;40mError\033[0m: Undefined or erroneous arguments\n')
+  console.log(usage)
 }
 
-function send_internal_command (cmd, done) {
-    config = require('haraka-config');
-    const key = config.get("internalcmd_key");
-    const smtp_ini = config.get("smtp.ini");
-    const listen_addrs = require(path.join(base, "server")).get_listen_addrs(smtp_ini.main);
-    const hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(listen_addrs[0]);
-    if (!hp) throw "No listen address in smtp.ini";
-    // console.log("Connecting to " + listen_addrs[0]);
-    const sock = net.connect(hp[2], hp[1], function () {
-        sock.once('data', function (data) {
-            // this is the greeting. Ignore it...
-            sock.write(`INTERNALCMD ${key ? (`key:${key} `) : ''}${cmd}\r\n`);
-            sock.once('data', function (data2) {
-                console.log(data2.toString().replace(/\r?\n$/, ''));
-                sock.write('QUIT\r\n');
-                sock.once('data', function (data3) {
-                    sock.end();
-                })
-            });
-        });
-    });
-    sock.on('end', done);
+function send_internal_command(cmd, done) {
+  config = require('haraka-config')
+  const key = config.get('internalcmd_key')
+  const smtp_ini = config.get('smtp.ini')
+  const listen_addrs = require(path.join(base, 'server')).get_listen_addrs(smtp_ini.main)
+  const hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(listen_addrs[0])
+  if (!hp) throw 'No listen address in smtp.ini'
+  // console.log("Connecting to " + listen_addrs[0]);
+  const sock = net.connect(hp[2], hp[1], function () {
+    sock.once('data', function (data) {
+      // this is the greeting. Ignore it...
+      sock.write(`INTERNALCMD ${key ? `key:${key} ` : ''}${cmd}\r\n`)
+      sock.once('data', function (data2) {
+        console.log(data2.toString().replace(/\r?\n$/, ''))
+        sock.write('QUIT\r\n')
+        sock.once('data', function (data3) {
+          sock.end()
+        })
+      })
+    })
+  })
+  sock.on('end', done)
 }
