@@ -57,24 +57,18 @@ This should output a bunch of information about files it has created:
     Add the plugin to config:  /path/to/new_project/config/plugins
     And edit documentation in: /path/to/new_project/docs/plugins/rcpt_to.disposable.md
 
-So let's do the second part now - load up the `config/plugins` file and lets
-set this up to test things. Comment out most of the plugins, except for
+So let's do the second part now - load up the `config/plugins` file and
+set it up to test. Comment out most of the plugins, except for
 `rcpt_to.in_host_list` and add in our new plugin, and change the queue
 plugin to `test_queue`. The final file should look like this:
 
     # default list of plugins
 
-    # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
-    #dnsbl
-
-    # allow bad mail signatures from the config/data.signatures file.
+    #dns-lists
     #data.signatures
 
     # block mail from some known bad HELOs - see config/helo.checks.ini for configuration
     #helo.checks
-
-    # block mail from known bad email addresses you put in config/mail_from.blocklist
-    #mail_from.blocklist
 
     # Only accept mail where the MAIL FROM domain is resolvable to an MX record
     #mail_from.is_resolvable
@@ -90,19 +84,17 @@ plugin to `test_queue`. The final file should look like this:
 
     test_queue
 
-Remember that the ordering here is important - our new plugin has to come
-before `rcpt_to.in_host_list`.
+The ordering here is important - our new plugin has to come before `rcpt_to.in_host_list`.
 
-Now fire up your favourite editor and put the following into
-the `plugins/rcpt_to.disposable.js` file:
+Fire up your favourite editor and put the following into the `plugins/rcpt_to.disposable.js` file:
 
     exports.hook_rcpt = function (next, connection, params) {
-    	var rcpt = params[0];
+    	const rcpt = params[0];
     	this.loginfo("Got recipient: " + rcpt);
     	next();
     }
 
-All we are doing here is logging the fact that we got the recipient.
+Here we log that we got the recipient.
 
 Check this works. You'll need two terminal windows. In window 1:
 
@@ -124,7 +116,7 @@ Which indicates everything is working. You should also have a file
 
 ## Parsing Out The Date
 
-Now lets check for emails with an expire date in them and turn them into
+Now check for emails with an expire date in them and turn them into
 `Date` objects. Edit your plugin file as follows:
 
     exports.hook_rcpt = function (next, connection, params) {
