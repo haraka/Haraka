@@ -149,7 +149,7 @@ These are the hook and their parameters (next excluded):
 - init_child - in cluster, called when a child process is started
 - init_http - called when Haraka is started.
 - init_wss - called after init_http
-- connect*init - used to init data structures, called for \_every* connection
+- connect_init - used to init data structures, called for *every* connection
 - lookup_rdns - called to look up the rDNS - return the rDNS via `next(OK, rdns)`
 - connect - called after we got rDNS
 - capabilities - called to get the ESMTP capabilities (such as STARTTLS)
@@ -216,9 +216,11 @@ The ordering of hooks is determined by the SMTP protocol. Knowledge of [RFC 5321
 - hook_connect_init
 - hook_lookup_rdns
 - hook_connect
-- hook*helo **OR** hook_ehlo (EHLO is sent when ESMTP is desired which allows extensions
-  such as STARTTLS, AUTH, SIZE etc.) - hook_helo - hook_ehlo - hook_capabilities - \_hook_unrecognized_command* is run for each ESMTP extension the client requests
-  e.g. STARTTLS, AUTH etc.)
+- hook_helo **OR** hook_ehlo
+  - hook_helo
+  - hook_ehlo (when ESMTP is desired, allows extensions such as STARTTLS, AUTH, SIZE etc.)
+    - hook_capabilities
+    - *hook_unrecognized_command* is run for each ESMTP extension the client requests (e.g. STARTTLS, AUTH etc.)
   - hook_mail
   - hook_rcpt (once per-recipient)
   - hook_rcpt_ok (for every recipient that hook_rcpt returned `next(OK)` for)

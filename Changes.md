@@ -301,7 +301,7 @@ config files.
 - dep(haraka-plugin-redis)!: 1.0 -> 2.0 #3038
 - dep(redis)!: 3.1 -> 4.1 #3058
 - dep(generic-pool): remove pooling from outbound #3115
-- smtp*client: remove smtp*\* pooling support in #3113
+- smtp_client: remove smtp\_\* pooling support in #3113
 - dep: bump plugin versions #3063
 - dep: bump haraka-plugin-asn from 1.0.9 to 2.0.0 #3062
 - dep(redis): 3.1 -> 4.1 #3058
@@ -583,7 +583,7 @@ config files.
 
 #### Fixes
 
-- data*headers: check defined-ness of hdr_address \_after* try/catch #2458
+- data_headers: check defined-ness of hdr_address *after* try/catch #2458
 - tls: remove tls.ini loading from plugins/tls #2459
 - tls: remove invalid opt from load_tls_ini #2456
 - outbound: escape values in HTML bounce correctly #2446
