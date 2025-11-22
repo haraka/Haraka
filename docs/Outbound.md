@@ -53,6 +53,18 @@ Default: false. By default, outbound to a local IP is disabled, to avoid creatin
 
 Set this to specify the delay intervals to use between trying to re-send an email that has a temporary failure condition. The setting is a comma separated list of time spans and multipliers. The time span is a number followed by `s`, `m`, `h`, or `d` to represent seconds, minutes, hours, and days, respectively. The multiplier is an asterisk followed by an integer representing the number of times to repeat the interval. For example, the entry `1m, 5m*2, 1h*3` results in an array of delay times of `[60,300,300,3600,3600,3600]` in seconds. The email will be bounced when the array runs out of intervals (the 7th failure in this case). Set this to `none` to bounce the email on the first temporary failure.
 
+* `inet_prefer`
+
+Default: default. Selects the preferred address family (IP version) to deliver messages.
+
+| Value              | Description |
+|------------------------|-------------|
+| `default` | Prefer IPv6 when IPv4 and IPv6 IPs exist at the same MX priority |
+| `v4`    | Try IPv4 addresses first, then IPv6 |
+| `v6`    | Try IPv6 addresses first, then IPv4 |
+
+Note: Delivery attempts follow MX priority order. Socket-based deliveries ignore this setting.
+
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.

@@ -17,6 +17,12 @@ function load_config () {
         load_config();
     }).main;
 
+    if (!cfg.inet_prefer) cfg.inet_prefer = 'default';
+    if (!cfg.inet_prefer.match(/^(v4|v6|default)$/)) {
+        logger.warn(exports, `inet_prefer is set to an invalid value: ${cfg.inet_prefer}`);
+        cfg.inet_prefer = 'default';
+    }
+
     // legacy config file support. Remove in Haraka 4.0
     if (!cfg.disabled && config.get('outbound.disabled')) {
         cfg.disabled = true;
