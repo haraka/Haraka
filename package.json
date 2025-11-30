@@ -35,7 +35,7 @@
     "haraka-results": "^2.2.6",
     "haraka-tld": "^1.2.4",
     "haraka-utils": "^1.1.4",
-    "ipaddr.js": "~2.2.0",
+    "ipaddr.js": "~2.3.0",
     "node-gyp": "^11.5.0",
     "nopt": "^8.1.0",
     "npid": "~0.4.0",
