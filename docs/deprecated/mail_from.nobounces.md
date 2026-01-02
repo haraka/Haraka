@@ -1,5 +1,4 @@
-mail\_from.nobounces
-===================
+# mail_from.nobounces
 
 This mail blocks all bounce messages using the simple rule of checking
 for `MAIL FROM:<>`.

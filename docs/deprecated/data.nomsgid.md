@@ -1,5 +1,4 @@
-data.nomsgid
-============
+# data.nomsgid
 
 NOTICE: this plugin is deprecated. Use data.headers instead.
 

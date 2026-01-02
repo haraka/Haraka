@@ -1,5 +1,4 @@
-data.rfc5322\_header\_checks
-==========================
+# data.rfc5322_header_checks
 
 NOTICE: this plugin is deprecated. Use data.headers instead.
 

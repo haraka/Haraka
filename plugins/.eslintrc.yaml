@@ -1,4 +1,3 @@
-
 globals:
   server: true
   NEXT_HOOK: true

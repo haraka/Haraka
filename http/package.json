@@ -16,8 +16,6 @@
   "dependencies": {
     "express": "^4.0"
   },
-  "devDependencies": {
-  },
-  "scripts": {
-  }
+  "devDependencies": {},
+  "scripts": {}
 }

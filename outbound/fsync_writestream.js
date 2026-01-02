@@ -1,45 +1,44 @@
-'use strict';
+'use strict'
 
-const fs = require('node:fs');
+const fs = require('node:fs')
 
 class FsyncWriteStream extends fs.WriteStream {
-    constructor (path, options) {
-        super(path, options);
+    constructor(path, options) {
+        super(path, options)
     }
 
-    close (cb) {
-        const self = this;
-        if (cb) this.once('close', cb);
+    close(cb) {
+        const self = this
+        if (cb) this.once('close', cb)
 
         if (this.closed || 'number' !== typeof this.fd) {
             if ('number' !== typeof this.fd) {
-                this.once('open', close);
-                return;
+                this.once('open', close)
+                return
             }
-            return setImmediate(this.emit.bind(this, 'close'));
+            return setImmediate(this.emit.bind(this, 'close'))
         }
-        this.closed = true;
-        close();
+        this.closed = true
+        close()
 
-        function close (fd) {
-            fs.fsync(fd || self.fd, er => {
+        function close(fd) {
+            fs.fsync(fd || self.fd, (er) => {
                 if (er) {
-                    self.emit('error', er);
-                    return;
+                    self.emit('error', er)
+                    return
                 }
 
-                fs.close(fd || self.fd, err => {
+                fs.close(fd || self.fd, (err) => {
                     if (err) {
-                        self.emit('error', err);
+                        self.emit('error', err)
+                    } else {
+                        self.emit('close')
                     }
-                    else {
-                        self.emit('close');
-                    }
-                });
-                self.fd = null;
-            });
+                })
+                self.fd = null
+            })
         }
     }
 }
 
-module.exports = FsyncWriteStream;
+module.exports = FsyncWriteStream

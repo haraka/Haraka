@@ -1,4 +1,5 @@
-# queue/smtp\_forward
+# queue/smtp_forward
+
 ==================
 
 This plugin delivers to another mail server. This is a common setup when you want to have a mail server with a solid pedigree of outbound delivery to other hosts, and inbound delivery to users.
@@ -6,66 +7,67 @@ This plugin delivers to another mail server. This is a common setup when you wan
 In comparison to `queue/smtp_proxy`, this plugin waits until queue time to attempt the ongoing connection. This can be a benefit in reducing connections to your inbound mail server when you have content filtering (such as spamassassin) enabled. A possible downside is that it also delays recipient validation that the ongoing mail server may provide until queue time.
 
 ## Configuration
--------------
 
-Configuration is stored in smtp\_forward.ini in the following keys:
+---
 
-  * enable\_outbound=[true]
+Configuration is stored in smtp_forward.ini in the following keys:
 
-    SMTP forward outbound messages (set to false to enable Haraka's separate Outbound mail routing (MX based delivery)).
+- enable_outbound=[true]
 
-  * host=HOST
+  SMTP forward outbound messages (set to false to enable Haraka's separate Outbound mail routing (MX based delivery)).
 
-    The host to connect to.
+- host=HOST
 
-  * port=PORT
+  The host to connect to.
 
-    The port to connect to. Default: 25
+- port=PORT
 
-  * connect\_timeout=SECONDS
+  The port to connect to. Default: 25
 
-    The maximum amount of time to wait when creating a new connection to the host.  Default: 30 seconds.
+- connect_timeout=SECONDS
 
-  * timeout=SECONDS
+  The maximum amount of time to wait when creating a new connection to the host. Default: 30 seconds.
 
-    The amount of seconds to let a backend connection live idle in the connection pool.  This should always be less than the global plugin timeout, which should in turn be less than the connection timeout.
+- timeout=SECONDS
 
-  * max\_connections=NUMBER
+  The amount of seconds to let a backend connection live idle in the connection pool. This should always be less than the global plugin timeout, which should in turn be less than the connection timeout.
 
-    Maximum number of connections at any given time. Default: 1000
+- max_connections=NUMBER
 
-  * enable\_tls=[true]
+  Maximum number of connections at any given time. Default: 1000
 
-    Enable TLS with the forward host (if supported). TLS uses options from the tls plugin. If key and cert are provided in the the outbound section of the tls plugin, that certificate will be used as a TLS Client Certificate.
+- enable_tls=[true]
 
-    This option controls the use of TLS via `STARTTLS`. This plugin does not work with SMTP over TLS.
+  Enable TLS with the forward host (if supported). TLS uses options from the tls plugin. If key and cert are provided in the the outbound section of the tls plugin, that certificate will be used as a TLS Client Certificate.
 
-  * auth\_type=[plain\|login]
+  This option controls the use of TLS via `STARTTLS`. This plugin does not work with SMTP over TLS.
 
-    Enable PLAIN or LOGIN SMTP AUTH.  This is required to enable AUTH.
+- auth_type=[plain\|login]
 
-  * auth\_user=USERNAME
+  Enable PLAIN or LOGIN SMTP AUTH. This is required to enable AUTH.
 
-    SMTP AUTH username to use.
+- auth_user=USERNAME
 
-  * auth\_pass=PASSWORD
+  SMTP AUTH username to use.
 
-    SMTP AUTH password to use.
+- auth_pass=PASSWORD
 
-  * queue
+  SMTP AUTH password to use.
 
-    Which queue plugin to use. Default: undefined. The default bahavior is to use smtp_forward for inbound connections and outbound for relaying connections. This option is used for complex mail routes.
+- queue
 
-  * check_sender=false
+  Which queue plugin to use. Default: undefined. The default bahavior is to use smtp_forward for inbound connections and outbound for relaying connections. This option is used for complex mail routes.
 
-    Requires that sender domains defined in smtp_forward.ini (see Per-Domain below) have relaying privileges. This is a form of spoof prevention and assumes that any mail clients have relaying or AUTH privileges. This is usually the case.
+- check_sender=false
 
-  * check_recipient=false
+  Requires that sender domains defined in smtp_forward.ini (see Per-Domain below) have relaying privileges. This is a form of spoof prevention and assumes that any mail clients have relaying or AUTH privileges. This is usually the case.
 
-    By default, Haraka accepts no emails until a recipient plugin has been configured to accept mails for a domain. The simplest common case is the in_host_list plugin with a list of domains in config/host_list. An alternative is to set `check_recipient=true` and list each domain in a definition block in smtp_forward.ini (see Per-Domain Configuration). An example for two domains:
+- check_recipient=false
 
-    [example.com]
-    [example.net]
+  By default, Haraka accepts no emails until a recipient plugin has been configured to accept mails for a domain. The simplest common case is the in_host_list plugin with a list of domains in config/host_list. An alternative is to set `check_recipient=true` and list each domain in a definition block in smtp_forward.ini (see Per-Domain Configuration). An example for two domains:
+
+  [example.com]
+  [example.net]
 
 # Per-Domain Configuration
 
@@ -75,7 +77,7 @@ When `domain_selector` is set to `rcpt_to` (the default), more specific routes a
 
 When `domain_selector` is set to `mail_from`, it first searches for configuration using the complete email address, falls back to the domain if not found, then to main configuration.
 
-enable\_outbound can be set or unset on a per-domain level to enable or disable forwarding for specific domains.
+enable_outbound can be set or unset on a per-domain level to enable or disable forwarding for specific domains.
 
     # default SMTP host
     host=1.2.3.4

@@ -37,7 +37,7 @@ When using `option smtpchk` you will see CONNRESET errors reported in the Haraka
 
 ```
         option tcp-check
-        tcp-check expect rstring ^220\ 
+        tcp-check expect rstring ^220\
         tcp-check send QUIT\r\n
-        tcp-check expect rstring ^221\ 
+        tcp-check expect rstring ^221\
 ```

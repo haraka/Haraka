@@ -1,7 +1,7 @@
-'use strict';
+'use strict'
 
-const net    = require('node:net');
-const utils  = require('haraka-utils');
+const net = require('node:net')
+const utils = require('haraka-utils')
 
 /* HostPool:
  *
@@ -21,31 +21,30 @@ const utils  = require('haraka-utils');
  * network failure from taking the whole system down.
  */
 
-const logger = require('./logger');
+const logger = require('./logger')
 
 class HostPool {
-
     // takes a comma/space-separated list of ip:ports
     //  1.1.1.1:22,  3.3.3.3:44
-    constructor (hostports_str, retry_secs) {
+    constructor(hostports_str, retry_secs) {
         const hosts = (hostports_str || '')
             .trim()
             .split(/[\s,]+/)
-            .map(hostport => {
-                const splithost = hostport.split(/:/);
-                if (! splithost[1]){
-                    splithost[1] = 25;
+            .map((hostport) => {
+                const splithost = hostport.split(/:/)
+                if (!splithost[1]) {
+                    splithost[1] = 25
                 }
                 return {
                     host: splithost[0],
-                    port: splithost[1]
-                };
-            });
-        this.hostports_str = hostports_str;
-        this.hosts = utils.shuffle(hosts);
-        this.dead_hosts = {};  // hostport => true/false
-        this.last_i = 0;  // the last one we checked
-        this.retry_secs = retry_secs || 10;
+                    port: splithost[1],
+                }
+            })
+        this.hostports_str = hostports_str
+        this.hosts = utils.shuffle(hosts)
+        this.dead_hosts = {} // hostport => true/false
+        this.last_i = 0 // the last one we checked
+        this.retry_secs = retry_secs || 10
     }
 
     /* failed
@@ -54,30 +53,30 @@ class HostPool {
      * this backend host and it'll come out of the pool and put into the recheck
      * timer.
      */
-    failed (host, port) {
-        const self = this;
-        const key = `${host}:${port}`;
-        const retry_msecs = self.retry_secs * 1000;
-        self.dead_hosts[key] = true;
+    failed(host, port) {
+        const self = this
+        const key = `${host}:${port}`
+        const retry_msecs = self.retry_secs * 1000
+        self.dead_hosts[key] = true
 
-        function cb_if_still_dead () {
-            logger.warn(`${host} ${key} is still dead, will retry in ${self.retry_secs} secs`);
-            self.dead_hosts[key] = true;
+        function cb_if_still_dead() {
+            logger.warn(`${host} ${key} is still dead, will retry in ${self.retry_secs} secs`)
+            self.dead_hosts[key] = true
             // console.log(1);
             setTimeout(() => {
-                self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive);
-            }, retry_msecs);
+                self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive)
+            }, retry_msecs)
         }
 
-        function cb_if_alive () {
+        function cb_if_alive() {
             // console.log(2);
-            logger.info(`${host} ${key} is back! adding back into pool`);
-            delete self.dead_hosts[key];
+            logger.info(`${host} ${key} is back! adding back into pool`)
+            delete self.dead_hosts[key]
         }
 
         setTimeout(() => {
-            self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive);
-        }, retry_msecs);
+            self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive)
+        }, retry_msecs)
     }
 
     /* probe_dead_host
@@ -87,35 +86,32 @@ class HostPool {
      * dead_hosts lists, and the next time get_host() is called, it'll be in the
      * mix.
      */
-    probe_dead_host (
-        host, port, cb_if_still_dead, cb_if_alive
-    ){
-        logger.info(`probing dead host ${host}:${port}`);
+    probe_dead_host(host, port, cb_if_still_dead, cb_if_alive) {
+        logger.info(`probing dead host ${host}:${port}`)
 
-        const connect_timeout_ms = 200; // keep it snappy
-        let s;
+        const connect_timeout_ms = 200 // keep it snappy
+        let s
         try {
-            s = this.get_socket();
+            s = this.get_socket()
             s.setTimeout(connect_timeout_ms, () => {
                 // nobody home, it's still dead
-                s.destroy();
-                cb_if_still_dead();
-            });
-            s.on('error', e => {
+                s.destroy()
+                cb_if_still_dead()
+            })
+            s.on('error', (e) => {
                 // silently catch all errors - assume the port is closed
-                s.destroy();
-                cb_if_still_dead();
-            });
+                s.destroy()
+                cb_if_still_dead()
+            })
 
             s.connect(port, host, () => {
-                cb_if_alive();
-                s.destroy(); // will this conflict with setTimeout's s.destroy?
-            });
-        }
-        catch (e) {
+                cb_if_alive()
+                s.destroy() // will this conflict with setTimeout's s.destroy?
+            })
+        } catch (e) {
             // only way to catch run-time javascript errors in here;
-            console.log(`ERROR in probe_dead_host, got error ${e}`);
-            throw e;
+            console.log(`ERROR in probe_dead_host, got error ${e}`)
+            throw e
         }
     }
 
@@ -123,8 +119,8 @@ class HostPool {
      *
      * so we can override in unit test
      */
-    get_socket () {
-        return new net.Socket();
+    get_socket() {
+        return new net.Socket()
     }
 
     /* get_host
@@ -135,39 +131,39 @@ class HostPool {
      * anyway. That should make it more forgiving about transient but widespread
      * network problems that make all the hosts look dead.
      */
-    get_host () {
-        let host;
-        let found;
+    get_host() {
+        let host
+        let found
 
-        let first_i = this.last_i + 1;
-        if (first_i >= this.hosts.length){
-            first_i = 0;
+        let first_i = this.last_i + 1
+        if (first_i >= this.hosts.length) {
+            first_i = 0
         }
 
-        for (let i = 0; i < this.hosts.length; ++i){
-            let j = i + first_i;
+        for (let i = 0; i < this.hosts.length; ++i) {
+            let j = i + first_i
             if (j >= this.hosts.length) {
-                j -= this.hosts.length;
+                j -= this.hosts.length
             }
-            host = this.hosts[j];
-            const key = `${host.host}:${host.port}`;
+            host = this.hosts[j]
+            const key = `${host.host}:${host.port}`
             if (this.dead_hosts[key]) {
-                continue;
+                continue
             }
-            this.last_i = j;
-            found = true;
-            break;
+            this.last_i = j
+            found = true
+            break
         }
         if (found) {
-            return host;
-        }
-        else {
+            return host
+        } else {
             logger.warn(
-                `no working hosts found, retrying a dead one, config (probably from smtp_forward.forwarding_host_pool) is '${this.hostports_str}'`);
-            this.last_i = first_i;
-            return this.hosts[first_i];
+                `no working hosts found, retrying a dead one, config (probably from smtp_forward.forwarding_host_pool) is '${this.hostports_str}'`,
+            )
+            this.last_i = first_i
+            return this.hosts[first_i]
         }
     }
 }
 
-module.exports = HostPool;
+module.exports = HostPool
