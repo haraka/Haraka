@@ -4,16 +4,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- change: finish renaming dot_stuffing to dot_stuffed
+### [3.1.2] - 2026-01-02
+
+- smtp_forward: [domain selector] : user + domain #3501
+- rspamd: revert to older plugin version #3493
+- feat: push to a 'release' branch with package-lock.json #3474
+- change: finish renaming dot_stuffing to dot_stuffed #3473
 - deps: bump all deps to latest
 - deps: bump message-stream to 1.3.0, add some missing ^ chars
+- feat(outbound): configurable outbound IPv4/IPv6 preference using `inet_prefer`
+- feat(outbound): deferred hook is now passed the failed recips and mx #3505
 - feat(rabbitmq_amqplib): configurable optional exchange arguments #3472
 - feat(rabbitmq_amqplib): configurable message priority #3472
-- feat(outbound): configurable outbound IPv4/IPv6 preference using `inet_prefer`
-- fix: auth_proxy TLS upgrade fix #3514
-- doc(Plugins): add save-sent
-- outbound: deferred hook is now passed the failed recips and mx #3505
-- style: run prettier in repo
+- fix: auth_proxy TLS upgrade works again #3514
+- doc(Plugins): add save-sent #3497
+- doc(README): update DKIM plugin link, #3490
+- style: run prettier in repo #3504
 
 ### [3.1.1] - 2025-05-19
 
@@ -1740,3 +1746,4 @@ config files.
 [0.2]: https://github.com/haraka/Haraka/releases/tag/v0.2
 [3.1.1]: https://github.com/haraka/Haraka/releases/tag/v3.1.1
 [3.1.0]: https://github.com/haraka/Haraka/releases/tag/v3.1.0
+[3.1.2]: https://github.com/haraka/Haraka/releases/tag/v3.1.2
