@@ -287,16 +287,16 @@ class HMailItem extends events.EventEmitter {
         switch (obc.cfg.inet_prefer) {
             case 'v4':
                 this.mxlist = [
-                    ...this.mxlist.filter(mx => !net.isIP(mx.exchange) || net.isIPv4(mx.exchange)),
-                    ...this.mxlist.filter(mx => net.isIPv6(mx.exchange))
-                ];
-                break;
+                    ...this.mxlist.filter((mx) => !net.isIP(mx.exchange) || net.isIPv4(mx.exchange)),
+                    ...this.mxlist.filter((mx) => net.isIPv6(mx.exchange)),
+                ]
+                break
             case 'v6':
                 this.mxlist = [
-                    ...this.mxlist.filter(mx => !net.isIP(mx.exchange) || net.isIPv6(mx.exchange)),
-                    ...this.mxlist.filter(mx => net.isIPv4(mx.exchange))
-                ];
-                break;
+                    ...this.mxlist.filter((mx) => !net.isIP(mx.exchange) || net.isIPv6(mx.exchange)),
+                    ...this.mxlist.filter((mx) => net.isIPv4(mx.exchange)),
+                ]
+                break
         }
 
         this.try_deliver()
