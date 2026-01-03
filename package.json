@@ -79,11 +79,10 @@
     "haraka-plugin-syslog": "^1.0.7",
     "haraka-plugin-uribl": "^1.0.10",
     "haraka-plugin-watch": "^2.0.8",
-    "@techteamer/ocsp": "^1.0.1",
-    "tmp": "~0.2.5"
+    "@techteamer/ocsp": "^1.0.1"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "^2.0.2",
+    "@haraka/eslint-config": "^2.0.3",
     "haraka-test-fixtures": "^1.3.10",
     "mocha": "^11.7.5",
     "mock-require": "^3.0.3",
