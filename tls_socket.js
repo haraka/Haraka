@@ -665,7 +665,8 @@ function getCertFor(host) {
 }
 
 function connect(conn_options = {}) {
-    // called by outbound/client_pool, smtp_client, plugins/spamassassin,avg,clamd
+    // called by outbound/client_pool, smtp_client, plugins/spamassassin,avg,clamd,
+    // plugins/auth/auth_proxy
 
     const cryptoSocket = net.connect(conn_options)
     const socket = new pluggableStream(cryptoSocket)
