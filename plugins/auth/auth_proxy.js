@@ -5,6 +5,8 @@ const net = require('node:net')
 const utils = require('haraka-utils')
 const net_utils = require('haraka-net-utils')
 
+const tls_socket = require('./tls_socket')
+
 const smtp_regexp = /^(\d{3})([ -])(.*)/
 
 exports.register = function () {
@@ -63,7 +65,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     let response = []
     let secure = false
 
-    const socket = net.connect({ host, port })
+    const socket = tls_socket.connect({ host, port })
     net_utils.add_line_processor(socket)
     connection.logdebug(this, `attempting connection to host=${host} port=${port}`)
     socket.setTimeout(30 * 1000)
@@ -196,7 +198,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         }
         switch (command) {
             case 'starttls':
-                socket.upgrade({ key, cert })
+                this.upgrade({ key, cert })
                 break
             case 'connect':
                 socket.send_command('EHLO', connection.local.host)
