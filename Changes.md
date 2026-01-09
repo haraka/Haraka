@@ -9,8 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - deps: bump message-stream to 1.3.0, add some missing ^ chars
 - feat(rabbitmq_amqplib): configurable optional exchange arguments #3472
 - feat(rabbitmq_amqplib): configurable message priority #3472
-- add save-sent to Plugins.md
 - feat(outbound): configurable outbound IPv4/IPv6 preference using `inet_prefer`
+- fix: auth_proxy TLS upgrade fix #3514
+- doc(Plugins): add save-sent
 - outbound: deferred hook is now passed the failed recips and mx #3505
 - style: run prettier in repo
 
