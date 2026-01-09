@@ -10,8 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - rspamd: revert to older plugin version #3493
 - feat: push to a 'release' branch with package-lock.json #3474
 - change: finish renaming dot_stuffing to dot_stuffed #3473
+- deps: require node 20+
 - deps: bump all deps to latest
 - deps: bump message-stream to 1.3.0, add some missing ^ chars
+- dep(tmp): deleted, only used in attachment plugin
 - feat(outbound): configurable outbound IPv4/IPv6 preference using `inet_prefer`
 - feat(outbound): deferred hook is now passed the failed recips and mx #3505
 - feat(rabbitmq_amqplib): configurable optional exchange arguments #3472
