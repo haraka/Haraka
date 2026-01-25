@@ -239,8 +239,8 @@ function getHooks() {
     .toString()
     .split('## Available Hooks')[1] // discard everything before this string
     .split('### rcpt')[0] // discard everything after this string
-    .match(/[*\-]\s(\S+)/gm) // grab the first word of lines starting with '* ' or '- '
-    .map((a) => a.replace(/^\* /, '').replace(/\\/g, '')) // strip list prefix and escapes
+    .match(/^-\s+\w+/gmu) // grab hook names from lines starting with '- '
+    .map((a) => a.replace(/^-\s+/u, '')) // strip list prefix
 }
 
 let config
