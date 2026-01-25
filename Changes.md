@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### Changed
+- haraka: fixed getHooks regex to grab only hook names
+
 ### [3.1.2] - 2026-01-02
 
 - smtp_forward: [domain selector] : user + domain #3501
