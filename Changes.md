@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 - haraka: fixed getHooks regex to grab only hook names
+- config: spool_dir and spool_after belong in connection.ini
 
 ### [3.1.2] - 2026-01-02
 

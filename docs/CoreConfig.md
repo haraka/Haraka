@@ -30,9 +30,6 @@ The list of plugins to load
   - daemonize - enable this to cause Haraka to fork into the background on start-up (default: 0)
   - daemon_log_file - (default: /var/log/haraka.log) where to redirect stdout/stderr when daemonized
   - daemon_pid_file - (default: /var/run/haraka.pid) where to write a PID file to
-  - spool_dir - (default: none) directory to create temporary spool files in
-  - spool_after - (default: -1) if message exceeds this size in bytes, then spool the message to disk
-    specify -1 to disable spooling completely or 0 to force all messages to be spooled to disk.
   - graceful_shutdown - (default: false) enable this to wait for sockets on shutdown instead of closing them quickly
   - force_shutdown_timeout - (default: 30) number of seconds to wait for a graceful shutdown
 
@@ -45,6 +42,8 @@ The list of plugins to load
 
   See inline comments in connection.ini for the following settings:
 
+  - main.spool_dir
+  - main.spool_after
   - haproxy.hosts_ipv4
   - haproxy.hosts_ipv6
   - headers.\*
