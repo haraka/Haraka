@@ -6,7 +6,7 @@ Streams are an abstraction over a data flow that is provided by Node core and is
 
 For more information about the Stream API, see http://nodejs.org/api/stream.html
 
-Note that when using bundled Haraka plugins, it's very unlikely you will need to change anything. Though you may want to configure `spool_dir` and `spool_after` in `config/smtp.ini`. If you have custom plugins, continue reading.
+Note that when using bundled Haraka plugins, it's very unlikely you will need to change anything. Though you may want to configure `spool_dir` and `spool_after` in `config/smtp.ini` (v2.x), or in `config/connection.ini` (v3.1 or newer). If you have custom plugins, continue reading.
 
 ## Changes To Look For
 
