@@ -4,7 +4,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- outbound: fixed aggregate error path
+### [3.1.3] - 2026-02-06
+
+- deps(graph): removed, sqlite3 library is unmaintained
+- deps: bump all to latest
+- outbound: fix aggregate error path #3519
+- doc: fix no plugin names displayed with haraka --order #3517
 - haraka: fixed getHooks regex to grab only hook names
 - config: spool_dir and spool_after belong in connection.ini
 
@@ -1753,3 +1758,4 @@ config files.
 [3.1.1]: https://github.com/haraka/Haraka/releases/tag/v3.1.1
 [3.1.0]: https://github.com/haraka/Haraka/releases/tag/v3.1.0
 [3.1.2]: https://github.com/haraka/Haraka/releases/tag/v3.1.2
+[3.1.3]: https://github.com/haraka/Haraka/releases/tag/v3.1.3
