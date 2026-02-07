@@ -37,7 +37,7 @@ exports.get_client = function (mx, callback) {
         const errMsg = err.message
             ? err.message
             : err instanceof AggregateError
-              ? err.map((e) => e.message).join(', ')
+              ? err.errors.map((e) => e.message).join(', ')
               : util.inspect(err, { depth: 3 })
         callback(errMsg, null)
     })
