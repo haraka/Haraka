@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [3.1.3] - 2026-02-06
 
+- deps(graph): removed, sqlite3 library is unmaintained
 - deps: bump all to latest
 - outbound: fix aggregate error path #3519
 - doc: fix no plugin names displayed with haraka --order #3517
