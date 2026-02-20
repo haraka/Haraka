@@ -250,6 +250,131 @@ describe('transaction', () => {
             })
         })
     })
+
+    describe('remove_final_cr', () => {
+        beforeEach(_set_up)
+
+        const cases = [
+            { desc: 'empty buffer',             input: Buffer.from(''),           expected: '' },
+            { desc: 'single byte',              input: Buffer.from('a'),          expected: 'a' },
+            { desc: 'CRLF ending',              input: Buffer.from('hello\r\n'),  expected: 'hello\n' },
+            { desc: 'LF-only ending unchanged', input: Buffer.from('hello\n'),    expected: 'hello\n' },
+            { desc: 'no newline unchanged',     input: Buffer.from('hello'),      expected: 'hello' },
+            { desc: 'string input',             input: 'hello\r\n',              expected: 'hello\n' },
+        ]
+
+        for (const { desc, input, expected } of cases) {
+            it(desc, () => {
+                const result = this.transaction.remove_final_cr(input)
+                assert.equal(result.toString(), expected)
+            })
+        }
+    })
+
+    describe('add_dot_stuffing_and_ensure_crlf_newlines', () => {
+        beforeEach(_set_up)
+
+        const cases = [
+            { desc: 'empty string',              input: '',           expected: '' },
+            { desc: 'no dots or newlines',       input: 'hello world', expected: 'hello world' },
+            { desc: 'bare LF becomes CRLF',      input: 'hello\n',    expected: 'hello\r\n' },
+            { desc: 'CRLF preserved',            input: 'hello\r\n',  expected: 'hello\r\n' },
+            { desc: 'dot at line start stuffed', input: '.hello\n',   expected: '..hello\r\n' },
+            { desc: 'dot mid-line not stuffed',  input: 'hel.lo\n',   expected: 'hel.lo\r\n' },
+            { desc: 'multi-line with dots',      input: 'a\n.b\n',    expected: 'a\r\n..b\r\n' },
+            { desc: 'dot after CRLF stuffed',    input: 'a\r\n.b\n',  expected: 'a\r\n..b\r\n' },
+        ]
+
+        for (const { desc, input, expected } of cases) {
+            it(desc, () => {
+                const inBuf = Buffer.isBuffer(input) ? input : Buffer.from(input)
+                const result = this.transaction.add_dot_stuffing_and_ensure_crlf_newlines(inBuf)
+                assert.equal(result.toString(), expected)
+            })
+        }
+    })
+
+    describe('header manipulation', () => {
+        beforeEach(_set_up)
+
+        it('add_header appends a header', (done) => {
+            this.transaction.add_data('Subject: original\n')
+            this.transaction.add_data('\n')
+            this.transaction.add_data('body\n')
+            this.transaction.end_data(() => {
+                this.transaction.add_header('X-Test', 'added')
+                const lines = this.transaction.header.get_all('X-Test')
+                assert.ok(lines.length > 0, 'header was added')
+                assert.equal(lines[0], 'added')
+                done()
+            })
+        })
+
+        it('add_leading_header prepends a header', (done) => {
+            this.transaction.add_data('Subject: original\n')
+            this.transaction.add_data('\n')
+            this.transaction.add_data('body\n')
+            this.transaction.end_data(() => {
+                this.transaction.add_leading_header('X-Lead', 'first')
+                const lines = this.transaction.header.get_all('X-Lead')
+                assert.ok(lines.length > 0, 'leading header was added')
+                assert.equal(lines[0], 'first')
+                done()
+            })
+        })
+
+        it('remove_header removes a header', (done) => {
+            this.transaction.add_data('X-Remove: gone\n')
+            this.transaction.add_data('\n')
+            this.transaction.add_data('body\n')
+            this.transaction.end_data(() => {
+                this.transaction.remove_header('X-Remove')
+                const lines = this.transaction.header.get_all('X-Remove')
+                assert.equal(lines.length, 0, 'header was removed')
+                done()
+            })
+        })
+    })
+
+    describe('incr_mime_count', () => {
+        beforeEach(_set_up)
+
+        it('increments mime_part_count', () => {
+            assert.equal(this.transaction.mime_part_count, 0)
+            this.transaction.incr_mime_count()
+            assert.equal(this.transaction.mime_part_count, 1)
+            this.transaction.incr_mime_count()
+            assert.equal(this.transaction.mime_part_count, 2)
+        })
+    })
+
+    describe('discard_data', () => {
+        beforeEach(_set_up)
+
+        it('end_data calls cb even when discard_data is true', (done) => {
+            this.transaction.discard_data = true
+            this.transaction.add_data('Subject: test\n')
+            this.transaction.add_data('\n')
+            this.transaction.add_data('body\n')
+            this.transaction.end_data(() => {
+                assert.ok(true, 'callback was called')
+                done()
+            })
+        })
+    })
+
+    describe('busted email (no header/body separator)', () => {
+        beforeEach(_set_up)
+
+        it('end_data handles email with no blank line separator', (done) => {
+            this.transaction.add_data('Subject: test\n')
+            this.transaction.add_data('From: a@b.com\n')
+            this.transaction.end_data(() => {
+                assert.ok(this.transaction.header, 'header exists')
+                done()
+            })
+        })
+    })
 })
 
 function write_file_data_to_transaction(test_transaction, filename) {
