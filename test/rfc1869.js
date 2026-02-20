@@ -63,4 +63,47 @@ describe('rfc1869', () => {
     it('RCPT TO:<postmaster>', () => {
         _check('RCPT TO:<postmaster>', ['<postmaster>'])
     })
+
+    describe('error cases', () => {
+        const throwCases = [
+            {
+                desc: 'MAIL FROM with space inside angle-bracket address',
+                args: ['mail', 'FROM:<user@dom ain>'],
+            },
+            {
+                desc: 'RCPT TO with syntax error in address (space in address)',
+                args: ['rcpt', 'TO: user @domain bad'],
+            },
+            {
+                desc: 'RCPT TO unknown address (no @ and not postmaster/abuse)',
+                args: ['rcpt', 'TO:unknown'],
+            },
+        ]
+
+        for (const { desc, args } of throwCases) {
+            it(`throws: ${desc}`, () => {
+                assert.throws(() => parse(...args), Error)
+            })
+        }
+    })
+
+    describe('strict mode', () => {
+        it('strict MAIL FROM:<user@domain> accepts angle-bracket address', () => {
+            const result = parse('mail', 'FROM:<user@domain.com>', true)
+            assert.equal(result[0], '<user@domain.com>')
+        })
+
+        it('strict MAIL FROM without angle brackets throws', () => {
+            assert.throws(() => parse('mail', 'FROM:user@domain.com', true), Error)
+        })
+
+        it('strict RCPT TO:<user@domain> accepts angle-bracket address', () => {
+            const result = parse('rcpt', 'TO:<user@domain.com>', true)
+            assert.equal(result[0], '<user@domain.com>')
+        })
+
+        it('strict RCPT TO without angle brackets throws', () => {
+            assert.throws(() => parse('rcpt', 'TO:user@domain.com', true), Error)
+        })
+    })
 })
