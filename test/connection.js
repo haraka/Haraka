@@ -303,4 +303,34 @@ describe('connection', () => {
             )
         })
     })
+
+    describe('pause and resume', () => {
+        beforeEach(_set_up)
+
+        it('restores previous state when still paused', () => {
+            this.connection.client.pause = () => {}
+            this.connection.client.resume = () => {}
+
+            this.connection.state = constants.connection.state.PAUSE_SMTP
+            this.connection.pause()
+            this.connection.resume()
+
+            assert.equal(this.connection.state, constants.connection.state.PAUSE_SMTP)
+            assert.equal(this.connection.prev_state, null)
+        })
+
+        it('does not overwrite state changed while paused', () => {
+            this.connection.client.pause = () => {}
+            this.connection.client.resume = () => {}
+
+            this.connection.state = constants.connection.state.PAUSE_SMTP
+            this.connection.pause()
+
+            this.connection.state = constants.connection.state.CMD
+            this.connection.resume()
+
+            assert.equal(this.connection.state, constants.connection.state.CMD)
+            assert.equal(this.connection.prev_state, null)
+        })
+    })
 })
