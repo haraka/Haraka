@@ -4,7 +4,6 @@ const child_process = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 
-const async = require('async')
 const { Address } = require('address-rfc2821')
 const config = require('haraka-config')
 
@@ -14,6 +13,41 @@ const HMailItem = require('./hmail')
 const obc = require('./config')
 const _qfile = require('./qfile')
 const obtls = require('./tls')
+
+class Queue {
+    constructor(worker) {
+        this.worker = worker
+        this.tasks = []
+        this.running = 0
+    }
+
+    push(task) {
+        this.tasks.push(task)
+        this._process()
+    }
+
+    length() {
+        return this.tasks.length + this.running
+    }
+
+    async _process() {
+        while (this.running < obc.cfg.concurrency_max && this.tasks.length > 0) {
+            this.running++
+            const task = this.tasks.shift()
+
+            try {
+                await new Promise((resolve) => {
+                    this.worker(task, (err) => {
+                        resolve()
+                    })
+                })
+            } finally {
+                this.running--
+                setImmediate(() => this._process())
+            }
+        }
+    }
+}
 
 exports.name = 'outbound/queue'
 
@@ -28,14 +62,14 @@ if (config.get('queue_dir')) {
 
 exports.queue_dir = queue_dir
 
-const load_queue = async.queue((file, cb) => {
+const load_queue = new Queue((file, cb) => {
     const hmail = new HMailItem(file, path.join(queue_dir, file))
     exports._add_hmail(hmail)
     hmail.once('ready', cb)
-}, obc.cfg.concurrency_max)
+})
 
 let in_progress = 0
-const delivery_queue = (exports.delivery_queue = async.queue((hmail, cb) => {
+const delivery_queue = (exports.delivery_queue = new Queue((hmail, cb) => {
     in_progress++
     hmail.next_cb = () => {
         in_progress--
@@ -45,7 +79,7 @@ const delivery_queue = (exports.delivery_queue = async.queue((hmail, cb) => {
     obtls.init(() => {
         hmail.send()
     })
-}, obc.cfg.concurrency_max))
+}))
 
 const temp_fail_queue = (exports.temp_fail_queue = new TimerQueue())
 
@@ -164,42 +198,58 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
         logger.info(exports, 'Loading the queue...')
     }
 
-    async.map(
-        input_files,
-        (file, cb) => {
-            const parts = self.read_parts(file)
-            if (!parts) return cb()
+    // Promise-based map implementation
+    Promise.all(
+        input_files.map(
+            (file) =>
+                new Promise((resolve) => {
+                    const parts = self.read_parts(file)
+                    if (!parts) return resolve()
 
-            if (searchPid) {
-                if (parts.pid !== searchPid) return cb()
+                    if (searchPid) {
+                        if (parts.pid !== searchPid) return resolve()
 
-                self.rename_to_actual_pid(file, parts, (error, renamed_file) => {
-                    if (error) {
-                        logger.error(exports, `${error}`)
-                        return cb()
+                        self.rename_to_actual_pid(file, parts, (error, renamed_file) => {
+                            if (error) {
+                                logger.error(exports, `${error}`)
+                                return resolve()
+                            }
+
+                            stat_renamed++
+                            stat_loaded++
+                            resolve(renamed_file)
+                        })
+                    } else {
+                        stat_loaded++
+                        resolve(file)
                     }
-
-                    stat_renamed++
-                    stat_loaded++
-                    cb(null, renamed_file)
-                })
-            } else {
-                stat_loaded++
-                cb(null, file)
-            }
-        },
-        (err, results) => {
-            if (err) logger.err(exports, `[pid: ${pid}] ${err}`)
-            if (searchPid) logger.info(exports, `[pid: ${pid}] ${stat_renamed} files old PID queue fixed up`)
+                }),
+        ),
+    )
+        .then((results) => {
+            if (searchPid)
+                logger.info(exports, `[pid: ${pid}] ${stat_renamed} files old PID queue fixed up`)
             logger.debug(exports, `[pid: ${pid}] ${stat_loaded} files loaded`)
 
-            async.map(
-                results.filter((i) => i),
-                iteratee,
-                callback,
+            const filtered = results.filter((i) => i)
+            return Promise.all(
+                filtered.map(
+                    (item) =>
+                        new Promise((resolve) => {
+                            iteratee(item, (err) => {
+                                resolve()
+                            })
+                        }),
+                ),
             )
-        },
-    )
+        })
+        .then(() => {
+            callback()
+        })
+        .catch((err) => {
+            if (err) logger.err(exports, `[pid: ${pid}] ${err}`)
+            callback()
+        })
 }
 
 exports.stats = () => {
