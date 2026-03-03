@@ -178,8 +178,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-qlmtp]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/lmtp.md
 [url-qmail]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/qmail-queue.md
 [url-qquart]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/quarantine.md
-[url-qrabbit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/rabbitmq.md
-[url-qrabbita]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/rabbitmq_amqplib.md
+[url-qrabbit]: https://github.com/haraka/haraka-plugin-queue-rabbitmq
 [url-qbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_bridge.md
 [url-qforward]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_forward.md
 [url-qproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_proxy.md
