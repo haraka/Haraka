@@ -56,7 +56,7 @@ class Plugin {
         */
 
         this.hasPackageJson = false
-        const name = this.name.startsWith('haraka-plugin-') ? this.name.substr(14) : this.name
+        const name = this.name.startsWith('haraka-plugin-') ? this.name.slice(14) : this.name
         if (this.name !== name) this.name = name
 
         let paths = []
@@ -281,7 +281,7 @@ plugins.load_plugins = (override) => {
     }
 
     for (let plugin of plugin_list) {
-        if (plugin.startsWith('haraka-plugin-')) plugin = plugin.substr(14)
+        if (plugin.startsWith('haraka-plugin-')) plugin = plugin.substring(14)
         if (plugins.deprecated[plugin]) {
             plugins.lognotice(
                 `${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`,
@@ -467,7 +467,7 @@ plugins.run_next_hook = (hook, object, params) => {
         }
 
         const respond_method = `${hook}_respond`
-        if (item && is_deny_retval(retval) && hook.substr(0, 5) !== 'init_') {
+        if (item && is_deny_retval(retval) && hook.substring(0, 5) !== 'init_') {
             object.deny_respond = get_denyfn(object, hook, params, retval, msg, respond_method)
             plugins.run_hooks('deny', object, [retval, msg, item[0].name, item[1], params, hook])
         } else {

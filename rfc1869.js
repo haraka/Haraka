@@ -33,7 +33,7 @@ exports.parse = (type, line, strict) => {
 
     while (1) {
         const old_length = line.length
-        line = line.replace(chew_regexp, function repl(str, p1) {
+        line = line.replace(chew_regexp, (str, p1) => {
             params.push(p1)
             return ''
         })
@@ -73,17 +73,17 @@ exports.parse = (type, line, strict) => {
             throw new Error('Syntax error in parameters')
         }
     } else {
-        // console.log(`Looking at ${line}``);
+        // console.log(`Looking at ${line}`);
         if (line.match(/@.*\s/)) {
             throw new Error('Syntax error in parameters')
-        } else {
-            if (line.match(/\s/)) {
-                throw new Error('Syntax error in parameters')
-            } else if (line.match(/@/)) {
-                if (!line.match(/^<.*>$/)) line = `<${line}>`
-            } else if (!line.match(/^<(postmaster|abuse)>$/i)) {
-                throw new Error(`Syntax error in address: ${line}`)
-            }
+        }
+        if (line.match(/\s/)) {
+            throw new Error('Syntax error in parameters')
+        }
+        if (line.match(/@/)) {
+            if (!line.match(/^<.*>$/)) line = `<${line}>`
+        } else if (!line.match(/^<(postmaster|abuse)>$/i)) {
+            throw new Error(`Syntax error in address: ${line}`)
         }
     }
 

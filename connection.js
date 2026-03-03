@@ -192,9 +192,7 @@ class Connection {
 
         const ha_list = net.isIPv6(self.remote.ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4
         if (
-            ha_list.some((element, index, array) => {
-                return ipaddr.parse(self.remote.ip).match(element[0], element[1])
-            })
+            ha_list.some((element) => ipaddr.parse(self.remote.ip).match(element[0], element[1]))
         ) {
             self.proxy.allowed = true
             // Wait for PROXY command
@@ -302,7 +300,7 @@ class Connection {
         /* eslint no-control-regex: 0 */
         if (/[^\x00-\x7F]/.test(this.current_line)) {
             // See if this is a TLS handshake
-            const buf = Buffer.from(this.current_line.substr(0, 3), 'binary')
+            const buf = Buffer.from(this.current_line.slice(0, 3), 'binary')
             if (
                 buf[0] === 0x16 &&
                 buf[1] === 0x03 &&
@@ -516,9 +514,7 @@ class Connection {
         } else {
             messages = msg.slice()
         }
-        messages = messages.filter((msg2) => {
-            return /\S/.test(msg2)
-        })
+        messages = messages.filter((msg2) => /\S/.test(msg2))
 
         // Multiline AUTH PLAIN as in RFC-4954 page 8.
         if (code === 334 && !messages.length) {
@@ -530,7 +526,7 @@ class Connection {
             if (cfg.uuid.deny_chars) {
                 uuid = (this.transaction || this).uuid
                 if (cfg.uuid.deny_chars > 1) {
-                    uuid = uuid.substr(0, cfg.uuid.deny_chars)
+                    uuid = uuid.slice(0, cfg.uuid.deny_chars)
                 }
             }
         }
@@ -793,12 +789,12 @@ class Connection {
                     greeting = [...cfg.message.greeting]
                     greeting[0] = `${this.local.host} ESMTP ${greeting[0]}`
                     if (cfg.uuid.banner_chars) {
-                        greeting[0] += ` (${this.uuid.substr(0, cfg.uuid.banner_chars)})`
+                        greeting[0] += ` (${this.uuid.slice(0, cfg.uuid.banner_chars)})`
                     }
                 } else {
                     greeting = `${this.local.host} ESMTP ${this.local.info} ready`
                     if (cfg.uuid.banner_chars) {
-                        greeting += ` (${this.uuid.substr(0, cfg.uuid.banner_chars)})`
+                        greeting += ` (${this.uuid.slice(0, cfg.uuid.banner_chars)})`
                     }
                 }
                 this.respond(220, msg || greeting)
@@ -964,7 +960,7 @@ class Connection {
             let addr = sender.format()
             if (addr.length > 2) {
                 // all but null sender
-                addr = addr.substr(1, addr.length - 2) // trim off < >
+                addr = addr.slice(1, -1) // trim off < >
             }
             this.transaction.results.add(
                 { name: 'mail_from' },
@@ -1012,7 +1008,7 @@ class Connection {
 
         const addr = rcpt.format()
         const recipient = {
-            address: addr.substr(1, addr.length - 2),
+            address: addr.slice(1, -1),
             action,
         }
 

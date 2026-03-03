@@ -25,8 +25,8 @@ exports.hook_data_post = (next, connection) => {
     if (idx) {
         // If the username is qualified (e.g. user@domain.com)
         // then we make the @domain.com part optional in the regexp.
-        domain = user.substr(idx)
-        user = user.substr(0, idx)
+        domain = user.substring(idx)
+        user = user.substring(0, idx)
     }
     const passwd = connection.notes.auth_passwd
     const bound_regexp = '(?:\\b|\\B)'
