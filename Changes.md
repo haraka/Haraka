@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix connection pause after odd SMTP command sequence, #3525
+- add tests for transaction, rfc1869, xclient, and record_envelope_addresses #3524
+
 ### [3.1.3] - 2026-02-06
 
 - deps(graph): removed, sqlite3 library is unmaintained

@@ -673,10 +673,10 @@ class Connection {
     resume() {
         if (this.state >= states.DISCONNECTING) return
         this.client.resume()
-        if (this.prev_state) {
+        if (this.prev_state && this.state === states.PAUSE_DATA) {
             this.state = this.prev_state
-            this.prev_state = null
         }
+        this.prev_state = null
         setImmediate(() => this._process_data())
     }
     /////////////////////////////////////////////////////////////////////////////
