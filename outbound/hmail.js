@@ -1,7 +1,8 @@
 'use strict'
 
 const events = require('node:events')
-const fs = require('node:fs')
+const fs = require('node:fs/promises')
+const { createReadStream } = require('node:fs')
 const dns = require('node:dns')
 const net = require('node:net')
 const path = require('node:path')
@@ -68,20 +69,15 @@ class HMailItem extends events.EventEmitter {
     }
 
     data_stream() {
-        return fs.createReadStream(this.path, {
+        return createReadStream(this.path, {
             start: this.data_start,
             end: this.file_size,
         })
     }
 
-    size_file() {
-        fs.stat(this.path, (err, stats) => {
-            if (err) {
-                // we are fucked... guess I need somewhere for this to go
-                this.logerror(`Error obtaining file size: ${err}`)
-                this.temp_fail('Error obtaining file size')
-                return
-            }
+    async size_file() {
+        try {
+            const stats = await fs.stat(this.path)
             if (stats.size === 0) {
                 this.logerror(`Error reading queue file ${this.filename}: zero bytes`)
                 this.emit('error', `Error reading queue file ${this.filename}: zero bytes`)
@@ -90,74 +86,74 @@ class HMailItem extends events.EventEmitter {
 
             this.file_size = stats.size
             this.read_todo()
-        })
+        }
+        catch (err) {
+            // we are fucked... guess I need somewhere for this to go
+            this.logerror(`Error obtaining file size: ${err}`)
+            this.temp_fail('Error obtaining file size')
+        }
     }
 
-    read_todo() {
-        this._stream_bytes_from(this.path, { start: 0, end: 3 }, (err, bytes) => {
-            if (err) {
-                const errMsg = `Error reading queue file ${this.filename}: ${err}`
-                this.logerror(errMsg)
-                this.temp_fail(errMsg)
-                return
-            }
+    async read_todo() {
+        try {
+            const bytes = await this._stream_bytes_from(this.path, { start: 0, end: 3 })
 
             const todo_len = bytes.readUInt32BE(0)
             this.logdebug(`todo header length: ${todo_len}`)
             this.data_start = todo_len + 4
 
-            this._stream_bytes_from(this.path, { start: 4, end: todo_len + 3 }, (err2, todo_bytes) => {
-                if (todo_bytes.length !== todo_len) {
-                    const wrongLength = `Didn't find right amount of data in todo!: ${err2} ${this.path}`
-                    this.logcrit(wrongLength)
-                    fs.rename(this.path, path.join(queue_dir, `error.${this.filename}`), (err3) => {
-                        if (err3) {
-                            this.logerror(`Error creating (error.${this.filename}): ${err3}`)
-                        }
-                    })
-                    this.emit('error', wrongLength) // Note nothing picks this up yet
-                    return
-                }
+            const todo_bytes = await this._stream_bytes_from(this.path, { start: 4, end: todo_len + 3 })
+            if (todo_bytes.length !== todo_len) {
+                const wrongLength = `Didn't find right amount of data in todo: ${this.path}`
+                this.logcrit(wrongLength)
+                await fs.rename(this.path, path.join(queue_dir, `error.${this.filename}`))
+                this.emit('error', wrongLength) // Note nothing picks this up yet
+                return
+            }
 
-                // we read everything
-                const todo_json = todo_bytes.toString().trim()
-                const last_char = todo_json.charAt(todo_json.length - 1)
-                if (last_char !== '}') {
-                    this.emit(
-                        'error',
-                        `invalid todo header end char: ${last_char} at pos ${todo_len} of ${this.filename}`,
-                    )
-                    return
-                }
-                this.todo = JSON.parse(todo_json)
-                this.todo.mail_from = new Address(this.todo.mail_from)
-                this.todo.rcpt_to = this.todo.rcpt_to.map((a) => new Address(a))
-                this.todo.notes = new Notes(this.todo.notes)
-                this.emit('ready')
-            })
-        })
+            // we read everything
+            const todo_json = todo_bytes.toString().trim()
+            const last_char = todo_json.charAt(todo_json.length - 1)
+            if (last_char !== '}') {
+                this.emit(
+                    'error',
+                    `invalid todo header end char: ${last_char} at pos ${todo_len} of ${this.filename}`,
+                )
+                return
+            }
+            this.todo = JSON.parse(todo_json)
+            this.todo.mail_from = new Address(this.todo.mail_from)
+            this.todo.rcpt_to = this.todo.rcpt_to.map((a) => new Address(a))
+            this.todo.notes = new Notes(this.todo.notes)
+            this.emit('ready')
+        }
+        catch (err) {
+            const errMsg = `Error reading queue file ${this.filename}: ${err}`
+            this.logerror(errMsg)
+            this.temp_fail(errMsg)
+        }
     }
 
-    _stream_bytes_from(file_path, opts, done) {
-        if (opts.encoding !== undefined) {
-            // passing an encoding to fs.createReadStream will change the type of data returned
-            // ex: instead of returning a buffer, it may return a String, which will cause
-            // Buffer.concat to barf. There's a reason this function has 'bytes' in the name
-            done(new Error('Thar be dragons here! Encode/decode on the result of this function'))
-            return
-        }
+    _stream_bytes_from(file_path, opts) {
+        return new Promise((resolve, reject) => {
+            if (opts.encoding !== undefined) {
+                // passing an encoding to fs.createReadStream will change the type of data returned
+                // ex: instead of returning a buffer, it may return a String, which will cause
+                // Buffer.concat to barf. There's a reason this function has 'bytes' in the name
+                reject(new Error('Thar be dragons here! Encode/decode on the result of this function'))
+                return
+            }
+            const stream = createReadStream(file_path, opts)
+            stream.on('error', reject)
 
-        const stream = fs.createReadStream(file_path, opts)
+            let raw_bytes = Buffer.alloc(0)
+            stream.on('data', (data) => {
+                raw_bytes = Buffer.concat([raw_bytes, data])
+            })
 
-        stream.on('error', done)
-
-        let raw_bytes = Buffer.alloc(0)
-        stream.on('data', (data) => {
-            raw_bytes = Buffer.concat([raw_bytes, data])
-        })
-
-        stream.on('end', () => {
-            done(null, raw_bytes)
+            stream.on('end', () => {
+                resolve(raw_bytes)
+            })
         })
     }
 
@@ -1290,7 +1286,7 @@ class HMailItem extends events.EventEmitter {
 
     double_bounce(err) {
         this.lognotice(`Double bounce: ${err}`)
-        fs.unlink(this.path, () => {})
+        fs.unlink(this.path).catch(() => {})
         this.next_cb()
         // TODO: fill this in... ?
         // One strategy is perhaps log to an mbox file. What do other servers do?
@@ -1320,7 +1316,7 @@ class HMailItem extends events.EventEmitter {
         this.refcount--
         if (this.refcount === 0) {
             // Remove the file.
-            fs.unlink(this.path, () => {})
+            fs.unlink(this.path).catch(() => {})
             this.next_cb()
         }
     }
@@ -1349,7 +1345,7 @@ class HMailItem extends events.EventEmitter {
         plugins.run_hooks('deferred', this, { delay, err, ...(extra || {}) })
     }
 
-    deferred_respond(retval, msg, params) {
+    async deferred_respond(retval, msg, params) {
         if (retval !== constants.cont && retval !== constants.denysoft) {
             this.loginfo(`plugin responded with: ${retval}. Not deferring. Deleting mail.`)
             return this.discard() // calls next_cb
@@ -1367,11 +1363,8 @@ class HMailItem extends events.EventEmitter {
         parts.attempts = this.num_failures
         const new_filename = _qfile.name(parts)
 
-        fs.rename(this.path, path.join(queue_dir, new_filename), (err) => {
-            if (err) {
-                return this.bounce(`Error re-queueing email: ${err}`)
-            }
-
+        try {
+            await fs.rename(this.path, path.join(queue_dir, new_filename))
             this.path = path.join(queue_dir, new_filename)
             this.filename = new_filename
 
@@ -1380,7 +1373,9 @@ class HMailItem extends events.EventEmitter {
             temp_fail_queue.add(this.filename, delay, () => {
                 delivery_queue.push(this)
             })
-        })
+        } catch (err) {
+            return this.bounce(`Error re-queueing email: ${err}`)
+        }
     }
 
     // The following handler impacts outgoing mail. It removes the queue file.
@@ -1472,18 +1467,17 @@ class HMailItem extends events.EventEmitter {
                 err_handler(err, 'hmail.data_stream reader')
             })
             rs.on('end', () => {
-                ws.on('close', () => {
-                    const dest_path = path.join(queue_dir, fname)
-                    fs.rename(tmp_path, dest_path, (err) => {
-                        if (err) {
-                            err_handler(err, 'tmp file rename')
-                            return
-                        }
+                ws.on('close', async () => {
+                    try {
+                        const dest_path = path.join(queue_dir, fname)
+                        await fs.rename(tmp_path, dest_path)
                         const split_mail = new HMailItem(fname, dest_path, hmail.notes)
                         split_mail.once('ready', () => {
                             cb(split_mail)
                         })
-                    })
+                    } catch (err) {
+                        err_handler(err, 'tmp file rename')
+                    }
                 })
                 ws.destroySoon()
             })

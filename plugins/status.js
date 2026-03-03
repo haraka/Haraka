@@ -92,8 +92,9 @@ exports.pool_list = (cb) => {
     cb(null, result)
 }
 
-exports.queue_list = function (cb) {
-    this.outbound.list_queue((err, qlist = []) => {
+exports.queue_list = async function (cb) {
+    try {
+        const qlist = await this.outbound.list_queue()
         const result = []
 
         for (const todo of qlist) {
@@ -107,8 +108,10 @@ exports.queue_list = function (cb) {
             })
         }
 
-        cb(err, result)
-    })
+        cb(null, result)
+    } catch (err) {
+        cb(err)
+    }
 }
 
 exports.queue_stats = function (cb) {
@@ -116,7 +119,7 @@ exports.queue_stats = function (cb) {
 }
 
 exports.queue_inspect = function (cb) {
-    const delivery_queue_items = this.outbound.delivery_queue._tasks.toArray()
+    const delivery_queue_items = this.outbound.delivery_queue.tasks
     const fail_queue_items = this.outbound.temp_fail_queue.queue
 
     cb(null, {
