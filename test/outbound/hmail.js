@@ -23,6 +23,7 @@ describe('outbound/hmail', () => {
         assert.equal(sorted[0].exchange, 'mx2.example.com')
         done()
     })
+
     it('sort_mx, shuffled', (done) => {
         const sorted = this.hmail.sort_mx([
             { exchange: 'mx2.example.com', priority: 5 },
@@ -33,6 +34,7 @@ describe('outbound/hmail', () => {
         assert.ok(sorted[1].exchange == 'mx3.example.com' || sorted[1].exchange == 'mx1.example.com')
         done()
     })
+
     it('force_tls', (done) => {
         this.hmail.todo = { domain: 'miss.example.com' }
         this.hmail.obtls.cfg = {
@@ -64,6 +66,7 @@ describe('outbound/hmail.HMailItem', () => {
             done()
         })
     })
+
     it('normal TODO w/multibyte chars loads w/o error', (done) => {
         this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_qfile', 'test/fixtures/todo_qfile.txt', {})
         this.hmail.on('ready', () => {
@@ -77,6 +80,7 @@ describe('outbound/hmail.HMailItem', () => {
             done()
         })
     })
+
     it('too short TODO length declared', (done) => {
         this.hmail = new Hmail(
             '1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka',
@@ -94,6 +98,7 @@ describe('outbound/hmail.HMailItem', () => {
             done()
         })
     })
+
     it('too long TODO length declared', (done) => {
         this.hmail = new Hmail(
             '1508269674999_1508269674999_0_34002_socVUF_1_haraka',
@@ -111,6 +116,7 @@ describe('outbound/hmail.HMailItem', () => {
             done()
         })
     })
+
     it('zero-length file load skip w/o crash', (done) => {
         this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_zero', 'test/queue/zero-length', {})
         this.hmail.on('ready', () => {
@@ -123,6 +129,7 @@ describe('outbound/hmail.HMailItem', () => {
             done()
         })
     })
+
     it('lifecycle, reads and writes a haraka queue file', (done) => {
         this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_qfile', 'test/fixtures/todo_qfile.txt', {})
 

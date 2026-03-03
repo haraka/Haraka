@@ -1,7 +1,7 @@
 'use strict'
 
 const child_process = require('node:child_process')
-const fs = require('node:fs')
+const fs = require('node:fs/promises')
 const path = require('node:path')
 
 const { Address } = require('address-rfc2821')
@@ -36,11 +36,13 @@ class Queue {
             const task = this.tasks.shift()
 
             try {
-                await new Promise((resolve) => {
-                    this.worker(task, (err) => {
-                        resolve()
-                    })
+                // Support both callback and async worker functions
+                const result = this.worker(task, (err) => {
+                    // Callback handler for backward compatibility
                 })
+                if (result instanceof Promise) {
+                    await result
+                }
             } finally {
                 this.running--
                 setImmediate(() => this._process())
@@ -84,47 +86,44 @@ let queue_count = 0
 
 exports.get_stats = () => `${in_progress}/${exports.delivery_queue.length()}/${exports.temp_fail_queue.length()}`
 
-exports.list_queue = (cb) => {
-    exports._load_cur_queue(null, exports._list_file, cb)
+exports.list_queue = async () => {
+    return exports._load_cur_queue(null, exports._list_file)
 }
 
-exports._stat_file = (file, cb) => {
+exports._stat_file = async (file) => {
     queue_count++
-    setImmediate(cb)
 }
 
-exports.stat_queue = (cb) => {
-    const self = exports
-    exports._load_cur_queue(null, exports._stat_file, (err) => {
-        if (err) return cb(err)
-        return cb(null, self.stats())
-    })
+exports.stat_queue = async () => {
+    await exports._load_cur_queue(null, exports._stat_file)
+    return exports.stats()
 }
 
-exports.load_queue = (pid) => {
+exports.load_queue = async (pid) => {
     // Initialise and load queue
     // This function is called first when not running under cluster,
-    exports.ensure_queue_dir()
-    exports.delete_dot_files()
+    await exports.ensure_queue_dir()
+    await exports.delete_dot_files()
 
-    exports._load_cur_queue(pid, exports._add_file, () => {
-        logger.info(exports, `[pid: ${pid}] ${delivery_queue.length()} files in my delivery queue`)
-        logger.info(exports, `[pid: ${pid}] ${load_queue.length()} files in my load queue`)
-        logger.info(exports, `[pid: ${pid}] ${temp_fail_queue.length()} files in my temp fail queue`)
-    })
+    await exports._load_cur_queue(pid, exports._add_file)
+    logger.info(exports, `[pid: ${pid}] ${delivery_queue.length()} files in my delivery queue`)
+    logger.info(exports, `[pid: ${pid}] ${load_queue.length()} files in my load queue`)
+    logger.info(exports, `[pid: ${pid}] ${temp_fail_queue.length()} files in my temp fail queue`)
 }
 
-exports._load_cur_queue = (pid, iteratee, cb) => {
-    logger.info(exports, 'Loading outbound queue from ', exports.queue_dir)
-    fs.readdir(exports.queue_dir, (err, files) => {
-        if (err) {
-            return logger.error(exports, `Failed to load queue directory (${exports.queue_dir}): ${err}`)
-        }
+exports._load_cur_queue = async (pid, iteratee) => {
+    logger.info(exports, 'Loading outbound queue from ', queue_dir)
+    let files
+    try {
+        files = await fs.readdir(queue_dir)
+    } catch (err) {
+        logger.error(exports, `Failed to load queue directory (${queue_dir}): ${err}`)
+        throw err
+    }
 
-        this.cur_time = new Date() // set once so we're not calling it a lot
+    exports.cur_time = new Date() // set once so we're not calling it a lot
 
-        this.load_queue_files(pid, files, iteratee, cb)
-    })
+    return exports.load_queue_files(pid, files, iteratee)
 }
 
 exports.read_parts = (file) => {
@@ -147,7 +146,7 @@ exports.read_parts = (file) => {
     return parts
 }
 
-exports.rename_to_actual_pid = (file, parts, cb) => {
+exports.rename_to_actual_pid = async (file, parts) => {
     // maintain some original details for the rename
     const new_filename = _qfile.name({
         arrival: parts.arrival,
@@ -156,34 +155,29 @@ exports.rename_to_actual_pid = (file, parts, cb) => {
         attempts: parts.attempts,
     })
 
-    fs.rename(path.join(exports.queue_dir, file), path.join(exports.queue_dir, new_filename), (err) => {
-        if (err) {
-            return cb(`Unable to rename queue file: ${file} to ${new_filename} : ${err}`)
-        }
-
-        cb(null, new_filename)
-    })
+    try {
+        await fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename))
+        return new_filename
+    } catch (err) {
+        throw new Error(`Unable to rename queue file: ${file} to ${new_filename} : ${err}`)
+    }
 }
 
-exports._add_file = (file, cb) => {
-    const self = exports
+exports._add_file = async (file) => {
     const parts = _qfile.parts(file)
 
-    if (parts.next_attempt <= self.cur_time) {
+    if (parts.next_attempt <= exports.cur_time) {
         logger.debug(exports, `File ${file} needs processing now`)
         load_queue.push(file)
     } else {
-        logger.debug(exports, `File ${file} needs processing later: ${parts.next_attempt - self.cur_time}ms`)
-        temp_fail_queue.add(file, parts.next_attempt - self.cur_time, () => {
+        logger.debug(exports, `File ${file} needs processing later: ${parts.next_attempt - exports.cur_time}ms`)
+        temp_fail_queue.add(file, parts.next_attempt - exports.cur_time, () => {
             load_queue.push(file)
         })
     }
-
-    cb()
 }
 
-exports.load_queue_files = (pid, input_files, iteratee, callback = function () {}) => {
-    const self = exports
+exports.load_queue_files = async (pid, input_files, iteratee) => {
     const searchPid = parseInt(pid)
 
     let stat_renamed = 0
@@ -195,58 +189,39 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
         logger.info(exports, 'Loading the queue...')
     }
 
-    // Promise-based map implementation
-    Promise.all(
-        input_files.map(
-            (file) =>
-                new Promise((resolve) => {
-                    const parts = self.read_parts(file)
-                    if (!parts) return resolve()
+    const results = await Promise.all(
+        input_files.map(async (file) => {
+            const parts = exports.read_parts(file)
+            if (!parts) return null
 
-                    if (searchPid) {
-                        if (parts.pid !== searchPid) return resolve()
+            if (!searchPid) {
+                stat_loaded++
+                return file
+            }
 
-                        self.rename_to_actual_pid(file, parts, (error, renamed_file) => {
-                            if (error) {
-                                logger.error(exports, `${error}`)
-                                return resolve()
-                            }
+            if (parts.pid !== searchPid) return null
 
-                            stat_renamed++
-                            stat_loaded++
-                            resolve(renamed_file)
-                        })
-                    } else {
-                        stat_loaded++
-                        resolve(file)
-                    }
-                }),
-        ),
+            try {
+                const renamed_file = await exports.rename_to_actual_pid(file, parts)
+                stat_renamed++
+                stat_loaded++
+                return renamed_file
+            } catch (error) {
+                logger.error(exports, `${error.message}`)
+                return null
+            }
+        }),
     )
-        .then((results) => {
-            if (searchPid)
-                logger.info(exports, `[pid: ${pid}] ${stat_renamed} files old PID queue fixed up`)
-            logger.debug(exports, `[pid: ${pid}] ${stat_loaded} files loaded`)
 
-            const filtered = results.filter((i) => i)
-            return Promise.all(
-                filtered.map(
-                    (item) =>
-                        new Promise((resolve) => {
-                            iteratee(item, (err) => {
-                                resolve()
-                            })
-                        }),
-                ),
-            )
-        })
-        .then(() => {
-            callback()
-        })
-        .catch((err) => {
-            if (err) logger.err(exports, `[pid: ${pid}] ${err}`)
-            callback()
-        })
+    if (searchPid) logger.info(exports, `[pid: ${pid}] ${stat_renamed} files old PID queue fixed up`)
+    logger.debug(exports, `[pid: ${pid}] ${stat_loaded} files loaded`)
+
+    const filtered = results.filter((i) => i)
+    return await Promise.all(
+        filtered.map(async (item) => {
+            await iteratee(item)
+        }),
+    )
 }
 
 exports.stats = () => {
@@ -256,85 +231,80 @@ exports.stats = () => {
     }
 }
 
-exports._list_file = (file, cb) => {
-    const tl_reader = fs.createReadStream(path.join(exports.queue_dir, file), {
-        start: 0,
-        end: 3,
-    })
-    tl_reader.on('error', (err) => {
-        console.error(`Error reading queue file: ${file}:`, err)
-    })
-    tl_reader.once('data', (buf) => {
-        // I'm making the assumption here we won't ever read less than 4 bytes
-        // as no filesystem on the planet should be that dumb...
-        tl_reader.destroy()
+exports._list_file = async (file) => {
+    try {
+        const filePath = path.join(queue_dir, file)
+
+        // Read first 4 bytes to get the todo length
+        const handle = await fs.open(filePath, 'r')
+        const buf = Buffer.alloc(4)
+        await handle.read(buf, 0, 4, 0)
         const todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3]
-        const td_reader = fs.createReadStream(path.join(exports.queue_dir, file), {
-            encoding: 'utf8',
-            start: 4,
-            end: todo_len + 3,
-        })
-        let todo = ''
-        td_reader.on('data', (str) => {
-            todo += str
-            if (Buffer.byteLength(todo) === todo_len) {
-                // we read everything
-                const todo_struct = JSON.parse(todo)
-                todo_struct.rcpt_to = todo_struct.rcpt_to.map((a) => new Address(a))
-                todo_struct.mail_from = new Address(todo_struct.mail_from)
-                todo_struct.file = file
-                todo_struct.full_path = path.join(exports.queue_dir, file)
-                const parts = _qfile.parts(file)
-                todo_struct.pid = parts?.pid || null
-                cb(null, todo_struct)
-            }
-        })
-        td_reader.on('end', () => {
-            if (Buffer.byteLength(todo) !== todo_len) {
-                console.error("Didn't find right amount of data in todo for file:", file)
-                return cb()
-            }
-        })
-    })
+
+        // Read the todo data
+        const todoBuf = Buffer.alloc(todo_len)
+        await handle.read(todoBuf, 0, todo_len, 4)
+        await handle.close()
+
+        const todo = todoBuf.toString('utf8')
+        const todo_struct = JSON.parse(todo)
+        todo_struct.rcpt_to = todo_struct.rcpt_to.map((a) => new Address(a))
+        todo_struct.mail_from = new Address(todo_struct.mail_from)
+        todo_struct.file = file
+        todo_struct.full_path = filePath
+        const parts = _qfile.parts(file)
+        todo_struct.pid = parts?.pid || null
+        return todo_struct
+    } catch (err) {
+        console.error(`Error reading queue file: ${file}:`, err)
+        return null
+    }
 }
 
-exports.flush_queue = (domain, pid) => {
+exports.flush_queue = async (domain, pid) => {
     if (domain) {
-        exports.list_queue((err, qlist) => {
-            if (err) return logger.error(exports, `Failed to load queue: ${err}`)
+        try {
+            const qlist = await exports.list_queue()
             for (const todo of qlist) {
-                if (todo.domain.toLowerCase() != domain.toLowerCase()) return
-                if (pid && todo.pid != pid) return
+                if (todo.domain.toLowerCase() !== domain.toLowerCase()) continue
+                if (pid && todo.pid !== pid) continue
                 // console.log("requeue: ", todo);
                 delivery_queue.push(new HMailItem(todo.file, todo.full_path))
             }
-        })
+        } catch (err) {
+            logger.error(exports, `Failed to load queue: ${err.message}`)
+        }
     } else {
         temp_fail_queue.drain()
     }
 }
 
-exports.load_pid_queue = (pid) => {
+exports.load_pid_queue = async (pid) => {
     logger.info(exports, `Loading queue for pid: ${pid}`)
-    exports.load_queue(pid)
+    await exports.load_queue(pid)
 }
 
-exports.ensure_queue_dir = () => {
+exports.ensure_queue_dir = async () => {
     // this code is only run at start-up.
-    if (fs.existsSync(exports.queue_dir)) return
+    try {
+        await fs.access(queue_dir)
+        return // directory already exists
+    } catch (ignore) {
+        // directory doesn't exist, try to create it
+    }
 
     logger.debug(exports, `Creating queue directory ${exports.queue_dir}`)
     try {
-        fs.mkdirSync(exports.queue_dir, 493) // 493 == 0755
+        await fs.mkdir(queue_dir, { mode: 493 }) // 493 == 0755
         const cfg = config.get('smtp.ini')
         let uid
         let gid
         if (cfg.user) uid = parseInt(child_process.execSync(`id -u ${cfg.user}`).toString().trim(), 10)
         if (cfg.group) gid = parseInt(child_process.execSync(`id -g ${cfg.group}`).toString().trim(), 10)
         if (uid && gid) {
-            fs.chown(exports.queue_dir, uid, gid)
+            await fs.chown(queue_dir, uid, gid)
         } else if (uid) {
-            fs.chown(exports.queue_dir, uid)
+            await fs.chown(queue_dir, uid, -1)
         }
     } catch (err) {
         if (err.code !== 'EEXIST') {
@@ -344,17 +314,22 @@ exports.ensure_queue_dir = () => {
     }
 }
 
-exports.delete_dot_files = () => {
-    for (const file of fs.readdirSync(exports.queue_dir)) {
-        if (file.startsWith(_qfile.platformDOT)) {
-            logger.warn(exports, `Removing left over dot-file: ${file}`)
-            return fs.unlinkSync(path.join(exports.queue_dir, file))
+exports.delete_dot_files = async () => {
+    try {
+        const files = await fs.readdir(exports.queue_dir)
+        for (const file of files) {
+            if (file.startsWith(_qfile.platformDOT)) {
+                logger.warn(exports, `Removing left over dot-file: ${file}`)
+                await fs.unlink(path.join(exports.queue_dir, file))
+            }
         }
+    } catch (err) {
+        logger.error(exports, `Error deleting dot files: ${err}`)
     }
 }
 
 exports._add_hmail = (hmail) => {
-    if (hmail.next_process < exports.cur_time) {
+    if (hmail.next_process <= exports.cur_time) {
         delivery_queue.push(hmail)
     } else {
         temp_fail_queue.add(hmail.filename, hmail.next_process - exports.cur_time, () => {
@@ -363,26 +338,25 @@ exports._add_hmail = (hmail) => {
     }
 }
 
-exports.scan_queue_pids = (cb) => {
-    const self = exports
-
+exports.scan_queue_pids = async () => {
     // Under cluster, this is called first by the master
-    self.ensure_queue_dir()
-    self.delete_dot_files()
+    await exports.ensure_queue_dir()
+    await exports.delete_dot_files()
 
-    fs.readdir(exports.queue_dir, (err, files) => {
-        if (err) {
-            logger.error(exports, `Failed to load queue directory (${exports.queue_dir}): ${err}`)
-            return cb(err)
-        }
+    let files
+    try {
+        files = await fs.readdir(exports.queue_dir)
+    } catch (err) {
+        logger.error(exports, `Failed to load queue directory (${exports.queue_dir}): ${err}`)
+        throw err
+    }
 
-        const pids = {}
+    const pids = {}
 
-        for (const file of files) {
-            const parts = self.read_parts(file)
-            if (parts) pids[parts.pid] = true
-        }
+    for (const file of files) {
+        const parts = exports.read_parts(file)
+        if (parts) pids[parts.pid] = true
+    }
 
-        return cb(null, Object.keys(pids))
-    })
+    return Object.keys(pids)
 }

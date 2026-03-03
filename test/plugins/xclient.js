@@ -17,44 +17,35 @@ describe('xclient', () => {
     describe('hook_capabilities', () => {
         it('adds XCLIENT capability for allowed IP (127.0.0.1)', (done) => {
             this.connection.remote.ip = '127.0.0.1'
-            this.plugin.hook_capabilities(
-                () => {
-                    assert.ok(
-                        this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
-                        'XCLIENT capability added',
-                    )
-                    done()
-                },
-                this.connection,
-            )
+            this.plugin.hook_capabilities(() => {
+                assert.ok(
+                    this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
+                    'XCLIENT capability added',
+                )
+                done()
+            }, this.connection)
         })
 
         it('adds XCLIENT capability for allowed IP (::1)', (done) => {
             this.connection.remote.ip = '::1'
-            this.plugin.hook_capabilities(
-                () => {
-                    assert.ok(
-                        this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
-                        'XCLIENT capability added for IPv6 loopback',
-                    )
-                    done()
-                },
-                this.connection,
-            )
+            this.plugin.hook_capabilities(() => {
+                assert.ok(
+                    this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
+                    'XCLIENT capability added for IPv6 loopback',
+                )
+                done()
+            }, this.connection)
         })
 
         it('does not add XCLIENT capability for disallowed IP', (done) => {
             this.connection.remote.ip = '10.0.0.1'
-            this.plugin.hook_capabilities(
-                () => {
-                    assert.ok(
-                        !this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
-                        'XCLIENT capability not added',
-                    )
-                    done()
-                },
-                this.connection,
-            )
+            this.plugin.hook_capabilities(() => {
+                assert.ok(
+                    !this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
+                    'XCLIENT capability not added',
+                )
+                done()
+            }, this.connection)
         })
     })
 

@@ -1,8 +1,9 @@
 'use strict'
 
-const fs = require('node:fs')
+const fs = require('node:fs/promises')
+const { WriteStream } = require('node:fs')
 
-class FsyncWriteStream extends fs.WriteStream {
+class FsyncWriteStream extends WriteStream {
     constructor(path, options) {
         super(path, options)
     }
@@ -22,21 +23,19 @@ class FsyncWriteStream extends fs.WriteStream {
         close()
 
         function close(fd) {
-            fs.fsync(fd || self.fd, (er) => {
-                if (er) {
-                    self.emit('error', er)
-                    return
-                }
+            const targetFd = fd || self.fd
 
-                fs.close(fd || self.fd, (err) => {
-                    if (err) {
-                        self.emit('error', err)
-                    } else {
-                        self.emit('close')
-                    }
+            fs.fsync(targetFd)
+                .then(() => fs.close(targetFd))
+                .then(() => {
+                    self.emit('close')
                 })
-                self.fd = null
-            })
+                .catch((err) => {
+                    self.emit('error', err)
+                })
+                .finally(() => {
+                    self.fd = null
+                })
         }
     }
 }

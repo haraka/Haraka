@@ -1,11 +1,8 @@
 name: publish
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - package.json
+  release:
+    types: [published]
 
 permissions:
   id-token: write
