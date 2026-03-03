@@ -29,7 +29,7 @@ describe('outbound', () => {
                 let line = match[1]
                 line = line.replace(/\r?\n?$/, '\r\n') // assure \r\n ending
                 result += line
-                contents = contents.substr(match[1].length)
+                contents = contents.substring(match[1].length)
                 if (contents.length === 0) {
                     break
                 }

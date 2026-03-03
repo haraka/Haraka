@@ -120,11 +120,11 @@ exports.send_email = function (from, to, contents, next, options = {}) {
         while ((match = utils.line_regexp.exec(contents))) {
             let line = match[1]
             line = line.replace(/\r?\n?$/, '\r\n') // make sure it ends in \r\n
-            if (dot_stuffed === false && line.length >= 3 && line.substr(0, 1) === '.') {
+            if (dot_stuffed === false && line.length >= 3 && line.substring(0, 1) === '.') {
                 line = `.${line}`
             }
             transaction.add_data(Buffer.from(line))
-            contents = contents.substr(match[1].length)
+            contents = contents.substring(match[1].length)
             if (contents.length === 0) {
                 break
             }
@@ -302,9 +302,7 @@ exports.process_delivery = function (ok_paths, todo, hmails) {
         })
 
         this.build_todo(todo, ws, () => {
-            // SUNSET: dot_stuffing was renamed to dot_stuffed, remove it after 2026-01
             todo.message_stream.pipe(ws, {
-                dot_stuffing: true,
                 dot_stuffed: false,
             })
         })

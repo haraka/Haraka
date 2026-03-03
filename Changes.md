@@ -4,8 +4,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- fix connection pause after odd SMTP command sequence, #3525
-- add tests for transaction, rfc1869, xclient, and record_envelope_addresses #3524
+- es6: use startsWith instead of indexOf === 0
+- es6: use spread syntax instead of [].concat and {}.assign
+- es6: use implicit arrow function returns
+- es6: replace deprecated substr with slice or substring
+- chore: repackage ./plugin/queue/rabbit* as haraka-plugin-queue/rabbitmq
+- fix: connection pause after odd SMTP command sequence, #3525
+- test: add to transaction, rfc1869, xclient, and record_envelope_addresses #3524
 
 ### [3.1.3] - 2026-02-06
 

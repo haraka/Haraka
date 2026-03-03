@@ -615,7 +615,7 @@ function createServer(cb) {
 
             cryptoSocket.removeAllListeners('data')
 
-            const options = Object.assign({}, certsByHost['*'])
+            const options = { ...certsByHost['*'] }
             options.server = server // TLSSocket needs server for SNI to work
 
             options.rejectUnauthorized = exports.get_rejectUnauthorized(
@@ -679,11 +679,11 @@ function connect(conn_options = {}) {
             const host = conn_options.host
             if (exports.cfg === undefined) exports.load_tls_ini()
             if (exports.cfg.mutual_auth_hosts[host]) {
-                options = Object.assign(options, getCertFor(exports.cfg.mutual_auth_hosts[host]))
+                options = { ...options, ...getCertFor(exports.cfg.mutual_auth_hosts[host]) }
             } else if (exports.cfg.mutual_auth_hosts_exclude[host]) {
                 // send no client cert
             } else if (exports.cfg.main.mutual_tls) {
-                options = Object.assign(options, getCertFor(host))
+                options = { ...options, ...getCertFor(host) }
             }
         }
         options.socket = cryptoSocket

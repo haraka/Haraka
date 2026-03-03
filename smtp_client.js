@@ -192,13 +192,8 @@ class SMTPClient extends events.EventEmitter {
         client.socket.on('end', closed('ended'))
     }
 
-    load_tls_config(opts) {
-        const tls_options = { servername: this.host }
-        if (opts) {
-            Object.assign(tls_options, opts)
-        }
-
-        this.tls_options = tls_options
+    load_tls_config(opts = {}) {
+        this.tls_options = { servername: this.host, ...opts }
     }
 
     send_command(command, data) {
@@ -212,10 +207,8 @@ class SMTPClient extends events.EventEmitter {
     start_data(data) {
         this.response = []
         this.command = 'dot'
-        // SUNSET: dot_stuffing was renamed to dot_stuffed, remove it after 2026-01
         data.pipe(this.socket, {
             dot_stuffed: false,
-            dot_stuffing: true,
             ending_dot: true,
             end: false,
         })
