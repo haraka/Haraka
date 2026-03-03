@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- es6: use startsWith instead of indexOf === 0
+- es6: use spread syntax instead of [].concat and {}.assign
 - es6: use implicit arrow function returns
 - es6: replace deprecated substr with slice or substring
 - fix: connection pause after odd SMTP command sequence, #3525

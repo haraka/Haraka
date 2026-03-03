@@ -192,11 +192,8 @@ class SMTPClient extends events.EventEmitter {
         client.socket.on('end', closed('ended'))
     }
 
-    load_tls_config(opts) {
-        const tls_options = { servername: this.host }
-        if (opts) {
-            Object.assign(tls_options, opts)
-        }
+    load_tls_config(opts = {}) {
+        const tls_options = { servername: this.host, ...opts }
 
         this.tls_options = tls_options
     }

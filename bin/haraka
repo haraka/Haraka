@@ -286,7 +286,7 @@ if (parsed.version) {
   if (process.env.PAGER) {
     const pager_split = process.env.PAGER.split(/ +/)
     pager = pager_split.shift()
-    md_path = pager_split.concat(md_path)
+    md_path = [...pager_split, ...md_path]
   }
 
   const less = child.spawn(pager, md_path, { stdio: 'inherit' })

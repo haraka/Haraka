@@ -97,7 +97,7 @@ exports._load_cur_queue = (pid, iteratee, cb) => {
 }
 
 exports.read_parts = (file) => {
-    if (file.indexOf(_qfile.platformDOT) === 0) {
+    if (file.startsWith(_qfile.platformDOT)) {
         logger.warn(exports, `'Skipping' dot-file in queue folder: ${file}`)
         return false
     }
@@ -299,7 +299,7 @@ exports.ensure_queue_dir = () => {
 
 exports.delete_dot_files = () => {
     for (const file of fs.readdirSync(queue_dir)) {
-        if (file.indexOf(_qfile.platformDOT) === 0) {
+        if (file.startsWith(_qfile.platformDOT)) {
             logger.warn(exports, `Removing left over dot-file: ${file}`)
             return fs.unlinkSync(path.join(queue_dir, file))
         }

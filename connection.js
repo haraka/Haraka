@@ -1442,10 +1442,9 @@ class Connection {
         }
 
         // assemble the new header
-        let header = [this.local.host]
-        header = header.concat(this.notes.authentication_results)
+        let header = [this.local.host, ...this.notes.authentication_results]
         if (has_tran === true) {
-            header = header.concat(this.transaction.notes.authentication_results)
+            header = [...header, ...this.transaction.notes.authentication_results]
         }
         if (header.length === 1) return '' // no results
         return header.join(';\r\n\t')

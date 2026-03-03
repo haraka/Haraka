@@ -62,7 +62,7 @@ class Plugin {
         let paths = []
         if (process.env.HARAKA) {
             // Installed mode - started via bin/haraka
-            paths = paths.concat(plugin_search_paths(process.env.HARAKA, name))
+            paths = [...paths, ...plugin_search_paths(process.env.HARAKA, name)]
 
             // permit local "folder" plugins (/$name/package.json) (see #1649)
             paths.push(
@@ -72,7 +72,7 @@ class Plugin {
         }
 
         // development mode
-        paths = paths.concat(plugin_search_paths(__dirname, name))
+        paths = [...paths, ...plugin_search_paths(__dirname, name)]
         for (const pp of paths) {
             if (this.plugin_path) continue
             try {

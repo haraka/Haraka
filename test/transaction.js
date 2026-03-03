@@ -18,7 +18,7 @@ describe('transaction', () => {
             // The functionality of these filter functions is tested in
             // haraka-email-message. This just assures the plumbing is in place.
 
-            assert.ok(ct.indexOf('text/plain') === 0, 'correct body part')
+            assert.ok(ct.startsWith('text/plain'), 'correct body part')
             assert.ok(/utf-?8/i.test(enc), 'correct encoding')
             assert.equal(buf.toString().trim(), 'Text part', 'correct body contents')
         })
