@@ -52,20 +52,26 @@ for (const n of qlfns) {
 process.on('message', async (msg) => {
     if (!msg.event) return
 
-    if (msg.event === 'outbound.load_pid_queue') {
-        await exports.load_pid_queue(msg.data)
+    try {
+        if (msg.event === 'outbound.load_pid_queue') {
+            await exports.load_pid_queue(msg.data)
+            return
+        }
+        if (msg.event === 'outbound.flush_queue') {
+            await exports.flush_queue(msg.domain, process.pid)
+            return
+        }
+        if (msg.event === 'outbound.shutdown') {
+            logger.info(exports, 'Shutting down temp fail queue')
+            temp_fail_queue.shutdown()
+            return
+        }
+        // ignores the message
+    }
+    catch (err) {
+        logger.error(exports, err)
         return
     }
-    if (msg.event === 'outbound.flush_queue') {
-        await exports.flush_queue(msg.domain, process.pid)
-        return
-    }
-    if (msg.event === 'outbound.shutdown') {
-        logger.info(exports, 'Shutting down temp fail queue')
-        temp_fail_queue.shutdown()
-        return
-    }
-    // ignores the message
 })
 
 exports.send_email = function (from, to, contents, next, options = {}) {
