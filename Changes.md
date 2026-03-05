@@ -4,11 +4,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- es6: use startsWith instead of indexOf === 0
-- es6: use spread syntax instead of [].concat and {}.assign
-- es6: use implicit arrow function returns
-- es6: replace deprecated substr with slice or substring
-- chore: repackage ./plugin/queue/rabbit* as haraka-plugin-queue/rabbitmq
+- es7: outbound replace fs callback with fs promises #3528
+- es6 & es7: #3527
+  - use startsWith instead of indexOf === 0
+  - use spread syntax instead of [].concat and {}.assign
+  - use implicit arrow function returns
+  - replace deprecated substr with slice or substring
+- chore: repackage ./plugin/queue/rabbit* as haraka-plugin-queue/rabbitmq, #3526
 - fix: connection pause after odd SMTP command sequence, #3525
 - test: add to transaction, rfc1869, xclient, and record_envelope_addresses #3524
 
