@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Unreleased
 
 - es7: outbound replace fs callback with fs promises #3528
+  - dep(async): remove dep by replacing a.map with Queue
 - es6 & es7: #3527
   - use startsWith instead of indexOf === 0
   - use spread syntax instead of [].concat and {}.assign
