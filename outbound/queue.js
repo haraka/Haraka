@@ -17,19 +17,16 @@ const obtls = require('./tls')
 
 exports.name = 'outbound/queue'
 
-let queue_dir
 if (config.get('queue_dir')) {
-    queue_dir = path.resolve(config.get('queue_dir'))
+    exports.queue_dir = path.resolve(config.get('queue_dir'))
 } else if (process.env.HARAKA) {
-    queue_dir = path.resolve(process.env.HARAKA, 'queue')
+    exports.queue_dir = path.resolve(process.env.HARAKA, 'queue')
 } else {
-    queue_dir = path.resolve('test', 'test-queue')
+    exports.queue_dir = path.resolve('test', 'test-queue')
 }
 
-exports.queue_dir = queue_dir
-
 const load_queue = async.queue((file, cb) => {
-    const hmail = new HMailItem(file, path.join(queue_dir, file))
+    const hmail = new HMailItem(file, path.join(exports.queue_dir, file))
     exports._add_hmail(hmail)
     hmail.once('ready', cb)
 }, obc.cfg.concurrency_max)
@@ -84,10 +81,10 @@ exports.load_queue = (pid) => {
 }
 
 exports._load_cur_queue = (pid, iteratee, cb) => {
-    logger.info(exports, 'Loading outbound queue from ', queue_dir)
-    fs.readdir(queue_dir, (err, files) => {
+    logger.info(exports, 'Loading outbound queue from ', exports.queue_dir)
+    fs.readdir(exports.queue_dir, (err, files) => {
         if (err) {
-            return logger.error(exports, `Failed to load queue directory (${queue_dir}): ${err}`)
+            return logger.error(exports, `Failed to load queue directory (${exports.queue_dir}): ${err}`)
         }
 
         this.cur_time = new Date() // set once so we're not calling it a lot
@@ -125,7 +122,7 @@ exports.rename_to_actual_pid = (file, parts, cb) => {
         attempts: parts.attempts,
     })
 
-    fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), (err) => {
+    fs.rename(path.join(exports.queue_dir, file), path.join(exports.queue_dir, new_filename), (err) => {
         if (err) {
             return cb(`Unable to rename queue file: ${file} to ${new_filename} : ${err}`)
         }
@@ -204,13 +201,13 @@ exports.load_queue_files = (pid, input_files, iteratee, callback = function () {
 
 exports.stats = () => {
     return {
-        queue_dir,
+        queue_dir: exports.queue_dir,
         queue_count,
     }
 }
 
 exports._list_file = (file, cb) => {
-    const tl_reader = fs.createReadStream(path.join(queue_dir, file), {
+    const tl_reader = fs.createReadStream(path.join(exports.queue_dir, file), {
         start: 0,
         end: 3,
     })
@@ -222,7 +219,7 @@ exports._list_file = (file, cb) => {
         // as no filesystem on the planet should be that dumb...
         tl_reader.destroy()
         const todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3]
-        const td_reader = fs.createReadStream(path.join(queue_dir, file), {
+        const td_reader = fs.createReadStream(path.join(exports.queue_dir, file), {
             encoding: 'utf8',
             start: 4,
             end: todo_len + 3,
@@ -236,7 +233,7 @@ exports._list_file = (file, cb) => {
                 todo_struct.rcpt_to = todo_struct.rcpt_to.map((a) => new Address(a))
                 todo_struct.mail_from = new Address(todo_struct.mail_from)
                 todo_struct.file = file
-                todo_struct.full_path = path.join(queue_dir, file)
+                todo_struct.full_path = path.join(exports.queue_dir, file)
                 const parts = _qfile.parts(file)
                 todo_struct.pid = parts?.pid || null
                 cb(null, todo_struct)
@@ -274,20 +271,20 @@ exports.load_pid_queue = (pid) => {
 
 exports.ensure_queue_dir = () => {
     // this code is only run at start-up.
-    if (fs.existsSync(queue_dir)) return
+    if (fs.existsSync(exports.queue_dir)) return
 
-    logger.debug(exports, `Creating queue directory ${queue_dir}`)
+    logger.debug(exports, `Creating queue directory ${exports.queue_dir}`)
     try {
-        fs.mkdirSync(queue_dir, 493) // 493 == 0755
+        fs.mkdirSync(exports.queue_dir, 493) // 493 == 0755
         const cfg = config.get('smtp.ini')
         let uid
         let gid
-        if (cfg.user) uid = child_process.execSync(`id -u ${cfg.user}`).toString().trim()
-        if (cfg.group) gid = child_process.execSync(`id -g ${cfg.group}`).toString().trim()
+        if (cfg.user) uid = parseInt(child_process.execSync(`id -u ${cfg.user}`).toString().trim(), 10)
+        if (cfg.group) gid = parseInt(child_process.execSync(`id -g ${cfg.group}`).toString().trim(), 10)
         if (uid && gid) {
-            fs.chown(queue_dir, uid, gid)
+            fs.chown(exports.queue_dir, uid, gid)
         } else if (uid) {
-            fs.chown(queue_dir, uid)
+            fs.chown(exports.queue_dir, uid)
         }
     } catch (err) {
         if (err.code !== 'EEXIST') {
@@ -298,10 +295,10 @@ exports.ensure_queue_dir = () => {
 }
 
 exports.delete_dot_files = () => {
-    for (const file of fs.readdirSync(queue_dir)) {
+    for (const file of fs.readdirSync(exports.queue_dir)) {
         if (file.startsWith(_qfile.platformDOT)) {
             logger.warn(exports, `Removing left over dot-file: ${file}`)
-            return fs.unlinkSync(path.join(queue_dir, file))
+            return fs.unlinkSync(path.join(exports.queue_dir, file))
         }
     }
 }
@@ -323,9 +320,9 @@ exports.scan_queue_pids = (cb) => {
     self.ensure_queue_dir()
     self.delete_dot_files()
 
-    fs.readdir(queue_dir, (err, files) => {
+    fs.readdir(exports.queue_dir, (err, files) => {
         if (err) {
-            logger.error(exports, `Failed to load queue directory (${queue_dir}): ${err}`)
+            logger.error(exports, `Failed to load queue directory (${exports.queue_dir}): ${err}`)
             return cb(err)
         }
 
