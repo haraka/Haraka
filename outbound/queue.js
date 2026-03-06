@@ -19,34 +19,60 @@ class Queue {
         this.worker = worker
         this.tasks = []
         this.running = 0
+        this._scheduled = false
     }
 
     push(task) {
         this.tasks.push(task)
-        this._process()
+        this._schedule()
     }
 
     length() {
         return this.tasks.length + this.running
     }
 
-    async _process() {
+    _schedule() {
+        if (this._scheduled) return
+        this._scheduled = true
+        setImmediate(() => {
+            this._scheduled = false
+            this._process()
+        })
+    }
+
+    _process() {
         while (this.running < obc.cfg.concurrency_max && this.tasks.length > 0) {
             this.running++
             const task = this.tasks.shift()
 
-            try {
-                // Support both callback and async worker functions
-                const result = this.worker(task, (err) => {
-                    // Callback handler for backward compatibility
-                })
-                if (result instanceof Promise) {
-                    await result
+            // Wrap both callback-style and Promise-based workers in a unified Promise.
+            // `done` may only be called once; the `settled` guard prevents double resolution.
+            const taskPromise = new Promise((resolve, reject) => {
+                let settled = false
+                const done = (err) => {
+                    if (settled) return
+                    settled = true
+                    if (err) reject(err)
+                    else resolve()
                 }
-            } finally {
-                this.running--
-                setImmediate(() => this._process())
-            }
+                try {
+                    const result = this.worker(task, done)
+                    if (result instanceof Promise) {
+                        result.then(() => done(), done)
+                    }
+                } catch (err) {
+                    done(err)
+                }
+            })
+
+            taskPromise
+                .catch((err) => {
+                    logger.error(exports, `Queue worker error: ${err}`)
+                })
+                .finally(() => {
+                    this.running--
+                    this._schedule()
+                })
         }
     }
 }
