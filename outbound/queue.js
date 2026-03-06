@@ -231,20 +231,42 @@ exports.stats = () => {
     }
 }
 
+// Maximum allowed todo header size (1 MB) to guard against corrupt/hostile queue files
+const MAX_TODO_SIZE = 1 * 1024 * 1024
+
+// Read exactly `length` bytes into `buffer` starting at `offset`, from file
+// position `position`. Loops to handle partial reads.
+async function readFull(handle, buffer, offset, length, position) {
+    let totalRead = 0
+    while (totalRead < length) {
+        const { bytesRead } = await handle.read(buffer, offset + totalRead, length - totalRead, position + totalRead)
+        if (bytesRead === 0) {
+            throw new Error(`Unexpected end of file: read ${totalRead} of ${length} bytes`)
+        }
+        totalRead += bytesRead
+    }
+}
+
 exports._list_file = async (file) => {
+    let handle
     try {
         const filePath = path.join(queue_dir, file)
 
+        handle = await fs.open(filePath, 'r')
+
         // Read first 4 bytes to get the todo length
-        const handle = await fs.open(filePath, 'r')
         const buf = Buffer.alloc(4)
-        await handle.read(buf, 0, 4, 0)
+        await readFull(handle, buf, 0, 4, 0)
         const todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3]
+
+        // Enforce a reasonable max to avoid large allocations from corrupt/hostile queue files
+        if (todo_len > MAX_TODO_SIZE) {
+            throw new Error(`todo length ${todo_len} exceeds maximum allowed size of ${MAX_TODO_SIZE} bytes`)
+        }
 
         // Read the todo data
         const todoBuf = Buffer.alloc(todo_len)
-        await handle.read(todoBuf, 0, todo_len, 4)
-        await handle.close()
+        await readFull(handle, todoBuf, 0, todo_len, 4)
 
         const todo = todoBuf.toString('utf8')
         const todo_struct = JSON.parse(todo)
@@ -258,6 +280,8 @@ exports._list_file = async (file) => {
     } catch (err) {
         console.error(`Error reading queue file: ${file}:`, err)
         return null
+    } finally {
+        if (handle) await handle.close().catch((err) => console.error(`Failed to close queue file handle for ${file}:`, err))
     }
 }
 
