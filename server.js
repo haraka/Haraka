@@ -517,7 +517,7 @@ Server.init_master_respond = async (retval, msg) => {
 
     // Load the queue if we're just one process
     if (!(cluster && c.nodes)) {
-        await outbound.load_queue()
+        await outbound.init_queue()
         Server.setup_http_listeners()
         return
     }

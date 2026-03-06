@@ -43,9 +43,8 @@ class Queue {
     _process() {
         while (this.running < obc.cfg.concurrency_max && this.tasks.length > 0) {
             this.running++
-            const task = this.tasks.shift()
 
-            this.worker(task)
+            this.worker(this.tasks.shift())
                 .catch((err) => {
                     logger.error(exports, `Queue worker error: ${err}`)
                 })
@@ -121,7 +120,7 @@ exports.stat_queue = async () => {
     return exports.stats()
 }
 
-exports.load_queue = async (pid) => {
+exports.init_queue = async (pid) => {
     // Initialise and load queue
     // This function is called first when not running under cluster,
     await exports.ensure_queue_dir()
@@ -318,7 +317,7 @@ exports.flush_queue = async (domain, pid) => {
 
 exports.load_pid_queue = async (pid) => {
     logger.info(exports, `Loading queue for pid: ${pid}`)
-    await exports.load_queue(pid)
+    await exports.init_queue(pid)
 }
 
 exports.ensure_queue_dir = async () => {

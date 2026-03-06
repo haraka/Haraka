@@ -42,7 +42,7 @@ const qlfns = [
     'flush_queue',
     'load_pid_queue',
     'ensure_queue_dir',
-    'load_queue',
+    'init_queue',
     'stats',
 ]
 for (const n of qlfns) {
