@@ -45,27 +45,7 @@ class Queue {
             this.running++
             const task = this.tasks.shift()
 
-            // Wrap both callback-style and Promise-based workers in a unified Promise.
-            // `done` may only be called once; the `settled` guard prevents double resolution.
-            const taskPromise = new Promise((resolve, reject) => {
-                let settled = false
-                const done = (err) => {
-                    if (settled) return
-                    settled = true
-                    if (err) reject(err)
-                    else resolve()
-                }
-                try {
-                    const result = this.worker(task, done)
-                    if (result instanceof Promise) {
-                        result.then(() => done(), done)
-                    }
-                } catch (err) {
-                    done(err)
-                }
-            })
-
-            taskPromise
+            this.worker(task)
                 .catch((err) => {
                     logger.error(exports, `Queue worker error: ${err}`)
                 })
@@ -90,22 +70,38 @@ if (config.get('queue_dir')) {
 
 exports.queue_dir = queue_dir
 
-const load_queue = new Queue((file, cb) => {
+const load_queue = new Queue(async (file) => {
     const hmail = new HMailItem(file, path.join(queue_dir, file))
     exports._add_hmail(hmail)
-    hmail.once('ready', cb)
+    await new Promise((resolve, reject) => {
+        const onReady = () => {
+            hmail.off('error', onError)
+            resolve()
+        }
+        const onError = (err) => {
+            hmail.off('ready', onReady)
+            reject(err)
+        }
+        hmail.once('ready', onReady)
+        hmail.once('error', onError)
+    })
 })
 
 let in_progress = 0
-const delivery_queue = (exports.delivery_queue = new Queue((hmail, cb) => {
+const delivery_queue = (exports.delivery_queue = new Queue(async (hmail) => {
     in_progress++
-    hmail.next_cb = () => {
-        in_progress--
-        cb()
-    }
-    if (obtls.cfg) return hmail.send()
-    obtls.init(() => {
-        hmail.send()
+    await new Promise((resolve) => {
+        hmail.next_cb = () => {
+            in_progress--
+            resolve()
+        }
+        if (obtls.cfg) {
+            hmail.send()
+        } else {
+            obtls.init(() => {
+                hmail.send()
+            })
+        }
     })
 }))
 
