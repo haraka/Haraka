@@ -19,34 +19,40 @@ class Queue {
         this.worker = worker
         this.tasks = []
         this.running = 0
+        this._scheduled = false
     }
 
     push(task) {
         this.tasks.push(task)
-        this._process()
+        this._schedule()
     }
 
     length() {
         return this.tasks.length + this.running
     }
 
-    async _process() {
+    _schedule() {
+        if (this._scheduled) return
+        this._scheduled = true
+        setImmediate(() => {
+            this._scheduled = false
+            this._process()
+        })
+    }
+
+    _process() {
         while (this.running < obc.cfg.concurrency_max && this.tasks.length > 0) {
             this.running++
             const task = this.tasks.shift()
 
-            try {
-                // Support both callback and async worker functions
-                const result = this.worker(task, (err) => {
-                    // Callback handler for backward compatibility
+            this.worker(task)
+                .catch((err) => {
+                    logger.error(exports, `Queue worker error: ${err}`)
                 })
-                if (result instanceof Promise) {
-                    await result
-                }
-            } finally {
-                this.running--
-                setImmediate(() => this._process())
-            }
+                .finally(() => {
+                    this.running--
+                    this._schedule()
+                })
         }
     }
 }
@@ -61,22 +67,38 @@ if (config.get('queue_dir')) {
     exports.queue_dir = path.resolve('test', 'test-queue')
 }
 
-const load_queue = new Queue((file, cb) => {
+const load_queue = new Queue(async (file) => {
     const hmail = new HMailItem(file, path.join(exports.queue_dir, file))
     exports._add_hmail(hmail)
-    hmail.once('ready', cb)
+    await new Promise((resolve, reject) => {
+        const onReady = () => {
+            hmail.off('error', onError)
+            resolve()
+        }
+        const onError = (err) => {
+            hmail.off('ready', onReady)
+            reject(err)
+        }
+        hmail.once('ready', onReady)
+        hmail.once('error', onError)
+    })
 })
 
 let in_progress = 0
-const delivery_queue = (exports.delivery_queue = new Queue((hmail, cb) => {
+const delivery_queue = (exports.delivery_queue = new Queue(async (hmail) => {
     in_progress++
-    hmail.next_cb = () => {
-        in_progress--
-        cb()
-    }
-    if (obtls.cfg) return hmail.send()
-    obtls.init(() => {
-        hmail.send()
+    await new Promise((resolve) => {
+        hmail.next_cb = () => {
+            in_progress--
+            resolve()
+        }
+        if (obtls.cfg) {
+            hmail.send()
+        } else {
+            obtls.init(() => {
+                hmail.send()
+            })
+        }
     })
 }))
 
@@ -112,12 +134,12 @@ exports.load_queue = async (pid) => {
 }
 
 exports._load_cur_queue = async (pid, iteratee) => {
-    logger.info(exports, 'Loading outbound queue from ', queue_dir)
+    logger.info(exports, 'Loading outbound queue from ', exports.queue_dir)
     let files
     try {
-        files = await fs.readdir(queue_dir)
+        files = await fs.readdir(exports.queue_dir)
     } catch (err) {
-        logger.error(exports, `Failed to load queue directory (${queue_dir}): ${err}`)
+        logger.error(exports, `Failed to load queue directory (${exports.queue_dir}): ${err}`)
         throw err
     }
 
@@ -156,7 +178,7 @@ exports.rename_to_actual_pid = async (file, parts) => {
     })
 
     try {
-        await fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename))
+        await fs.rename(path.join(exports.queue_dir, file), path.join(exports.queue_dir, new_filename))
         return new_filename
     } catch (err) {
         throw new Error(`Unable to rename queue file: ${file} to ${new_filename} : ${err}`)
@@ -247,7 +269,7 @@ async function readFull(handle, buffer, offset, length, position) {
 exports._list_file = async (file) => {
     let handle
     try {
-        const filePath = path.join(queue_dir, file)
+        const filePath = path.join(exports.queue_dir, file)
 
         handle = await fs.open(filePath, 'r')
 
