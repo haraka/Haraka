@@ -231,11 +231,8 @@ exports.stats = () => {
     }
 }
 
-// Maximum allowed todo header size (1 MB) to guard against corrupt/hostile queue files
-const MAX_TODO_SIZE = 1 * 1024 * 1024
-
-// Read exactly `length` bytes into `buffer` starting at `offset`, from file
 // position `position`. Loops to handle partial reads.
+// Read exactly `length` bytes into `buffer` starting at `offset`, from file
 async function readFull(handle, buffer, offset, length, position) {
     let totalRead = 0
     while (totalRead < length) {
@@ -259,12 +256,6 @@ exports._list_file = async (file) => {
         await readFull(handle, buf, 0, 4, 0)
         const todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3]
 
-        // Enforce a reasonable max to avoid large allocations from corrupt/hostile queue files
-        if (todo_len > MAX_TODO_SIZE) {
-            throw new Error(`todo length ${todo_len} exceeds maximum allowed size of ${MAX_TODO_SIZE} bytes`)
-        }
-
-        // Read the todo data
         const todoBuf = Buffer.alloc(todo_len)
         await readFull(handle, todoBuf, 0, todo_len, 4)
 
@@ -311,7 +302,7 @@ exports.load_pid_queue = async (pid) => {
 exports.ensure_queue_dir = async () => {
     // this code is only run at start-up.
     try {
-        await fs.access(queue_dir)
+        await fs.access(exports.queue_dir)
         return // directory already exists
     } catch (ignore) {
         // directory doesn't exist, try to create it
@@ -319,16 +310,16 @@ exports.ensure_queue_dir = async () => {
 
     logger.debug(exports, `Creating queue directory ${exports.queue_dir}`)
     try {
-        await fs.mkdir(queue_dir, { mode: 493 }) // 493 == 0755
+        await fs.mkdir(exports.queue_dir, { mode: 493 }) // 493 == 0755
         const cfg = config.get('smtp.ini')
         let uid
         let gid
         if (cfg.user) uid = parseInt(child_process.execSync(`id -u ${cfg.user}`).toString().trim(), 10)
         if (cfg.group) gid = parseInt(child_process.execSync(`id -g ${cfg.group}`).toString().trim(), 10)
         if (uid && gid) {
-            await fs.chown(queue_dir, uid, gid)
+            await fs.chown(exports.queue_dir, uid, gid)
         } else if (uid) {
-            await fs.chown(queue_dir, uid, -1)
+            await fs.chown(exports.queue_dir, uid, -1)
         }
     } catch (err) {
         if (err.code !== 'EEXIST') {
