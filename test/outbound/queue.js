@@ -8,6 +8,27 @@ const os = require('node:os')
 const queue = require('../../outbound/queue')
 const qfile = require('../../outbound/qfile')
 
+const sourceQueueDir = path.join('test', 'queue')
+const testQueueDir = path.join('test', 'test-queue')
+const fixtureFiles = [
+    '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka',
+    '1508269674999_1508269674999_0_34002_socVUF_1_haraka',
+]
+
+const clearTestQueue = () => {
+    fs.mkdirSync(testQueueDir, { recursive: true })
+    for (const file of fs.readdirSync(testQueueDir)) {
+        fs.unlinkSync(path.join(testQueueDir, file))
+    }
+}
+
+const populateTestQueue = () => {
+    clearTestQueue()
+    for (const file of fixtureFiles) {
+        fs.copyFileSync(path.join(sourceQueueDir, file), path.join(testQueueDir, file))
+    }
+}
+
 describe('outbound/queue', () => {
     describe('read_parts', () => {
         it('parses valid queue filenames', () => {
@@ -42,12 +63,17 @@ describe('outbound/queue', () => {
                 cb(null, file)
             }
 
-            queue.load_queue_files(null, ['1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka'], iteratee, (err, results) => {
-                assert.ifError(err)
-                assert.equal(seen.length, 1)
-                assert.equal(results[0], '1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka')
-                done()
-            })
+            queue.load_queue_files(
+                null,
+                ['1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka'],
+                iteratee,
+                (err, results) => {
+                    assert.ifError(err)
+                    assert.equal(seen.length, 1)
+                    assert.equal(results[0], '1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka')
+                    done()
+                },
+            )
         })
 
         it('skips invalid files', (done) => {
@@ -80,7 +106,10 @@ describe('outbound/queue', () => {
 
             queue.load_queue_files(
                 61403, // specific pid
-                ['1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka'], // different pids
+                [
+                    '1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka',
+                    '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka',
+                ], // different pids
                 (_file, cb) => {
                     cb(null)
                 },
@@ -159,47 +188,68 @@ describe('outbound/queue', () => {
     })
 
     describe('list_queue', () => {
-        it('returns array from test queue directory', (done) => {
-            const originalQueueDir = queue.queue_dir
-            queue.queue_dir = path.join('test', 'test-queue')
+        beforeEach(() => {
+            populateTestQueue()
+        })
 
+        afterEach(() => {
+            clearTestQueue()
+        })
+
+        it('returns todo objects from real queue files', (done) => {
             queue.list_queue((err, qlist) => {
-                if (err) console.error('list_queue error:', err)
-                console.log(qlist)
-                queue.queue_dir = originalQueueDir
-                // Test gracefully handles malformed queue files
+                assert.ifError(err)
+                assert.ok(Array.isArray(qlist))
+                assert.ok(qlist.length > 0)
+                assert.ok(qlist[0].mail_from)
+                assert.ok(Array.isArray(qlist[0].rcpt_to))
                 done()
             })
         })
     })
 
     describe('stat_queue', () => {
-        it('returns queue stats', (done) => {
-            const originalQueueDir = queue.queue_dir
-            queue.queue_dir = path.join('test', 'test-queue')
+        beforeEach(() => {
+            populateTestQueue()
+        })
 
+        afterEach(() => {
+            clearTestQueue()
+        })
+
+        it('returns queue stats', (done) => {
             queue.stat_queue((err, stats) => {
-                queue.queue_dir = originalQueueDir
                 assert.ifError(err)
                 assert.ok(stats)
                 assert.ok('queue_dir' in stats)
+                assert.ok(stats.queue_count >= 1)
                 done()
             })
         })
     })
 
     describe('load_pid_queue', () => {
-        it('attempts to load queue for specific pid', () => {
-            let loadQueuePid = null
+        beforeEach(() => {
+            populateTestQueue()
+        })
+
+        afterEach(() => {
+            clearTestQueue()
+        })
+
+        it('delegates pid loading to load_queue', () => {
+            const parts = qfile.parts(fixtureFiles[0])
+            const observed = []
             const originalLoadQueue = queue.load_queue
 
             queue.load_queue = (pid) => {
-                loadQueuePid = pid
+                observed.push(pid)
             }
 
             try {
-                queue.load_pid_queue(12345)
-                assert.equal(loadQueuePid, 12345)
+                assert.ok(fs.existsSync(path.join(testQueueDir, fixtureFiles[0])))
+                queue.load_pid_queue(parts.pid)
+                assert.deepEqual(observed, [parts.pid])
             } finally {
                 queue.load_queue = originalLoadQueue
             }
