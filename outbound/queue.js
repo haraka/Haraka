@@ -144,7 +144,7 @@ exports._load_cur_queue = async (pid, iteratee) => {
 
     exports.cur_time = new Date() // set once so we're not calling it a lot
 
-    return exports.load_queue_files(pid, files, iteratee)
+    return await exports.load_queue_files(pid, files, iteratee)
 }
 
 exports.read_parts = (file) => {
@@ -196,6 +196,7 @@ exports._add_file = async (file) => {
             load_queue.push(file)
         })
     }
+    return file;
 }
 
 exports.load_queue_files = async (pid, input_files, iteratee) => {
@@ -237,12 +238,11 @@ exports.load_queue_files = async (pid, input_files, iteratee) => {
     if (searchPid) logger.info(exports, `[pid: ${pid}] ${stat_renamed} files old PID queue fixed up`)
     logger.debug(exports, `[pid: ${pid}] ${stat_loaded} files loaded`)
 
-    const filtered = results.filter((i) => i)
-    return await Promise.all(
-        filtered.map(async (item) => {
-            await iteratee(item)
-        }),
+    const iterateeResults = await Promise.all(
+        results.filter((i) => i).map(async (item) => await iteratee(item)),
     )
+
+    return iterateeResults.filter((result) => result !== null && result !== undefined)
 }
 
 exports.stats = () => {
