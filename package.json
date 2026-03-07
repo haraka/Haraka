@@ -22,7 +22,6 @@
   "dependencies": {
     "address-rfc2821": "^2.1.5",
     "address-rfc2822": "^2.2.3",
-    "async": "^3.2.6",
     "daemon": "~1.1.0",
     "haraka-config": "^1.4.2",
     "haraka-constants": "^1.0.7",

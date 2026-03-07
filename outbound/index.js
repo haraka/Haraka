@@ -1,6 +1,6 @@
 'use strict'
 
-const fs = require('node:fs')
+const fs = require('node:fs/promises')
 const path = require('node:path')
 
 const { Address } = require('address-rfc2821')
@@ -42,30 +42,36 @@ const qlfns = [
     'flush_queue',
     'load_pid_queue',
     'ensure_queue_dir',
-    'load_queue',
+    'init_queue',
     'stats',
 ]
 for (const n of qlfns) {
     exports[n] = queuelib[n]
 }
 
-process.on('message', (msg) => {
+process.on('message', async (msg) => {
     if (!msg.event) return
 
-    if (msg.event === 'outbound.load_pid_queue') {
-        exports.load_pid_queue(msg.data)
+    try {
+        if (msg.event === 'outbound.load_pid_queue') {
+            await exports.load_pid_queue(msg.data)
+            return
+        }
+        if (msg.event === 'outbound.flush_queue') {
+            await exports.flush_queue(msg.domain, process.pid)
+            return
+        }
+        if (msg.event === 'outbound.shutdown') {
+            logger.info(exports, 'Shutting down temp fail queue')
+            temp_fail_queue.shutdown()
+            return
+        }
+        // ignores the message
+    }
+    catch (err) {
+        logger.error(exports, err)
         return
     }
-    if (msg.event === 'outbound.flush_queue') {
-        exports.flush_queue(msg.domain, process.pid)
-        return
-    }
-    if (msg.event === 'outbound.shutdown') {
-        logger.info(exports, 'Shutting down temp fail queue')
-        temp_fail_queue.shutdown()
-        return
-    }
-    // ignores the message
 })
 
 exports.send_email = function (from, to, contents, next, options = {}) {
@@ -252,7 +258,7 @@ exports.send_trans_email = function (transaction, next) {
             }
         } catch (err) {
             for (let i = 0, l = ok_paths.length; i < l; i++) {
-                fs.unlink(ok_paths[i], () => {})
+                await fs.unlink(ok_paths[i]).catch(() => {})
             }
             transaction.results.add({ name: 'outbound' }, { err })
             if (next) next(constants.denysoft, err)
@@ -279,25 +285,24 @@ exports.process_delivery = function (ok_paths, todo, hmails) {
             flags: constants.WRITE_EXCL,
         })
 
-        ws.on('close', () => {
+        ws.on('close', async () => {
             const dest_path = path.join(queue_dir, fname)
-            fs.rename(tmp_path, dest_path, (err) => {
-                if (err) {
-                    logger.error(exports, `Unable to rename tmp file!: ${err}`)
-                    fs.unlink(tmp_path, () => {})
-                    reject('Queue error')
-                } else {
-                    hmails.push(new HMailItem(fname, dest_path, todo.notes))
-                    ok_paths.push(dest_path)
-                    resolve()
-                }
-            })
+            try {
+                await fs.rename(tmp_path, dest_path)
+                hmails.push(new HMailItem(fname, dest_path, todo.notes))
+                ok_paths.push(dest_path)
+                resolve()
+            } catch (err) {
+                logger.error(exports, `Unable to rename tmp file: ${err}`)
+                await fs.unlink(tmp_path).catch(() => {})
+                reject('Queue error')
+            }
         })
 
-        ws.on('error', (err) => {
+        ws.on('error', async (err) => {
             logger.error(exports, `Unable to write queue file (${fname}): ${err}`)
             ws.destroy()
-            fs.unlink(tmp_path, () => {})
+            await fs.unlink(tmp_path).catch(() => {})
             reject('Queueing failed')
         })
 

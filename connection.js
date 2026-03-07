@@ -191,9 +191,7 @@ class Connection {
         })
 
         const ha_list = net.isIPv6(self.remote.ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4
-        if (
-            ha_list.some((element) => ipaddr.parse(self.remote.ip).match(element[0], element[1]))
-        ) {
+        if (ha_list.some((element) => ipaddr.parse(self.remote.ip).match(element[0], element[1]))) {
             self.proxy.allowed = true
             // Wait for PROXY command
             self.proxy.timer = setTimeout(() => {
