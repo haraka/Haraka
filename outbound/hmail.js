@@ -105,7 +105,12 @@ class HMailItem extends events.EventEmitter {
             if (todo_bytes.length !== todo_len) {
                 const wrongLength = `Didn't find right amount of data in todo: ${this.path}`
                 this.logcrit(wrongLength)
-                await fs.rename(this.path, path.join(queue_dir, `error.${this.filename}`))
+                try {
+                    await fs.rename(this.path, path.join(queue_dir, `error.${this.filename}`))
+                }
+                catch (renameErr) {
+                    this.logerror(`Failed to move corrupt todo file ${this.path} to error queue: ${renameErr}`)
+                }
                 this.emit('error', wrongLength) // Note nothing picks this up yet
                 return
             }
