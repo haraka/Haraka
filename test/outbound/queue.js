@@ -108,11 +108,8 @@ describe('outbound/queue', () => {
                     '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka',
                 ], // different pids
                 (_file) => {},
-                (err) => {
-                    queue.rename_to_actual_pid = originalRename
-                    // Should only attempt rename on matching pid
-                },
             )
+            queue.rename_to_actual_pid = originalRename
             assert.equal(renameAttempts, 1)
         })
     })
