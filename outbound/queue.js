@@ -303,7 +303,6 @@ exports.flush_queue = async (domain, pid) => {
             for (const todo of qlist) {
                 if (todo.domain.toLowerCase() !== domain.toLowerCase()) continue
                 if (pid && todo.pid !== pid) continue
-                // console.log("requeue: ", todo);
                 delivery_queue.push(new HMailItem(todo.file, todo.full_path))
             }
         } catch (err) {
