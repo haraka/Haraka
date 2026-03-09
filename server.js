@@ -517,7 +517,12 @@ Server.init_master_respond = async (retval, msg) => {
 
     // Load the queue if we're just one process
     if (!(cluster && c.nodes)) {
-        await outbound.init_queue()
+        try {
+            await outbound.init_queue()
+        } catch (err) {
+            Server.logcrit('Loading queue failed. Shutting down.')
+            return logger.dump_and_exit(1)
+        }
         Server.setup_http_listeners()
         return
     }
