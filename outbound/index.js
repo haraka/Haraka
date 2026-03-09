@@ -67,8 +67,7 @@ process.on('message', async (msg) => {
             return
         }
         // ignores the message
-    }
-    catch (err) {
+    } catch (err) {
         logger.error(exports, err)
         return
     }

@@ -196,7 +196,7 @@ exports._add_file = async (file) => {
             load_queue.push(file)
         })
     }
-    return file;
+    return file
 }
 
 exports.load_queue_files = async (pid, input_files, iteratee) => {
@@ -238,9 +238,7 @@ exports.load_queue_files = async (pid, input_files, iteratee) => {
     if (searchPid) logger.info(exports, `[pid: ${pid}] ${stat_renamed} files old PID queue fixed up`)
     logger.debug(exports, `[pid: ${pid}] ${stat_loaded} files loaded`)
 
-    const iterateeResults = await Promise.all(
-        results.filter((i) => i).map(async (item) => await iteratee(item)),
-    )
+    const iterateeResults = await Promise.all(results.filter((i) => i).map(async (item) => await iteratee(item)))
 
     return iterateeResults.filter((result) => result !== null && result !== undefined)
 }
@@ -293,7 +291,8 @@ exports._list_file = async (file) => {
         console.error(`Error reading queue file: ${file}:`, err)
         return null
     } finally {
-        if (handle) await handle.close().catch((err) => console.error(`Failed to close queue file handle for ${file}:`, err))
+        if (handle)
+            await handle.close().catch((err) => console.error(`Failed to close queue file handle for ${file}:`, err))
     }
 }
 

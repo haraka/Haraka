@@ -86,8 +86,7 @@ class HMailItem extends events.EventEmitter {
 
             this.file_size = stats.size
             this.read_todo()
-        }
-        catch (err) {
+        } catch (err) {
             // we are fucked... guess I need somewhere for this to go
             this.logerror(`Error obtaining file size: ${err}`)
             this.temp_fail('Error obtaining file size')
@@ -115,10 +114,7 @@ class HMailItem extends events.EventEmitter {
             const todo_json = todo_bytes.toString().trim()
             const last_char = todo_json.charAt(todo_json.length - 1)
             if (last_char !== '}') {
-                this.emit(
-                    'error',
-                    `invalid todo header end char: ${last_char} at pos ${todo_len} of ${this.filename}`,
-                )
+                this.emit('error', `invalid todo header end char: ${last_char} at pos ${todo_len} of ${this.filename}`)
                 return
             }
             this.todo = JSON.parse(todo_json)
@@ -126,8 +122,7 @@ class HMailItem extends events.EventEmitter {
             this.todo.rcpt_to = this.todo.rcpt_to.map((a) => new Address(a))
             this.todo.notes = new Notes(this.todo.notes)
             this.emit('ready')
-        }
-        catch (err) {
+        } catch (err) {
             const errMsg = `Error reading queue file ${this.filename}: ${err}`
             this.logerror(errMsg)
             this.temp_fail(errMsg)

@@ -56,9 +56,12 @@ describe('outbound/queue', () => {
     })
 
     describe('load_queue_files', () => {
-
-        beforeEach(() => { populateTestQueue(); })
-        afterEach(() => { clearTestQueue(); })
+        beforeEach(() => {
+            populateTestQueue()
+        })
+        afterEach(() => {
+            clearTestQueue()
+        })
 
         it('processes valid queue files', async () => {
             const seen = []
@@ -66,7 +69,10 @@ describe('outbound/queue', () => {
             const files = await queue.load_queue_files(
                 null,
                 ['1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka'],
-                (file) => { seen.push(file); return file; }
+                (file) => {
+                    seen.push(file)
+                    return file
+                },
             )
             assert.equal(seen.length, 1)
             assert.equal(files[0], '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka')
@@ -78,7 +84,9 @@ describe('outbound/queue', () => {
             await queue.load_queue_files(
                 null,
                 ['1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', 'invalid-file', 'zero-length'],
-                (file) => { seen.push(file); }
+                (file) => {
+                    seen.push(file)
+                },
             )
             assert.equal(seen.length, 1)
         })
@@ -150,25 +158,30 @@ describe('outbound/queue', () => {
     })
 
     describe('_load_cur_queue', () => {
-        beforeEach(() => { populateTestQueue(); })
-        afterEach(() => { clearTestQueue(); })
+        beforeEach(() => {
+            populateTestQueue()
+        })
+        afterEach(() => {
+            clearTestQueue()
+        })
 
         it('reads queue directory and processes files', async () => {
             const processedFiles = []
-            await queue._load_cur_queue(
-                null,
-                (file) => {
-                    processedFiles.push(file)
-                }
-            )
+            await queue._load_cur_queue(null, (file) => {
+                processedFiles.push(file)
+            })
 
             assert.ok(processedFiles.length >= 0)
         })
     })
 
     describe('list_queue', () => {
-        beforeEach(() => { populateTestQueue(); })
-        afterEach(() => { clearTestQueue(); })
+        beforeEach(() => {
+            populateTestQueue()
+        })
+        afterEach(() => {
+            clearTestQueue()
+        })
 
         it('returns todo objects from real queue files', async () => {
             const qlist = await queue.list_queue()
@@ -180,8 +193,12 @@ describe('outbound/queue', () => {
     })
 
     describe('stat_queue', () => {
-        beforeEach(() => { populateTestQueue(); })
-        afterEach(() => { clearTestQueue(); })
+        beforeEach(() => {
+            populateTestQueue()
+        })
+        afterEach(() => {
+            clearTestQueue()
+        })
 
         it('returns queue stats', async () => {
             const stats = await queue.stat_queue()
@@ -192,8 +209,12 @@ describe('outbound/queue', () => {
     })
 
     describe('load_pid_queue', () => {
-        beforeEach(() => { populateTestQueue(); })
-        afterEach(() => { clearTestQueue(); })
+        beforeEach(() => {
+            populateTestQueue()
+        })
+        afterEach(() => {
+            clearTestQueue()
+        })
 
         it('delegates pid loading to init_queue', async () => {
             const parts = qfile.parts(fixtureFiles[0])
