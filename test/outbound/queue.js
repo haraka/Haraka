@@ -96,9 +96,9 @@ describe('outbound/queue', () => {
 
             // Mock rename to track calls
             const originalRename = queue.rename_to_actual_pid
-            queue.rename_to_actual_pid = (file, parts, cb) => {
+            queue.rename_to_actual_pid = (file, parts) => {
                 renameAttempts++
-                cb(new Error('test skip'))
+                throw new Error('test skip')
             }
 
             await queue.load_queue_files(
