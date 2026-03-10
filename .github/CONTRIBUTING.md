@@ -35,9 +35,7 @@ To submit new_branch as a Pull Request, visit the [Haraka project page](https://
 
 ### Style conventions
 
-- 4 spaces for indentation (no tabs)
-- Semi-colons on the end of statements are preferred
-- Use whitespace between operators - we prefer `if (foo > bar)` over `if(foo>bar)`
+- Use prettier
 - Don't comment out lines of code, remove them as they will be in the revision history.
 - Use boolean true/false instead of numeric 0/1
 - See [Editor Settings](Editor-Settings)

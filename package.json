@@ -95,7 +95,7 @@
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
-    "format:NYET": "npm run prettier:fix && npm run lint:fix",
+    "format": "npm run prettier:fix && npm run lint:fix",
     "lint": "npx eslint *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "lint:fix": "npx eslint --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "prettier": "npx prettier . --check",

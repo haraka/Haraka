@@ -107,8 +107,7 @@ class HMailItem extends events.EventEmitter {
                 this.logcrit(wrongLength)
                 try {
                     await fs.rename(this.path, path.join(queue_dir, `error.${this.filename}`))
-                }
-                catch (renameErr) {
+                } catch (renameErr) {
                     this.logerror(`Failed to move corrupt todo file ${this.path} to error queue: ${renameErr}`)
                 }
                 this.emit('error', wrongLength) // Note nothing picks this up yet
