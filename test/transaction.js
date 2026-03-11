@@ -255,12 +255,12 @@ describe('transaction', () => {
         beforeEach(_set_up)
 
         const cases = [
-            { desc: 'empty buffer',             input: Buffer.from(''),           expected: '' },
-            { desc: 'single byte',              input: Buffer.from('a'),          expected: 'a' },
-            { desc: 'CRLF ending',              input: Buffer.from('hello\r\n'),  expected: 'hello\n' },
-            { desc: 'LF-only ending unchanged', input: Buffer.from('hello\n'),    expected: 'hello\n' },
-            { desc: 'no newline unchanged',     input: Buffer.from('hello'),      expected: 'hello' },
-            { desc: 'string input',             input: 'hello\r\n',              expected: 'hello\n' },
+            { desc: 'empty buffer', input: Buffer.from(''), expected: '' },
+            { desc: 'single byte', input: Buffer.from('a'), expected: 'a' },
+            { desc: 'CRLF ending', input: Buffer.from('hello\r\n'), expected: 'hello\n' },
+            { desc: 'LF-only ending unchanged', input: Buffer.from('hello\n'), expected: 'hello\n' },
+            { desc: 'no newline unchanged', input: Buffer.from('hello'), expected: 'hello' },
+            { desc: 'string input', input: 'hello\r\n', expected: 'hello\n' },
         ]
 
         for (const { desc, input, expected } of cases) {
@@ -275,14 +275,14 @@ describe('transaction', () => {
         beforeEach(_set_up)
 
         const cases = [
-            { desc: 'empty string',              input: '',           expected: '' },
-            { desc: 'no dots or newlines',       input: 'hello world', expected: 'hello world' },
-            { desc: 'bare LF becomes CRLF',      input: 'hello\n',    expected: 'hello\r\n' },
-            { desc: 'CRLF preserved',            input: 'hello\r\n',  expected: 'hello\r\n' },
-            { desc: 'dot at line start stuffed', input: '.hello\n',   expected: '..hello\r\n' },
-            { desc: 'dot mid-line not stuffed',  input: 'hel.lo\n',   expected: 'hel.lo\r\n' },
-            { desc: 'multi-line with dots',      input: 'a\n.b\n',    expected: 'a\r\n..b\r\n' },
-            { desc: 'dot after CRLF stuffed',    input: 'a\r\n.b\n',  expected: 'a\r\n..b\r\n' },
+            { desc: 'empty string', input: '', expected: '' },
+            { desc: 'no dots or newlines', input: 'hello world', expected: 'hello world' },
+            { desc: 'bare LF becomes CRLF', input: 'hello\n', expected: 'hello\r\n' },
+            { desc: 'CRLF preserved', input: 'hello\r\n', expected: 'hello\r\n' },
+            { desc: 'dot at line start stuffed', input: '.hello\n', expected: '..hello\r\n' },
+            { desc: 'dot mid-line not stuffed', input: 'hel.lo\n', expected: 'hel.lo\r\n' },
+            { desc: 'multi-line with dots', input: 'a\n.b\n', expected: 'a\r\n..b\r\n' },
+            { desc: 'dot after CRLF stuffed', input: 'a\r\n.b\n', expected: 'a\r\n..b\r\n' },
         ]
 
         for (const { desc, input, expected } of cases) {

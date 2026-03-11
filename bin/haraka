@@ -310,7 +310,8 @@ if (parsed.version) {
   logger = require(path.join(base, 'logger'))
   if (!parsed.verbose) logger.log = noop // disable logging
   outbound = require(path.join(base, 'outbound'))
-  outbound.list_queue(function (err, qlist) {
+  ;(async () => {
+    const qlist = await outbound.list_queue()
     for (const todo of qlist) {
       console.log(
         sprintf(
@@ -323,7 +324,7 @@ if (parsed.version) {
       )
     }
     process.exit()
-  })
+  })()
 } else if (parsed.qstat) {
   if (!parsed.configs) fail('qstat option requires config path')
 
@@ -331,10 +332,11 @@ if (parsed.version) {
   logger = require(path.join(base, 'logger'))
   if (!parsed.verbose) logger.log = noop // disable logging
   outbound = require(path.join(base, 'outbound'))
-  outbound.stat_queue(function (err, stats) {
+  ;(async () => {
+    const stats = await outbound.stat_queue()
     console.log(stats)
     process.exit()
-  })
+  })()
 } else if (parsed.qunstick) {
   if (!parsed.configs) fail('qunstick option requires config path')
   const domain = parsed.qunstick.toLowerCase()

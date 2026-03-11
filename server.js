@@ -92,9 +92,9 @@ Server.daemonize = function () {
     }
 }
 
-Server.flushQueue = (domain) => {
+Server.flushQueue = async (domain) => {
     if (!Server.cluster) {
-        outbound.flush_queue(domain)
+        await outbound.flush_queue(domain)
         return
     }
 
@@ -506,7 +506,7 @@ Server.setup_http_listeners = async () => {
     app.use(Server.handle404)
 }
 
-Server.init_master_respond = (retval, msg) => {
+Server.init_master_respond = async (retval, msg) => {
     if (!(retval === constants.ok || retval === constants.cont)) {
         Server.logerror(`init_master returned error${msg ? `: ${msg}` : ''}`)
         return logger.dump_and_exit(1)
@@ -517,18 +517,20 @@ Server.init_master_respond = (retval, msg) => {
 
     // Load the queue if we're just one process
     if (!(cluster && c.nodes)) {
-        outbound.load_queue()
+        try {
+            await outbound.init_queue()
+        } catch (err) {
+            Server.logcrit('Loading queue failed. Shutting down.')
+            return logger.dump_and_exit(1)
+        }
         Server.setup_http_listeners()
         return
     }
 
     // Running under cluster, fork children here, so that
     // cluster events can be registered in init_master hooks.
-    outbound.scan_queue_pids((err, pids) => {
-        if (err) {
-            Server.logcrit('Scanning queue failed. Shutting down.')
-            return logger.dump_and_exit(1)
-        }
+    try {
+        const pids = await outbound.scan_queue_pids()
         Server.daemonize()
         // Fork workers
         const workers = c.nodes === 'cpus' ? os.cpus().length : c.nodes
@@ -552,7 +554,10 @@ Server.init_master_respond = (retval, msg) => {
             Server.lognotice(`worker ${worker.id} listening on ${endpoint(address)}`)
         })
         cluster.on('exit', cluster_exit_listener)
-    })
+    } catch (err) {
+        Server.logcrit('Scanning queue failed. Shutting down.')
+        logger.dump_and_exit(1)
+    }
 }
 
 function cluster_exit_listener(worker, code, signal) {

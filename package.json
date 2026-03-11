@@ -22,7 +22,6 @@
   "dependencies": {
     "address-rfc2821": "^2.1.5",
     "address-rfc2822": "^2.2.3",
-    "async": "^3.2.6",
     "daemon": "~1.1.0",
     "haraka-config": "^1.4.2",
     "haraka-constants": "^1.0.7",
@@ -96,7 +95,7 @@
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
-    "format:NYET": "npm run prettier:fix && npm run lint:fix",
+    "format": "npm run prettier:fix && npm run lint:fix",
     "lint": "npx eslint *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "lint:fix": "npx eslint --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "prettier": "npx prettier . --check",

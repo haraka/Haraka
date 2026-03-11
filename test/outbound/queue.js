@@ -56,75 +56,66 @@ describe('outbound/queue', () => {
     })
 
     describe('load_queue_files', () => {
-        it('processes valid queue files', (done) => {
-            const seen = []
-            const iteratee = (file, cb) => {
-                seen.push(file)
-                cb(null, file)
-            }
-
-            queue.load_queue_files(
-                null,
-                ['1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka'],
-                iteratee,
-                (err, results) => {
-                    assert.ifError(err)
-                    assert.equal(seen.length, 1)
-                    assert.equal(results[0], '1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka')
-                    done()
-                },
-            )
+        beforeEach(() => {
+            populateTestQueue()
+        })
+        afterEach(() => {
+            clearTestQueue()
         })
 
-        it('skips invalid files', (done) => {
+        it('processes valid queue files', async () => {
             const seen = []
 
-            queue.load_queue_files(
+            const files = await queue.load_queue_files(
+                null,
+                ['1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka'],
+                (file) => {
+                    seen.push(file)
+                    return file
+                },
+            )
+            assert.equal(seen.length, 1)
+            assert.equal(files[0], '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka')
+        })
+
+        it('skips invalid files', async () => {
+            const seen = []
+
+            await queue.load_queue_files(
                 null,
                 ['1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', 'invalid-file', 'zero-length'],
-                (file, cb) => {
+                (file) => {
                     seen.push(file)
-                    cb(null, file)
-                },
-                (err, results) => {
-                    assert.ifError(err)
-                    assert.equal(seen.length, 1)
-                    done()
                 },
             )
+            assert.equal(seen.length, 1)
         })
 
-        it('filters files by pid', (done) => {
+        it('filters files by pid', async () => {
             let renameAttempts = 0
 
             // Mock rename to track calls
             const originalRename = queue.rename_to_actual_pid
-            queue.rename_to_actual_pid = (file, parts, cb) => {
+            queue.rename_to_actual_pid = (file, parts) => {
                 renameAttempts++
-                cb(new Error('test skip'))
+                throw new Error('test skip')
             }
 
-            queue.load_queue_files(
+            await queue.load_queue_files(
                 61403, // specific pid
                 [
                     '1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka',
                     '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka',
                 ], // different pids
-                (_file, cb) => {
-                    cb(null)
-                },
-                (err) => {
-                    queue.rename_to_actual_pid = originalRename
-                    // Should only attempt rename on matching pid
-                    assert.equal(renameAttempts, 1)
-                    done()
-                },
+                (_file) => {},
             )
+            queue.rename_to_actual_pid = originalRename
+            assert.equal(renameAttempts, 1)
         })
     })
 
     describe('ensure_queue_dir', () => {
-        it('creates queue dir', () => {
+        it('creates queue dir', async () => {
             const tmpDir = path.join(os.tmpdir(), `haraka-test-queue-${Date.now()}`)
 
             // Override queue_dir for this test
@@ -132,9 +123,9 @@ describe('outbound/queue', () => {
             queue.queue_dir = tmpDir
 
             try {
-                queue.ensure_queue_dir()
+                await queue.ensure_queue_dir()
                 assert.ok(fs.existsSync(tmpDir))
-                const stat = fs.statSync(tmpDir)
+                const stat = await fs.promises.stat(tmpDir)
                 assert.ok(stat.isDirectory())
             } catch (err) {
                 assert.fail(`ensure_queue_dir threw an error: ${err.message}`)
@@ -144,7 +135,7 @@ describe('outbound/queue', () => {
             }
         })
 
-        it('returns early if queue dir already exists', () => {
+        it('returns early if queue dir already exists', async () => {
             const tmpDir = path.join(os.tmpdir(), `haraka-test-queue-exists-${Date.now()}`)
             fs.mkdirSync(tmpDir)
 
@@ -152,7 +143,7 @@ describe('outbound/queue', () => {
             queue.queue_dir = tmpDir
 
             try {
-                queue.ensure_queue_dir()
+                await queue.ensure_queue_dir()
                 assert.ok(fs.existsSync(tmpDir))
             } catch (err) {
                 assert.fail(`ensure_queue_dir threw an error: ${err.message}`)
@@ -164,26 +155,20 @@ describe('outbound/queue', () => {
     })
 
     describe('_load_cur_queue', () => {
-        it('reads queue directory and processes files', (done) => {
-            const testDir = path.join('test', 'queue')
-            const originalQueueDir = queue.queue_dir
+        beforeEach(() => {
+            populateTestQueue()
+        })
+        afterEach(() => {
+            clearTestQueue()
+        })
+
+        it('reads queue directory and processes files', async () => {
             const processedFiles = []
+            await queue._load_cur_queue(null, (file) => {
+                processedFiles.push(file)
+            })
 
-            queue.queue_dir = testDir
-
-            queue._load_cur_queue(
-                null,
-                (file, cb) => {
-                    processedFiles.push(file)
-                    cb(null, file)
-                },
-                () => {
-                    queue.queue_dir = originalQueueDir
-                    // console.log('Processed files:', processedFiles)
-                    assert.ok(processedFiles.length >= 0)
-                    done()
-                },
-            )
+            assert.ok(processedFiles.length >= 0)
         })
     })
 
@@ -191,20 +176,16 @@ describe('outbound/queue', () => {
         beforeEach(() => {
             populateTestQueue()
         })
-
         afterEach(() => {
             clearTestQueue()
         })
 
-        it('returns todo objects from real queue files', (done) => {
-            queue.list_queue((err, qlist) => {
-                assert.ifError(err)
-                assert.ok(Array.isArray(qlist))
-                assert.ok(qlist.length > 0)
-                assert.ok(qlist[0].mail_from)
-                assert.ok(Array.isArray(qlist[0].rcpt_to))
-                done()
-            })
+        it('returns todo objects from real queue files', async () => {
+            const qlist = await queue.list_queue()
+            assert.ok(Array.isArray(qlist))
+            assert.ok(qlist.length > 0)
+            assert.ok(qlist[0].mail_from)
+            assert.ok(Array.isArray(qlist[0].rcpt_to))
         })
     })
 
@@ -212,19 +193,15 @@ describe('outbound/queue', () => {
         beforeEach(() => {
             populateTestQueue()
         })
-
         afterEach(() => {
             clearTestQueue()
         })
 
-        it('returns queue stats', (done) => {
-            queue.stat_queue((err, stats) => {
-                assert.ifError(err)
-                assert.ok(stats)
-                assert.ok('queue_dir' in stats)
-                assert.ok(stats.queue_count >= 1)
-                done()
-            })
+        it('returns queue stats', async () => {
+            const stats = await queue.stat_queue()
+            assert.ok(stats)
+            assert.ok('queue_dir' in stats)
+            assert.ok(stats.queue_count >= 1)
         })
     })
 
@@ -232,26 +209,25 @@ describe('outbound/queue', () => {
         beforeEach(() => {
             populateTestQueue()
         })
-
         afterEach(() => {
             clearTestQueue()
         })
 
-        it('delegates pid loading to load_queue', () => {
+        it('delegates pid loading to init_queue', async () => {
             const parts = qfile.parts(fixtureFiles[0])
             const observed = []
-            const originalLoadQueue = queue.load_queue
+            const originalLoadQueue = queue.init_queue
 
-            queue.load_queue = (pid) => {
+            queue.init_queue = (pid) => {
                 observed.push(pid)
             }
 
             try {
                 assert.ok(fs.existsSync(path.join(testQueueDir, fixtureFiles[0])))
-                queue.load_pid_queue(parts.pid)
+                await queue.load_pid_queue(parts.pid)
                 assert.deepEqual(observed, [parts.pid])
             } finally {
-                queue.load_queue = originalLoadQueue
+                queue.init_queue = originalLoadQueue
             }
         })
     })
