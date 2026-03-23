@@ -273,10 +273,6 @@ logger.add_log_methods(Plugin)
 
 const plugins = exports
 
-// Set in server.js; initialized to empty object
-// to prevent it from blowing up any unit tests.
-plugins.server = { notes: {} }
-
 logger.add_log_methods(plugins, 'plugins')
 
 plugins.Plugin = Plugin
@@ -365,6 +361,10 @@ plugins.load_plugin = (name) => {
 
     plugins.registered_plugins[name] = plugin
 }
+
+// Set in server.js; initialized to empty object
+// to prevent it from blowing up any unit tests.
+plugins.server = { notes: {} }
 
 plugins._load_and_compile_plugin = (name) => {
     const plugin = new Plugin(name)
