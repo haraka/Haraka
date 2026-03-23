@@ -4,6 +4,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- deps(all): bump versions
+- doc(Plugins): added more sections
+- test: fixes for test-fixtures 1.4 & local plugins that do require('./')
+  - TL;DR: bundled plugins don't need a special require any more
+  - fixtures/plugin behaves more like real one, test accordingly
+- deleted core_require
 - es7: outbound replace fs callback with fs promises #3528
   - dep(async): remove dep by replacing async.map with Queue
 - es6 & es7: #3527

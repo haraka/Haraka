@@ -4,7 +4,7 @@
 
 /* global server */
 
-const tls_socket = require('./tls_socket')
+const tls_socket = require('../tls_socket')
 
 // exported so tests can override config dir
 exports.net_utils = require('haraka-net-utils')

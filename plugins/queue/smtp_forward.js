@@ -6,7 +6,7 @@
 
 const url = require('node:url')
 
-const smtp_client_mod = require('./smtp_client')
+const smtp_client_mod = require('../../smtp_client')
 
 exports.register = function () {
     this.load_errs = []

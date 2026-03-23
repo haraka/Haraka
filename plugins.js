@@ -33,10 +33,6 @@ class Plugin {
         return require(`./${name}`)
     }
 
-    core_require(name) {
-        return this.haraka_require(name)
-    }
-
     _get_plugin_path() {
         /* From https://github.com/haraka/Haraka/pull/1278#issuecomment-168856528
         In Development mode, or install via a plain "git clone":
@@ -91,11 +87,13 @@ class Plugin {
             // haraka/config folder for overrides
             return exports.config.module_config(path.dirname(this.plugin_path), process.env.HARAKA || __dirname)
         }
+
         if (process.env.HARAKA) {
             // Plain .js file, installed mode - look in core folder for defaults,
             // install dir for overrides
             return exports.config.module_config(__dirname, process.env.HARAKA)
         }
+
         if (process.env.HARAKA_TEST_DIR) {
             return exports.config.module_config(process.env.HARAKA_TEST_DIR)
         }
@@ -158,17 +156,19 @@ class Plugin {
                 return require(module)
             }
 
-            if (fs.existsSync(path.join(__dirname, `${module}.js`)) || fs.existsSync(path.join(__dirname, module))) {
-                return require(module)
+            for (const ext of [`${module}.js`, module]) {
+              if (fs.existsSync(path.join(__dirname, ext))) {
+                return require(module);
+              }
             }
 
             return require(path.join(path.dirname(this.plugin_path), module))
         }
     }
 
-    _get_code(pp) {
+    _get_code(pi_path) {
         if (this.hasPackageJson) {
-            let packageDir = path.dirname(pp)
+            let packageDir = path.dirname(pi_path)
             if (/^win(32|64)/.test(process.platform)) {
                 // escape the c:\path\back\slashes else they disappear
                 packageDir = packageDir.replace(/\\/g, '\\\\')
@@ -177,7 +177,7 @@ class Plugin {
         }
 
         try {
-            return `"use strict";${fs.readFileSync(pp)}`
+            return `"use strict";${fs.readFileSync(pi_path)}`
         } catch (err) {
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
                 plugins.logcrit(`Loading ${this.name} failed: ${err}`)
@@ -241,8 +241,13 @@ process.on('message', (msg) => {
 
 function plugin_search_paths(prefix, name) {
     return [
+        // Haraka/plugins/*.js
         path.resolve(prefix, 'plugins', `${name}.js`),
+
+        // Haraka/node_modules/haraka-plugin-*/package.json
         path.resolve(prefix, 'node_modules', `haraka-plugin-${name}`, 'package.json'),
+
+        // global node_modules/haraka-plugin-*/package.json
         path.resolve(prefix, '..', `haraka-plugin-${name}`, 'package.json'),
     ]
 }
