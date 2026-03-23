@@ -33,10 +33,6 @@ class Plugin {
         return require(`./${name}`)
     }
 
-    core_require(name) {
-        return this.haraka_require(name)
-    }
-
     _get_plugin_path() {
         /* From https://github.com/haraka/Haraka/pull/1278#issuecomment-168856528
         In Development mode, or install via a plain "git clone":
@@ -160,8 +156,10 @@ class Plugin {
                 return require(module)
             }
 
-            if (fs.existsSync(path.join(__dirname, `${module}.js`)) || fs.existsSync(path.join(__dirname, module))) {
-                return require(module)
+            for (const ext of [`${module}.js`, module]) {
+              if (fs.existsSync(path.join(__dirname, ext))) {
+                return require(module);
+              }
             }
 
             return require(path.join(path.dirname(this.plugin_path), module))

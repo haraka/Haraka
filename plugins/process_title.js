@@ -1,6 +1,6 @@
 // process_title
 
-const outbound = require('./outbound')
+const outbound = require('../outbound')
 
 function setupInterval(title, server) {
     // Set up a timer to update title

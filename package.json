@@ -23,7 +23,7 @@
     "address-rfc2821": "^2.1.5",
     "address-rfc2822": "^2.2.3",
     "daemon": "~1.1.0",
-    "haraka-config": "^1.4.2",
+    "haraka-config": "^1.5.0",
     "haraka-constants": "^1.0.7",
     "haraka-dsn": "^1.1.0",
     "haraka-email-message": "^1.2.6",
@@ -46,8 +46,8 @@
   "optionalDependencies": {
     "haraka-plugin-access": "^1.1.10",
     "haraka-plugin-aliases": "^1.0.3",
-    "haraka-plugin-asn": "^2.0.5",
-    "haraka-plugin-attachment": "^1.1.5",
+    "haraka-plugin-asn": "^2.0.6",
+    "haraka-plugin-attachment": "^1.2.0",
     "haraka-plugin-avg": "^1.1.0",
     "haraka-plugin-bounce": "^2.1.2",
     "haraka-plugin-clamd": "^1.0.2",
@@ -55,10 +55,10 @@
     "haraka-plugin-dkim": "^1.0.11",
     "haraka-plugin-dns-list": "^1.2.4",
     "haraka-plugin-early_talker": "^1.0.2",
-    "haraka-plugin-elasticsearch": "^8.1.5",
+    "haraka-plugin-elasticsearch": "^8.1.6",
     "haraka-plugin-esets": "^1.0.1",
     "haraka-plugin-fcrdns": "^1.1.2",
-    "haraka-plugin-geoip": "^1.1.1",
+    "haraka-plugin-geoip": "^1.1.2",
     "haraka-plugin-greylist": "^1.1.0",
     "haraka-plugin-headers": "^1.1.0",
     "haraka-plugin-helo.checks": "^1.1.0",
@@ -68,7 +68,7 @@
     "haraka-plugin-mail_from.is_resolvable": "^1.1.0",
     "haraka-plugin-messagesniffer": "^1.0.1",
     "haraka-plugin-p0f": "^1.0.11",
-    "haraka-plugin-qmail-deliverable": "^1.2.5",
+    "haraka-plugin-qmail-deliverable": "^1.3.1",
     "haraka-plugin-recipient-routes": "^1.3.1",
     "haraka-plugin-relay": "^1.0.1",
     "haraka-plugin-rspamd": "^1.4.2",
@@ -76,15 +76,15 @@
     "haraka-plugin-spf": "^1.2.11",
     "haraka-plugin-syslog": "^1.0.7",
     "haraka-plugin-uribl": "^1.0.10",
-    "haraka-plugin-watch": "^2.0.8",
+    "haraka-plugin-watch": "^2.0.9",
     "@techteamer/ocsp": "^1.0.1"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "^2.0.3",
-    "haraka-test-fixtures": "^1.3.10",
+    "@haraka/eslint-config": "^2.0.4",
+    "haraka-test-fixtures": "^1.4.1",
     "mocha": "^11.7.5",
     "mock-require": "^3.0.3",
-    "nodemailer": "^8.0.1"
+    "nodemailer": "^8.0.3"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
@@ -102,8 +102,7 @@
     "prettier:fix": "npx prettier . --write --log-level=warn",
     "test": "npx mocha --exit --timeout=4000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
     "versions": "npx dependency-version-checker check",
-    "versions:fix": "npx dependency-version-checker update",
-    "format": "npm run prettier:fix && npm run lint:fix"
+    "versions:fix": "npx dependency-version-checker update"
   },
   "prettier": {
     "singleQuote": true,

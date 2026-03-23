@@ -39,9 +39,9 @@ describe('tls', () => {
     })
 
     describe('register', () => {
-        it('with certs, should call register_hook()', () => {
+        it('with certs, should register hooks', () => {
             this.plugin.register()
-            assert.ok(this.plugin.register_hook.called)
+            assert.ok(Object.keys(this.plugin.hooks).length)
         })
     })
 

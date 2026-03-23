@@ -30,7 +30,7 @@ describe('smtp_forward', () => {
             plugin.register()
 
             assert.equal(plugin.tls_options, undefined)
-            assert.equal(plugin.register_hook.called, true)
+            assert.ok(Object.keys(plugin.hooks).length)
         })
     })
 
