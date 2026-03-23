@@ -35,6 +35,52 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 | [opendkim][url-opendkim]         | DKIM sign and verify email messages               |
 | [spf][url-spf]                   | Perform SPF checks                                |
 
+### Enrichment Plugins
+
+| Name                           | Description                                |
+| ------------------------------ | ------------------------------------------ |
+| [ASN][url-asn]                 | Get ASN info for remote senders                |
+| [fcrdns][url-fcrdns]           | Forward Confirmed reverse DNS                  |
+| [geoip][url-geoip]             | get geographic information about mail senders  |
+| [p0f][url-p0f]                 | TCP Fingerprinting                             |
+| [karma][url-karma]                  | Dynamic scoring of incoming connections   |
+| [known-senders][url-known-senders]  | Reward emails from those you send mail to |
+| [record_envelope_addresses][url-recordenv] | Adds message headers with ENV recips |
+
+### Filtering Plugins
+
+| Name                           | Description                                |
+| ------------------------------ | ------------------------------------------ |
+| [attachment][url-attach]       | Restrict attachment types                  |
+| [block_me][url-blockme]        | Populate block list via forwarded emails   |
+| [avg][url-avg]                 | AVG antivirus scanner                      |
+| [clamd][url-clamd]             | Anti-Virus scanning with ClamAV            |
+| [data.signatures][url-sigs]    | Block emails whose bodies match signatures |
+| [dcc][url-dcc]                 | Distributed Checksum Clearinghouse         |
+| [dns-list][url-dns-list]       | Check against DNS and reputation lists     |
+| [early_talker][url-early]      | Reject remotes that talk early             |
+| [esets][url-esets]             | Virus scanning with ESET Mail Security     |
+| [greylist][url-greylist]       | Greylisting                                |
+| [helo.checks][url-helo]        | Validity checks of the HELO string         |
+| [mail_from.is_resolvable][url-mfres] | Verifies the MAIL FROM domain resolves to a MX |
+| [messagesniffer][url-msgsniff] | Anti-spam via [MessageSniffer][url-ms]     |
+| [milter][url-milter]           | milter support                             |
+| [rspamd][url-rspamd]           | Scan emails with rspamd                    |
+| [spamassassin][url-spamass]    | Scan emails with SpamAssassin              |
+| [uribl][url-uribl]             | Block based on URI blacklists              |
+
+### Logging & Telemetry
+
+| Name                             | Description                                                              |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| [accounting_files][url-acc-files]      | Retrieve, Store and Archive custom information of outbound traffic |
+| [elasticsearch][url-elastic]           | Store message metadata in Elasticsearch                            |
+| [log reader][url-logreader]            | extract log entries from the haraka log file                       |
+| [outbound-logger][url-outbound-logger] | JSON logging of outbound email. Logs metadata about delivered/bounced emails |
+| [process_title][url-proctitle]         | Populate `ps` output with activity counters                        |
+| [syslog][url-syslog]                   | Log to syslog                                                      |
+| [watch][url-watch]                     | Watch live SMTP traffic in a web interface                         |
+
 ### Queue Plugins
 
 | Name                             | Description                                                              |
@@ -53,72 +99,42 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 | [smtp_proxy][url-qproxy]         | Proxy SMTP connections to another MTA                                    |
 | [wildduck][url-wildduck]         | queue messages to Wild Duck                                              |
 
-### Filtering Plugins
+### Recipient Validation
 
-| Name                           | Description                                |
-| ------------------------------ | ------------------------------------------ |
-| [attachment][url-attach]       | Restrict attachment types                  |
-| [avg][url-avg]                 | AVG antivirus scanner                      |
-| [clamd][url-clamd]             | Anti-Virus scanning with ClamAV            |
-| [data.signatures][url-sigs]    | Block emails whose bodies match signatures |
-| [dcc][url-dcc]                 | Distributed Checksum Clearinghouse         |
-| [esets][url-esets]             | Virus scanning with ESET Mail Security     |
-| [messagesniffer][url-msgsniff] | Anti-spam via [MessageSniffer][url-ms]     |
-| [milter][url-milter]           | milter support                             |
-| [rspamd][url-rspamd]           | Scan emails with rspamd                    |
-| [spamassassin][url-spamass]    | Scan emails with SpamAssassin              |
-| [uribl][url-uribl]             | Block based on URI blacklists              |
+| Name                               | Description                                           |
+| -----------------------------------| ----------------------------------------------------- |
+| [dovecot][url-dovecot]             | Recipient validation & SMTP AUTH against dovecot      |
+| [LDAP][url-ldap]                   | Aliases, Auth, and Recipient validation from LDAP     |
+| [recipient-routes][url-rroutes]    | Route emails based on their recipient(s)              |
+| [rcpt_to.in_host_list][url-rhost]  | Define local email domains in a file                  |
+| [rcpt_to.ldap][url-rcpt-ldap]      | Validate recipients against LDAP                      |
+| [rcpt-postgresql][url-postgres]    | validate recipients against PostgreSQL                |
+| [qmail-deliverable][url-rqmd]      | Validate recipients against Qmail-Deliverable         |
+| [vmta][url-vmta]                   | Virtual MTA management                                |
+| [wildduck][url-wildduck]           | provides recipient checks against Wild Duck           |
 
 ### Every other Plugin
 
-| Name                                       | Description                                                                                 |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| [access][url-access]                       | ACLs based on IPs, domains, email addrs, etc.                                               |
-| [accounting_files][url-acc-files]          | Retrieve, Store and Archive custom information of outbound traffic                          |
-| [aliases][url-aliases]                     | Email aliases                                                                               |
-| [ASN][url-asn]                             | Get ASN info for remote senders                                                             |
-| [block_me][url-blockme]                    | Populate block list via forwarded emails                                                    |
-| [bounce][url-bounce]                       | Many options for bounce processing                                                          |
-| [delay_deny][url-delay]                    | Delays all pre-DATA 'deny' results                                                          |
-| [dns-list][url-dns-list]                   | Check remote MTAs against DNS black, white, and karma lists                                 |
-| [dovecot][url-dovecot]                     | Recipient validation & SMTP AUTH against dovecot                                            |
-| [early_talker][url-early]                  | Reject remotes that talk early                                                              |
-| [fcrdns][url-fcrdns]                       | Forward Confirmed reverse DNS                                                               |
-| [geoip][url-geoip]                         | get geographic information about mail senders                                               |
-| [greylist][url-greylist]                   | Greylisting                                                                                 |
-| [headers][url-headers]                     | Inspect and verify various email headers                                                    |
-| [helo.checks][url-helo]                    | Validity checks of the HELO string                                                          |
-| [karma][url-karma]                         | Dynamic scoring of incoming connections                                                     |
-| [known-senders][url-known-senders]         | Reward emails from those you send mail to                                                   |
-| [LDAP][url-ldap]                           | Aliases, Auth, and Recipient validation from LDAP                                           |
-| [Limit][url-limit]                         | Apply many types of limits to SMTP connections                                              |
-| [elasticsearch][url-elastic]               | Store message metadata in Elasticsearch                                                     |
-| [log reader][url-logreader]                | extract log entries from the haraka log file                                                |
-| [syslog][url-syslog]                       | Log to syslog                                                                               |
-| [mail_from.is_resolvable][url-mfres]       | Verifies the MAIL FROM domain resolves to a MX                                              |
-| [outbound-logger][url-outbound-logger]     | JSON logging of outbound email traffic. Logs useful metadata about delivered/bounced emails |
-| [p0f][url-p0f]                             | TCP Fingerprinting                                                                          |
-| [prevent_credential_leaks][url-creds]      | Prevent users from emailing their credentials                                               |
-| [process_title][url-proctitle]             | Populate `ps` output with activity counters                                                 |
-| [recipient-routes][url-rroutes]            | Route emails based on their recipient(s)                                                    |
-| [redis][url-redis]                         | multi-purpose Redis db connection(s)                                                        |
-| [rcpt_to.in_host_list][url-rhost]          | Define local email domains in a file                                                        |
-| [rcpt_to.ldap][url-rcpt-ldap]              | Validate recipients against LDAP                                                            |
-| [rcpt-postgresql][url-postgres]            | validate recipients against PostgreSQL                                                      |
-| [qmail-deliverable][url-rqmd]              | Validate recipients against Qmail-Deliverable                                               |
-| [record_envelope_addresses][url-recordenv] | Adds message headers with ENV recips                                                        |
-| [relay][url-relay]                         | Manage relay permissions                                                                    |
-| [reseed_rng][url-rng]                      | Reseed the RNG                                                                              |
-| [batv-srs][url-batv]                       | BATV & SRS                                                                                  |
-| [srs][url-srs]                             | Sender Rewriting Scheme                                                                     |
-| [tarpit][url-tarpit]                       | Slow down connections                                                                       |
-| [tls][url-tls]                             | Implements TLS                                                                              |
-| [toobusy][url-toobusy]                     | Defers connections when too busy                                                            |
-| [vmta][url-vmta]                           | Virtual MTA management                                                                      |
-| [watch][url-watch]                         | Watch live SMTP traffic in a web interface                                                  |
-| [wildduck][url-wildduck]                   | provides recipient checks against Wild Duck                                                 |
-| [xclient][url-xclient]                     | Implements XCLIENT                                                                          |
-| [save-sent][url-save-sent]                 | Save sent emails on the serverside to a mailbox of the sender                               |
+| Name                                       | Description                                                     |
+| ------------------------------------------ | --------------------------------------------------------------- |
+| [access][url-access]                       | ACLs based on IPs, domains, email addrs, etc.                   |
+| [aliases][url-aliases]                     | Email aliases                                                   |
+| [bounce][url-bounce]                       | Many options for bounce processing                              |
+| [delay_deny][url-delay]                    | Delays all pre-DATA 'deny' results                              |
+| [dovecot][url-dovecot]                     | Recipient validation & SMTP AUTH against dovecot                |
+| [headers][url-headers]                     | Inspect and verify various email headers                        |
+| [Limit][url-limit]                         | Apply many types of limits to SMTP connections                  |
+| [prevent_credential_leaks][url-creds]      | Prevent users from emailing their credentials                   |
+| [redis][url-redis]                         | multi-purpose Redis db connection(s)                            |
+| [relay][url-relay]                         | Manage relay permissions                                        |
+| [reseed_rng][url-rng]                      | Reseed the RNG                                                  |
+| [batv-srs][url-batv]                       | BATV & SRS                                                      |
+| [srs][url-srs]                             | Sender Rewriting Scheme                                         |
+| [tarpit][url-tarpit]                       | Slow down connections                                           |
+| [tls][url-tls]                             | Implements TLS                                                  |
+| [toobusy][url-toobusy]                     | Defers connections when too busy                                |
+| [xclient][url-xclient]                     | Implements XCLIENT                                              |
+| [save-sent][url-save-sent]                 | Save sent emails on the serverside to a mailbox of the sender   |
 
 <!-- URLs tucked safely out of the way -->
 

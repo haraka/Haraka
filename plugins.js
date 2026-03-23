@@ -91,11 +91,13 @@ class Plugin {
             // haraka/config folder for overrides
             return exports.config.module_config(path.dirname(this.plugin_path), process.env.HARAKA || __dirname)
         }
+
         if (process.env.HARAKA) {
             // Plain .js file, installed mode - look in core folder for defaults,
             // install dir for overrides
             return exports.config.module_config(__dirname, process.env.HARAKA)
         }
+
         if (process.env.HARAKA_TEST_DIR) {
             return exports.config.module_config(process.env.HARAKA_TEST_DIR)
         }
@@ -166,9 +168,9 @@ class Plugin {
         }
     }
 
-    _get_code(pp) {
+    _get_code(pi_path) {
         if (this.hasPackageJson) {
-            let packageDir = path.dirname(pp)
+            let packageDir = path.dirname(pi_path)
             if (/^win(32|64)/.test(process.platform)) {
                 // escape the c:\path\back\slashes else they disappear
                 packageDir = packageDir.replace(/\\/g, '\\\\')
@@ -177,7 +179,7 @@ class Plugin {
         }
 
         try {
-            return `"use strict";${fs.readFileSync(pp)}`
+            return `"use strict";${fs.readFileSync(pi_path)}`
         } catch (err) {
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
                 plugins.logcrit(`Loading ${this.name} failed: ${err}`)
@@ -241,8 +243,13 @@ process.on('message', (msg) => {
 
 function plugin_search_paths(prefix, name) {
     return [
+        // Haraka/plugins/*.js
         path.resolve(prefix, 'plugins', `${name}.js`),
+
+        // Haraka/node_modules/haraka-plugin-*/package.json
         path.resolve(prefix, 'node_modules', `haraka-plugin-${name}`, 'package.json'),
+
+        // global node_modules/haraka-plugin-*/package.json
         path.resolve(prefix, '..', `haraka-plugin-${name}`, 'package.json'),
     ]
 }
@@ -265,6 +272,10 @@ function get_timeout(name) {
 logger.add_log_methods(Plugin)
 
 const plugins = exports
+
+// Set in server.js; initialized to empty object
+// to prevent it from blowing up any unit tests.
+plugins.server = { notes: {} }
 
 logger.add_log_methods(plugins, 'plugins')
 
@@ -354,10 +365,6 @@ plugins.load_plugin = (name) => {
 
     plugins.registered_plugins[name] = plugin
 }
-
-// Set in server.js; initialized to empty object
-// to prevent it from blowing up any unit tests.
-plugins.server = { notes: {} }
 
 plugins._load_and_compile_plugin = (name) => {
     const plugin = new Plugin(name)
