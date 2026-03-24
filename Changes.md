@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(conn): avoid connection fault when 2x QUIT sent #3536
 - fix(txn): more robust handling of broken messages #3535
 - deps(all): bump versions
 - doc(Plugins): added more sections

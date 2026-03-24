@@ -333,4 +333,41 @@ describe('connection', () => {
             assert.equal(this.connection.prev_state, null)
         })
     })
+
+    describe('issue #3374', () => {
+        beforeEach(_set_up)
+
+        it('prevents double QUIT hook invocation in LOOP state', (done) => {
+            const conn = this.connection
+            conn.loop_respond(554, 'Denied')
+            assert.equal(conn.state, constants.connection.state.LOOP)
+
+            let quit_hook_calls = 0
+            // Mock run_hooks to count calls and simulate delay
+            const plugins = require('../plugins')
+            const original_run_hooks = plugins.run_hooks
+            plugins.run_hooks = (hook, connection, params) => {
+                if (hook === 'quit') {
+                    quit_hook_calls++
+                    if (quit_hook_calls === 1) {
+                        setTimeout(() => {
+                            connection.quit_respond(constants.ok)
+                        }, 50)
+                    }
+                    return
+                }
+                original_run_hooks(hook, connection, params)
+            }
+
+            // Send two QUIT commands
+            conn.process_line(Buffer.from('QUIT\r\n'))
+            conn.process_line(Buffer.from('QUIT\r\n'))
+
+            setTimeout(() => {
+                plugins.run_hooks = original_run_hooks // Restore original
+                assert.equal(quit_hook_calls, 1, 'Quit hook should only be called once')
+                done()
+            }, 100)
+        })
+    })
 })

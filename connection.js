@@ -344,10 +344,13 @@ class Connection {
         } else if (this.state === states.LOOP) {
             // Allow QUIT
             if (this.current_line.toUpperCase() === 'QUIT') {
+                this.state = states.PAUSE_SMTP
                 this.cmd_quit()
             } else {
                 this.respond(this.loop_code, this.loop_msg)
             }
+        } else if (this.state === states.PAUSE_SMTP) {
+            // Do nothing
         } else {
             throw new Error(`unknown state ${this.state}`)
         }
