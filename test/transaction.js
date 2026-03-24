@@ -436,6 +436,27 @@ describe('transaction', () => {
         })
     })
 
+    describe('parse_body enabled after header/body separator', () => {
+        beforeEach(_set_up)
+
+        it('does not throw when parse_body set true after header/body separator seen', (done) => {
+            // parse_body is false when the blank line separator is processed,
+            // so ensure_body() is NOT called at that point.
+            // Then parse_body is set true, and a body line arrives — this
+            // previously crashed with "Cannot read properties of null (reading 'parse_more')".
+            this.transaction.add_data('Subject: test\n')
+            this.transaction.add_data('\n') // separator seen; parse_body still false → body stays null
+            this.transaction.parse_body = true // plugin enables body parsing after separator
+            assert.doesNotThrow(() => {
+                this.transaction.add_data('body line\n')
+            })
+            this.transaction.end_data(() => {
+                assert.ok(this.transaction.body, 'body was lazily created')
+                done()
+            })
+        })
+    })
+
     describe('late header additions', () => {
         beforeEach(_set_up)
 
