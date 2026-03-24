@@ -457,6 +457,34 @@ describe('transaction', () => {
         })
     })
 
+    describe('pre-data header additions (e.g. hook_mail / hook_rcpt)', () => {
+        beforeEach(_set_up)
+
+        it('preserves email headers when add_header is called before data', (done) => {
+            // Simulates record_envelope_addresses which calls add_header in hook_rcpt/hook_mail
+            // before any DATA is received. This must not corrupt header_pos.
+            this.transaction.add_header('X-Envelope-From', 'sender@example.com')
+            this.transaction.add_header('X-Envelope-To', 'rcpt@example.com')
+
+            this.transaction.add_data('Subject: Test\r\n')
+            this.transaction.add_data('From: sender@example.com\r\n')
+            this.transaction.add_data('\r\n')
+            this.transaction.add_data('Body line 1\r\n')
+
+            this.transaction.end_data(() => {
+                this.transaction.message_stream.get_data((output) => {
+                    const str = output.toString()
+                    assert.ok(str.includes('Subject: Test'), 'Subject header preserved')
+                    assert.ok(str.includes('From: sender@example.com'), 'From header preserved')
+                    assert.ok(str.includes('X-Envelope-From: sender@example.com'), 'pre-data header present')
+                    assert.ok(str.includes('X-Envelope-To: rcpt@example.com'), 'pre-data header present')
+                    assert.ok(str.includes('Body line 1'), 'body present')
+                    done()
+                })
+            })
+        })
+    })
+
     describe('late header additions', () => {
         beforeEach(_set_up)
 
