@@ -133,7 +133,7 @@ class Transaction {
         // is this the end of headers line?
         if (this.header_pos === 0 && (line[0] === 0x0a || (line[0] === 0x0d && line[1] === 0x0a))) {
             this.header.parse(this.header_lines)
-            this.header_pos = this.header_lines.length
+            this.header_pos = this.header.header_list ? this.header.header_list.length : -1
             this.found_hb_sep = true
             if (this.parse_body) this.ensure_body()
         } else if (this.header_pos === 0) {
@@ -169,12 +169,22 @@ class Transaction {
             }
             const body_lines = this.header_lines.splice(header_pos + 1)
             this.header.parse(this.header_lines)
-            this.header_pos = header_pos
+            this.header_pos = this.header.header_list ? this.header.header_list.length : -1
+            this.found_hb_sep = true
+
+            // We MUST add an empty line to the message_stream so that it knows
+            // where the headers end. Otherwise it skips everything.
+            if (!this.discard_data) this.message_stream.add_line(Buffer.from('\r\n'))
+
             if (this.parse_body) {
                 this.ensure_body()
                 for (const bodyLine of body_lines) {
                     this.body.parse_more(bodyLine)
                 }
+            }
+
+            for (const bodyLine of body_lines) {
+                if (!this.discard_data) this.message_stream.add_line(Buffer.from(`${bodyLine}\n`))
             }
         }
         if (this.header_pos && this.parse_body) {
@@ -195,22 +205,21 @@ class Transaction {
 
     add_header(key, value) {
         this.header.add_end(key, value)
-        if (this.header_pos > 0) this.reset_headers()
+        this.reset_headers()
     }
 
     add_leading_header(key, value) {
         this.header.add(key, value)
-        if (this.header_pos > 0) this.reset_headers()
+        this.reset_headers()
     }
 
     reset_headers() {
-        const header_lines = this.header.lines()
-        this.header_pos = header_lines.length
+        this.header_pos = this.header.header_list ? this.header.header_list.length : -1
     }
 
     remove_header(key) {
         this.header.remove(key)
-        if (this.header_pos > 0) this.reset_headers()
+        this.reset_headers()
     }
 
     attachment_hooks(start, data, end) {

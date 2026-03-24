@@ -14,9 +14,9 @@
 - When updating files, add `node:` prefixes to any Node.js built-in `require()` calls that lack them (e.g. `require('fs')` → `require('node:fs')`)
 
 # Test
-- `npm test`                          # run all tests
-./run_tests                           # Same as npm test
-./run_tests test/plugins/bounce.js    # Single test file
+npm test                            # run all tests
+./run_tests                         # Same as npm test
+./run_tests test/plugins/bounce.js  # Single test file
 
 # Lint & format
 npm run lint                          # ESLint check
