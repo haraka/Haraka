@@ -157,9 +157,9 @@ class Plugin {
             }
 
             for (const ext of [`${module}.js`, module]) {
-              if (fs.existsSync(path.join(__dirname, ext))) {
-                return require(module);
-              }
+                if (fs.existsSync(path.join(__dirname, ext))) {
+                    return require(module)
+                }
             }
 
             return require(path.join(path.dirname(this.plugin_path), module))

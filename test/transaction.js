@@ -369,9 +369,60 @@ describe('transaction', () => {
         it('end_data handles email with no blank line separator', (done) => {
             this.transaction.add_data('Subject: test\n')
             this.transaction.add_data('From: a@b.com\n')
+            this.transaction.add_data('Body line 1\n')
             this.transaction.end_data(() => {
                 assert.ok(this.transaction.header, 'header exists')
-                done()
+                assert.equal(this.transaction.header.get('Subject').trim(), 'test')
+                assert.equal(this.transaction.header.get('From').trim(), 'a@b.com')
+
+                this.transaction.message_stream.get_data((output) => {
+                    const str = output.toString()
+                    assert.ok(str.includes('Subject: test'), 'Subject in output')
+                    assert.ok(str.includes('Body line 1'), 'Body in output')
+                    done()
+                })
+            })
+        })
+    })
+
+    describe('late header additions', () => {
+        beforeEach(_set_up)
+
+        it('adds late header to busted email in correct position', (done) => {
+            this.transaction.add_data('Subject: Test\r\n')
+            this.transaction.add_data('From: user@example.com\r\n')
+            this.transaction.add_data('Body line 1\r\n')
+
+            this.transaction.end_data(() => {
+                this.transaction.add_header('X-Late', 'true')
+
+                this.transaction.message_stream.get_data((output) => {
+                    const str = output.toString()
+                    assert.ok(str.includes('X-Late: true'), 'Late header present')
+                    const lateIdx = str.indexOf('X-Late: true')
+                    const bodyIdx = str.indexOf('Body line 1')
+                    assert.ok(lateIdx < bodyIdx, 'Late header before body')
+                    done()
+                })
+            })
+        })
+
+        it('adds late header to clean email in correct position', (done) => {
+            this.transaction.add_data('Subject: Clean\r\n')
+            this.transaction.add_data('\r\n')
+            this.transaction.add_data('Body line 1\r\n')
+
+            this.transaction.end_data(() => {
+                this.transaction.add_header('X-Late', 'true')
+
+                this.transaction.message_stream.get_data((output) => {
+                    const str = output.toString()
+                    assert.ok(str.includes('X-Late: true'), 'Late header present')
+                    const lateIdx = str.indexOf('X-Late: true')
+                    const bodyIdx = str.indexOf('Body line 1')
+                    assert.ok(lateIdx < bodyIdx, 'Late header before body')
+                    done()
+                })
             })
         })
     })
