@@ -209,12 +209,12 @@ class Transaction {
 
     add_header(key, value) {
         this.header.add_end(key, value)
-        this.reset_headers()
+        if (this.found_hb_sep) this.reset_headers()
     }
 
     add_leading_header(key, value) {
         this.header.add(key, value)
-        this.reset_headers()
+        if (this.found_hb_sep) this.reset_headers()
     }
 
     reset_headers() {
@@ -223,7 +223,7 @@ class Transaction {
 
     remove_header(key) {
         this.header.remove(key)
-        this.reset_headers()
+        if (this.found_hb_sep) this.reset_headers()
     }
 
     attachment_hooks(start, data, end) {
