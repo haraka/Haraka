@@ -146,6 +146,7 @@ class Transaction {
                 this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'))
             }
         } else if (this.parse_body) {
+            this.ensure_body()
             let new_line = line
             if (new_line[0] === 0x2e) new_line = new_line.slice(1) // Strip leading "."
 
