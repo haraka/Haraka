@@ -42,6 +42,57 @@ describe('transaction', () => {
         })
     })
 
+    // Issue #2290: add_body_filter called after ensure_body() has already run
+    // (e.g. body already initialized via attachment_hooks + data) must still apply.
+    describe('add_body_filter after body is initialized (#2290)', () => {
+        // "Before" scenario: demonstrates the bug trigger — body exists before add_body_filter.
+        // Without the fix, filter_called would remain false.
+        it('filter is applied when added after header/body separator seen', (done) => {
+            this.transaction.attachment_hooks(() => {}) // sets parse_body = true
+
+            // Feed headers + separator — this triggers ensure_body(), creating this.body
+            this.transaction.add_data('Content-Type: text/plain\n')
+            this.transaction.add_data('\n') // ensure_body() fires here
+
+            // add_body_filter AFTER body already exists — the bug scenario
+            let filter_called = false
+            this.transaction.add_body_filter('text/plain', (ct, enc, buf) => {
+                filter_called = true
+                return buf
+            })
+
+            this.transaction.add_data('Hello\n')
+            this.transaction.end_data(() => {
+                this.transaction.message_stream.get_data(() => {
+                    assert.ok(filter_called, 'filter must be called even when added after body init')
+                    done()
+                })
+            })
+        })
+
+        // "After" scenario: verifies the fix — filter added post-init transforms content correctly.
+        it('filter added after body init can transform body content', (done) => {
+            this.transaction.attachment_hooks(() => {}) // sets parse_body = true
+
+            this.transaction.add_data('Content-Type: text/plain\n')
+            this.transaction.add_data('\n') // ensure_body() fires here
+
+            // add_body_filter after body exists; replace content to confirm it ran
+            this.transaction.add_body_filter('text/plain', (ct, enc, buf) => {
+                return Buffer.from(buf.toString().replace('Hello', 'World'))
+            })
+
+            this.transaction.add_data('Hello\n')
+            this.transaction.end_data(() => {
+                this.transaction.message_stream.get_data((body) => {
+                    assert.ok(body.toString().includes('World'), 'filter transformed body content')
+                    assert.ok(!body.toString().includes('Hello'), 'original content was replaced')
+                    done()
+                })
+            })
+        })
+    })
+
     it('regression: attachment_hooks before set_banner/add_body_filter', (done) => {
         this.transaction.attachment_hooks(() => {})
         this.transaction.set_banner('banner')

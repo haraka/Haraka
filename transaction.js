@@ -55,9 +55,12 @@ class Transaction {
 
         for (const o of this.body_filters) {
             this.body.add_filter((ct, enc, buf) => {
-                const re_match = util.types.isRegExp(o.ct_match) && o.ct_match.test(ct.toLowerCase())
-                const ct_begins = ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0
-                if (re_match || ct_begins) return o.filter(ct, enc, buf)
+                if (!ct) return buf
+                const ct_lc = String(ct).toLowerCase().trim()
+                const re_match = util.types.isRegExp(o.ct_match) && o.ct_match.test(ct_lc)
+                const ct_begins = ct_lc.indexOf(String(o.ct_match).toLowerCase()) === 0
+                if (re_match || ct_begins) return o.filter(ct, enc, buf) || buf
+                return buf
             })
         }
     }
@@ -239,6 +242,16 @@ class Transaction {
     add_body_filter(ct_match, filter) {
         this.parse_body = true
         this.body_filters.push({ ct_match, filter })
+        if (this.body) {
+            this.body.add_filter((ct, enc, buf) => {
+                if (!ct) return buf
+                const ct_lc = String(ct).toLowerCase().trim()
+                const re_match = util.types.isRegExp(ct_match) && ct_match.test(ct_lc)
+                const ct_begins = ct_lc.indexOf(String(ct_match).toLowerCase()) === 0
+                if (re_match || ct_begins) return filter(ct, enc, buf) || buf
+                return buf
+            })
+        }
     }
 
     incr_mime_count(line) {
