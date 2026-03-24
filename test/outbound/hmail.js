@@ -1,9 +1,11 @@
 const assert = require('node:assert')
+const { EventEmitter } = require('node:events')
 const fs = require('node:fs')
 const path = require('node:path')
 
 const Hmail = require('../../outbound/hmail')
 const outbound = require('../../outbound/index')
+const client_pool = require('../../outbound/client_pool')
 
 describe('outbound/hmail', () => {
     beforeEach((done) => {
@@ -13,6 +15,72 @@ describe('outbound/hmail', () => {
             {},
         )
         done()
+    })
+
+    // Issue #3388: socket.once('error') is consumed by the first error.
+    // When socket.once('timeout') subsequently fires and emits another error,
+    // there is no handler left → Node throws ERR_UNHANDLED_ERROR and crashes.
+    describe('socket error/timeout handler robustness (#3388)', () => {
+        const mx = { using_lmtp: false, port: 25, exchange: 'mx.example.com', bind: null, bind_helo: 'test' }
+
+        function makeSocket() {
+            const s = new EventEmitter()
+            s.name = 'mock'
+            s.writable = true
+            s.write = () => {}
+            s.destroy = () => {}
+            return s
+        }
+
+        let origRelease
+
+        beforeEach(() => {
+            origRelease = client_pool.release_client
+            client_pool.release_client = () => {}
+            this.hmail.todo = { rcpt_to: [] }
+            this.hmail.try_deliver = () => {}
+            this.hmail.logerror = () => {}
+        })
+
+        afterEach(() => {
+            client_pool.release_client = origRelease
+        })
+
+        it('error then timeout does not throw ERR_UNHANDLED_ERROR', () => {
+            const socket = makeSocket()
+            this.hmail.try_deliver_host_on_socket(mx, '1.2.3.4', 25, socket)
+
+            // First error fires and consumes the once('error') handler
+            socket.emit('error', new Error('connection refused'))
+
+            // Timeout now fires → emits a second error → was unhandled before fix
+            assert.doesNotThrow(
+                () => socket.emit('timeout'),
+                'ERR_UNHANDLED_ERROR: timeout after error must not crash',
+            )
+        })
+
+        it('timeout then error does not throw ERR_UNHANDLED_ERROR', () => {
+            const socket = makeSocket()
+            this.hmail.try_deliver_host_on_socket(mx, '1.2.3.4', 25, socket)
+
+            // Timeout fires first — internally emits error, consuming once('error')
+            socket.emit('timeout')
+
+            // A subsequent socket error — was unhandled before fix
+            assert.doesNotThrow(
+                () => socket.emit('error', new Error('late socket error')),
+                'ERR_UNHANDLED_ERROR: error after timeout-triggered error must not crash',
+            )
+        })
+
+        it('multiple timeouts do not throw ERR_UNHANDLED_ERROR', () => {
+            const socket = makeSocket()
+            this.hmail.try_deliver_host_on_socket(mx, '1.2.3.4', 25, socket)
+
+            socket.emit('timeout')
+            assert.doesNotThrow(() => socket.emit('timeout'), 'ERR_UNHANDLED_ERROR: second timeout must not crash')
+        })
     })
 
     it('sort_mx', (done) => {

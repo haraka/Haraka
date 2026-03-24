@@ -360,7 +360,7 @@ class HMailItem extends events.EventEmitter {
             socket.emit('error', `socket timeout waiting on ${command}`)
         })
 
-        socket.once('error', (err) => {
+        socket.on('error', (err) => {
             if (!processing_mail) return
 
             self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`)
