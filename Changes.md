@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(txn): more robust handling of broken messages #3535
 - deps(all): bump versions
 - doc(Plugins): added more sections
 - test: fixes for test-fixtures 1.4 & local plugins that do require('./')
