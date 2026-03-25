@@ -9,9 +9,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(txn): more robust handling of broken messages #3535
 - deps(all): bump versions
 - doc(Plugins): added more sections
-- test: fixes for test-fixtures 1.4 & local plugins that do require('./')
-  - TL;DR: bundled plugins don't need a special require any more
-  - fixtures/plugin behaves more like real one, test accordingly
 - deleted core_require
 - es7: outbound replace fs callback with fs promises #3528
   - dep(async): remove dep by replacing async.map with Queue
@@ -23,6 +20,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - chore: repackage ./plugin/queue/rabbit* as haraka-plugin-queue/rabbitmq, #3526
 - fix: connection pause after odd SMTP command sequence, #3525
 - test: add to transaction, rfc1869, xclient, and record_envelope_addresses #3524
+- test: fixes for test-fixtures 1.4 & local plugins that do require('./')
+  - TL;DR: bundled plugins don't need a special require any more
+  - fixtures/plugin behaves more like real one, test accordingly
+- test: refactored connection, transaction, and outbound to `node --test`
+  - transaction.js (48 → 62 tests)
+  - connection.js (24 → 51 tests)
+  - moved ./test/outbound_* to ./test/outbound/, and fixed race conditions
 
 ### [3.1.3] - 2026-02-06
 
