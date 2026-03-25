@@ -100,7 +100,7 @@
     "lint:fix": "npx eslint --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
     "prettier": "npx prettier . --check",
     "prettier:fix": "npx prettier . --write --log-level=warn",
-    "test": "npx mocha --exit --timeout=4000 test test/outbound test/plugins/auth test/plugins/queue test/plugins",
+    "test": "sh ./run_tests",
     "versions": "npx npm-dep-mgr check",
     "versions:fix": "npx npm-dep-mgr update",
     "test:coverage": "npx c8 --reporter=text --reporter=text-summary npm test"
