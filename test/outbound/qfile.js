@@ -1,15 +1,15 @@
+'use strict'
+
+const { describe, it, beforeEach } = require('node:test')
 const assert = require('node:assert')
 const os = require('node:os')
 
-describe('qfile', () => {
-    describe('qfile', () => {
-        beforeEach((done) => {
-            this.qfile = require('../../outbound/qfile')
-            done()
-        })
+const qfile = require('../../outbound/qfile')
 
+describe('outbound/qfile', () => {
+    describe('name', () => {
         it('name() basic functions', () => {
-            const name = this.qfile.name()
+            const name = qfile.name()
             const split = name.split('_')
             assert.equal(split.length, 7)
             assert.equal(split[2], 0)
@@ -25,7 +25,7 @@ describe('qfile', () => {
                 uid: 'XXYYZZ',
                 host: os.hostname(),
             }
-            const name = this.qfile.name(overrides)
+            const name = qfile.name(overrides)
             const split = name.split('_')
             assert.equal(split.length, 7)
             assert.equal(split[0], overrides.arrival)
@@ -38,9 +38,9 @@ describe('qfile', () => {
 
         it('rnd_unique() is unique-ish', () => {
             const repeats = 1000
-            const u = this.qfile.rnd_unique()
+            const u = qfile.rnd_unique()
             for (let i = 0; i < repeats; i++) {
-                assert.notEqual(u, this.qfile.rnd_unique())
+                assert.notEqual(u, qfile.rnd_unique())
             }
         })
     })
@@ -49,7 +49,7 @@ describe('qfile', () => {
         it('parts() updates previous queue filenames', () => {
             // $nextattempt_$attempts_$pid_$uniq.$host
             const name = '1111_0_2222_3333.foo.example.com'
-            const parts = this.qfile.parts(name)
+            const parts = qfile.parts(name)
             assert.equal(parts.next_attempt, 1111)
             assert.equal(parts.attempts, 0)
             assert.equal(parts.pid, 2222)
@@ -65,8 +65,8 @@ describe('qfile', () => {
                 uid: 'XXYYZZ',
                 host: os.hostname(),
             }
-            const name = this.qfile.name(overrides)
-            const parts = this.qfile.parts(name)
+            const name = qfile.name(overrides)
+            const parts = qfile.parts(name)
             assert.equal(parts.arrival, overrides.arrival)
             assert.equal(parts.next_attempt, overrides.next_attempt)
             assert.equal(parts.attempts, overrides.attempts)
@@ -75,8 +75,8 @@ describe('qfile', () => {
             assert.equal(parts.host, overrides.host)
         })
 
-        it('handles 4', () => {
-            const r = this.qfile.parts('1484878079415_0_12345_8888.mta1.example.com')
+        it('handles 4-part legacy filename', () => {
+            const r = qfile.parts('1484878079415_0_12345_8888.mta1.example.com')
             delete r.arrival
             delete r.uid
             delete r.counter
@@ -89,8 +89,8 @@ describe('qfile', () => {
             })
         })
 
-        it('handles 7', () => {
-            const r = this.qfile.parts('1516650518128_1516667073032_8_29538_TkPZWz_1_haraka')
+        it('handles 7-part standard filename', () => {
+            const r = qfile.parts('1516650518128_1516667073032_8_29538_TkPZWz_1_haraka')
             delete r.age
             assert.deepEqual(r, {
                 arrival: 1516650518128,
@@ -103,22 +103,22 @@ describe('qfile', () => {
             })
         })
 
-        it('punts on 5', () => {
-            assert.deepEqual(this.qfile.parts('1516650518128_1516667073032_8_29538_TkPZWz'), null)
+        it('punts on 5-part filename', () => {
+            assert.deepEqual(qfile.parts('1516650518128_1516667073032_8_29538_TkPZWz'), null)
         })
     })
 
     describe('hostname', () => {
-        it('hostname, defaults to os.hostname()', () => {
-            assert.deepEqual(this.qfile.hostname(), require('os').hostname())
+        it('defaults to os.hostname()', () => {
+            assert.deepEqual(qfile.hostname(), os.hostname())
         })
 
-        it('hostname, replaces \\ char', () => {
-            assert.deepEqual(this.qfile.hostname('mt\\a1.exam\\ple.com'), 'mt\\057a1.exam\\057ple.com')
+        it('replaces backslash char', () => {
+            assert.deepEqual(qfile.hostname('mt\\a1.exam\\ple.com'), 'mt\\057a1.exam\\057ple.com')
         })
 
-        it('hostname, replaces _ char', () => {
-            assert.deepEqual(this.qfile.hostname('mt_a1.exam_ple.com'), 'mt\\137a1.exam\\137ple.com')
+        it('replaces underscore char', () => {
+            assert.deepEqual(qfile.hostname('mt_a1.exam_ple.com'), 'mt\\137a1.exam\\137ple.com')
         })
     })
 })

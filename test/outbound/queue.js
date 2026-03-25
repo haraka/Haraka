@@ -1,5 +1,6 @@
 'use strict'
 
+const { describe, it, beforeEach, afterEach } = require('node:test')
 const assert = require('node:assert')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -94,19 +95,18 @@ describe('outbound/queue', () => {
         it('filters files by pid', async () => {
             let renameAttempts = 0
 
-            // Mock rename to track calls
             const originalRename = queue.rename_to_actual_pid
-            queue.rename_to_actual_pid = (file, parts) => {
+            queue.rename_to_actual_pid = (_file, _parts) => {
                 renameAttempts++
                 throw new Error('test skip')
             }
 
             await queue.load_queue_files(
-                61403, // specific pid
+                61403,
                 [
                     '1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka',
                     '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka',
-                ], // different pids
+                ],
                 (_file) => {},
             )
             queue.rename_to_actual_pid = originalRename
@@ -118,7 +118,6 @@ describe('outbound/queue', () => {
         it('creates queue dir', async () => {
             const tmpDir = path.join(os.tmpdir(), `haraka-test-queue-${Date.now()}`)
 
-            // Override queue_dir for this test
             const originalQueueDir = queue.queue_dir
             queue.queue_dir = tmpDir
 
