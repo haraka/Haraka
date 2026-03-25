@@ -2,4 +2,20 @@
 
 TESTS=${1:-"test test/outbound test/plugins/auth test/plugins/queue test/plugins"}
 
-npx mocha --exit $TESTS
+if [ -n "$1" ]; then
+    case "$1" in
+        "test/transaction"|"test/tranaction.js")
+            node --test test/transaction.js
+            ;;
+        "test/connection"|"test/connection.js")
+            node --test test/connection.js
+            ;;
+        *)
+            npx mocha --exit --timeout=4000 $1
+            ;;
+    esac
+else
+    # default, run 'em all
+    node --test test/transaction.js test/connection.js && \
+    npx mocha --exit --timeout=4000 --ignore=test/transaction.js --ignore=test/connection.js $TESTS
+fi
