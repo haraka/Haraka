@@ -135,6 +135,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 | [toobusy][url-toobusy]                     | Defers connections when too busy                                |
 | [xclient][url-xclient]                     | Implements XCLIENT                                              |
 | [save-sent][url-save-sent]                 | Save sent emails on the serverside to a mailbox of the sender   |
+| [dropbox][url-dropbox]                     | Forward incoming emails to configured Dropbox webhook URLs.     |
 
 <!-- URLs tucked safely out of the way -->
 
@@ -223,3 +224,4 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-kafka]: https://github.com/benjamonnguyen/haraka-plugin-queue-kafka
 [url-mailauth]: https://www.npmjs.com/package/haraka-plugin-mailauth
 [url-save-sent]: https://github.com/AprilGrimoire/haraka-plugin-save-sent
+[url-dropbox]: https://github.com/dspangenberg/haraka-plugin-dropbox
