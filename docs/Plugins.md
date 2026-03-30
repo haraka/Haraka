@@ -166,7 +166,7 @@ These are the hook and their parameters (next excluded):
 - rcpt_ok (to)
 - data - called at the DATA command
 - data_post - called at the end-of-data marker
-- max_data_exceeded - called when the message exceeds connection.max_bytes
+- max_data_exceeded - called when the message exceeds connection.max.bytes
 - queue - called to queue the mail
 - queue_outbound - called to queue the mail when connection.relaying is set
 - queue_ok - called when a mail has been queued successfully

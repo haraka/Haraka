@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - transaction.js (48 → 62 tests)
   - connection.js (24 → 51 tests)
   - moved ./test/outbound_* to ./test/outbound/, and fixed race conditions
+  - move TLS tests to haraka-tls #3542
 
 ### [3.1.3] - 2026-02-06
 
