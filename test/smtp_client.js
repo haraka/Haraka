@@ -140,15 +140,15 @@ describe('smtp_client', () => {
             this.client.on('data', () => {
                 assert.equal(this.client.response[0], 'go ahead')
                 this.client.start_data(message_stream)
-                message_stream.on('end', () => {
-                    this.client.socket.write('.\r\n')
-                })
                 message_stream.add_line('Header: test\r\n')
                 message_stream.add_line('\r\n')
                 message_stream.add_line('hi\r\n')
                 message_stream.add_line_end()
             })
 
+            data.push('Header: test')
+            data.push('')
+            data.push('hi')
             data.push('.')
             data.push('250 message queued')
 
@@ -249,15 +249,15 @@ describe('smtp_client', () => {
             this.client.on('data', () => {
                 assert.equal(this.client.response[0], 'go ahead')
                 this.client.start_data(message_stream)
-                message_stream.on('end', () => {
-                    this.client.socket.write('.\r\n')
-                })
                 message_stream.add_line('Header: test\r\n')
                 message_stream.add_line('\r\n')
                 message_stream.add_line('hi\r\n')
                 message_stream.add_line_end()
             })
 
+            data.push('Header: test')
+            data.push('')
+            data.push('hi')
             data.push('.')
             data.push('250 message queued')
 
