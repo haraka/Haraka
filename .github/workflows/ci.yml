@@ -12,11 +12,9 @@ jobs:
     uses: haraka/.github/.github/workflows/lint.yml@master
 
   ubuntu:
-    needs: [lint]
     uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
   windows:
-    needs: [lint]
     uses: haraka/.github/.github/workflows/windows.yml@master
 
   get-lts:
