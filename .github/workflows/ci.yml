@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: master
 
 env:
   CI: true
@@ -11,20 +13,20 @@ jobs:
   lint:
     uses: haraka/.github/.github/workflows/lint.yml@master
 
+  prettier:
+    uses: haraka/.github/.github/workflows/prettier.yml@master
+    with:
+      branch: ${{ github.head_ref }}
+
+  coverage:
+    uses: haraka/.github/.github/workflows/coverage.yml@master
+    secrets: inherit
+
   ubuntu:
     uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
   windows:
     uses: haraka/.github/.github/workflows/windows.yml@master
 
-  get-lts:
-    runs-on: ubuntu-latest
-    steps:
-      - id: get
-        uses: msimerson/node-lts-versions@v1
-    outputs:
-      active: ${{ steps.get.outputs.active }}
-      maintenance: ${{ steps.get.outputs.maintenance }}
-      lts: ${{ steps.get.outputs.lts }}
-      current: ${{ steps.get.outputs.current }}
-      min: ${{ steps.get.outputs.min }}
+  macos:
+    uses: haraka/.github/.github/workflows/macos.yml@master
