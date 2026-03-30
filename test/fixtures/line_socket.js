@@ -12,6 +12,7 @@ class Socket extends events.EventEmitter {
         this.setTimeout = stub()
         this.setKeepAlive = stub()
         this.destroy = stub()
+        this.end = stub()
     }
 }
 
