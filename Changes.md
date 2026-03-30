@@ -4,30 +4,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.1.4] - 2026-03-30
+
+#### Fixed
+
+- fix: add ensure_body for late parse_body=true #3539
 - fix(outbound): prevent ERR_UNHANDLED_ERROR crash #3538
+- fix(txn): more robust handling of body filter additions #3537
 - fix(conn): avoid connection fault when 2x QUIT sent #3536
 - fix(txn): more robust handling of broken messages #3535
+- fix(connection): pause after odd SMTP command sequence #3525
+
+#### Changed
+
+- sunset: remove dot_stuffing (now dot_stuffed)
+- chore(plugins): deleted deprecated core_require
+- dep(rabbitmq): repackaged as NPM module #3526
 - deps(all): bump versions
-- doc(Plugins): added more sections
-- deleted core_require
-- es7: outbound replace fs callback with fs promises #3528
+- doc(Plugins): add sections filter, enrichment, and logging #3534
+  - added dropbox-plugin #3543
+- es2024: #3527, #3528
+  - outbound replace fs callback with promises and async/await #3528
   - dep(async): remove dep by replacing async.map with Queue
-- es6 & es7: #3527
   - use startsWith instead of indexOf === 0
   - use spread syntax instead of [].concat and {}.assign
   - use implicit arrow function returns
   - replace deprecated substr with slice or substring
-- chore: repackage ./plugin/queue/rabbit* as haraka-plugin-queue/rabbitmq, #3526
-- fix: connection pause after odd SMTP command sequence, #3525
-- test: add to transaction, rfc1869, xclient, and record_envelope_addresses #3524
 - test: fixes for test-fixtures 1.4 & local plugins that do require('./')
+  - outbound/queue: added tests #3531
   - TL;DR: bundled plugins don't need a special require any more
   - fixtures/plugin behaves more like real one, test accordingly
-- test: refactored connection, transaction, and outbound to `node --test`
-  - transaction.js (48 → 62 tests)
-  - connection.js (24 → 51 tests)
-  - moved ./test/outbound_* to ./test/outbound/, and fixed race conditions
+  - refactored connection, transaction, and outbound to `node --test` #3541
+    - transaction.js (48 → 62 tests)
+    - connection.js (24 → 51 tests)
+    - moved ./test/outbound_* to ./test/outbound/, and fixed race conditions
   - move TLS tests to haraka-tls #3542
+  - improve coverage for transaction, rfc1869, xclient, and record_envelope_addresses #3524
 
 ### [3.1.3] - 2026-02-06
 
@@ -1784,3 +1796,4 @@ config files.
 [3.1.0]: https://github.com/haraka/Haraka/releases/tag/v3.1.0
 [3.1.2]: https://github.com/haraka/Haraka/releases/tag/v3.1.2
 [3.1.3]: https://github.com/haraka/Haraka/releases/tag/v3.1.3
+[3.1.4]: https://github.com/haraka/Haraka/releases/tag/v3.1.4

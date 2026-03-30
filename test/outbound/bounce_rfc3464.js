@@ -82,15 +82,21 @@ describe('outbound_bounce_rfc3464', () => {
                     outbound_context.exports.send_email = orig
                 }
             }
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, reject, [
-                { from: 'remote', line: '220 testing-smtp' },
-                { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
-                { from: 'remote', line: '220-testing-smtp' },
-                { from: 'remote', line: '220 8BITMIME' },
-                { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
-                { from: 'remote', line: '500 5.0.0 Absolutely not acceptable. Basic Test Only.' },
-                { from: 'haraka', test: 'QUIT', end_test: true },
-            ], () => {})
+            util_hmailitem.playTestSmtpConversation(
+                mock_hmail,
+                mock_socket,
+                reject,
+                [
+                    { from: 'remote', line: '220 testing-smtp' },
+                    { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
+                    { from: 'remote', line: '220-testing-smtp' },
+                    { from: 'remote', line: '220 8BITMIME' },
+                    { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
+                    { from: 'remote', line: '500 5.0.0 Absolutely not acceptable. Basic Test Only.' },
+                    { from: 'haraka', test: 'QUIT', end_test: true },
+                ],
+                () => {},
+            )
         })
     })
 
@@ -113,15 +119,21 @@ describe('outbound_bounce_rfc3464', () => {
                     HMailItem.prototype.temp_fail = orig
                 }
             }
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, reject, [
-                { from: 'remote', line: '220 testing-smtp' },
-                { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
-                { from: 'remote', line: '220-testing-smtp' },
-                { from: 'remote', line: '220 8BITMIME' },
-                { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
-                { from: 'remote', line: '300 3.0.0 No time for you right now' },
-                { from: 'haraka', test: 'QUIT', end_test: true },
-            ], () => {})
+            util_hmailitem.playTestSmtpConversation(
+                mock_hmail,
+                mock_socket,
+                reject,
+                [
+                    { from: 'remote', line: '220 testing-smtp' },
+                    { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
+                    { from: 'remote', line: '220-testing-smtp' },
+                    { from: 'remote', line: '220 8BITMIME' },
+                    { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
+                    { from: 'remote', line: '300 3.0.0 No time for you right now' },
+                    { from: 'haraka', test: 'QUIT', end_test: true },
+                ],
+                () => {},
+            )
         })
     })
 
@@ -144,17 +156,23 @@ describe('outbound_bounce_rfc3464', () => {
                     HMailItem.prototype.temp_fail = orig
                 }
             }
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, reject, [
-                { from: 'remote', line: '220 testing-smtp' },
-                { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
-                { from: 'remote', line: '220-testing-smtp' },
-                { from: 'remote', line: '220 8BITMIME' },
-                { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
-                { from: 'remote', line: '250 2.1.0 Ok' },
-                { from: 'haraka', test: 'RCPT TO:<recipient@domain>' },
-                { from: 'remote', line: '400 4.0.0 Currently not available. Try again later.' },
-                { from: 'haraka', test: 'QUIT', end_test: true },
-            ], () => {})
+            util_hmailitem.playTestSmtpConversation(
+                mock_hmail,
+                mock_socket,
+                reject,
+                [
+                    { from: 'remote', line: '220 testing-smtp' },
+                    { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
+                    { from: 'remote', line: '220-testing-smtp' },
+                    { from: 'remote', line: '220 8BITMIME' },
+                    { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
+                    { from: 'remote', line: '250 2.1.0 Ok' },
+                    { from: 'haraka', test: 'RCPT TO:<recipient@domain>' },
+                    { from: 'remote', line: '400 4.0.0 Currently not available. Try again later.' },
+                    { from: 'haraka', test: 'QUIT', end_test: true },
+                ],
+                () => {},
+            )
         })
     })
 
@@ -177,19 +195,25 @@ describe('outbound_bounce_rfc3464', () => {
                     HMailItem.prototype.temp_fail = orig
                 }
             }
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, reject, [
-                { from: 'remote', line: '220 testing-smtp' },
-                { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
-                { from: 'remote', line: '220-testing-smtp' },
-                { from: 'remote', line: '220 8BITMIME' },
-                { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
-                { from: 'remote', line: '250 2.1.0 Ok' },
-                { from: 'haraka', test: 'RCPT TO:<recipient@domain>' },
-                { from: 'remote', line: '250 2.1.5 Ok' },
-                { from: 'haraka', test: 'DATA' },
-                { from: 'remote', line: '450 4.6.0 Currently I do not like ascii art cats.' },
-                { from: 'haraka', test: 'QUIT', end_test: true },
-            ], () => {})
+            util_hmailitem.playTestSmtpConversation(
+                mock_hmail,
+                mock_socket,
+                reject,
+                [
+                    { from: 'remote', line: '220 testing-smtp' },
+                    { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
+                    { from: 'remote', line: '220-testing-smtp' },
+                    { from: 'remote', line: '220 8BITMIME' },
+                    { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
+                    { from: 'remote', line: '250 2.1.0 Ok' },
+                    { from: 'haraka', test: 'RCPT TO:<recipient@domain>' },
+                    { from: 'remote', line: '250 2.1.5 Ok' },
+                    { from: 'haraka', test: 'DATA' },
+                    { from: 'remote', line: '450 4.6.0 Currently I do not like ascii art cats.' },
+                    { from: 'haraka', test: 'QUIT', end_test: true },
+                ],
+                () => {},
+            )
         })
     })
 
@@ -214,17 +238,23 @@ describe('outbound_bounce_rfc3464', () => {
                     outbound_context.exports.send_email = orig
                 }
             }
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, reject, [
-                { from: 'remote', line: '220 testing-smtp' },
-                { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
-                { from: 'remote', line: '220-testing-smtp' },
-                { from: 'remote', line: '220 8BITMIME' },
-                { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
-                { from: 'remote', line: '250 2.1.0 Ok' },
-                { from: 'haraka', test: 'RCPT TO:<recipient@domain>' },
-                { from: 'remote', line: '550 5.1.1 Not available and will not come back' },
-                { from: 'haraka', test: 'QUIT', end_test: true },
-            ], () => {})
+            util_hmailitem.playTestSmtpConversation(
+                mock_hmail,
+                mock_socket,
+                reject,
+                [
+                    { from: 'remote', line: '220 testing-smtp' },
+                    { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
+                    { from: 'remote', line: '220-testing-smtp' },
+                    { from: 'remote', line: '220 8BITMIME' },
+                    { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
+                    { from: 'remote', line: '250 2.1.0 Ok' },
+                    { from: 'haraka', test: 'RCPT TO:<recipient@domain>' },
+                    { from: 'remote', line: '550 5.1.1 Not available and will not come back' },
+                    { from: 'haraka', test: 'QUIT', end_test: true },
+                ],
+                () => {},
+            )
         })
     })
 
@@ -249,19 +279,25 @@ describe('outbound_bounce_rfc3464', () => {
                     outbound_context.exports.send_email = orig
                 }
             }
-            util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, reject, [
-                { from: 'remote', line: '220 testing-smtp' },
-                { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
-                { from: 'remote', line: '220-testing-smtp' },
-                { from: 'remote', line: '220 8BITMIME' },
-                { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
-                { from: 'remote', line: '250 2.1.0 Ok' },
-                { from: 'haraka', test: 'RCPT TO:<recipient@domain>' },
-                { from: 'remote', line: '250 2.1.5 Ok' },
-                { from: 'haraka', test: 'DATA' },
-                { from: 'remote', line: '550 5.6.0 I never did and will like ascii art cats.' },
-                { from: 'haraka', test: 'QUIT', end_test: true },
-            ], () => {})
+            util_hmailitem.playTestSmtpConversation(
+                mock_hmail,
+                mock_socket,
+                reject,
+                [
+                    { from: 'remote', line: '220 testing-smtp' },
+                    { from: 'haraka', test: (l) => l.match(/^EHLO /), description: 'EHLO' },
+                    { from: 'remote', line: '220-testing-smtp' },
+                    { from: 'remote', line: '220 8BITMIME' },
+                    { from: 'haraka', test: 'MAIL FROM:<sender@domain>' },
+                    { from: 'remote', line: '250 2.1.0 Ok' },
+                    { from: 'haraka', test: 'RCPT TO:<recipient@domain>' },
+                    { from: 'remote', line: '250 2.1.5 Ok' },
+                    { from: 'haraka', test: 'DATA' },
+                    { from: 'remote', line: '550 5.6.0 I never did and will like ascii art cats.' },
+                    { from: 'haraka', test: 'QUIT', end_test: true },
+                ],
+                () => {},
+            )
         })
     })
 })

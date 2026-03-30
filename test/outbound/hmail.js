@@ -64,7 +64,10 @@ describe('outbound/hmail', () => {
             const socket = makeSocket()
             hmail.try_deliver_host_on_socket(mx, '1.2.3.4', 25, socket)
             socket.emit('timeout')
-            assert.doesNotThrow(() => socket.emit('error', new Error('late error')), 'error after timeout must not crash')
+            assert.doesNotThrow(
+                () => socket.emit('error', new Error('late error')),
+                'error after timeout must not crash',
+            )
         })
 
         it('multiple timeouts do not throw ERR_UNHANDLED_ERROR', () => {
@@ -147,11 +150,7 @@ describe('outbound/hmail.HMailItem — queue file loading', () => {
     it('emits error on too-long declared TODO length', async () => {
         // Recreate fixture in case a prior run renamed it to the error queue
         makeToolongFixture()
-        const h = new Hmail(
-            '1509000000000_1509000000000_0_99999_ToLong_1_haraka',
-            TOOLONG_FIXTURE,
-            {},
-        )
+        const h = new Hmail('1509000000000_1509000000000_0_99999_ToLong_1_haraka', TOOLONG_FIXTURE, {})
         const err = await new Promise((resolve) => {
             h.once('ready', () => resolve(null))
             h.once('error', resolve)

@@ -97,7 +97,6 @@ WARNING: DO NOT USE THIS PLUGIN WITH queue/smtp_proxy.
 - action (required)
 
   The following is a list of supported actions, and the options they require.
-
   - drop
 
     This action simply drops a message, while pretending everything was
@@ -110,7 +109,6 @@ WARNING: DO NOT USE THIS PLUGIN WITH queue/smtp_proxy.
     "to" option. A note about matching in addition to the note
     about wildcard '-' above. When we match an alias, we store the
     hostname of the match for a shortcut substitution syntax later.
-
     - to (required)
 
       This option is the full address, or local part at matched hostname

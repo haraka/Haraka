@@ -1,0 +1,23 @@
+name: release
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - package.json
+
+env:
+  CI: true
+
+jobs:
+  release:
+    uses: haraka/.github/.github/workflows/release.yml@master
+    secrets: inherit
+
+  publish:
+    needs: release
+    if: needs.release.outputs.changed == 'true'
+    uses: haraka/.github/.github/workflows/publish.yml@master
+    secrets: inherit
