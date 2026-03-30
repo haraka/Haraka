@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 #### Changed
 
+- sunset: remove dot_stuffing (now dot_stuffed)
 - chore(plugins): deleted deprecated core_require
 - dep(rabbitmq): repackaged as NPM module #3526
 - deps(all): bump versions
@@ -29,8 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - use spread syntax instead of [].concat and {}.assign
   - use implicit arrow function returns
   - replace deprecated substr with slice or substring
-- test(outbound/queue): added tests #3531
 - test: fixes for test-fixtures 1.4 & local plugins that do require('./')
+  - outbound/queue: added tests #3531
   - TL;DR: bundled plugins don't need a special require any more
   - fixtures/plugin behaves more like real one, test accordingly
   - refactored connection, transaction, and outbound to `node --test` #3541
