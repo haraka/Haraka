@@ -4,6 +4,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.1.4] - 2026-03-30
+
+#### Fixed
+
+- fix breaking change in #3535 (#3540)
+- add ensure_body for late parse_body=true (#3539)
+- prevent ERR_UNHANDLED_ERROR crash (#3538)
+- more robust handling of body filter additions (#3537)
+- avoid connection fault when QUIT,QUIT sent (#3536)
+- more robust handling of broken messages (#3535)
+
+#### Changed
+
+- v3.1.4
+- connection, transaction, outbound (#3541)
+- outbound/queue (#3531)
+
+#### Other
+
+- remove TLS tests to haraka-tls (#3542)
+- Added dropbox-plugin (#3543)
+- doc(Plugins): added filter, enrichment, and logging sections (#3534)
+- Outbound: replace fs callbacks with promises and async/await (#3528)
+- ES6 & ES7 updates (#3527)
+- repackage rabbitmq plugins as NPM module (#3526)
+- fix connection pause after odd SMTP command sequence (#3525)
+- Improve test coverage for transaction, rfc1869, xclient, and record_envelope_addresses (#3524)
+
+
 - fix(outbound): prevent ERR_UNHANDLED_ERROR crash #3538
 - fix(conn): avoid connection fault when 2x QUIT sent #3536
 - fix(txn): more robust handling of broken messages #3535
@@ -1784,3 +1813,4 @@ config files.
 [3.1.0]: https://github.com/haraka/Haraka/releases/tag/v3.1.0
 [3.1.2]: https://github.com/haraka/Haraka/releases/tag/v3.1.2
 [3.1.3]: https://github.com/haraka/Haraka/releases/tag/v3.1.3
+[3.1.4]: https://github.com/haraka/Haraka/releases/tag/v3.1.4
