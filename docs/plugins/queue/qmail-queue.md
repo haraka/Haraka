@@ -10,7 +10,6 @@ for both inbound and outbound delivery.
   The path to the `qmail-queue` binary. Default: `/var/qmail/bin/qmail-queue`
 
 - qmail-queue.ini
-
   - enable_outbound=true
 
     Deliver outbound email to qmail. Set to false to use Haraka's

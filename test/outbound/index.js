@@ -48,9 +48,10 @@ describe('outbound', () => {
 
     it('set_temp_fail_intervals coverage', () => {
         const config = require('../../outbound/config')
-        assert.deepEqual(config.cfg.temp_fail_intervals, [
-            64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072,
-        ])
+        assert.deepEqual(
+            config.cfg.temp_fail_intervals,
+            [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+        )
 
         config.cfg.temp_fail_intervals = '10s, 1m*2'
         config.set_temp_fail_intervals()
@@ -58,9 +59,10 @@ describe('outbound', () => {
 
         config.cfg.temp_fail_intervals = '30s, 1m, 5m, 9m, 15m*3, 30m*2, 1h*3, 2h*3, 1d'
         config.set_temp_fail_intervals()
-        assert.deepEqual(config.cfg.temp_fail_intervals, [
-            30, 60, 300, 540, 900, 900, 900, 1800, 1800, 3600, 3600, 3600, 7200, 7200, 7200, 86400,
-        ])
+        assert.deepEqual(
+            config.cfg.temp_fail_intervals,
+            [30, 60, 300, 540, 900, 900, 900, 1800, 1800, 3600, 3600, 3600, 7200, 7200, 7200, 86400],
+        )
 
         config.cfg.temp_fail_intervals = 'none'
         config.set_temp_fail_intervals()
@@ -68,9 +70,10 @@ describe('outbound', () => {
 
         config.cfg.temp_fail_intervals = '60 min'
         config.set_temp_fail_intervals()
-        assert.deepEqual(config.cfg.temp_fail_intervals, [
-            64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072,
-        ])
+        assert.deepEqual(
+            config.cfg.temp_fail_intervals,
+            [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+        )
     })
 
     describe('get_tls_options', () => {
