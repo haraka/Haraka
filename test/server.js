@@ -1,13 +1,15 @@
-const assert = require('node:assert')
+'use strict'
+
+const { describe, it, beforeEach, afterEach } = require('node:test')
+const assert = require('node:assert/strict')
 const path = require('node:path')
 
 const endpoint = require('../endpoint')
 const message = require('haraka-email-message')
 
-const _set_up = (done) => {
+const _set_up = () => {
     this.config = require('haraka-config')
     this.server = require('../server')
-    done()
 }
 
 const _setupServer = (ip_port, done) => {
@@ -127,7 +129,7 @@ describe('server', () => {
     })
 
     describe('get_smtp_server', () => {
-        beforeEach((done) => {
+        beforeEach((t, done) => {
             this.config = require('haraka-config')
             this.config = this.config.module_config(path.resolve('test'))
 
@@ -142,7 +144,7 @@ describe('server', () => {
             })
         })
 
-        it('gets a net server object', (done) => {
+        it('gets a net server object', (t, done) => {
             this.server.get_smtp_server(endpoint('0.0.0.0:2501'), 10).then((server) => {
                 if (!server) {
                     console.error('unable to bind to 0.0.0.0:2501')
@@ -157,7 +159,7 @@ describe('server', () => {
             })
         })
 
-        it('gets a TLS net server object', (done) => {
+        it('gets a TLS net server object', (t, done) => {
             this.server.cfg.main.smtps_port = 2502
             this.server.get_smtp_server(endpoint('0.0.0.0:2502'), 10).then((server) => {
                 if (!server) {
@@ -183,11 +185,13 @@ describe('server', () => {
     })
 
     describe('smtp_client', () => {
-        beforeEach((done) => {
+        beforeEach((t, done) => {
             _setupServer('localhost:2500', done)
         })
 
-        afterEach(_tearDownServer)
+        afterEach((t, done) => {
+            _tearDownServer(done)
+        })
 
         it('accepts SMTP message', () => {
             const server = { notes: {} }
@@ -240,13 +244,15 @@ describe('server', () => {
     })
 
     describe('nodemailer', () => {
-        beforeEach((done) => {
+        beforeEach((t, done) => {
             _setupServer('127.0.0.1:2503', done)
         })
 
-        afterEach(_tearDownServer)
+        afterEach((t, done) => {
+            _tearDownServer(done)
+        })
 
-        it('accepts SMTP message', (done) => {
+        it('accepts SMTP message', (t, done) => {
             const nodemailer = require('nodemailer')
             const transporter = nodemailer.createTransport({
                 host: '127.0.0.1',
@@ -280,7 +286,7 @@ describe('server', () => {
             )
         })
 
-        it('accepts authenticated SMTP', (done) => {
+        it('accepts authenticated SMTP', (t, done) => {
             const nodemailer = require('nodemailer')
             const transporter = nodemailer.createTransport({
                 host: '127.0.0.1',
@@ -320,7 +326,7 @@ describe('server', () => {
             )
         })
 
-        it('rejects invalid auth', (done) => {
+        it('rejects invalid auth', (t, done) => {
             const nodemailer = require('nodemailer')
             const transporter = nodemailer.createTransport({
                 host: '127.0.0.1',
@@ -359,7 +365,7 @@ describe('server', () => {
             )
         })
 
-        it('DKIM validates signed message', (done) => {
+        it('DKIM validates signed message', (t, done) => {
             const nodemailer = require('nodemailer')
             const transporter = nodemailer.createTransport({
                 host: '127.0.0.1',
@@ -403,13 +409,15 @@ describe('server', () => {
     })
 
     describe('requireAuthorized_SMTPS', () => {
-        beforeEach((done) => {
+        beforeEach((t, done) => {
             _setupServer('127.0.0.1:2465', done)
         })
 
-        afterEach(_tearDownServer)
+        afterEach((t, done) => {
+            _tearDownServer(done)
+        })
 
-        it('rejects non-validated SMTPS connection', (done) => {
+        it('rejects non-validated SMTPS connection', (t, done) => {
             const nodemailer = require('nodemailer')
             const transporter = nodemailer.createTransport({
                 host: '127.0.0.1',
@@ -460,11 +468,15 @@ describe('server', () => {
     })
 
     describe('requireAuthorized_STARTTLS', () => {
-        beforeEach((done) => {
+        beforeEach((t, done) => {
             _setupServer('127.0.0.1:2587', done)
         })
 
-        it('rejects non-validated STARTTLS connection', (done) => {
+        afterEach((t, done) => {
+            _tearDownServer(done)
+        })
+
+        it('rejects non-validated STARTTLS connection', (t, done) => {
             const nodemailer = require('nodemailer')
             const transporter = nodemailer.createTransport({
                 host: '127.0.0.1',

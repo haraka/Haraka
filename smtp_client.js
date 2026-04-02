@@ -210,14 +210,12 @@ class SMTPClient extends events.EventEmitter {
         data.pipe(this.socket, {
             dot_stuffed: false,
             ending_dot: true,
-            end: false,
         })
     }
 
     release() {
         if (this.state === STATE.DESTROYED) return
-        logger.debug(`[smtp_client] ${this.uuid} releasing, state=${this.state}`)
-        ;[
+        const listeners = [
             'auth',
             'bad_code',
             'capabilities',
@@ -233,9 +231,11 @@ class SMTPClient extends events.EventEmitter {
             'rset',
             'server_protocol',
             'xclient',
-        ].forEach((l) => {
+        ]
+        logger.debug(`[smtp_client] ${this.uuid} releasing, state=${this.state}`)
+        for (const l of listeners) {
             this.removeAllListeners(l)
-        })
+        }
 
         if (this.connected) this.send_command('QUIT')
         this.destroy()
@@ -349,7 +349,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
         }
     }
 
-    const hostport = get_hostport(connection, connection.server, c)
+    const hostport = get_hostport(connection, c)
     const smtp_client = new SMTPClient(hostport)
     logger.info(`[smtp_client] uuid=${smtp_client.uuid} host=${hostport.host} port=${hostport.port} created`)
 
@@ -468,7 +468,8 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
     callback(null, smtp_client)
 }
 
-function get_hostport(connection, server, cfg) {
+function get_hostport(connection, cfg) {
+    const server = connection.server
     if (cfg.forwarding_host_pool) {
         if (!server.notes.host_pool) {
             connection.logwarn(`creating host_pool from ${cfg.forwarding_host_pool}`)

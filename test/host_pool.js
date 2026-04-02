@@ -1,20 +1,20 @@
 'use strict'
 
-const assert = require('node:assert')
+const { describe, it } = require('node:test')
+const assert = require('node:assert/strict')
 
 const HostPool = require('../host_pool')
 
 describe('HostPool', () => {
-    it('get a host', (done) => {
+    it('get a host', () => {
         const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222')
         const host = pool.get_host()
 
         assert.ok(/\d\.\d\.\d\.\d/.test(host.host), `'${host.host}' looks like a IP`)
         assert.ok(/\d\d\d\d/.test(host.port), `'${host.port}' looks like a port`)
-        done()
     })
 
-    it('uses all the list', (done) => {
+    it('uses all the list', () => {
         const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222')
 
         const host1 = pool.get_host()
@@ -24,10 +24,9 @@ describe('HostPool', () => {
         assert.notEqual(host1.host, host2.host)
         assert.notEqual(host3.host, host2.host)
         assert.equal(host3.host, host1.host)
-        done()
     })
 
-    it('default port 25', (done) => {
+    it('default port 25', () => {
         const pool = new HostPool('1.1.1.1, 2.2.2.2')
 
         const host1 = pool.get_host()
@@ -35,11 +34,24 @@ describe('HostPool', () => {
 
         assert.equal(host1.port, 25, `is port 25: ${host1.port}`)
         assert.equal(host2.port, 25, `is port 25: ${host2.port}`)
-        done()
     })
 
-    it('dead host', (done) => {
-        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222')
+    it('dead host', () => {
+        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222', 0.001)
+        pool.get_socket = () => ({
+            pretendTimeout: () => {},
+            setTimeout(ms, cb) {
+                this.pretendTimeout = cb
+            },
+            listeners: {},
+            on(ev, cb) {
+                this.listeners[ev] = cb
+            },
+            connect(port, host, cb) {
+                cb()
+            }, // immediately "connects" to stop retry loop
+            destroy() {},
+        })
 
         pool.failed('1.1.1.1', '1111')
 
@@ -51,17 +63,30 @@ describe('HostPool', () => {
         assert.equal(host.host, '2.2.2.2', 'dead host is not returned')
         host = pool.get_host()
         assert.equal(host.host, '2.2.2.2', 'dead host is not returned')
-        done()
     })
 
     // if they're *all* dead, we return a host to try anyway, to keep from
     // accidentally DOS'ing ourselves if there's a transient but widespread
     // network outage
-    it("they're all dead", (done) => {
+    it("they're all dead", () => {
         let host1
         let host2
 
-        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222')
+        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222', 0.001)
+        pool.get_socket = () => ({
+            pretendTimeout: () => {},
+            setTimeout(ms, cb) {
+                this.pretendTimeout = cb
+            },
+            listeners: {},
+            on(ev, cb) {
+                this.listeners[ev] = cb
+            },
+            connect(port, host, cb) {
+                cb()
+            }, // immediately "connects" to stop retry loop
+            destroy() {},
+        })
 
         host1 = pool.get_host()
 
@@ -79,13 +104,12 @@ describe('HostPool', () => {
         host2 = pool.get_host()
         assert.ok(host2, "if they're all dead, try one anyway")
         assert.notEqual(host1.host, host2.host, 'rotation continues')
-        done()
     })
 
     // after .01 secs the timer to retry the dead host will fire, and then
     // we connect using this mock socket, whose "connect" always succeeds
     // so the code brings the dead host back to life
-    it('host dead checking timer', (done) => {
+    it('host dead checking timer', async () => {
         let num_reqs = 0
         const MockSocket = function MockSocket(pool) {
             // these are the methods called from probe_dead_host
@@ -141,22 +165,24 @@ describe('HostPool', () => {
 
         // probe_dead_host() will hit two failures and one success (based on
         // num_reqs above). So we wait at least 10s for that to happen:
-        const timer = setTimeout(() => {
-            clearInterval(interval)
-            assert.ok(false, 'probe_dead_host failed')
-            done()
-        }, 10 * 1000)
+        await new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                clearInterval(interval)
+                reject(new Error('probe_dead_host failed'))
+            }, 10 * 1000)
 
-        const interval = setInterval(
-            () => {
-                if (!pool.dead_hosts['1.1.1.1:1111']) {
-                    clearTimeout(timer)
-                    clearInterval(interval)
-                    assert.ok(true, 'timer un-deaded it')
-                    done()
-                }
-            },
-            retry_secs * 1000 * 3,
-        )
+            const interval = setInterval(
+                () => {
+                    if (!pool.dead_hosts['1.1.1.1:1111']) {
+                        clearTimeout(timer)
+                        clearInterval(interval)
+                        resolve()
+                    }
+                },
+                retry_secs * 1000 * 3,
+            )
+        })
+
+        assert.ok(true, 'timer un-deaded it')
     })
 })

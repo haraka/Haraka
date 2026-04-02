@@ -247,7 +247,7 @@ exports.queue_forward = function (next, connection) {
         )
 
         function get_rs() {
-            return connection?.transaction?.results ? connection.transaction.results : connection.results
+            return txn?.results ?? connection.results
         }
 
         function dead_sender() {
@@ -320,10 +320,10 @@ exports.get_mx_next_hop = (next_hop) => {
         exchange: dest.hostname,
     }
     if (dest.protocol === 'lmtp:') mx.using_lmtp = true
-    if (dest.auth) {
+    if (dest.username) {
         mx.auth_type = 'plain'
-        mx.auth_user = dest.auth.split(':')[0]
-        mx.auth_pass = dest.auth.split(':')[1]
+        mx.auth_user = dest.username
+        mx.auth_pass = dest.password
     }
     return mx
 }

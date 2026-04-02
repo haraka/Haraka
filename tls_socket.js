@@ -159,21 +159,16 @@ exports.parse_x509 = async (string) => {
     const res = {}
     if (!string) return res
 
-    const keyRe = new RegExp('([-]+BEGIN (?:\\w+ )?PRIVATE KEY[-]+[^-]*[-]+END (?:\\w+ )?PRIVATE KEY[-]+)', 'gm')
+    const keyRe = /([-]+BEGIN (?:\w+ )?PRIVATE KEY[-]+[^-]*[-]+END (?:\w+ )?PRIVATE KEY[-]+)/gm
     res.keys = string.match(keyRe)
 
-    const certRe = new RegExp('([-]+BEGIN CERTIFICATE[-]+[^-]*[-]+END CERTIFICATE[-]+)', 'gm')
+    const certRe = /([-]+BEGIN CERTIFICATE[-]+[^-]*[-]+END CERTIFICATE[-]+)/gm
     res.chain = string.match(certRe)
 
     if (res.chain?.length) {
-        const opensslArgs = [res.chain[0], 'x509', '-noout']
-        // shush openssl, https://github.com/openssl/openssl/issues/22893
-        // if (['darwin','linux','freebsd'].includes(process.platform))
-        //     opensslArgs.push('-in', '/dev/stdin')
-
         // it's cleaner to call openssl with each of -enddate, -subject, etc, but it costs
         // 40-50ms per spawn with node v21 on a M1 MBP
-        const raw = await openssl(...opensslArgs, '-enddate', '-subject', '-ext', 'subjectAltName')
+        const raw = await openssl(res.chain[0], 'x509', '-noout', '-enddate', '-subject', '-ext', 'subjectAltName')
         if (!raw) return res
 
         res.expire = new Date(raw.match(/notAfter=(.* [A-Z]{3})/)[1])
@@ -191,7 +186,7 @@ exports.parse_x509 = async (string) => {
 }
 
 exports.load_tls_ini = (opts) => {
-    log.info(`loading tls.ini`) // from ${this.config.root_path}`);
+    log.info('loading tls.ini')
 
     const cfg = exports.config.get(
         'tls.ini',
@@ -339,7 +334,7 @@ exports.load_default_opts = () => {
     if (!Array.isArray(cfg.key)) cfg.key = [cfg.key]
     if (!Array.isArray(cfg.cert)) cfg.cert = [cfg.cert]
 
-    if (cfg.key.length != cfg.cert.length) {
+    if (cfg.key.length !== cfg.cert.length) {
         log.error(`number of keys (${cfg.key.length}) not equal to certs (${cfg.cert.length}).`)
     }
 
@@ -454,19 +449,20 @@ exports.get_certs_dir = async (tlsDir) => {
 function openssl(crt, ...params) {
     return new Promise((resolve) => {
         let crtTxt = ''
+        let errTxt = ''
 
-        const o = spawn('openssl', [...params], { timeout: 1000 })
+        const o = spawn('openssl', params, { timeout: 2000 })
         o.stdout.on('data', (data) => {
             crtTxt += data
         })
 
         o.stderr.on('data', (data) => {
-            log.debug(`err: ${data.toString().trim()}`)
+            errTxt += data
         })
 
         o.on('close', (code) => {
             if (code !== 0) {
-                if (code) console.error(code)
+                log.error(`openssl ${params.join(' ')} failed with code ${code}: ${errTxt.trim()}`)
             }
             resolve(crtTxt)
         })
@@ -484,8 +480,7 @@ exports.getSocketOpts = async (name) => {
         await this.get_certs_dir('tls')
     } catch (err) {
         if (err.code !== 'ENOENT') {
-            console.error(err.messsage)
-            log.error(err)
+            log.error(err.message)
         }
     }
 
@@ -519,7 +514,7 @@ exports.ensureDhparams = (done) => {
 
     log.info(`Generating a 2048 bit dhparams file at ${fpResolved}`)
 
-    const o = spawn('openssl', ['dhparam', '-out', `${fpResolved}`, '2048'])
+    const o = spawn('openssl', ['dhparam', '-out', fpResolved, '2048'], { timeout: 30000 })
     o.stdout.on('data', (data) => {
         // normally empty output
         log.debug(data)
@@ -586,9 +581,9 @@ exports.shutdown = () => {
 
 function cleanOcspCache() {
     log.debug(`Cleaning ocspCache. How many keys? ${Object.keys(ocspCache.cache).length}`)
-    Object.keys(ocspCache.cache).forEach((key) => {
+    for (const key of Object.keys(ocspCache.cache)) {
         clearTimeout(ocspCache.cache[key].timer)
-    })
+    }
 }
 
 exports.certsByHost = certsByHost
@@ -688,7 +683,7 @@ function connect(conn_options = {}) {
         }
         options.socket = cryptoSocket
 
-        const cleartext = new tls.connect(options)
+        const cleartext = tls.connect(options)
 
         pipe(cleartext, cryptoSocket)
 

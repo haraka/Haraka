@@ -1,9 +1,11 @@
-const assert = require('node:assert')
+'use strict'
+
+const { describe, it, beforeEach } = require('node:test')
+const assert = require('node:assert/strict')
 const util = require('node:util')
 
-const _set_up = (done) => {
+const _set_up = () => {
     this.logger = require('../logger')
-    done()
 }
 
 describe('logger', () => {

@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(smtp_forward): update AUTH to match WHATWG URL API
+- ci: added explicit minimal permissions
+- tests(smtp_client, tls_socket, smtp_forward): 95% coverage
+- tests: convert test/*.js to node:test runner
+
 ### [3.1.4] - 2026-03-30
 
 #### Fixed
