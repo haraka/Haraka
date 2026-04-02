@@ -688,7 +688,8 @@ function connect(conn_options = {}) {
         pipe(cleartext, cryptoSocket)
 
         cleartext.on('error', (err) => {
-            if (err.reason) log.error(`client TLS error: ${err}`)
+            err.source = 'tls'
+            socket.emit('error', err)
         })
 
         cleartext.once('secureConnect', () => {

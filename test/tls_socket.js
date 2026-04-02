@@ -3,6 +3,7 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
+const net = require('node:net')
 const tls = require('node:tls')
 const fs = require('node:fs')
 
@@ -10,6 +11,9 @@ const fs = require('node:fs')
 const mock = require('node:test').mock
 
 const tls_socket = require('../tls_socket')
+
+const TEST_CERT = fs.readFileSync(path.join(__dirname, 'config/tls_cert.pem'))
+const TEST_KEY = fs.readFileSync(path.join(__dirname, 'config/tls_key.pem'))
 
 test('tls_socket', async (t) => {
     await t.test('parse_x509', async (t) => {
@@ -59,6 +63,38 @@ test('tls_socket', async (t) => {
         // Exercise the `new tls.connect` bug
         // We can't easily catch the 'new' keyword usage without proxying tls.connect
         assert.strictEqual(typeof tls_socket.connect, 'function')
+    })
+
+    await t.test('connect upgrade error propagation', async (t) => {
+        // Verify that TLS errors during socket.upgrade() are propagated to the outer
+        // pluggableStream socket, not silently swallowed.
+        // A TLS server that requires a client cert; connecting without one triggers
+        // a post-handshake "certificate required" alert (TLSv1.3).
+        await t.test('emits error on outer socket when client cert is missing', async () => {
+            const server = tls.createServer(
+                { cert: TEST_CERT, key: TEST_KEY, requestCert: true, rejectUnauthorized: true },
+                () => {},
+            )
+            await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+            const { port } = server.address()
+
+            try {
+                const err = await new Promise((resolve, reject) => {
+                    const socket = tls_socket.connect({ host: '127.0.0.1', port })
+                    socket.upgrade({ rejectUnauthorized: false }, () => {})
+                    socket.on('error', resolve)
+                    socket.on('close', () => reject(new Error('closed without error')))
+                    setTimeout(() => reject(new Error('timeout')), 3000)
+                })
+                assert.ok(
+                    /certificate required|socket hang up|disconnected/.test(err.message),
+                    `unexpected error: ${err.message}`,
+                )
+                assert.equal(err.source, 'tls', 'error.source should be "tls"')
+            } finally {
+                await new Promise((resolve) => server.close(resolve))
+            }
+        })
     })
 
     await t.test('getSocketOpts', async (t) => {
