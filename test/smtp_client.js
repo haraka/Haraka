@@ -660,7 +660,7 @@ describe('smtp_client.get_client', () => {
     beforeEach(() => mockTlsConnect())
     afterEach(restoreTlsConnect)
 
-    it('calls callback with a new SMTPClient', (t, done) =>  {
+    it('calls callback with a new SMTPClient', (t, done) => {
         smtp_client_module.get_client(
             { notes: {} },
             (client) => {
@@ -764,7 +764,7 @@ describe('smtp_client.get_client_plugin', () => {
     })
     afterEach(restoreTlsConnect)
 
-    it('calls callback with null error and a SMTPClient', (t, done) =>  {
+    it('calls callback with null error and a SMTPClient', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             assert.equal(err, null)
             assert.ok(client instanceof SMTPClient)
@@ -772,7 +772,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('merges auth_type / auth_user / auth_pass into c.auth', (t, done) =>  {
+    it('merges auth_type / auth_user / auth_pass into c.auth', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, auth_type: 'plain', auth_user: 'alice', auth_pass: 's3cr3t' }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             assert.deepEqual(c.auth, { type: 'plain', user: 'alice', pass: 's3cr3t' })
@@ -780,7 +780,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('does not set c.auth when no auth fields present', (t, done) =>  {
+    it('does not set c.auth when no auth fields present', (t, done) => {
         const c = { host: 'relay.example.com', port: 25 }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             assert.equal(c.auth, undefined)
@@ -788,14 +788,14 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('loads tls_config on the returned client', (t, done) =>  {
+    it('loads tls_config on the returned client', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             assert.ok(client.tls_options)
             done()
         })
     })
 
-    it('greeting handler sends EHLO with local.host (no xclient)', (t, done) =>  {
+    it('greeting handler sends EHLO with local.host (no xclient)', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             const written = []
             client.socket.write = (data) => written.push(data)
@@ -805,7 +805,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('greeting handler sends EHLO with hello.host when xclient is set', (t, done) =>  {
+    it('greeting handler sends EHLO with hello.host when xclient is set', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             client.xclient = true
             const written = []
@@ -816,7 +816,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('xclient handler sends EHLO with hello.host', (t, done) =>  {
+    it('xclient handler sends EHLO with hello.host', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             client.xclient = true
             const written = []
@@ -827,7 +827,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('helo handler sends MAIL FROM when no auth configured', (t, done) =>  {
+    it('helo handler sends MAIL FROM when no auth configured', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             const written = []
             client.socket.write = (data) => written.push(data)
@@ -837,7 +837,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('helo handler sends MAIL FROM when already authenticated', (t, done) =>  {
+    it('helo handler sends MAIL FROM when already authenticated', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: 'plain', user: 'u', pass: 'p' } }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             client.authenticated = true
@@ -850,7 +850,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('helo handler skips when auth.type is null', (t, done) =>  {
+    it('helo handler skips when auth.type is null', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: null, user: 'u', pass: 'p' } }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             client.authenticated = false
@@ -863,7 +863,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('helo handler throws when auth type not supported by server', (t, done) =>  {
+    it('helo handler throws when auth type not supported by server', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: 'plain', user: 'u', pass: 'p' } }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             client.authenticated = false
@@ -873,7 +873,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('helo handler sends AUTH PLAIN with base64 credentials', (t, done) =>  {
+    it('helo handler sends AUTH PLAIN with base64 credentials', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: 'plain', user: 'alice', pass: 'secret' } }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             client.authenticated = false
@@ -886,7 +886,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('helo handler throws for plain auth with no user/pass', (t, done) =>  {
+    it('helo handler throws for plain auth with no user/pass', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: 'plain', user: '', pass: '' } }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             client.authenticated = false
@@ -896,7 +896,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('helo handler throws for cram-md5 (not implemented)', (t, done) =>  {
+    it('helo handler throws for cram-md5 (not implemented)', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: 'cram-md5', user: 'u', pass: 'p' } }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             client.authenticated = false
@@ -906,7 +906,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('helo handler throws for unknown auth type', (t, done) =>  {
+    it('helo handler throws for unknown auth type', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: 'gssapi', user: 'u', pass: 'p' } }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             client.authenticated = false
@@ -916,7 +916,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('auth handler sends MAIL FROM after successful authentication', (t, done) =>  {
+    it('auth handler sends MAIL FROM after successful authentication', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             client.authenticating = false
             const written = []
@@ -927,7 +927,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('auth handler returns early when still authenticating', (t, done) =>  {
+    it('auth handler returns early when still authenticating', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             client.authenticating = true
             const written = []
@@ -938,7 +938,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('error handler calls call_next', (t, done) =>  {
+    it('error handler calls call_next', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             let nextCalled = false
             client.next = () => {
@@ -950,7 +950,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('connection-error handler calls call_next', (t, done) =>  {
+    it('connection-error handler calls call_next', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             let nextCalled = false
             client.next = () => {
@@ -962,7 +962,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('connection-error handler calls host_pool.failed when pool exists', (t, done) =>  {
+    it('connection-error handler calls host_pool.failed when pool exists', (t, done) => {
         let failedCalled = false
         conn.server.notes.host_pool = {
             failed: (host, port) => {
@@ -983,7 +983,7 @@ describe('smtp_client.get_client_plugin', () => {
         )
     })
 
-    it('uses forwarding_host_pool when configured', (t, done) =>  {
+    it('uses forwarding_host_pool when configured', (t, done) => {
         const c = { forwarding_host_pool: '10.0.0.1:25, 10.0.0.2:25' }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             assert.equal(err, null)
@@ -994,7 +994,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('reuses existing host_pool from server.notes', (t, done) =>  {
+    it('reuses existing host_pool from server.notes', (t, done) => {
         const HostPool = require('../host_pool')
         const pool = new HostPool('10.0.0.3:25')
         conn.server.notes.host_pool = pool
@@ -1005,14 +1005,14 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('server_protocol event logs protocol line', (t, done) =>  {
+    it('server_protocol event logs protocol line', (t, done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             assert.doesNotThrow(() => client.emit('server_protocol', '220 server ready'))
             done()
         })
     })
 
-    it('capabilities handler calls onCapabilitiesOutbound', (t, done) =>  {
+    it('capabilities handler calls onCapabilitiesOutbound', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, enable_tls: true }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             // Simulate EHLO response containing STARTTLS + AUTH
@@ -1023,7 +1023,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('on_secured fires greeting and is idempotent', (t, done) =>  {
+    it('on_secured fires greeting and is idempotent', (t, done) => {
         const c = { host: 'relay.example.com', port: 25, enable_tls: true }
         smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
             // Trigger STARTTLS so on_secured is registered on socket 'secure'
@@ -1047,7 +1047,7 @@ describe('smtp_client.get_client_plugin', () => {
         })
     })
 
-    it('connected + xclient: sends XCLIENT immediately', (t, done) =>  {
+    it('connected + xclient: sends XCLIENT immediately', (t, done) => {
         // Make the mock socket emit a 220 greeting synchronously during SMTPClient construction
         // so smtp_client.connected is true before get_client_plugin's check runs
         const origConnect = tls_socket.connect
@@ -1090,7 +1090,7 @@ describe('smtp_client.get_client_plugin', () => {
 // ─── Full SMTP session (integration) ─────────────────────────────────────────
 
 describe('smtp_client full session (basic)', () => {
-    beforeEach((t, done) =>  {
+    beforeEach((t, done) => {
         smtp_client_module.get_client(
             { notes: {} },
             (client) => {
@@ -1101,7 +1101,7 @@ describe('smtp_client full session (basic)', () => {
         )
     })
 
-    it('conducts a SMTP session', (t, done) =>  {
+    it('conducts a SMTP session', (t, done) => {
         const message_stream = new message.stream({ main: { spool_after: 1024 } }, '123456789')
 
         const data = []
@@ -1194,7 +1194,7 @@ describe('smtp_client full session (basic)', () => {
 // ─── Full SMTP session with AUTH (integration) ───────────────────────────────
 
 describe('smtp_client full session (auth)', () => {
-    beforeEach((t, done) =>  {
+    beforeEach((t, done) => {
         smtp_client_module.get_client(
             { notes: {} },
             (client) => {
@@ -1205,7 +1205,7 @@ describe('smtp_client full session (auth)', () => {
         )
     })
 
-    it('authenticates during SMTP conversation', (t, done) =>  {
+    it('authenticates during SMTP conversation', (t, done) => {
         const message_stream = new message.stream({ main: { spool_after: 1024 } }, '123456789')
 
         const data = []
