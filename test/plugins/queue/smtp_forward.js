@@ -1,5 +1,6 @@
 'use strict'
 
+const { describe, it, beforeEach, afterEach } = require('node:test')
 const assert = require('node:assert/strict')
 const { EventEmitter } = require('node:events')
 const path = require('node:path')
@@ -627,7 +628,7 @@ describe('smtp_forward queue_forward', () => {
         assert.equal(called, false)
     })
 
-    it('calls next() when forward_enabled returns false', (done) => {
+    it('calls next() when forward_enabled returns false', (t, done) =>  {
         connection.relaying = true // outbound disabled → forward_enabled=false
         plugin.queue_forward((code) => {
             assert.equal(code, undefined)
@@ -635,7 +636,7 @@ describe('smtp_forward queue_forward', () => {
         }, connection)
     })
 
-    it('forwards mail: mail event triggers first RCPT', (done) => {
+    it('forwards mail: mail event triggers first RCPT', (t, done) =>  {
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
 
@@ -646,7 +647,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('sends DATA after last RCPT TO', (done) => {
+    it('sends DATA after last RCPT TO', (t, done) =>  {
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
 
@@ -659,7 +660,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('data event calls start_data with message_stream', (done) => {
+    it('data event calls start_data with message_stream', (t, done) =>  {
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
 
@@ -672,7 +673,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('dot event calls next(OK) and releases when all rcpts done', (done) => {
+    it('dot event calls next(OK) and releases when all rcpts done', (t, done) =>  {
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
 
@@ -692,7 +693,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('dot event sends RSET when more rcpts remain (multi-rcpt, one_message_per_rcpt)', (done) => {
+    it('dot event sends RSET when more rcpts remain (multi-rcpt, one_message_per_rcpt)', (t, done) =>  {
         connection.transaction.rcpt_to = [new Address('<a@example.com>'), new Address('<b@example.com>')]
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
@@ -708,7 +709,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('rset event sends MAIL FROM', (done) => {
+    it('rset event sends MAIL FROM', (t, done) =>  {
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
 
@@ -720,7 +721,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('bad_code 5xx emits DENY and releases', (done) => {
+    it('bad_code 5xx emits DENY and releases', (t, done) =>  {
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
 
@@ -737,7 +738,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('bad_code 4xx emits DENYSOFT and releases', (done) => {
+    it('bad_code 4xx emits DENYSOFT and releases', (t, done) =>  {
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
 
@@ -749,7 +750,7 @@ describe('smtp_forward queue_forward', () => {
         client.emit('bad_code', '421', 'Service unavailable')
     })
 
-    it('dead_sender: adds err result and skips forwarding', (done) => {
+    it('dead_sender: adds err result and skips forwarding', (t, done) =>  {
         const client = new MockSMTPClient()
         client.is_dead_sender = () => true
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
@@ -762,7 +763,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('calls plugin.auth when auth_user is configured in cfg', (done) => {
+    it('calls plugin.auth when auth_user is configured in cfg', (t, done) =>  {
         const client = new MockSMTPClient()
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => cb(null, client))
 
@@ -781,7 +782,7 @@ describe('smtp_forward queue_forward', () => {
         done()
     })
 
-    it('uses forwarding_host_pool when configured', (done) => {
+    it('uses forwarding_host_pool when configured', (t, done) =>  {
         const client = new MockSMTPClient()
         let capturedCfg
         restore = stubGetClientPlugin((plug, conn, cfg, cb) => {
@@ -842,7 +843,7 @@ describe('smtp_forward get_mx', () => {
         hmail = makeHmail()
     })
 
-    it('returns no route for undefined domains', (done) => {
+    it('returns no route for undefined domains', (t, done) =>  {
         plugin.get_mx(
             (code, mx) => {
                 assert.equal(code, undefined)
@@ -854,7 +855,7 @@ describe('smtp_forward get_mx', () => {
         )
     })
 
-    it('returns no route when queue.wants is not smtp_forward or outbound', (done) => {
+    it('returns no route when queue.wants is not smtp_forward or outbound', (t, done) =>  {
         hmail.todo.notes.set('queue.wants', 'some_other_queue')
         plugin.get_mx(
             (code, mx) => {
@@ -866,7 +867,7 @@ describe('smtp_forward get_mx', () => {
         )
     })
 
-    it('returns route from next_hop URL when queue.wants=smtp_forward', (done) => {
+    it('returns route from next_hop URL when queue.wants=smtp_forward', (t, done) =>  {
         hmail.todo.notes.set('queue.wants', 'smtp_forward')
         hmail.todo.notes.set('queue.next_hop', 'smtp://4.3.2.1:465')
         plugin.get_mx(
@@ -881,7 +882,7 @@ describe('smtp_forward get_mx', () => {
         )
     })
 
-    it('returns route for configured domain', (done) => {
+    it('returns route for configured domain', (t, done) =>  {
         plugin.get_mx(
             (code, mx) => {
                 assert.equal(code, OK)
@@ -896,7 +897,7 @@ describe('smtp_forward get_mx', () => {
         )
     })
 
-    it('returns no route (DNS MX) for unconfigured domain when queue.wants=outbound', (done) => {
+    it('returns no route (DNS MX) for unconfigured domain when queue.wants=outbound', (t, done) =>  {
         hmail.todo.notes.set('queue.wants', 'outbound')
         plugin.get_mx(
             (code, mx) => {
@@ -908,7 +909,7 @@ describe('smtp_forward get_mx', () => {
         )
     })
 
-    it('uses lmtp URL and sets using_lmtp when next_hop is lmtp', (done) => {
+    it('uses lmtp URL and sets using_lmtp when next_hop is lmtp', (t, done) =>  {
         hmail.todo.notes.set('queue.wants', 'smtp_forward')
         hmail.todo.notes.set('queue.next_hop', 'lmtp://4.3.2.1')
         plugin.get_mx(
@@ -923,7 +924,7 @@ describe('smtp_forward get_mx', () => {
         )
     })
 
-    it('uses mail_from host when domain_selector=mail_from', (done) => {
+    it('uses mail_from host when domain_selector=mail_from', (t, done) =>  {
         plugin.cfg.main.domain_selector = 'mail_from'
         hmail.todo.mail_from = new Address('<sender@test.com>')
         plugin.get_mx(
@@ -937,7 +938,7 @@ describe('smtp_forward get_mx', () => {
         )
     })
 
-    it('applies mx_opts from domain config', (done) => {
+    it('applies mx_opts from domain config', (t, done) =>  {
         plugin.cfg['test.com'].bind = '192.168.1.1'
         plugin.cfg['test.com'].bind_helo = 'relay.example.com'
         plugin.get_mx(
