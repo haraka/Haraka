@@ -276,35 +276,23 @@ describe('SMTPClient line handler', () => {
 
     // ── Auth responses ──────────────────────────────────────────────────────
 
-    it('emits auth_username on 334 VXNlcm5hbWU6', () => {
-        client.command = 'auth'
-        let fired = false
-        client.on('auth_username', () => {
-            fired = true
+    // ── Auth challenge responses (334) ─────────────────────────────────────
+    // Each case: [event to emit, challenge line]
+    for (const [event, challenge] of [
+        ['auth_username', '334 VXNlcm5hbWU6\r\n'], // base64('Username:')
+        ['auth_username', '334 dXNlcm5hbWU6\r\n'], // base64('username:') — case-insensitive workaround
+        ['auth_password', '334 UGFzc3dvcmQ6\r\n'], // base64('Password:')
+    ]) {
+        it(`emits ${event} on ${challenge.trim()}`, () => {
+            client.command = 'auth'
+            let fired = false
+            client.on(event, () => {
+                fired = true
+            })
+            client.socket.emit('line', challenge)
+            assert.ok(fired)
         })
-        client.socket.emit('line', '334 VXNlcm5hbWU6\r\n')
-        assert.ok(fired)
-    })
-
-    it('emits auth_username on 334 dXNlcm5hbWU6 (workaround)', () => {
-        client.command = 'auth'
-        let fired = false
-        client.on('auth_username', () => {
-            fired = true
-        })
-        client.socket.emit('line', '334 dXNlcm5hbWU6\r\n')
-        assert.ok(fired)
-    })
-
-    it('emits auth_password on 334 UGFzc3dvcmQ6', () => {
-        client.command = 'auth'
-        let fired = false
-        client.on('auth_password', () => {
-            fired = true
-        })
-        client.socket.emit('line', '334 UGFzc3dvcmQ6\r\n')
-        assert.ok(fired)
-    })
+    }
 
     it('emits auth and sets authenticated on 235 while authenticating', () => {
         client.command = 'auth'
@@ -764,216 +752,168 @@ describe('smtp_client.get_client_plugin', () => {
     })
     afterEach(restoreTlsConnect)
 
-    it('calls callback with null error and a SMTPClient', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            assert.equal(err, null)
-            assert.ok(client instanceof SMTPClient)
-            done()
+    // Helper: wrap get_client_plugin callback in a Promise
+    const getClientPlugin = (opts = { host: 'relay.example.com', port: 25 }) =>
+        new Promise((resolve, reject) => {
+            smtp_client_module.get_client_plugin(plugin, conn, opts, (err, client) => {
+                if (err) reject(err)
+                else resolve(client)
+            })
         })
+
+    it('calls callback with null error and a SMTPClient', async () => {
+        const client = await getClientPlugin()
+        assert.ok(client instanceof SMTPClient)
     })
 
-    it('merges auth_type / auth_user / auth_pass into c.auth', (t, done) => {
+    it('merges auth_type / auth_user / auth_pass into c.auth', async () => {
         const c = { host: 'relay.example.com', port: 25, auth_type: 'plain', auth_user: 'alice', auth_pass: 's3cr3t' }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            assert.deepEqual(c.auth, { type: 'plain', user: 'alice', pass: 's3cr3t' })
-            done()
-        })
+        await getClientPlugin(c)
+        assert.deepEqual(c.auth, { type: 'plain', user: 'alice', pass: 's3cr3t' })
     })
 
-    it('does not set c.auth when no auth fields present', (t, done) => {
+    it('does not set c.auth when no auth fields present', async () => {
         const c = { host: 'relay.example.com', port: 25 }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            assert.equal(c.auth, undefined)
-            done()
-        })
+        await getClientPlugin(c)
+        assert.equal(c.auth, undefined)
     })
 
-    it('loads tls_config on the returned client', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            assert.ok(client.tls_options)
-            done()
-        })
+    it('loads tls_config on the returned client', async () => {
+        const client = await getClientPlugin()
+        assert.ok(client.tls_options)
     })
 
-    it('greeting handler sends EHLO with local.host (no xclient)', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            client.emit('greeting', 'EHLO')
-            assert.ok(written.some((l) => /EHLO relay\.example\.com/.test(l)))
-            done()
-        })
+    it('greeting handler sends EHLO with local.host (no xclient)', async () => {
+        const client = await getClientPlugin()
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        client.emit('greeting', 'EHLO')
+        assert.ok(written.some((l) => /EHLO relay\.example\.com/.test(l)))
     })
 
-    it('greeting handler sends EHLO with hello.host when xclient is set', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            client.xclient = true
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            client.emit('greeting', 'EHLO')
-            assert.ok(written.some((l) => /EHLO client\.example\.com/.test(l)))
-            done()
-        })
+    it('greeting handler sends EHLO with hello.host when xclient is set', async () => {
+        const client = await getClientPlugin()
+        client.xclient = true
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        client.emit('greeting', 'EHLO')
+        assert.ok(written.some((l) => /EHLO client\.example\.com/.test(l)))
     })
 
-    it('xclient handler sends EHLO with hello.host', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            client.xclient = true
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            client.emit('xclient', 'EHLO')
-            assert.ok(written.some((l) => /EHLO client\.example\.com/.test(l)))
-            done()
-        })
+    it('xclient handler sends EHLO with hello.host', async () => {
+        const client = await getClientPlugin()
+        client.xclient = true
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        client.emit('xclient', 'EHLO')
+        assert.ok(written.some((l) => /EHLO client\.example\.com/.test(l)))
     })
 
-    it('helo handler sends MAIL FROM when no auth configured', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            client.emit('helo')
-            assert.ok(written.some((l) => /MAIL FROM/.test(l)))
-            done()
-        })
+    it('helo handler sends MAIL FROM when no auth configured', async () => {
+        const client = await getClientPlugin()
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        client.emit('helo')
+        assert.ok(written.some((l) => /MAIL FROM/.test(l)))
     })
 
-    it('helo handler sends MAIL FROM when already authenticated', (t, done) => {
+    it('helo handler sends MAIL FROM when already authenticated', async () => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: 'plain', user: 'u', pass: 'p' } }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            client.authenticated = true
-            client.auth_capabilities = ['plain']
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            client.emit('helo')
-            assert.ok(written.some((l) => /MAIL FROM/.test(l)))
-            done()
-        })
+        const client = await getClientPlugin(c)
+        client.authenticated = true
+        client.auth_capabilities = ['plain']
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        client.emit('helo')
+        assert.ok(written.some((l) => /MAIL FROM/.test(l)))
     })
 
-    it('helo handler skips when auth.type is null', (t, done) => {
+    it('helo handler skips when auth.type is null', async () => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: null, user: 'u', pass: 'p' } }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            client.authenticated = false
-            client.auth_capabilities = []
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            assert.doesNotThrow(() => client.emit('helo'))
-            assert.equal(written.length, 0)
-            done()
-        })
+        const client = await getClientPlugin(c)
+        client.authenticated = false
+        client.auth_capabilities = []
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        assert.doesNotThrow(() => client.emit('helo'))
+        assert.equal(written.length, 0)
     })
 
-    it('helo handler throws when auth type not supported by server', (t, done) => {
-        const c = { host: 'relay.example.com', port: 25, auth: { type: 'plain', user: 'u', pass: 'p' } }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            client.authenticated = false
-            client.auth_capabilities = ['cram-md5'] // plain not in list
-            assert.throws(() => client.emit('helo'), /not supported by server/)
-            done()
-        })
-    })
-
-    it('helo handler sends AUTH PLAIN with base64 credentials', (t, done) => {
+    it('helo handler sends AUTH PLAIN with base64 credentials', async () => {
         const c = { host: 'relay.example.com', port: 25, auth: { type: 'plain', user: 'alice', pass: 'secret' } }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
+        const client = await getClientPlugin(c)
+        client.authenticated = false
+        client.auth_capabilities = ['plain']
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        client.emit('helo')
+        assert.ok(written.some((l) => /AUTH PLAIN/.test(l)))
+    })
+
+    // Table-drive the helo-throws cases
+    for (const [desc, opts, capabilities, pattern] of [
+        ['unsupported auth type', { type: 'plain', user: 'u', pass: 'p' }, ['cram-md5'], /not supported by server/],
+        ['plain auth with no user/pass', { type: 'plain', user: '', pass: '' }, ['plain'], /Must include auth\.user/],
+        ['cram-md5 (not implemented)', { type: 'cram-md5', user: 'u', pass: 'p' }, ['cram-md5'], /Not implemented/],
+        ['unknown auth type', { type: 'gssapi', user: 'u', pass: 'p' }, ['gssapi'], /Unknown AUTH type/],
+    ]) {
+        it(`helo handler throws for ${desc}`, async () => {
+            const c = { host: 'relay.example.com', port: 25, auth: opts }
+            const client = await getClientPlugin(c)
             client.authenticated = false
-            client.auth_capabilities = ['plain']
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            client.emit('helo')
-            assert.ok(written.some((l) => /AUTH PLAIN/.test(l)))
-            done()
+            client.auth_capabilities = capabilities
+            assert.throws(() => client.emit('helo'), pattern)
         })
+    }
+
+    it('auth handler sends MAIL FROM after successful authentication', async () => {
+        const client = await getClientPlugin()
+        client.authenticating = false
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        client.emit('auth')
+        assert.ok(written.some((l) => /MAIL FROM/.test(l)))
     })
 
-    it('helo handler throws for plain auth with no user/pass', (t, done) => {
-        const c = { host: 'relay.example.com', port: 25, auth: { type: 'plain', user: '', pass: '' } }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            client.authenticated = false
-            client.auth_capabilities = ['plain']
-            assert.throws(() => client.emit('helo'), /Must include auth\.user/)
-            done()
-        })
+    it('auth handler returns early when still authenticating', async () => {
+        const client = await getClientPlugin()
+        client.authenticating = true
+        const written = []
+        client.socket.write = (data) => written.push(data)
+        client.emit('auth')
+        assert.equal(written.length, 0)
     })
 
-    it('helo handler throws for cram-md5 (not implemented)', (t, done) => {
-        const c = { host: 'relay.example.com', port: 25, auth: { type: 'cram-md5', user: 'u', pass: 'p' } }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            client.authenticated = false
-            client.auth_capabilities = ['cram-md5']
-            assert.throws(() => client.emit('helo'), /Not implemented/)
-            done()
-        })
+    it('error handler calls call_next', async () => {
+        const client = await getClientPlugin()
+        let nextCalled = false
+        client.next = () => {
+            nextCalled = true
+        }
+        client.emit('error', 'something went wrong')
+        assert.ok(nextCalled)
     })
 
-    it('helo handler throws for unknown auth type', (t, done) => {
-        const c = { host: 'relay.example.com', port: 25, auth: { type: 'gssapi', user: 'u', pass: 'p' } }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            client.authenticated = false
-            client.auth_capabilities = ['gssapi']
-            assert.throws(() => client.emit('helo'), /Unknown AUTH type/)
-            done()
-        })
+    it('connection-error handler calls call_next', async () => {
+        const client = await getClientPlugin()
+        let nextCalled = false
+        client.next = () => {
+            nextCalled = true
+        }
+        client.emit('connection-error', 'backend unreachable')
+        assert.ok(nextCalled)
     })
 
-    it('auth handler sends MAIL FROM after successful authentication', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            client.authenticating = false
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            client.emit('auth')
-            assert.ok(written.some((l) => /MAIL FROM/.test(l)))
-            done()
-        })
-    })
-
-    it('auth handler returns early when still authenticating', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            client.authenticating = true
-            const written = []
-            client.socket.write = (data) => written.push(data)
-            client.emit('auth')
-            assert.equal(written.length, 0)
-            done()
-        })
-    })
-
-    it('error handler calls call_next', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            let nextCalled = false
-            client.next = () => {
-                nextCalled = true
-            }
-            client.emit('error', 'something went wrong')
-            assert.ok(nextCalled)
-            done()
-        })
-    })
-
-    it('connection-error handler calls call_next', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            let nextCalled = false
-            client.next = () => {
-                nextCalled = true
-            }
-            client.emit('connection-error', 'backend unreachable')
-            assert.ok(nextCalled)
-            done()
-        })
-    })
-
-    it('connection-error handler calls host_pool.failed when pool exists', (t, done) => {
+    it('connection-error handler calls host_pool.failed when pool exists', async () => {
         let failedCalled = false
         conn.server.notes.host_pool = {
-            failed: (host, port) => {
+            failed: () => {
                 failedCalled = true
             },
         }
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            client.emit('connection-error', 'Error: connect ECONNREFUSED')
-            assert.ok(failedCalled)
-            done()
-        })
+        const client = await getClientPlugin()
+        client.emit('connection-error', 'Error: connect ECONNREFUSED')
+        assert.ok(failedCalled)
     })
 
     it('throws when neither forwarding_host_pool nor host/port specified', () => {
@@ -983,68 +923,48 @@ describe('smtp_client.get_client_plugin', () => {
         )
     })
 
-    it('uses forwarding_host_pool when configured', (t, done) => {
+    it('uses forwarding_host_pool when configured', async () => {
         const c = { forwarding_host_pool: '10.0.0.1:25, 10.0.0.2:25' }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            assert.equal(err, null)
-            assert.ok(client instanceof SMTPClient)
-            // host_pool is created and stored in server notes
-            assert.ok(conn.server.notes.host_pool)
-            done()
-        })
+        const client = await getClientPlugin(c)
+        assert.ok(client instanceof SMTPClient)
+        assert.ok(conn.server.notes.host_pool)
     })
 
-    it('reuses existing host_pool from server.notes', (t, done) => {
+    it('reuses existing host_pool from server.notes', async () => {
         const HostPool = require('../host_pool')
         const pool = new HostPool('10.0.0.3:25')
         conn.server.notes.host_pool = pool
-        const c = { forwarding_host_pool: '10.0.0.3:25' }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            assert.equal(conn.server.notes.host_pool, pool) // same object reused
-            done()
-        })
+        await getClientPlugin({ forwarding_host_pool: '10.0.0.3:25' })
+        assert.equal(conn.server.notes.host_pool, pool)
     })
 
-    it('server_protocol event logs protocol line', (t, done) => {
-        smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            assert.doesNotThrow(() => client.emit('server_protocol', '220 server ready'))
-            done()
-        })
+    it('server_protocol event logs protocol line', async () => {
+        const client = await getClientPlugin()
+        assert.doesNotThrow(() => client.emit('server_protocol', '220 server ready'))
     })
 
-    it('capabilities handler calls onCapabilitiesOutbound', (t, done) => {
-        const c = { host: 'relay.example.com', port: 25, enable_tls: true }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            // Simulate EHLO response containing STARTTLS + AUTH
-            client.response = ['SIZE 10240000', 'AUTH PLAIN LOGIN']
-            assert.doesNotThrow(() => client.emit('capabilities'))
-            assert.deepEqual(client.auth_capabilities, ['plain', 'login'])
-            done()
-        })
+    it('capabilities handler calls onCapabilitiesOutbound', async () => {
+        const client = await getClientPlugin({ host: 'relay.example.com', port: 25, enable_tls: true })
+        client.response = ['SIZE 10240000', 'AUTH PLAIN LOGIN']
+        assert.doesNotThrow(() => client.emit('capabilities'))
+        assert.deepEqual(client.auth_capabilities, ['plain', 'login'])
     })
 
-    it('on_secured fires greeting and is idempotent', (t, done) => {
-        const c = { host: 'relay.example.com', port: 25, enable_tls: true }
-        smtp_client_module.get_client_plugin(plugin, conn, c, (err, client) => {
-            // Trigger STARTTLS so on_secured is registered on socket 'secure'
-            client.response = ['STARTTLS']
-            const written = []
-            client.socket.write = (d) => written.push(d)
-            client.emit('capabilities') // → registers socket.on('secure', on_secured)
+    it('on_secured fires greeting and is idempotent', async () => {
+        const client = await getClientPlugin({ host: 'relay.example.com', port: 25, enable_tls: true })
+        client.response = ['STARTTLS']
+        const written = []
+        client.socket.write = (d) => written.push(d)
+        client.emit('capabilities')
 
-            let greetingCount = 0
-            client.on('greeting', () => {
-                greetingCount++
-            })
-
-            // First secure event → on_secured sets secured=true and emits greeting
-            client.socket.emit('secure')
-            // Second secure event → on_secured returns early (idempotent)
-            client.socket.emit('secure')
-
-            assert.equal(greetingCount, 1)
-            done()
+        let greetingCount = 0
+        client.on('greeting', () => {
+            greetingCount++
         })
+
+        client.socket.emit('secure')
+        client.socket.emit('secure') // second call is a no-op
+        assert.equal(greetingCount, 1)
     })
 
     it('connected + xclient: sends XCLIENT immediately', (t, done) => {

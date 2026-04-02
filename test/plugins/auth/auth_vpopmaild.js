@@ -1,11 +1,12 @@
 'use strict'
 
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
 const path = require('node:path')
+const { describe, it, beforeEach } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
 
-const _set_up = (done) => {
+const _set_up = () => {
     this.backup = {}
 
     this.plugin = new fixtures.plugin('auth/auth_vpopmaild')
@@ -17,14 +18,12 @@ const _set_up = (done) => {
 
     this.connection = fixtures.connection.createConnection()
     this.connection.capabilities = null
-
-    done()
 }
 
 describe('hook_capabilities', () => {
     beforeEach(_set_up)
 
-    it('no TLS', (done) => {
+    it('no TLS', (t, done) => {
         this.plugin.hook_capabilities((rc, msg) => {
             assert.equal(undefined, rc)
             assert.equal(undefined, msg)
@@ -33,7 +32,7 @@ describe('hook_capabilities', () => {
         }, this.connection)
     })
 
-    it('with TLS', (done) => {
+    it('with TLS', (t, done) => {
         this.connection.tls.enabled = true
         this.connection.capabilities = []
         this.plugin.hook_capabilities((rc, msg) => {
@@ -44,7 +43,7 @@ describe('hook_capabilities', () => {
         }, this.connection)
     })
 
-    it('with TLS, sysadmin', (done) => {
+    it('with TLS, sysadmin', (t, done) => {
         this.connection.tls.enabled = true
         this.connection.capabilities = []
         this.plugin.hook_capabilities((rc, msg) => {
@@ -62,14 +61,14 @@ describe('get_vpopmaild_socket', () => {
     it('any', () => {
         const socket = this.plugin.get_vpopmaild_socket('foo@localhost.com')
         assert.ok(socket)
-        socket.end()
+        socket.destroy()
     })
 })
 
 describe('get_plain_passwd', () => {
     beforeEach(_set_up)
 
-    it('matt@example.com', (done) => {
+    it('matt@example.com', (t, done) => {
         if (this.plugin.cfg['example.com'].sysadmin) {
             this.plugin.get_plain_passwd('matt@example.com', (pass) => {
                 assert.ok(pass)

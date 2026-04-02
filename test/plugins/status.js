@@ -1,6 +1,7 @@
 'use strict'
 
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
+const { describe, it, beforeEach } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
 const outbound = require('../../outbound')
@@ -8,13 +9,12 @@ const TimerQueue = require('../../outbound/timer_queue')
 
 const Connection = fixtures.connection
 
-const _set_up = (done) => {
+const _set_up = () => {
     this.plugin = new fixtures.plugin('status')
     this.plugin.outbound = outbound
 
     this.connection = Connection.createConnection()
     this.connection.remote.is_local = true
-    done()
 }
 
 describe('status', () => {
@@ -29,7 +29,7 @@ describe('status', () => {
     describe('access', () => {
         beforeEach(_set_up)
 
-        it('remote', (done) => {
+        it('remote', (t, done) => {
             this.connection.remote.is_local = false
             this.plugin.hook_unrecognized_command(
                 (code) => {
@@ -45,7 +45,7 @@ describe('status', () => {
     describe('pools', () => {
         beforeEach(_set_up)
 
-        it('list_pools', (done) => {
+        it('list_pools', (t, done) => {
             this.connection.respond = (code, message) => {
                 const data = JSON.parse(message)
                 assert.equal('object', typeof data) // there should be one pools array for noncluster and more for cluster
@@ -58,7 +58,7 @@ describe('status', () => {
     describe('queues', () => {
         beforeEach(_set_up)
 
-        it('inspect_queue', (done) => {
+        it('inspect_queue', (t, done) => {
             // should list delivery_queue and temp_fail_queue per cluster children
             outbound.temp_fail_queue = new TimerQueue(10)
             outbound.temp_fail_queue.add('file1', 100, () => {})
@@ -73,7 +73,7 @@ describe('status', () => {
             this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE INSPECT'])
         })
 
-        it('stat_queue', (done) => {
+        it('stat_queue', (t, done) => {
             // should list files only
             this.connection.respond = (code, message) => {
                 const data = JSON.parse(message)
@@ -83,7 +83,7 @@ describe('status', () => {
             this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE STATS'])
         })
 
-        it('list_queue', (done) => {
+        it('list_queue', (t, done) => {
             // should list files only
             this.connection.respond = (code, message) => {
                 const data = JSON.parse(message)
@@ -93,7 +93,7 @@ describe('status', () => {
             this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE LIST'])
         })
 
-        it('discard_from_queue', (done) => {
+        it('discard_from_queue', (t, done) => {
             const self = this
 
             outbound.temp_fail_queue = new TimerQueue(10)
@@ -118,7 +118,7 @@ describe('status', () => {
             )
         })
 
-        it('push_email_at_queue', (done) => {
+        it('push_email_at_queue', (t, done) => {
             const timeout = setTimeout(() => {
                 assert.ok(false, 'Timeout')
                 done()

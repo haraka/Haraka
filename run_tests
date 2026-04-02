@@ -1,22 +1,11 @@
 #!/bin/sh
 
 # Files using node:test
-NODE_TEST_FILES="test/*.js test/outbound/*.js test/plugins/queue/smtp_forward.js"
-
-MOCHA_IGNORE="--ignore=test/plugins/queue/smtp_forward.js"
-MOCHA_TESTS="test/plugins/auth test/plugins/queue test/plugins"
+NODE_TEST_FILES="test/*.js test/outbound/*.js test/plugins/*.js test/plugins/auth/*.js test/plugins/queue/*.js"
 
 if [ -n "$1" ]; then
-    case "$1" in
-        test/transaction.js | test/connection.js | test/smtp_client.js | test/tls_socket.js | test/rfc1869.js | test/host_pool.js | test/logger.js | test/endpoint.js | test/plugins.js | test/server.js | test/outbound/* | test/plugins/queue/smtp_forward.js)
-            node --test "$1"
-            ;;
-        *)
-            npx mocha --exit --timeout=4000 "$1"
-            ;;
-    esac
+    node --test "$1"
 else
     # default, run 'em all
-    node --test --test-concurrency=1 $NODE_TEST_FILES && \
-    npx mocha --exit --timeout=4000 $MOCHA_IGNORE $MOCHA_TESTS
+    node --test --test-concurrency=1 $NODE_TEST_FILES
 fi
