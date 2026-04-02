@@ -12,9 +12,7 @@ const mock = require('node:test').mock
 const tls_socket = require('../tls_socket')
 
 test('tls_socket', async (t) => {
-
     await t.test('parse_x509', async (t) => {
-
         await t.test('handles empty string', async () => {
             const res = await tls_socket.parse_x509('')
             assert.deepEqual(res, {})
@@ -53,7 +51,7 @@ test('tls_socket', async (t) => {
     })
 
     await t.test('pluggableStream', async (t) => {
-        // This is a class inside the file, but not exported. 
+        // This is a class inside the file, but not exported.
         // We can test it via createServer or connect if we mock net.
     })
 

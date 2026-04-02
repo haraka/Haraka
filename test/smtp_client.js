@@ -43,11 +43,13 @@ function makeClient(opts = {}) {
 let _origTlsConnect
 function mockTlsConnect(socketFactory) {
     _origTlsConnect = tls_socket.connect
-    tls_socket.connect = socketFactory || (() => {
-        const s = makeSocket()
-        net_utils.add_line_processor(s)
-        return s
-    })
+    tls_socket.connect =
+        socketFactory ||
+        (() => {
+            const s = makeSocket()
+            net_utils.add_line_processor(s)
+            return s
+        })
 }
 function restoreTlsConnect() {
     if (_origTlsConnect) tls_socket.connect = _origTlsConnect
@@ -102,7 +104,9 @@ describe('SMTPClient constructor', () => {
     it('calls setTimeout and setKeepAlive on the socket', () => {
         const socket = makeSocket()
         let timeoutSet = false
-        socket.setTimeout = () => { timeoutSet = true }
+        socket.setTimeout = () => {
+            timeoutSet = true
+        }
         socket.setKeepAlive = () => {}
         new SMTPClient({ host: 'mx.example.com', port: 25, socket })
         assert.ok(timeoutSet)
@@ -137,7 +141,9 @@ describe('SMTPClient line handler', () => {
 
     it('emits greeting EHLO on 220 response', () => {
         let greetingArg = null
-        client.on('greeting', (cmd) => { greetingArg = cmd })
+        client.on('greeting', (cmd) => {
+            greetingArg = cmd
+        })
         client.socket.emit('line', '220 hello server\r\n')
         assert.equal(greetingArg, 'EHLO')
         assert.equal(client.connected, true)
@@ -146,7 +152,9 @@ describe('SMTPClient line handler', () => {
     it('emits helo after ehlo 250', () => {
         client.command = 'ehlo'
         let heloFired = false
-        client.on('helo', () => { heloFired = true })
+        client.on('helo', () => {
+            heloFired = true
+        })
         client.socket.emit('line', '250 OK\r\n')
         assert.ok(heloFired)
     })
@@ -154,7 +162,9 @@ describe('SMTPClient line handler', () => {
     it('falls back to HELO when EHLO is rejected with 5xx', () => {
         client.command = 'ehlo'
         let greetingArg = null
-        client.on('greeting', (cmd) => { greetingArg = cmd })
+        client.on('greeting', (cmd) => {
+            greetingArg = cmd
+        })
         client.socket.emit('line', '502 EHLO not supported\r\n')
         assert.equal(greetingArg, 'HELO')
     })
@@ -177,7 +187,9 @@ describe('SMTPClient line handler', () => {
             const c = makeClient()
             c.command = cmd
             let fired = false
-            c.on(cmd, () => { fired = true })
+            c.on(cmd, () => {
+                fired = true
+            })
             c.socket.emit('line', '250 OK\r\n')
             assert.ok(fired, `expected '${cmd}' event to fire`)
         }
@@ -186,7 +198,9 @@ describe('SMTPClient line handler', () => {
     it('emits quit and destroys on quit 2xx', () => {
         client.command = 'quit'
         let quitFired = false
-        client.on('quit', () => { quitFired = true })
+        client.on('quit', () => {
+            quitFired = true
+        })
         client.socket.emit('line', '221 Bye\r\n')
         assert.ok(quitFired)
         assert.equal(client.state, STATE.DESTROYED)
@@ -195,7 +209,9 @@ describe('SMTPClient line handler', () => {
     it('sets xclient flag and emits xclient on XCLIENT success', () => {
         client.command = 'xclient'
         let xclientArg = null
-        client.on('xclient', (arg) => { xclientArg = arg })
+        client.on('xclient', (arg) => {
+            xclientArg = arg
+        })
         client.socket.emit('line', '220 OK\r\n')
         assert.ok(client.xclient)
         assert.equal(xclientArg, 'EHLO')
@@ -211,7 +227,9 @@ describe('SMTPClient line handler', () => {
         client.command = 'starttls'
         client.tls_options = { servername: 'mx.example.com' }
         let upgradeCalled = false
-        client.socket.upgrade = (opts, cb) => { upgradeCalled = true }
+        client.socket.upgrade = (opts, cb) => {
+            upgradeCalled = true
+        }
         client.socket.emit('line', '220 Go ahead\r\n')
         assert.ok(upgradeCalled)
     })
@@ -220,7 +238,9 @@ describe('SMTPClient line handler', () => {
         client.command = 'mail'
         client.state = STATE.ACTIVE
         let badCode = null
-        client.on('bad_code', (code) => { badCode = code })
+        client.on('bad_code', (code) => {
+            badCode = code
+        })
         client.socket.emit('line', '550 Rejected\r\n')
         assert.equal(badCode, '550')
     })
@@ -229,9 +249,13 @@ describe('SMTPClient line handler', () => {
         client.command = 'mail'
         client.state = STATE.IDLE
         let heloFired = false
-        client.on('helo', () => { heloFired = true }) // shouldn't fire
+        client.on('helo', () => {
+            heloFired = true
+        }) // shouldn't fire
         let badCodeFired = false
-        client.on('bad_code', () => { badCodeFired = true })
+        client.on('bad_code', () => {
+            badCodeFired = true
+        })
         client.socket.emit('line', '550 Rejected\r\n')
         assert.ok(badCodeFired)
         // state is IDLE so it returns early — no further dispatch
@@ -246,10 +270,7 @@ describe('SMTPClient line handler', () => {
 
     it('throws on unknown command', () => {
         client.command = 'unknown_cmd'
-        assert.throws(
-            () => client.socket.emit('line', '250 OK\r\n'),
-            /Unknown command: unknown_cmd/,
-        )
+        assert.throws(() => client.socket.emit('line', '250 OK\r\n'), /Unknown command: unknown_cmd/)
     })
 
     // ── Auth responses ──────────────────────────────────────────────────────
@@ -257,7 +278,9 @@ describe('SMTPClient line handler', () => {
     it('emits auth_username on 334 VXNlcm5hbWU6', () => {
         client.command = 'auth'
         let fired = false
-        client.on('auth_username', () => { fired = true })
+        client.on('auth_username', () => {
+            fired = true
+        })
         client.socket.emit('line', '334 VXNlcm5hbWU6\r\n')
         assert.ok(fired)
     })
@@ -265,7 +288,9 @@ describe('SMTPClient line handler', () => {
     it('emits auth_username on 334 dXNlcm5hbWU6 (workaround)', () => {
         client.command = 'auth'
         let fired = false
-        client.on('auth_username', () => { fired = true })
+        client.on('auth_username', () => {
+            fired = true
+        })
         client.socket.emit('line', '334 dXNlcm5hbWU6\r\n')
         assert.ok(fired)
     })
@@ -273,7 +298,9 @@ describe('SMTPClient line handler', () => {
     it('emits auth_password on 334 UGFzc3dvcmQ6', () => {
         client.command = 'auth'
         let fired = false
-        client.on('auth_password', () => { fired = true })
+        client.on('auth_password', () => {
+            fired = true
+        })
         client.socket.emit('line', '334 UGFzc3dvcmQ6\r\n')
         assert.ok(fired)
     })
@@ -282,7 +309,9 @@ describe('SMTPClient line handler', () => {
         client.command = 'auth'
         client.authenticating = true
         let authFired = false
-        client.on('auth', () => { authFired = true })
+        client.on('auth', () => {
+            authFired = true
+        })
         client.socket.emit('line', '235 Authentication successful\r\n')
         assert.ok(authFired)
         assert.equal(client.authenticated, true)
@@ -293,7 +322,9 @@ describe('SMTPClient line handler', () => {
         client.command = 'auth'
         client.authenticating = false
         let authFired = false
-        client.on('auth', () => { authFired = true })
+        client.on('auth', () => {
+            authFired = true
+        })
         client.socket.emit('line', '250 OK\r\n')
         assert.ok(authFired)
     })
@@ -321,7 +352,9 @@ describe('SMTPClient socket connect event', () => {
     it('replaces timeout with idle_timeout on connect', () => {
         const socket = makeSocket()
         let lastTimeout = null
-        socket.setTimeout = (ms) => { lastTimeout = ms }
+        socket.setTimeout = (ms) => {
+            lastTimeout = ms
+        }
         const client = makeClient({ socket, idle_timeout: 120 })
         socket.emit('connect')
         assert.equal(lastTimeout, 120_000)
@@ -490,7 +523,11 @@ describe('SMTPClient#start_data', () => {
     it('pipes the data stream to the socket', () => {
         const client = makeClient()
         let pipeTarget = null
-        const mockStream = { pipe: (dest, opts) => { pipeTarget = dest } }
+        const mockStream = {
+            pipe: (dest, opts) => {
+                pipeTarget = dest
+            },
+        }
         client.start_data(mockStream)
         assert.equal(pipeTarget, client.socket)
     })
@@ -565,7 +602,9 @@ describe('SMTPClient#upgrade', () => {
     it('delegates to socket.upgrade with tls_options', () => {
         const socket = makeSocket()
         let upgradeOpts = null
-        socket.upgrade = (opts, cb) => { upgradeOpts = opts }
+        socket.upgrade = (opts, cb) => {
+            upgradeOpts = opts
+        }
         const client = makeClient({ socket })
         const opts = { servername: 'secure.example.com', rejectUnauthorized: true }
         client.upgrade(opts)
@@ -574,7 +613,18 @@ describe('SMTPClient#upgrade', () => {
 
     it('logs upgrade details in callback', () => {
         const socket = makeSocket()
-        socket.upgrade = (opts, cb) => cb(true, null, { subject: { CN: 'example.com', O: 'Org' }, issuer: { O: 'CA' }, valid_to: '2030-01-01', fingerprint: 'AA:BB' }, { name: 'AES', version: 'TLSv1.3' })
+        socket.upgrade = (opts, cb) =>
+            cb(
+                true,
+                null,
+                {
+                    subject: { CN: 'example.com', O: 'Org' },
+                    issuer: { O: 'CA' },
+                    valid_to: '2030-01-01',
+                    fingerprint: 'AA:BB',
+                },
+                { name: 'AES', version: 'TLSv1.3' },
+            )
         const client = makeClient({ socket })
         assert.doesNotThrow(() => client.upgrade({ servername: 'example.com' }))
     })
@@ -695,9 +745,7 @@ describe('smtp_client.onCapabilitiesOutbound', () => {
         client.tls_config = { no_tls_hosts: ['10.0.0.0/8'] }
         client.remote_ip = '10.0.0.1'
         const conn = makeConnection()
-        smtp_client_module.onCapabilitiesOutbound(
-            client, false, conn, { enable_tls: true, host: '10.0.0.1' }, () => {},
-        )
+        smtp_client_module.onCapabilitiesOutbound(client, false, conn, { enable_tls: true, host: '10.0.0.1' }, () => {})
         assert.ok(!written.some((l) => l === 'STARTTLS\r\n'))
     })
 })
@@ -892,7 +940,9 @@ describe('smtp_client.get_client_plugin', () => {
     it('error handler calls call_next', (done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             let nextCalled = false
-            client.next = () => { nextCalled = true }
+            client.next = () => {
+                nextCalled = true
+            }
             client.emit('error', 'something went wrong')
             assert.ok(nextCalled)
             done()
@@ -902,7 +952,9 @@ describe('smtp_client.get_client_plugin', () => {
     it('connection-error handler calls call_next', (done) => {
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             let nextCalled = false
-            client.next = () => { nextCalled = true }
+            client.next = () => {
+                nextCalled = true
+            }
             client.emit('connection-error', 'backend unreachable')
             assert.ok(nextCalled)
             done()
@@ -912,7 +964,9 @@ describe('smtp_client.get_client_plugin', () => {
     it('connection-error handler calls host_pool.failed when pool exists', (done) => {
         let failedCalled = false
         conn.server.notes.host_pool = {
-            failed: (host, port) => { failedCalled = true },
+            failed: (host, port) => {
+                failedCalled = true
+            },
         }
         smtp_client_module.get_client_plugin(plugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
             client.emit('connection-error', 'Error: connect ECONNREFUSED')
@@ -978,7 +1032,9 @@ describe('smtp_client.get_client_plugin', () => {
             client.emit('capabilities') // → registers socket.on('secure', on_secured)
 
             let greetingCount = 0
-            client.on('greeting', () => { greetingCount++ })
+            client.on('greeting', () => {
+                greetingCount++
+            })
 
             // First secure event → on_secured sets secured=true and emits greeting
             client.socket.emit('secure')
@@ -1014,14 +1070,19 @@ describe('smtp_client.get_client_plugin', () => {
         const written = []
         const mockPlugin = makePlugin()
 
-        smtp_client_module.get_client_plugin(mockPlugin, conn, { host: 'relay.example.com', port: 25 }, (err, client) => {
-            tls_socket.connect = origConnect
-            // If connected=true and xclient=true, XCLIENT was sent
-            // If connected=true and xclient=false, helo was emitted
-            // Either way connected path was exercised — just verify no crash
-            assert.ok(client instanceof SMTPClient)
-            done()
-        })
+        smtp_client_module.get_client_plugin(
+            mockPlugin,
+            conn,
+            { host: 'relay.example.com', port: 25 },
+            (err, client) => {
+                tls_socket.connect = origConnect
+                // If connected=true and xclient=true, XCLIENT was sent
+                // If connected=true and xclient=false, helo was emitted
+                // Either way connected path was exercised — just verify no crash
+                assert.ok(client instanceof SMTPClient)
+                done()
+            },
+        )
     })
 })
 
@@ -1108,7 +1169,10 @@ describe('smtp_client full session (basic)', () => {
         })
 
         this.client.socket.write = function (line) {
-            if (data.length === 0) { assert.ok(false); return }
+            if (data.length === 0) {
+                assert.ok(false)
+                return
+            }
             const lineStr = Buffer.isBuffer(line) ? line.toString() : line
             assert.equal(`${data.shift()}\r\n`, lineStr)
             if (reading_body && lineStr === '.\r\n') reading_body = false
@@ -1213,7 +1277,10 @@ describe('smtp_client full session (auth)', () => {
         })
 
         this.client.socket.write = function (line) {
-            if (data.length === 0) { assert.ok(false); return }
+            if (data.length === 0) {
+                assert.ok(false)
+                return
+            }
             const lineStr = Buffer.isBuffer(line) ? line.toString() : line
             assert.equal(`${data.shift()}\r\n`, lineStr)
             if (reading_body && lineStr === '.\r\n') reading_body = false
@@ -1244,8 +1311,12 @@ describe('smtp_client', () => {
         const socket = {
             setTimeout: () => {},
             setKeepAlive: () => {},
-            on: (eventName, callback) => { cmds[eventName] = callback },
-            upgrade: (arg) => { upgradeArgs = arg },
+            on: (eventName, callback) => {
+                cmds[eventName] = callback
+            },
+            upgrade: (arg) => {
+                upgradeArgs = arg
+            },
         }
 
         const client = new SMTPClient({ host: 'mx.example.com', port: 25, socket })
@@ -1268,7 +1339,9 @@ describe('smtp_client', () => {
             setKeepAlive: () => {},
             on: () => {},
             upgrade: () => {},
-            write: (arg) => { cmd = arg },
+            write: (arg) => {
+                cmd = arg
+            },
         }
 
         const client = new SMTPClient({ host: 'mx.example.com', port: 25, socket })

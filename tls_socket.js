@@ -481,7 +481,6 @@ exports.getSocketOpts = async (name) => {
     } catch (err) {
         if (err.code !== 'ENOENT') {
             log.error(err.message)
-            log.error(err)
         }
     }
 

@@ -12,21 +12,33 @@ env:
 jobs:
   lint:
     uses: haraka/.github/.github/workflows/lint.yml@master
+    permissions:
+      contents: read
 
   prettier:
     uses: haraka/.github/.github/workflows/prettier.yml@master
+    permissions:
+      contents: write
     with:
       branch: ${{ github.head_ref }}
 
   coverage:
     uses: haraka/.github/.github/workflows/coverage.yml@master
     secrets: inherit
+    permissions:
+      contents: read
 
   ubuntu:
     uses: haraka/.github/.github/workflows/ubuntu.yml@master
+    permissions:
+      contents: read
 
   windows:
     uses: haraka/.github/.github/workflows/windows.yml@master
+    permissions:
+      contents: read
 
   macos:
     uses: haraka/.github/.github/workflows/macos.yml@master
+    permissions:
+      contents: read
