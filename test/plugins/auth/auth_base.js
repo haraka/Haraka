@@ -1,11 +1,12 @@
 'use strict'
 const assert = require('node:assert')
+const { describe, it, beforeEach } = require('node:test')
 
 const { Address } = require('address-rfc2821')
 const fixtures = require('haraka-test-fixtures')
 const utils = require('haraka-utils')
 
-const _set_up = (done) => {
+const _set_up = () => {
     this.plugin = new fixtures.plugin('auth/auth_base')
 
     this.plugin.get_plain_passwd = (user, cb) => {
@@ -15,11 +16,9 @@ const _set_up = (done) => {
 
     this.connection = fixtures.connection.createConnection()
     this.connection.capabilities = null
-
-    done()
 }
 
-const _set_up_2 = (done) => {
+const _set_up_2 = () => {
     this.plugin = new fixtures.plugin('auth/auth_base')
 
     this.plugin.get_plain_passwd = (user, connection, cb) => {
@@ -30,11 +29,9 @@ const _set_up_2 = (done) => {
 
     this.connection = fixtures.connection.createConnection()
     this.connection.capabilities = null
-
-    done()
 }
 
-const _set_up_custom_pwcb_opts = (done) => {
+const _set_up_custom_pwcb_opts = () => {
     this.plugin = new fixtures.plugin('auth/auth_base')
 
     this.plugin.check_plain_passwd = (connection, user, passwd, pwok_cb) => {
@@ -63,15 +60,13 @@ const _set_up_custom_pwcb_opts = (done) => {
         this.connection.notes.resp_strings.push([code, msg])
         return cb()
     }
-
-    done()
 }
 
 describe('auth_base', () => {
     describe('hook_capabilities', () => {
         beforeEach(_set_up)
 
-        it('no TLS, no auth', (done) => {
+        it('no TLS, no auth', (t, done) => {
             this.plugin.hook_capabilities((rc, msg) => {
                 assert.equal(undefined, rc)
                 assert.equal(undefined, msg)
@@ -80,7 +75,7 @@ describe('auth_base', () => {
             }, this.connection)
         })
 
-        it('with TLS, auth is offered', (done) => {
+        it('with TLS, auth is offered', (t, done) => {
             this.connection.tls.enabled = true
             this.connection.capabilities = []
             this.plugin.hook_capabilities((rc, msg) => {
@@ -97,13 +92,13 @@ describe('auth_base', () => {
     describe('get_plain_passwd', () => {
         beforeEach(_set_up)
 
-        it('get_plain_passwd, no result', (done) => {
+        it('get_plain_passwd, no result', (t, done) => {
             this.plugin.get_plain_passwd('user', (pass) => {
                 assert.equal(pass, null)
                 done()
             })
         })
-        it('get_plain_passwd, test user', (done) => {
+        it('get_plain_passwd, test user', (t, done) => {
             this.plugin.get_plain_passwd('test', (pass) => {
                 assert.equal(pass, 'testpass')
                 done()
@@ -114,21 +109,21 @@ describe('auth_base', () => {
     describe('check_plain_passwd', () => {
         beforeEach(_set_up)
 
-        it('valid password', (done) => {
+        it('valid password', (t, done) => {
             this.plugin.check_plain_passwd(this.connection, 'test', 'testpass', (pass) => {
                 assert.equal(pass, true)
                 done()
             })
         })
 
-        it('wrong password', (done) => {
+        it('wrong password', (t, done) => {
             this.plugin.check_plain_passwd(this.connection, 'test', 'test1pass', (pass) => {
                 assert.equal(pass, false)
                 done()
             })
         })
 
-        it('null password', (done) => {
+        it('null password', (t, done) => {
             this.plugin.check_plain_passwd(this.connection, 'test', null, (pass) => {
                 assert.equal(pass, false)
                 done()
@@ -139,7 +134,7 @@ describe('auth_base', () => {
     describe('select_auth_method', () => {
         beforeEach(_set_up)
 
-        it('no auth methods yield no result', (done) => {
+        it('no auth methods yield no result', (t, done) => {
             this.plugin.select_auth_method(
                 (code) => {
                     assert.equal(code, null)
@@ -151,7 +146,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('invalid AUTH method, no result', (done) => {
+        it('invalid AUTH method, no result', (t, done) => {
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN', 'CRAM-MD5']
             this.plugin.select_auth_method(
                 (code) => {
@@ -164,7 +159,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('valid AUTH method, valid attempt', (done) => {
+        it('valid AUTH method, valid attempt', (t, done) => {
             const method = `PLAIN ${utils.base64('discard\0test\0testpass')}`
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN']
             this.plugin.select_auth_method(
@@ -182,7 +177,7 @@ describe('auth_base', () => {
     describe('auth_plain', () => {
         beforeEach(_set_up)
 
-        it('params type=string returns OK', (done) => {
+        it('params type=string returns OK', (t, done) => {
             this.plugin.auth_plain(
                 (rc) => {
                     assert.equal(rc, OK)
@@ -194,7 +189,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('params type=empty array, returns OK', (done) => {
+        it('params type=empty array, returns OK', (t, done) => {
             this.plugin.auth_plain(
                 (rc) => {
                     assert.equal(rc, OK)
@@ -206,7 +201,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('params type=array, successful auth', (done) => {
+        it('params type=array, successful auth', (t, done) => {
             const method = utils.base64('discard\0test\0testpass')
             this.plugin.auth_plain(
                 (rc) => {
@@ -219,7 +214,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('params type=with two line login', (done) => {
+        it('params type=with two line login', (t, done) => {
             this.plugin.auth_plain(
                 (rc) => {
                     assert.equal(this.connection.notes.auth_plain_asked_login, true)
@@ -235,7 +230,7 @@ describe('auth_base', () => {
     describe('check_user', () => {
         beforeEach(_set_up_2)
 
-        it('bad auth', (done) => {
+        it('bad auth', (t, done) => {
             const credentials = ['matt', 'ttam']
             this.plugin.check_user(
                 (code) => {
@@ -250,7 +245,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('good auth', (done) => {
+        it('good auth', (t, done) => {
             const credentials = ['test', 'testpass']
             this.plugin.check_user(
                 (code) => {
@@ -269,7 +264,7 @@ describe('auth_base', () => {
     describe('check_user_custom_opts', () => {
         beforeEach(_set_up_custom_pwcb_opts)
 
-        it('legacyok_nomessage', (done) => {
+        it('legacyok_nomessage', (t, done) => {
             this.plugin.check_user(
                 (code, msg) => {
                     assert.equal(code, OK)
@@ -283,7 +278,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('legacyfail_nomessage', (done) => {
+        it('legacyfail_nomessage', (t, done) => {
             this.plugin.check_user(
                 (code, msg) => {
                     assert.equal(code, OK)
@@ -297,7 +292,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('legacyok_message', (done) => {
+        it('legacyok_message', (t, done) => {
             this.plugin.check_user(
                 (code, msg) => {
                     assert.equal(code, OK)
@@ -311,7 +306,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('legacyfail_message', (done) => {
+        it('legacyfail_message', (t, done) => {
             this.plugin.check_user(
                 (code, msg) => {
                     assert.equal(code, OK)
@@ -325,7 +320,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('newok', (done) => {
+        it('newok', (t, done) => {
             this.plugin.check_user(
                 (code, msg) => {
                     assert.equal(code, OK)
@@ -339,7 +334,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('newfail', (done) => {
+        it('newfail', (t, done) => {
             this.plugin.check_user(
                 (code, msg) => {
                     assert.equal(code, OK)
@@ -357,7 +352,7 @@ describe('auth_base', () => {
     describe('auth_notes_are_set', () => {
         beforeEach(_set_up_2)
 
-        it('bad auth: no notes should be set', (done) => {
+        it('bad auth: no notes should be set', (t, done) => {
             const credentials = ['matt', 'ttam']
             this.plugin.check_user(
                 (code) => {
@@ -371,7 +366,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('good auth: dont store password', (done) => {
+        it('good auth: dont store password', (t, done) => {
             const creds = ['test', 'testpass']
             this.plugin.blankout_password = true
             this.plugin.check_user(
@@ -386,7 +381,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('good auth: store password (default)', (done) => {
+        it('good auth: store password (default)', (t, done) => {
             const creds = ['test', 'testpass']
             this.plugin.check_user(
                 (code) => {
@@ -404,7 +399,7 @@ describe('auth_base', () => {
     describe('hook_unrecognized_command', () => {
         beforeEach(_set_up)
 
-        it('AUTH type FOO', (done) => {
+        it('AUTH type FOO', (t, done) => {
             const params = ['AUTH', 'FOO']
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN']
             this.plugin.hook_unrecognized_command(
@@ -418,7 +413,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('AUTH PLAIN', (done) => {
+        it('AUTH PLAIN', (t, done) => {
             const params = ['AUTH', 'PLAIN', utils.base64('discard\0test\0testpass')]
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN']
             this.plugin.hook_unrecognized_command(
@@ -432,7 +427,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('AUTH PLAIN, authenticating', (done) => {
+        it('AUTH PLAIN, authenticating', (t, done) => {
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN']
             this.connection.notes.authenticating = true
             this.connection.notes.auth_method = 'PLAIN'
@@ -451,7 +446,7 @@ describe('auth_base', () => {
     describe('auth_login', () => {
         beforeEach(_set_up)
 
-        it('AUTH LOGIN', (done) => {
+        it('AUTH LOGIN', (t, done) => {
             const params = ['AUTH', 'LOGIN']
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN']
             this.plugin.hook_unrecognized_command(
@@ -484,7 +479,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('AUTH LOGIN <username>', (done) => {
+        it('AUTH LOGIN <username>', (t, done) => {
             const params = ['AUTH', 'LOGIN', utils.base64('test')]
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN']
             this.plugin.hook_unrecognized_command(
@@ -509,7 +504,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('AUTH LOGIN <username>, bad protocol', (done) => {
+        it('AUTH LOGIN <username>, bad protocol', (t, done) => {
             const params = ['AUTH', 'LOGIN', utils.base64('test')]
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN']
             this.plugin.hook_unrecognized_command(
@@ -535,7 +530,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('AUTH LOGIN, reauthentication', (done) => {
+        it('AUTH LOGIN, reauthentication', (t, done) => {
             const params = ['AUTH', 'LOGIN', utils.base64('test')]
             this.connection.notes.allowed_auth_methods = ['PLAIN', 'LOGIN']
             this.plugin.hook_unrecognized_command(
@@ -583,7 +578,7 @@ describe('auth_base', () => {
     describe('constrain_sender', () => {
         beforeEach(_set_up)
 
-        it('constrain_sender, domain match', (done) => {
+        it('constrain_sender, domain match', (t, done) => {
             this.mfrom = new Address('user@example.com')
             this.connection.results.add({ name: 'auth' }, { user: 'user@example.com' })
             this.plugin.constrain_sender(
@@ -596,7 +591,7 @@ describe('auth_base', () => {
             )
         })
 
-        it('constrain_sender, domain mismatch', (done) => {
+        it('constrain_sender, domain mismatch', (t, done) => {
             this.mfrom = new Address('user@example.net')
             this.connection.results.add({ name: 'auth' }, { user: 'user@example.com' })
             this.plugin.constrain_sender(
@@ -609,7 +604,7 @@ describe('auth_base', () => {
                 [this.mfrom],
             )
         })
-        it('constrain_sender, no domain', (done) => {
+        it('constrain_sender, no domain', (t, done) => {
             this.mfrom = new Address('user@example.com')
             this.connection.results.add({ name: 'auth' }, { user: 'user' })
             this.plugin.constrain_sender(

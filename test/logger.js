@@ -18,55 +18,23 @@ describe('logger', () => {
     })
 
     describe('log', () => {
-        it('log', () => {
-            this.logger.deferred_logs = []
-            assert.equal(0, this.logger.deferred_logs.length)
-            assert.ok(this.logger.log('WARN', 'test warning'))
-            assert.equal(1, this.logger.deferred_logs.length)
-        })
+        const formats = ['DEFAULT', 'LOGFMT', 'JSON']
 
-        it('log, w/deferred', () => {
-            this.logger.plugins = { plugin_list: true }
-            this.logger.deferred_logs.push({
-                level: 'INFO',
-                data: 'log test info',
+        for (const fmt of formats) {
+            it(`log in ${fmt} format`, () => {
+                this.logger.deferred_logs = []
+                this.logger.format = this.logger.formats[fmt]
+                assert.ok(this.logger.log('WARN', 'test warning'))
+                assert.equal(this.logger.deferred_logs.length, 1)
             })
-            assert.ok(this.logger.log('INFO', 'another test info'))
-        })
 
-        it('log in logfmt', () => {
-            this.logger.deferred_logs = []
-            this.logger.format = this.logger.formats.LOGFMT
-            assert.equal(0, this.logger.deferred_logs.length)
-            assert.ok(this.logger.log('WARN', 'test warning'))
-            assert.equal(1, this.logger.deferred_logs.length)
-        })
-
-        it('log in logfmt w/deferred', () => {
-            this.logger.plugins = { plugin_list: true }
-            this.logger.deferred_logs.push({
-                level: 'INFO',
-                data: 'log test info',
+            it(`log in ${fmt} format w/deferred`, () => {
+                this.logger.format = this.logger.formats[fmt]
+                this.logger.plugins = { plugin_list: true }
+                this.logger.deferred_logs.push({ level: 'INFO', data: 'log test info' })
+                assert.ok(this.logger.log('INFO', 'another test info'))
             })
-            assert.ok(this.logger.log('INFO', 'another test info'))
-        })
-
-        it('log in json', () => {
-            this.logger.deferred_logs = []
-            this.logger.format = this.logger.formats.JSON
-            assert.equal(0, this.logger.deferred_logs.length)
-            assert.ok(this.logger.log('WARN', 'test warning'))
-            assert.equal(1, this.logger.deferred_logs.length)
-        })
-
-        it('log in json w/deferred', () => {
-            this.logger.plugins = { plugin_list: true }
-            this.logger.deferred_logs.push({
-                level: 'INFO',
-                data: 'log test info',
-            })
-            assert.ok(this.logger.log('INFO', 'another test info'))
-        })
+        }
     })
 
     describe('level', () => {
@@ -77,68 +45,40 @@ describe('logger', () => {
     })
 
     describe('set_format', () => {
-        it('set format to DEFAULT', () => {
-            this.logger.format = ''
-            this.logger.set_format('DEFAULT')
-            assert.equal(this.logger.format, this.logger.formats.DEFAULT)
-        })
-
-        it('set format to LOGFMT', () => {
-            this.logger.format = ''
-            this.logger.set_format('LOGFMT')
-            assert.equal(this.logger.format, this.logger.formats.LOGFMT)
-        })
-
-        it('set format to JSON', () => {
-            this.logger.format = ''
-            this.logger.set_format('JSON')
-            assert.equal(this.logger.format, this.logger.formats.JSON)
-        })
-
-        it('set format to DEFAULT if empty', () => {
-            this.logger.format = ''
-            this.logger.set_format('')
-            assert.equal(this.logger.format, this.logger.formats.DEFAULT)
-        })
-
-        it('set format to DEFAULT if lowercase', () => {
-            this.logger.format = ''
-            this.logger.set_format('default')
-            assert.equal(this.logger.format, this.logger.formats.DEFAULT)
-        })
-
-        it('set format to DEFAULT if invalid', () => {
-            this.logger.format = ''
-            this.logger.set_format('invalid')
-            assert.equal(this.logger.format, this.logger.formats.DEFAULT)
-        })
+        // [input, expected format key]
+        const cases = [
+            ['DEFAULT', 'DEFAULT'],
+            ['LOGFMT', 'LOGFMT'],
+            ['JSON', 'JSON'],
+            ['', 'DEFAULT'], // empty → DEFAULT
+            ['default', 'DEFAULT'], // case-insensitive → DEFAULT
+            ['invalid', 'DEFAULT'], // unknown → DEFAULT
+        ]
+        for (const [input, expectedKey] of cases) {
+            it(`set_format(${JSON.stringify(input)}) → ${expectedKey}`, () => {
+                this.logger.format = ''
+                this.logger.set_format(input)
+                assert.equal(this.logger.format, this.logger.formats[expectedKey])
+            })
+        }
     })
 
     describe('set_loglevel', () => {
-        it('set loglevel to LOGINFO', () => {
-            this.logger.set_loglevel('LOGINFO')
-            assert.equal(this.logger.loglevel, this.logger.levels.LOGINFO)
-        })
-
-        it('set loglevel to INFO', () => {
-            this.logger.set_loglevel('INFO')
-            assert.equal(this.logger.loglevel, this.logger.levels.INFO)
-        })
-
-        it('set loglevel to EMERG', () => {
-            this.logger.set_loglevel('emerg')
-            assert.equal(this.logger.loglevel, this.logger.levels.EMERG)
-        })
-
-        it('set loglevel to 6', () => {
-            this.logger.set_loglevel(6)
-            assert.equal(this.logger.loglevel, 6)
-        })
-
-        it('set loglevel to WARN if invalid', () => {
-            this.logger.set_loglevel('invalid')
-            assert.equal(this.logger.loglevel, this.logger.levels.WARN)
-        })
+        // [input, expected level key or null for numeric assertion]
+        const cases = [
+            ['LOGINFO', 'LOGINFO'],
+            ['INFO', 'INFO'],
+            ['emerg', 'EMERG'], // case-insensitive
+            [6, null], // numeric passthrough
+            ['invalid', 'WARN'], // unknown → WARN
+        ]
+        for (const [input, expectedKey] of cases) {
+            it(`set_loglevel(${JSON.stringify(input)}) → ${expectedKey ?? input}`, () => {
+                this.logger.set_loglevel(input)
+                const expected = expectedKey ? this.logger.levels[expectedKey] : input
+                assert.equal(this.logger.loglevel, expected)
+            })
+        }
     })
 
     describe('set_timestamps', () => {
@@ -221,40 +161,38 @@ describe('logger', () => {
     })
 
     describe('log_if_level', () => {
-        it('log_if_level is a function', () => {
-            assert.ok('function' === typeof this.logger.log_if_level)
+        it('is a function', () => {
+            assert.equal(typeof this.logger.log_if_level, 'function')
         })
 
-        it('log_if_level test log entry', () => {
+        it('returns a logging function', () => {
             this.logger.loglevel = 9
             const f = this.logger.log_if_level('INFO', 'LOGINFO')
-            assert.ok(f)
-            assert.ok('function' === typeof f)
-            assert.ok(f('test info message'))
-            assert.equal(1, this.logger.deferred_logs.length)
-            // console.log(this.logger.deferred_logs[0]);
-            assert.equal('INFO', this.logger.deferred_logs[0].level)
+            assert.equal(typeof f, 'function')
         })
 
-        it('log_if_level null case', () => {
-            this.logger.loglevel = 9
-            const f = this.logger.log_if_level('INFO', 'LOGINFO')
-            assert.ok(f(null))
-            assert.equal(2, this.logger.deferred_logs.length)
-        })
+        // Each of these runs independently with a fresh deferred_logs
+        for (const [label, msg] of [
+            ['string', 'test info message'],
+            ['null', null],
+            ['false', false],
+            ['0 (falsy number)', 0],
+        ]) {
+            it(`logs ${label} value and appends to deferred_logs`, () => {
+                this.logger.loglevel = 9
+                this.logger.deferred_logs = []
+                const f = this.logger.log_if_level('INFO', 'LOGINFO')
+                assert.ok(f(msg))
+                assert.equal(this.logger.deferred_logs.length, 1)
+            })
+        }
 
-        it('log_if_level false', () => {
+        it('records correct level in deferred log entry', () => {
             this.logger.loglevel = 9
+            this.logger.deferred_logs = []
             const f = this.logger.log_if_level('INFO', 'LOGINFO')
-            assert.ok(f(false))
-            assert.equal(3, this.logger.deferred_logs.length)
-        })
-
-        it('log_if_level 0', () => {
-            this.logger.loglevel = 9
-            const f = this.logger.log_if_level('INFO', 'LOGINFO')
-            assert.ok(f(0))
-            assert.equal(4, this.logger.deferred_logs.length)
+            f('test info message')
+            assert.equal(this.logger.deferred_logs[0].level, 'INFO')
         })
     })
 

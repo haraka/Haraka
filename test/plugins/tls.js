@@ -1,12 +1,13 @@
 'use strict'
 
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
 const path = require('node:path')
+const { describe, it, beforeEach } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
 const Plugin = fixtures.plugin
 
-const _set_up = (done) => {
+const _set_up = () => {
     this.plugin = new Plugin('tls')
     this.connection = new fixtures.connection.createConnection()
 
@@ -15,28 +16,17 @@ const _set_up = (done) => {
     this.plugin.net_utils.config = this.plugin.net_utils.config.module_config(path.resolve('test'))
 
     this.plugin.tls_opts = {}
-    done()
 }
 
 describe('tls', () => {
     beforeEach(_set_up)
 
-    it('has function register', () => {
-        assert.ok(this.plugin)
-        assert.equal('function', typeof this.plugin.register)
-    })
-
-    it('has function upgrade_connection', () => {
-        assert.equal('function', typeof this.plugin.upgrade_connection)
-    })
-
-    it('has function advertise_starttls', () => {
-        assert.equal('function', typeof this.plugin.advertise_starttls)
-    })
-
-    it('has function emit_upgrade_msg', () => {
-        assert.equal('function', typeof this.plugin.emit_upgrade_msg)
-    })
+    const methods = ['register', 'upgrade_connection', 'advertise_starttls', 'emit_upgrade_msg']
+    for (const method of methods) {
+        it(`has function ${method}`, () => {
+            assert.equal(typeof this.plugin[method], 'function')
+        })
+    }
 
     describe('register', () => {
         it('with certs, should register hooks', () => {

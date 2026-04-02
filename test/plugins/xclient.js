@@ -1,137 +1,102 @@
 'use strict'
 
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
+const { describe, it, beforeEach } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
 
-const _set_up = (done) => {
+const _set_up = () => {
     this.plugin = new fixtures.plugin('xclient')
     this.connection = fixtures.connection.createConnection()
     this.connection.capabilities = []
-    done()
 }
 
 describe('xclient', () => {
     beforeEach(_set_up)
 
     describe('hook_capabilities', () => {
-        it('adds XCLIENT capability for allowed IP (127.0.0.1)', (done) => {
-            this.connection.remote.ip = '127.0.0.1'
-            this.plugin.hook_capabilities(() => {
-                assert.ok(
-                    this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
-                    'XCLIENT capability added',
-                )
-                done()
-            }, this.connection)
-        })
+        const cases = [
+            { desc: 'adds XCLIENT for loopback IPv4 (127.0.0.1)', ip: '127.0.0.1', expected: true },
+            { desc: 'adds XCLIENT for loopback IPv6 (::1)', ip: '::1', expected: true },
+            { desc: 'does not add XCLIENT for non-loopback IP', ip: '10.0.0.1', expected: false },
+        ]
 
-        it('adds XCLIENT capability for allowed IP (::1)', (done) => {
-            this.connection.remote.ip = '::1'
-            this.plugin.hook_capabilities(() => {
-                assert.ok(
-                    this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
-                    'XCLIENT capability added for IPv6 loopback',
-                )
-                done()
-            }, this.connection)
-        })
-
-        it('does not add XCLIENT capability for disallowed IP', (done) => {
-            this.connection.remote.ip = '10.0.0.1'
-            this.plugin.hook_capabilities(() => {
-                assert.ok(
-                    !this.connection.capabilities.some((c) => c.startsWith('XCLIENT')),
-                    'XCLIENT capability not added',
-                )
-                done()
-            }, this.connection)
-        })
+        for (const { desc, ip, expected } of cases) {
+            it(desc, async () => {
+                this.connection.remote.ip = ip
+                await new Promise((resolve) => this.plugin.hook_capabilities(resolve, this.connection))
+                const hasXclient = this.connection.capabilities.some((c) => c.startsWith('XCLIENT'))
+                assert.equal(hasXclient, expected)
+            })
+        }
     })
 
     describe('hook_unrecognized_command', () => {
-        it('ignores non-XCLIENT commands', (done) => {
-            this.plugin.hook_unrecognized_command(
-                (code) => {
-                    assert.equal(code, undefined, 'next called with no args')
-                    done()
-                },
-                this.connection,
-                ['EHLO', 'example.com'],
-            )
-        })
+        const callHook = (params) =>
+            new Promise((resolve) => {
+                this.plugin.hook_unrecognized_command((code) => resolve(code), this.connection, params)
+            })
 
-        it('denies XCLIENT when transaction is in progress', (done) => {
-            this.connection.init_transaction()
-            this.plugin.hook_unrecognized_command(
-                (code) => {
-                    assert.equal(code, DENY, 'denied with transaction in progress')
-                    done()
+        const cases = [
+            {
+                desc: 'ignores non-XCLIENT commands',
+                params: ['EHLO', 'example.com'],
+                check: (code) => assert.equal(code, undefined),
+            },
+            {
+                desc: 'denies XCLIENT when transaction is in progress',
+                setup: () => this.connection.init_transaction(),
+                params: ['XCLIENT', 'ADDR=127.0.0.1'],
+                check: (code) => assert.equal(code, DENY),
+            },
+            {
+                desc: 'denies XCLIENT from disallowed IP',
+                setup: () => {
+                    this.connection.remote.ip = '10.0.0.1'
                 },
-                this.connection,
-                ['XCLIENT', 'ADDR=127.0.0.1'],
-            )
-        })
+                params: ['XCLIENT', 'ADDR=127.0.0.2'],
+                check: (code) => assert.equal(code, DENY),
+            },
+            {
+                desc: 'denies XCLIENT with no valid IP address',
+                setup: () => {
+                    this.connection.remote.ip = '127.0.0.1'
+                },
+                params: ['XCLIENT', 'NAME=example.com'],
+                check: (code) => assert.equal(code, DENY),
+            },
+            {
+                desc: 'accepts XCLIENT with valid IPv4 ADDR from allowed host',
+                setup: () => {
+                    this.connection.remote.ip = '127.0.0.1'
+                },
+                params: ['XCLIENT', 'ADDR=1.2.3.4'],
+                check: (code) => assert.ok(code === NEXT_HOOK || code === undefined),
+            },
+            {
+                desc: 'accepts XCLIENT with valid IPv6 ADDR from allowed host',
+                setup: () => {
+                    this.connection.remote.ip = '127.0.0.1'
+                },
+                params: ['XCLIENT', 'ADDR=IPV6:2001:db8::1'],
+                check: (code) => assert.ok(code === NEXT_HOOK || code === undefined),
+            },
+            {
+                desc: 'accepts XCLIENT with ADDR and NAME, skipping rdns lookup',
+                setup: () => {
+                    this.connection.remote.ip = '127.0.0.1'
+                },
+                params: ['XCLIENT', 'ADDR=1.2.3.4 NAME=example.com'],
+                check: (code) => assert.equal(code, NEXT_HOOK),
+            },
+        ]
 
-        it('denies XCLIENT from disallowed IP', (done) => {
-            this.connection.remote.ip = '10.0.0.1'
-            this.plugin.hook_unrecognized_command(
-                (code) => {
-                    assert.equal(code, DENY, 'denied from non-allowed IP')
-                    done()
-                },
-                this.connection,
-                ['XCLIENT', 'ADDR=127.0.0.2'],
-            )
-        })
-
-        it('denies XCLIENT with no valid IP address', (done) => {
-            this.connection.remote.ip = '127.0.0.1'
-            this.plugin.hook_unrecognized_command(
-                (code) => {
-                    assert.equal(code, DENY, 'denied when no valid ADDR')
-                    done()
-                },
-                this.connection,
-                ['XCLIENT', 'NAME=example.com'],
-            )
-        })
-
-        it('accepts XCLIENT with valid IPv4 ADDR from allowed host', (done) => {
-            this.connection.remote.ip = '127.0.0.1'
-            this.plugin.hook_unrecognized_command(
-                (code) => {
-                    // NEXT_HOOK or undefined (next called) means accepted
-                    assert.ok(code === NEXT_HOOK || code === undefined, 'accepted valid XCLIENT')
-                    done()
-                },
-                this.connection,
-                ['XCLIENT', 'ADDR=1.2.3.4'],
-            )
-        })
-
-        it('accepts XCLIENT with valid IPv6 ADDR from allowed host', (done) => {
-            this.connection.remote.ip = '127.0.0.1'
-            this.plugin.hook_unrecognized_command(
-                (code) => {
-                    assert.ok(code === NEXT_HOOK || code === undefined, 'accepted valid IPv6 XCLIENT')
-                    done()
-                },
-                this.connection,
-                ['XCLIENT', 'ADDR=IPV6:2001:db8::1'],
-            )
-        })
-
-        it('accepts XCLIENT with ADDR and NAME, skipping rdns lookup', (done) => {
-            this.connection.remote.ip = '127.0.0.1'
-            this.plugin.hook_unrecognized_command(
-                (code) => {
-                    assert.equal(code, NEXT_HOOK, 'jumps to connect hook when NAME provided')
-                    done()
-                },
-                this.connection,
-                ['XCLIENT', 'ADDR=1.2.3.4 NAME=example.com'],
-            )
-        })
+        for (const { desc, setup, params, check } of cases) {
+            it(desc, async () => {
+                if (setup) setup()
+                const code = await callHook(params)
+                check(code)
+            })
+        }
     })
 })

@@ -1,22 +1,22 @@
 'use strict'
 
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
+const { describe, it, beforeEach } = require('node:test')
 
 const { Address } = require('address-rfc2821')
 const fixtures = require('haraka-test-fixtures')
 
-const _set_up = (done) => {
+const _set_up = () => {
     this.plugin = new fixtures.plugin('record_envelope_addresses')
     this.connection = fixtures.connection.createConnection()
     this.connection.init_transaction()
-    done()
 }
 
 describe('record_envelope_addresses', () => {
     beforeEach(_set_up)
 
     describe('hook_mail', () => {
-        it('adds X-Envelope-From header from MAIL FROM address', (done) => {
+        it('adds X-Envelope-From header from MAIL FROM address', (t, done) => {
             const addr = new Address('<sender@example.com>')
             this.plugin.hook_mail(
                 () => {
@@ -30,7 +30,7 @@ describe('record_envelope_addresses', () => {
             )
         })
 
-        it('does not throw when connection has no transaction', (done) => {
+        it('does not throw when connection has no transaction', (t, done) => {
             this.connection.transaction = null
             const addr = new Address('<sender@example.com>')
             this.plugin.hook_mail(
@@ -45,7 +45,7 @@ describe('record_envelope_addresses', () => {
     })
 
     describe('hook_rcpt', () => {
-        it('adds X-Envelope-To header from RCPT TO address', (done) => {
+        it('adds X-Envelope-To header from RCPT TO address', (t, done) => {
             const addr = new Address('<rcpt@example.com>')
             this.plugin.hook_rcpt(
                 () => {
@@ -59,7 +59,7 @@ describe('record_envelope_addresses', () => {
             )
         })
 
-        it('adds X-Envelope-To header for each recipient', (done) => {
+        it('adds X-Envelope-To header for each recipient', (t, done) => {
             const addr1 = new Address('<one@example.com>')
             const addr2 = new Address('<two@example.com>')
             let calls = 0
@@ -77,7 +77,7 @@ describe('record_envelope_addresses', () => {
             this.plugin.hook_rcpt(next, this.connection, [addr2])
         })
 
-        it('does not throw when connection has no transaction', (done) => {
+        it('does not throw when connection has no transaction', (t, done) => {
             this.connection.transaction = null
             const addr = new Address('<rcpt@example.com>')
             this.plugin.hook_rcpt(
