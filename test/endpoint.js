@@ -1,3 +1,6 @@
+'use strict'
+
+const { describe, it, beforeEach, afterEach } = require('node:test')
 const assert = require('node:assert')
 
 const mock = require('mock-require')
@@ -39,7 +42,7 @@ describe('endpoint', () => {
     })
 
     describe('bind()', () => {
-        beforeEach((done) => {
+        beforeEach(() => {
             // Mock filesystem and log server + fs method calls
             const modes = (this.modes = {})
             const log = (this.log = [])
@@ -63,12 +66,10 @@ describe('endpoint', () => {
 
             mock('node:fs/promises', this.mockfs)
             this.endpoint = mock.reRequire('../endpoint')
-            done()
         })
 
-        afterEach((done) => {
+        afterEach(() => {
             mock.stop('node:fs/promises')
-            done()
         })
 
         it('IP socket', async () => {

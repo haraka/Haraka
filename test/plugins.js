@@ -2,7 +2,8 @@
 
 process.env.WITHOUT_CONFIG_CACHE = true
 
-const assert = require('node:assert')
+const { describe, it, beforeEach, afterEach } = require('node:test')
+const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 
@@ -49,7 +50,7 @@ describe('plugin', () => {
 
     describe('get_timeout', () => {
         const toPath = path.resolve('config', `${piName}.timeout`)
-        it('0s', (done) => {
+        it('0s', (t, done) => {
             fs.writeFile(toPath, '0', () => {
                 this.plugin = new plugin.Plugin(piName)
                 assert.equal(this.plugin.timeout, 0)
@@ -57,7 +58,7 @@ describe('plugin', () => {
             })
         })
 
-        it('3s', (done) => {
+        it('3s', (t, done) => {
             fs.writeFile(toPath, '3', () => {
                 this.plugin = new plugin.Plugin(piName)
                 assert.equal(this.plugin.timeout, 3)
@@ -65,7 +66,7 @@ describe('plugin', () => {
             })
         })
 
-        it('60s', (done) => {
+        it('60s', (t, done) => {
             fs.writeFile(toPath, '60', () => {
                 this.plugin = new plugin.Plugin(piName)
                 assert.equal(this.plugin.timeout, 60)
@@ -73,7 +74,7 @@ describe('plugin', () => {
             })
         })
 
-        it('30s default (overrides NaN)', (done) => {
+        it('30s default (overrides NaN)', (t, done) => {
             fs.writeFile(toPath, 'apple', () => {
                 this.plugin = new plugin.Plugin(piName)
                 assert.equal(this.plugin.timeout, 30)
@@ -83,14 +84,12 @@ describe('plugin', () => {
     })
 
     describe('plugin_paths', () => {
-        beforeEach((done) => {
+        beforeEach(() => {
             delete process.env.HARAKA
-            done()
         })
 
-        afterEach((done) => {
+        afterEach(() => {
             delete process.env.HARAKA
-            done()
         })
 
         it('CORE plugin: (tls)', () => {
@@ -190,14 +189,12 @@ describe('plugin', () => {
     })
 
     describe('plugin_config', () => {
-        beforeEach((done) => {
+        beforeEach(() => {
             delete process.env.HARAKA
-            done()
         })
 
-        afterEach((done) => {
+        afterEach(() => {
             delete process.env.HARAKA
-            done()
         })
 
         it('CORE plugin: (tls)', () => {
