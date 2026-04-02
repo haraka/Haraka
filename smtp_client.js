@@ -210,6 +210,7 @@ class SMTPClient extends events.EventEmitter {
         data.pipe(this.socket, {
             dot_stuffed: false,
             ending_dot: true,
+            end: false,
         })
     }
 
