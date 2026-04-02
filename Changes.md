@@ -8,17 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 #### Changed
 
-- refactor server.js, use smtp_client for all tests (#3548)
-- test runner is now node --test (#3547)
-- add tests for tls_socket & smtp_client (#3546)
-
-
+- fix(smtp_forward): update AUTH to match WHATWG URL API #3546
 - fix(smtp_forward): queue hook now calls next() after delivery
   — see haraka/message-stream#17
-- tests: convert test suite to node:test runner #3547
-- fix(smtp_forward): update AUTH to match WHATWG URL API #3546
+- deps(all): bump versions to latest
+- test: refactor server, use smtp_client for all tests #3548
+- test runner is now node --test #3547
+- test(smtp_client, tls_socket, smtp_forward): 95% coverage #3546
 - ci: added explicit minimal permissions
-- tests(smtp_client, tls_socket, smtp_forward): 95% coverage #3546
 
 ### [3.1.4] - 2026-03-30
 
