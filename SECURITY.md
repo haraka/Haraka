@@ -4,10 +4,10 @@
 
 Security fixes are applied to the **current release** only. We encourage all users to run the latest version.
 
-| Version | Supported |
-| ------- | --------- |
-| 3.1.x (latest) | ✅ |
-| < 3.1 | ❌ |
+| Version        | Supported |
+| -------------- | --------- |
+| 3.1.x (latest) | ✅        |
+| < 3.1          | ❌        |
 
 ## Reporting a Vulnerability
 
