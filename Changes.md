@@ -4,14 +4,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- dep(npid, sockaddr): removed
-- package.json: remove optional lesser used plugins
+- fix(outbound): yield before delivery attempts #3552
+- test(outbound,conn,endpoint,server,tls_socket): added tests #3552
+- dep(ocsp): replaced fork with local (more maintained) fork #3550
+- dep(npid, sockaddr): removed #3550
+- dep(daemon): removed, unmaintained #3550
+- doc(SECURITY): added #3550
+- package.json: remove optional lesser used plugins #3550
   - avg, elasticsearch, esets, p0f, recip-routes, watch
 
-
 ### [3.1.5] - 2026-04-02
-
-#### Changed
 
 - fix(smtp_forward): update AUTH to match WHATWG URL API #3546
 - fix(smtp_forward): queue hook now calls next() after delivery

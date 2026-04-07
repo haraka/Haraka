@@ -6,6 +6,7 @@ const { createHmac } = require('node:crypto')
 const net = require('node:net')
 const path = require('node:path')
 const tls = require('node:tls')
+const constants = require('haraka-constants')
 
 const endpoint = require('../endpoint')
 const message = require('haraka-email-message')
@@ -251,6 +252,177 @@ describe('server', () => {
 
         it('gets a fs path', () => {
             assert.ok(this.server.get_http_docroot())
+        })
+    })
+
+    describe('lifecycle helpers', () => {
+        beforeEach(() => {
+            this.server = require('../server')
+            this.server.cfg = this.server.cfg || { main: {} }
+            this.server.cfg.main = this.server.cfg.main || {}
+        })
+
+        it('init_child_respond OK path starts HTTP listeners', () => {
+            let called = 0
+            const original = this.server.setup_http_listeners
+            this.server.setup_http_listeners = () => {
+                called++
+            }
+            try {
+                this.server.init_child_respond(constants.ok)
+                assert.equal(called, 1)
+            } finally {
+                this.server.setup_http_listeners = original
+            }
+        })
+
+        it('init_child_respond error path kills master and exits', () => {
+            process.env.CLUSTER_MASTER_PID = '12345'
+            const originalKill = process.kill
+            const originalDump = this.server.logger.dump_and_exit
+            let killed = null
+            let exitCode = null
+            process.kill = (pid) => {
+                killed = pid
+            }
+            this.server.logger.dump_and_exit = (code) => {
+                exitCode = code
+            }
+            try {
+                this.server.init_child_respond(constants.deny, 'nope')
+                assert.equal(killed, '12345')
+                assert.equal(exitCode, 1)
+            } finally {
+                process.kill = originalKill
+                this.server.logger.dump_and_exit = originalDump
+                delete process.env.CLUSTER_MASTER_PID
+            }
+        })
+
+        it('listening applies configured uid/gid and marks ready', () => {
+            this.server.cfg.main.group = 'staff'
+            this.server.cfg.main.user = 'nobody'
+            const originalGetGid = process.getgid
+            const originalSetGid = process.setgid
+            const originalGetUid = process.getuid
+            const originalSetUid = process.setuid
+            const calls = { setgid: 0, setuid: 0 }
+            process.getgid = () => 20
+            process.setgid = () => {
+                calls.setgid++
+            }
+            process.getuid = () => 501
+            process.setuid = () => {
+                calls.setuid++
+            }
+            try {
+                this.server.listening()
+                assert.equal(calls.setgid, 1)
+                assert.equal(calls.setuid, 1)
+                assert.equal(this.server.ready, 1)
+            } finally {
+                process.getgid = originalGetGid
+                process.setgid = originalSetGid
+                process.getuid = originalGetUid
+                process.setuid = originalSetUid
+                delete this.server.cfg.main.group
+                delete this.server.cfg.main.user
+            }
+        })
+
+        it('sendToMaster calls receiveAsMaster when not clustered', () => {
+            const originalCluster = this.server.cluster
+            const originalReceive = this.server.receiveAsMaster
+            const seen = []
+            this.server.cluster = null
+            this.server.receiveAsMaster = (cmd, params) => {
+                seen.push([cmd, params])
+            }
+            try {
+                this.server.sendToMaster('flushQueue', ['example.com'])
+                assert.deepEqual(seen[0], ['flushQueue', ['example.com']])
+            } finally {
+                this.server.cluster = originalCluster
+                this.server.receiveAsMaster = originalReceive
+            }
+        })
+
+        it('receiveAsMaster ignores invalid commands and executes valid ones', () => {
+            const errors = []
+            const originalLogError = this.server.logerror
+            this.server.logerror = (msg) => errors.push(msg)
+            this.server._testCommand = (a, b) => {
+                this.server.notes.received = [a, b]
+            }
+            try {
+                this.server.receiveAsMaster('notACommand', [])
+                assert.equal(errors.length > 0, true)
+
+                this.server.receiveAsMaster('_testCommand', ['x', 'y'])
+                assert.deepEqual(this.server.notes.received, ['x', 'y'])
+            } finally {
+                this.server.logerror = originalLogError
+                delete this.server._testCommand
+            }
+        })
+    })
+
+    describe('HTTP helpers', () => {
+        beforeEach(() => {
+            this.server = require('../server')
+        })
+
+        it('handle404 serves html/json/text based on request accepts', () => {
+            const makeReq = (kind) => ({
+                accepts(type) {
+                    return type === kind
+                },
+            })
+            const responses = []
+            const makeRes = () => ({
+                status(code) {
+                    responses.push({ code })
+                    return this
+                },
+                sendFile(name, opts) {
+                    responses.push({ type: 'html', name, opts })
+                },
+                send(body) {
+                    responses.push({ type: 'body', body })
+                },
+            })
+
+            this.server.handle404(makeReq('html'), makeRes())
+            this.server.handle404(makeReq('json'), makeRes())
+            this.server.handle404(makeReq('none'), makeRes())
+
+            assert.equal(responses[0].code, 404)
+            assert.equal(responses[1].type, 'html')
+            assert.equal(responses[3].type, 'body')
+            assert.deepEqual(responses[3].body, { err: 'Not found' })
+            assert.equal(responses[5].body, 'Not found!')
+        })
+
+        it('init_http_respond logs and returns when ws is unavailable', () => {
+            const Module = require('node:module')
+            const originalRequire = Module.prototype.require
+            const originalLogError = this.server.logerror
+            const errors = []
+            this.server.logerror = (msg) => {
+                errors.push(msg)
+            }
+            this.server.http = { server: {} }
+            Module.prototype.require = function (id) {
+                if (id === 'ws') throw new Error('ws missing')
+                return originalRequire.apply(this, arguments)
+            }
+            try {
+                this.server.init_http_respond()
+                assert.equal(errors.length > 0, true)
+            } finally {
+                Module.prototype.require = originalRequire
+                this.server.logerror = originalLogError
+            }
         })
     })
 

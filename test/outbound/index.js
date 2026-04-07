@@ -152,6 +152,195 @@ describe('outbound', () => {
             })
             assert.ok(true)
         })
+
+        it('waits for drain when stream backpressure is applied', async () => {
+            const todo = {
+                queue_time: Date.now(),
+                domain: 'example.com',
+                rcpt_to: [],
+                mail_from: {},
+                notes: {},
+                uuid: 'u1',
+            }
+            let drained = false
+
+            await new Promise((resolve) => {
+                const ws = {
+                    write() {
+                        return false
+                    },
+                    once(event, cb) {
+                        assert.equal(event, 'drain')
+                        setImmediate(() => {
+                            drained = true
+                            cb()
+                            resolve()
+                        })
+                    },
+                }
+                outbound.build_todo(todo, ws, () => {})
+            })
+
+            assert.equal(drained, true)
+        })
+    })
+
+    describe('send_trans_email', () => {
+        const queueDir = path.resolve('test', 'test-queue')
+
+        beforeEach(() => {
+            process.env.HARAKA_TEST_DIR = path.resolve('test')
+            fs.mkdirSync(queueDir, { recursive: true })
+        })
+
+        afterEach(() => {
+            delete process.env.HARAKA_TEST_DIR
+            try {
+                for (const f of fs.readdirSync(queueDir)) {
+                    fs.unlinkSync(path.join(queueDir, f))
+                }
+            } catch (ignore) {}
+        })
+
+        // Regression test for haraka/Haraka#3551:
+        // When dkim_verify (data_post) pipes the message_stream and DKIMVerifyStream
+        // fires its callback early via process.nextTick (no DKIM-Signature found),
+        // the chain runs synchronously into process_delivery → pipe() while the
+        // first pipe is still in flight. pre_send_trans_email_respond must yield
+        // (via setImmediate) before opening a new pipe.
+        it('yields to setImmediate before opening process_delivery pipes', async () => {
+            const stream = require('node:stream')
+            const Transaction = require('../../transaction')
+            const Address = require('address-rfc2821').Address
+            const outbound = require('../../outbound')
+            const plugins = require('../../plugins')
+
+            const txn = Transaction.createTransaction()
+            const origRunHooks = plugins.run_hooks
+            try {
+                txn.mail_from = new Address('<from@example.com>')
+                txn.rcpt_to = [new Address('<to@example.com>')]
+                txn.message_stream.add_line(Buffer.from('From: from@example.com\r\n'))
+                txn.message_stream.add_line(Buffer.from('To: to@example.com\r\n'))
+                txn.message_stream.add_line(Buffer.from('\r\n'))
+                txn.message_stream.add_line(Buffer.from('body\r\n'))
+                await new Promise((r) => txn.message_stream.add_line_end(r))
+
+                // Start a pipe on the message_stream and fire a synchronous callback
+                // before it drains — this models what dkim_verify does.
+                const verifierFiredCb = new Promise((resolve) => {
+                    let scheduled = false
+                    const verifier = new stream.Writable({
+                        write(_chunk, _enc, cb) {
+                            if (!scheduled) {
+                                scheduled = true
+                                process.nextTick(resolve)
+                            }
+                            cb()
+                        },
+                    })
+                    txn.message_stream.pipe(verifier)
+                })
+                await verifierFiredCb
+
+                // Now invoke send_trans_email — its pre_send_trans_email_respond
+                // should yield (await setImmediate) before calling process_delivery,
+                // letting the verifier pipe drain so the new pipe can succeed.
+                await new Promise((resolve, reject) => {
+                    // Stub the heavy bits: we only care that the chain doesn't throw
+                    // "Cannot pipe while currently piping" before queuing happens.
+                    plugins.run_hooks = (hook, obj) => {
+                        if (hook === 'pre_send_trans_email') {
+                            // Mimic empty-hook synchronous callback (no plugins)
+                            obj.pre_send_trans_email_respond(constants.cont).catch(reject)
+                        } else {
+                            origRunHooks.call(plugins, hook, obj)
+                        }
+                    }
+
+                    outbound.send_trans_email(txn, (retval) => {
+                        if (retval === constants.ok) resolve()
+                        else reject(new Error(`unexpected retval ${retval}`))
+                    })
+                })
+            } finally {
+                plugins.run_hooks = origRunHooks
+                txn.message_stream.destroy()
+            }
+        })
+
+        it('adds missing Message-Id/Date and prepends Received before queueing', async () => {
+            process.env.HARAKA_TEST_DIR = path.resolve('test')
+            const Address = require('address-rfc2821').Address
+            const outbound = require('../../outbound')
+            const plugins = require('../../plugins')
+
+            const added = []
+            const leading = []
+            const queued = []
+            const transaction = {
+                uuid: 'txn-add-headers',
+                header: {
+                    get_all(_name) {
+                        return []
+                    },
+                    get() {
+                        return null
+                    },
+                },
+                rcpt_to: [new Address('<user@example.com>')],
+                notes: {},
+                add_header(name, value) {
+                    added.push([name, value])
+                },
+                remove_header() {},
+                add_leading_header(name, value) {
+                    leading.push([name, value])
+                },
+                results: {
+                    add() {},
+                },
+            }
+
+            const originalRunHooks = plugins.run_hooks
+            const originalProcessDelivery = outbound.process_delivery
+            const originalPush = outbound.delivery_queue.push
+            outbound.delivery_queue.push = (hmail) => {
+                queued.push(hmail)
+            }
+            outbound.process_delivery = async (_okPaths, _todo, hmails) => {
+                hmails.push({ queued: true })
+            }
+            plugins.run_hooks = (hook, conn) => {
+                if (hook === 'pre_send_trans_email') {
+                    conn.pre_send_trans_email_respond(constants.cont)
+                }
+            }
+
+            try {
+                const result = await new Promise((resolve) => {
+                    outbound.send_trans_email(transaction, (retval, msg) => resolve({ retval, msg }))
+                })
+
+                assert.equal(result.retval, constants.ok)
+                assert.match(result.msg, /Message Queued/)
+                assert.equal(queued.length, 1)
+                assert.equal(
+                    added.some(([name]) => name === 'Message-Id'),
+                    true,
+                )
+                assert.equal(
+                    added.some(([name]) => name === 'Date'),
+                    true,
+                )
+                assert.equal(leading[0][0], 'Received')
+            } finally {
+                plugins.run_hooks = originalRunHooks
+                outbound.process_delivery = originalProcessDelivery
+                outbound.delivery_queue.push = originalPush
+                delete process.env.HARAKA_TEST_DIR
+            }
+        })
     })
 
     describe('timer_queue', () => {

@@ -5,6 +5,7 @@ const assert = require('node:assert/strict')
 
 const constants = require('haraka-constants')
 const DSN = require('haraka-dsn')
+const { Address } = require('address-rfc2821')
 
 const connection = require('../connection')
 const Server = require('../server')
@@ -440,6 +441,239 @@ describe('connection', () => {
                     resolve()
                 }, 100)
             })
+        })
+    })
+
+    describe('queue responses', () => {
+        beforeEach(setUp)
+
+        const prepQueueTestConnection = () => {
+            const calls = { respond: [], reset: 0, disconnect: 0, queue_ok: 0, results: [] }
+            const plugins = require('../plugins')
+            const originalRunHooks = plugins.run_hooks
+
+            this.connection.transaction = {
+                uuid: 'txn-123',
+                msg_status: null,
+                results: {
+                    add(_meta, payload) {
+                        calls.results.push(payload)
+                    },
+                },
+            }
+
+            this.connection.respond = (code, msg, cb) => {
+                calls.respond.push({ code, msg })
+                if (cb) cb()
+            }
+            this.connection.reset_transaction = (cb) => {
+                calls.reset++
+                this.connection.transaction = this.connection.transaction || {}
+                if (cb) cb()
+            }
+            this.connection.disconnect = () => {
+                calls.disconnect++
+            }
+            plugins.run_hooks = (hook) => {
+                if (hook === 'queue_ok') calls.queue_ok++
+            }
+
+            return {
+                calls,
+                restore() {
+                    plugins.run_hooks = originalRunHooks
+                },
+            }
+        }
+
+        it('queue_respond handles denydisconnect and marks message rejected', () => {
+            const harness = prepQueueTestConnection()
+            try {
+                this.connection.queue_respond(constants.denydisconnect)
+                assert.equal(harness.calls.respond[0].code, 550)
+                assert.equal(this.connection.msg_count.reject, 1)
+                assert.equal(this.connection.transaction.msg_status, 'rejected')
+                assert.equal(harness.calls.disconnect, 1)
+                assert.deepEqual(harness.calls.results[0], { fail: 'Message denied' })
+            } finally {
+                harness.restore()
+            }
+        })
+
+        it('queue_respond handles denysoft and resets transaction', () => {
+            const harness = prepQueueTestConnection()
+            try {
+                this.connection.queue_respond(constants.denysoft)
+                assert.equal(harness.calls.respond[0].code, 450)
+                assert.equal(this.connection.msg_count.tempfail, 1)
+                assert.equal(this.connection.transaction.msg_status, 'deferred')
+                assert.equal(harness.calls.reset, 1)
+                assert.deepEqual(harness.calls.results[0], { fail: 'Message denied temporarily' })
+            } finally {
+                harness.restore()
+            }
+        })
+
+        it('queue_respond handles denysoftdisconnect and disconnects', () => {
+            const harness = prepQueueTestConnection()
+            try {
+                this.connection.queue_respond(constants.denysoftdisconnect)
+                assert.equal(harness.calls.respond[0].code, 450)
+                assert.equal(this.connection.msg_count.tempfail, 1)
+                assert.equal(this.connection.transaction.msg_status, 'deferred')
+                assert.equal(harness.calls.disconnect, 1)
+            } finally {
+                harness.restore()
+            }
+        })
+
+        it('queue_respond default path returns 451 and resets transaction', () => {
+            const harness = prepQueueTestConnection()
+            try {
+                this.connection.queue_respond(constants.cont)
+                assert.equal(harness.calls.respond[0].code, 451)
+                assert.equal(this.connection.msg_count.tempfail, 1)
+                assert.equal(this.connection.transaction.msg_status, 'deferred')
+                assert.equal(harness.calls.reset, 1)
+            } finally {
+                harness.restore()
+            }
+        })
+
+        it('queue_ok_respond accepts and resets transaction', () => {
+            const harness = prepQueueTestConnection()
+            try {
+                this.connection.queue_ok_respond(constants.ok, null, 'queued')
+                assert.equal(harness.calls.respond[0].code, 250)
+                assert.equal(this.connection.msg_count.accept, 1)
+                assert.equal(this.connection.transaction.msg_status, 'accepted')
+                assert.equal(harness.calls.reset, 1)
+            } finally {
+                harness.restore()
+            }
+        })
+    })
+
+    describe('smtp command/response branches', () => {
+        beforeEach(setUp)
+
+        it('rcpt_respond deny removes recipient and records reject', () => {
+            const plugins = require('../plugins')
+            const originalRunHooks = plugins.run_hooks
+            const rcpt = new Address('<to@example.com>')
+            const sender = new Address('<from@example.com>')
+            const actions = []
+
+            this.connection.transaction = {
+                rcpt_to: [rcpt],
+                mail_from: sender,
+                results: { push() {} },
+            }
+            this.connection.rcpt_incr = (_rcpt, action) => actions.push(action)
+            this.connection.respond = (_code, _msg, cb) => cb && cb()
+            plugins.run_hooks = () => {}
+
+            try {
+                this.connection.rcpt_respond(constants.deny, 'no')
+                assert.equal(actions[0], 'reject')
+                assert.equal(this.connection.transaction.rcpt_to.length, 0)
+            } finally {
+                plugins.run_hooks = originalRunHooks
+            }
+        })
+
+        it('rcpt_respond ok runs rcpt_ok hook', () => {
+            const plugins = require('../plugins')
+            const originalRunHooks = plugins.run_hooks
+            const rcpt = new Address('<to@example.com>')
+            const sender = new Address('<from@example.com>')
+            const hooks = []
+
+            this.connection.transaction = {
+                rcpt_to: [rcpt],
+                mail_from: sender,
+                results: { push() {} },
+            }
+            this.connection.respond = (_code, _msg, cb) => cb && cb()
+            plugins.run_hooks = (hook) => hooks.push(hook)
+
+            try {
+                this.connection.rcpt_respond(constants.ok, 'ok')
+                assert.equal(hooks.includes('rcpt_ok'), true)
+                assert.equal(this.connection.last_rcpt_msg, 'ok')
+            } finally {
+                plugins.run_hooks = originalRunHooks
+            }
+        })
+
+        it('cmd_proxy rejects when not allowed', () => {
+            let code
+            this.connection.proxy.allowed = false
+            this.connection.respond = (c) => {
+                code = c
+            }
+            this.connection.disconnect = () => {}
+            this.connection.cmd_proxy('TCP4 1.2.3.4 5.6.7.8 100 25')
+            assert.equal(code, 421)
+        })
+
+        it('cmd_proxy accepts valid TCP4 proxy line and runs connect_init', () => {
+            const plugins = require('../plugins')
+            const originalRunHooks = plugins.run_hooks
+            const hooks = []
+            this.connection.proxy.allowed = true
+            this.connection.remote.ip = '10.0.0.1'
+            this.connection.reset_transaction = (cb) => cb && cb()
+            this.connection.respond = () => {}
+            plugins.run_hooks = (hook) => hooks.push(hook)
+
+            try {
+                this.connection.cmd_proxy('TCP4 1.2.3.4 5.6.7.8 100 25')
+                assert.equal(this.connection.proxy.type, 'haproxy')
+                assert.equal(this.connection.remote.ip, '1.2.3.4')
+                assert.equal(this.connection.local.ip, '5.6.7.8')
+                assert.equal(hooks.includes('connect_init'), true)
+            } finally {
+                plugins.run_hooks = originalRunHooks
+            }
+        })
+
+        it('cmd_data validates argument/transaction/recipient preconditions', () => {
+            const responses = []
+            this.connection.respond = (code, msg) => {
+                responses.push([code, msg])
+            }
+
+            this.connection.cmd_data('unexpected')
+            this.connection.cmd_data()
+            this.connection.transaction = { rcpt_to: [] }
+            this.connection.cmd_data()
+
+            assert.equal(responses[0][0], 501)
+            assert.equal(responses[1][0], 503)
+            assert.equal(responses[2][0], 503)
+        })
+
+        it('data_respond denysoftdisconnect disconnects and default enters DATA', () => {
+            const responses = []
+            let disconnected = 0
+            this.connection.transaction = { data_bytes: 5 }
+            this.connection.respond = (code, _msg, cb) => {
+                responses.push(code)
+                if (cb) cb()
+            }
+            this.connection.disconnect = () => {
+                disconnected++
+            }
+
+            this.connection.data_respond(constants.denysoftdisconnect, 'tmpfail')
+            this.connection.data_respond(constants.ok, 'ok')
+
+            assert.equal(responses[0], 451)
+            assert.equal(disconnected, 1)
+            assert.equal(responses[1], 354)
+            assert.equal(this.connection.state, constants.connection.state.DATA)
+            assert.equal(this.connection.transaction.data_bytes, 0)
         })
     })
 })

@@ -248,6 +248,9 @@ exports.send_trans_email = function (transaction, next) {
 
         let todo_index = 1
 
+        // See haraka/Haraka#3551
+        await new Promise((resolve) => setImmediate(resolve))
+
         try {
             for (const deliv of deliveries) {
                 const todo = new TODOItem(deliv.domain, deliv.rcpts, transaction)

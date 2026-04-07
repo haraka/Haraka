@@ -2,21 +2,34 @@
 // Socket address parser/formatter and server binding helper
 
 const fs = require('node:fs/promises')
+const net = require('node:net')
 
 function parseSockaddr(addr, defaultPort = 0) {
     let match
-    if (/^[0-9]+$/.test(addr)) return { host: '::', port: parseInt(addr) }
+    if (/^[0-9]+$/.test(addr)) return { host: '::', port: parseInt(addr, 10) }
+
+    const lastColon = addr.lastIndexOf(':')
+    if (lastColon !== -1) {
+        const host = addr.slice(0, lastColon)
+        const port = addr.slice(lastColon + 1)
+
+        if (host.includes(':') && /^\d+$/.test(port) && net.isIP(host) === 6) {
+            return { host: host.toLowerCase(), port: parseInt(port, 10) }
+        }
+    }
+    if (net.isIP(addr) === 6) return { host: addr.toLowerCase(), port: defaultPort }
+
     if ((match = /^(\d{1,3}(?:\.\d{1,3}){3})(?::(\d+))?$/.exec(addr)))
-        return { host: match[1], port: match[2] !== undefined ? parseInt(match[2]) : defaultPort }
+        return { host: match[1], port: match[2] !== undefined ? parseInt(match[2], 10) : defaultPort }
     if ((match = /^\[([0-9a-fA-F:]+)\](?::(\d+))?$/.exec(addr)))
-        return { host: match[1].toLowerCase(), port: match[2] !== undefined ? parseInt(match[2]) : defaultPort }
+        return { host: match[1].toLowerCase(), port: match[2] !== undefined ? parseInt(match[2], 10) : defaultPort }
     if (
         (match =
             /^([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*)(?::(\d+))?$/.exec(
                 addr,
             ))
     )
-        return { host: match[1].toLowerCase(), port: match[2] !== undefined ? parseInt(match[2]) : defaultPort }
+        return { host: match[1].toLowerCase(), port: match[2] !== undefined ? parseInt(match[2], 10) : defaultPort }
     if (addr.includes('/')) return { path: addr }
     throw new Error(`Invalid socket address ${addr}`)
 }

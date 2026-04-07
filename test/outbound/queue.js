@@ -230,4 +230,96 @@ describe('outbound/queue', () => {
             }
         })
     })
+
+    describe('queue maintenance', () => {
+        it('delete_dot_files removes leftover dot files only', async () => {
+            const tmpDir = path.join(os.tmpdir(), `haraka-dot-clean-${Date.now()}`)
+            fs.mkdirSync(tmpDir, { recursive: true })
+            const dotName = `${qfile.platformDOT}leftover`
+            const normalName = 'keep-me'
+            fs.writeFileSync(path.join(tmpDir, dotName), 'x')
+            fs.writeFileSync(path.join(tmpDir, normalName), 'x')
+
+            const originalQueueDir = queue.queue_dir
+            queue.queue_dir = tmpDir
+            try {
+                await queue.delete_dot_files()
+                assert.equal(fs.existsSync(path.join(tmpDir, dotName)), false)
+                assert.equal(fs.existsSync(path.join(tmpDir, normalName)), true)
+            } finally {
+                queue.queue_dir = originalQueueDir
+                fs.rmSync(tmpDir, { recursive: true, force: true })
+            }
+        })
+
+        it('_add_hmail pushes immediate items and schedules delayed ones', () => {
+            const originalPush = queue.delivery_queue.push
+            const originalAdd = queue.temp_fail_queue.add
+            const pushed = []
+            const delayed = []
+            let delayedCb
+
+            queue.delivery_queue.push = (item) => pushed.push(item)
+            queue.temp_fail_queue.add = (id, ms, cb) => {
+                delayed.push([id, ms])
+                delayedCb = cb
+            }
+            queue.cur_time = new Date()
+
+            const immediate = { filename: 'a', next_process: queue.cur_time - 1 }
+            const future = { filename: 'b', next_process: queue.cur_time.getTime() + 1000 }
+
+            try {
+                queue._add_hmail(immediate)
+                queue._add_hmail(future)
+                assert.equal(pushed.length, 1)
+                assert.equal(delayed.length, 1)
+                assert.equal(delayed[0][0], 'b')
+                delayedCb()
+                assert.equal(pushed.length, 2)
+            } finally {
+                queue.delivery_queue.push = originalPush
+                queue.temp_fail_queue.add = originalAdd
+            }
+        })
+
+        it('scan_queue_pids returns unique pids from queue files', async () => {
+            populateTestQueue()
+            const originalQueueDir = queue.queue_dir
+            queue.queue_dir = testQueueDir
+
+            try {
+                const pids = await queue.scan_queue_pids()
+                assert.ok(Array.isArray(pids))
+                assert.equal(pids.length >= 1, true)
+            } finally {
+                queue.queue_dir = originalQueueDir
+                clearTestQueue()
+            }
+        })
+
+        it('scan_queue_pids throws when queue dir cannot be read', async () => {
+            const originalQueueDir = queue.queue_dir
+            const badPath = path.join(os.tmpdir(), `queue-not-dir-${Date.now()}`)
+            fs.writeFileSync(badPath, 'x')
+            queue.queue_dir = badPath
+            try {
+                await assert.rejects(() => queue.scan_queue_pids())
+            } finally {
+                queue.queue_dir = originalQueueDir
+                fs.rmSync(badPath, { force: true })
+            }
+        })
+
+        it('delete_dot_files handles readdir errors without throwing', async () => {
+            const originalQueueDir = queue.queue_dir
+            queue.queue_dir = path.join(os.tmpdir(), `missing-dot-${Date.now()}`)
+            try {
+                await queue.delete_dot_files()
+                assert.ok(true)
+            } finally {
+                queue.queue_dir = originalQueueDir
+            }
+        })
+    })
 })
