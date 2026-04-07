@@ -22,7 +22,6 @@
   "dependencies": {
     "address-rfc2821": "^2.1.5",
     "address-rfc2822": "^2.2.3",
-    "daemon": "~1.1.0",
     "haraka-config": "^1.5.0",
     "haraka-constants": "^1.0.7",
     "haraka-dsn": "^1.1.0",
@@ -44,6 +43,7 @@
     "sprintf-js": "~1.1.3"
   },
   "optionalDependencies": {
+    "@techteamer/ocsp": "^1.0.1",
     "haraka-plugin-access": "^1.1.10",
     "haraka-plugin-aliases": "^1.0.3",
     "haraka-plugin-asn": "^2.0.6",
@@ -76,8 +76,7 @@
     "haraka-plugin-spf": "^1.2.11",
     "haraka-plugin-syslog": "^1.0.7",
     "haraka-plugin-uribl": "^1.0.10",
-    "haraka-plugin-watch": "^2.0.9",
-    "@techteamer/ocsp": "^1.0.1"
+    "haraka-plugin-watch": "^2.0.9"
   },
   "devDependencies": {
     "@haraka/eslint-config": "^2.0.4",

@@ -2,12 +2,11 @@
 // smtp network server
 
 const cluster = require('node:cluster')
+const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const tls = require('node:tls')
-
-const daemon = require('daemon')
 const constants = require('haraka-constants')
 
 const tls_socket = require('./tls_socket')
@@ -77,10 +76,17 @@ Server.daemonize = function () {
         // we get a spurious 'Exiting' log entry.
         process.removeAllListeners('exit')
         Server.lognotice('Daemonizing...')
-    }
 
-    const log_fd = fs.openSync(c.daemon_log_file, 'a')
-    daemon({ cwd: process.cwd(), stdout: log_fd })
+        const log_fd = fs.openSync(c.daemon_log_file, 'a')
+        const child = spawn(process.execPath, process.argv.slice(1), {
+            detached: true,
+            stdio: ['ignore', log_fd, log_fd],
+            env: { ...process.env, __daemon: '1' },
+            cwd: process.cwd(),
+        })
+        child.unref()
+        process.exit(0)
+    }
 
     // We are the daemon from here on...
     const npid = require('npid')
