@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- package.json: remove optional lesser used plugins
+  - avg, elasticsearch, esets, p0f, recip-routes, watch
+
+
 ### [3.1.5] - 2026-04-02
 
 #### Changed
