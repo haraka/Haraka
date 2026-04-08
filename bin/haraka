@@ -11,7 +11,6 @@ const os = require('node:os')
 
 const nopt = require('nopt')
 const utils = require('haraka-utils')
-const sprintf = require('sprintf-js').sprintf
 const base = path.join(__dirname, '..')
 const ver = utils.getVersion(base)
 const knownOpts = {
@@ -313,15 +312,7 @@ if (parsed.version) {
   ;(async () => {
     const qlist = await outbound.list_queue()
     for (const todo of qlist) {
-      console.log(
-        sprintf(
-          'Q: %s rcpt:%d from:%s domain:%s',
-          todo.file,
-          todo.rcpt_to.length,
-          todo.mail_from.toString(),
-          todo.domain,
-        ),
-      )
+      console.log(`Q: ${todo.file} rcpt:${todo.rcpt_to.length} from:${todo.mail_from} domain:${todo.domain}`)
     }
     process.exit()
   })()
@@ -379,12 +370,14 @@ if (parsed.version) {
   console.log('')
   for (const hook of getHooks()) {
     if (!plugins.registered_hooks[hook]) continue
-    console.log(sprintf("%'--80s", `Hook: ${hook} `))
-    console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'))
-    console.log(sprintf("%'-80s", ''))
+    console.log(`Hook: ${hook} `.padEnd(80, '-'))
+    console.log(`${'Plugin'.padEnd(35)} ${'Method'.padEnd(35)} ${'Prio'.padEnd(4)} T/O`)
+    console.log('-'.repeat(80))
     for (let p = 0; p < plugins.registered_hooks[hook].length; p++) {
       const item = plugins.registered_hooks[hook][p]
-      console.log(sprintf('%-35s %-35s %4d %3d', item.plugin, item.method, item.priority, item.timeout))
+      console.log(
+        `${item.plugin.padEnd(35)} ${item.method.padEnd(35)} ${String(item.priority).padStart(4)} ${String(item.timeout).padStart(3)}`,
+      )
     }
     console.log('')
   }
