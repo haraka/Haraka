@@ -12,7 +12,7 @@ function parseSockaddr(addr, defaultPort = 0) {
         return { host: match[1].toLowerCase(), port: match[2] !== undefined ? parseInt(match[2]) : defaultPort }
     if (
         (match =
-            /^([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])*)*)(?::(\d+))?$/.exec(
+            /^([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*)(?::(\d+))?$/.exec(
                 addr,
             ))
     )
