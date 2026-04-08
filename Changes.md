@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- dep(npid, sockaddr): removed
 - package.json: remove optional lesser used plugins
   - avg, elasticsearch, esets, p0f, recip-routes, watch
 

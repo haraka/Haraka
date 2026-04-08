@@ -36,10 +36,8 @@
     "ipaddr.js": "~2.3.0",
     "node-gyp": "^12.2.0",
     "nopt": "^9.0.0",
-    "npid": "~0.4.0",
     "redis": "~5.11.0",
-    "semver": "^7.7.4",
-    "sockaddr": "^1.0.1"
+    "semver": "^7.7.4"
   },
   "optionalDependencies": {
     "@haraka/ocsp": "^1.2.0",

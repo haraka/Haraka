@@ -89,9 +89,13 @@ Server.daemonize = function () {
     }
 
     // We are the daemon from here on...
-    const npid = require('npid')
     try {
-        npid.create(c.daemon_pid_file).removeOnExit()
+        fs.writeFileSync(c.daemon_pid_file, `${process.pid}\n`, { flag: 'wx' })
+        process.on('exit', () => {
+            try {
+                fs.unlinkSync(c.daemon_pid_file)
+            } catch {}
+        })
     } catch (err) {
         Server.logerror(err.message)
         logger.dump_and_exit(1)

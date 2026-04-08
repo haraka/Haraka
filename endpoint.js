@@ -2,12 +2,29 @@
 // Socket address parser/formatter and server binding helper
 
 const fs = require('node:fs/promises')
-const sockaddr = require('sockaddr')
+
+function parseSockaddr(addr, defaultPort = 0) {
+    let match
+    if (/^[0-9]+$/.test(addr)) return { host: '::', port: parseInt(addr) }
+    if ((match = /^(\d{1,3}(?:\.\d{1,3}){3})(?::(\d+))?$/.exec(addr)))
+        return { host: match[1], port: match[2] !== undefined ? parseInt(match[2]) : defaultPort }
+    if ((match = /^\[([0-9a-fA-F:]+)\](?::(\d+))?$/.exec(addr)))
+        return { host: match[1].toLowerCase(), port: match[2] !== undefined ? parseInt(match[2]) : defaultPort }
+    if (
+        (match =
+            /^([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])*)*)(?::(\d+))?$/.exec(
+                addr,
+            ))
+    )
+        return { host: match[1].toLowerCase(), port: match[2] !== undefined ? parseInt(match[2]) : defaultPort }
+    if (addr.includes('/')) return { path: addr }
+    throw new Error(`Invalid socket address ${addr}`)
+}
 
 module.exports = function endpoint(addr, defaultPort) {
     try {
         if ('string' === typeof addr || 'number' === typeof addr) {
-            addr = sockaddr(addr, { defaultPort })
+            addr = parseSockaddr(addr, defaultPort)
             const match = /^(.*):([0-7]{3})$/.exec(addr.path || '')
             if (match) {
                 addr.path = match[1]
