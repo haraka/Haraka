@@ -20,10 +20,31 @@ describe('endpoint', () => {
             assert.deepEqual(endpoint(25), { host: '::0', port: 25 })
         })
 
+        it('Unbracketed IPv6 host uses default port', () => {
+            assert.deepEqual(endpoint('::0', 25), {
+                host: '::0',
+                port: 25,
+            })
+        })
+
+        it('Unbracketed IPv6 host:port parses correctly (PR #3552 compatibility)', () => {
+            assert.deepEqual(endpoint('::0:25'), {
+                host: '::0',
+                port: 25,
+            })
+        })
+
         it('Default port if only host', () => {
             assert.deepEqual(endpoint('10.0.0.3', 42), {
                 host: '10.0.0.3',
                 port: 42,
+            })
+        })
+
+        it('Bracketed IPv6 host is normalized to lowercase', () => {
+            assert.deepEqual(endpoint('[ABCD::EF01]:2525'), {
+                host: 'abcd::ef01',
+                port: 2525,
             })
         })
 
@@ -38,6 +59,12 @@ describe('endpoint', () => {
                 path: '/foo/bar.sock',
                 mode: '770',
             })
+        })
+
+        it('Invalid unbracketed IPv6 host with non-numeric tail returns Error', () => {
+            const ep = endpoint('::0:port')
+            assert.equal(ep instanceof Error, true)
+            assert.match(ep.message, /Invalid socket address/)
         })
     })
 

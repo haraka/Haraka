@@ -225,7 +225,7 @@ exports.load_tls_ini = (opts) => {
 
     if (ocsp === undefined && cfg.main.requestOCSP) {
         try {
-            ocsp = require('ocsp')
+            ocsp = require('@haraka/ocsp')
             log.debug('ocsp loaded')
             ocspCache = new ocsp.Cache()
         } catch (ignore) {
