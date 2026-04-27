@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - fix(outbound): yield before delivery attempts #3552
 - test(outbound,conn,endpoint,server,tls_socket): added tests #3552
+- deps(various): updated to latest
 - dep(ocsp): replaced fork with local (more maintained) fork #3550
 - dep(npid, sockaddr): removed #3550
 - dep(daemon): removed, unmaintained #3550
