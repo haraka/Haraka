@@ -96,6 +96,49 @@ test('tls_socket', async (t) => {
                 await new Promise((resolve) => server.close(resolve))
             }
         })
+
+        await t.test('second error handler does not crash when first handler removes all listeners', () => {
+            // Regression test for issue #3553
+            const originalNetConnect = net.connect
+            const originalTlsConnect = tls.connect
+            const originalTlsValid = tls_socket.tls_valid
+
+            const fakeCrypto = new EventEmitter()
+            fakeCrypto.writable = true
+            fakeCrypto.removeAllListeners = EventEmitter.prototype.removeAllListeners
+            fakeCrypto.setTimeout = () => {}
+            fakeCrypto.setKeepAlive = () => {}
+
+            let capturedCleartext
+            net.connect = () => fakeCrypto
+            tls.connect = () => {
+                capturedCleartext = new EventEmitter()
+                capturedCleartext.writable = true
+                capturedCleartext.setTimeout = () => {}
+                capturedCleartext.setKeepAlive = () => {}
+                return capturedCleartext
+            }
+            tls_socket.tls_valid = false
+
+            try {
+                const socket = tls_socket.connect({ host: 'bad-tls.example.com', port: 25 })
+
+                // Simulate what release_client does: strip all listeners on first error
+                socket.once('error', () => socket.removeAllListeners())
+
+                socket.upgrade({}, () => {})
+
+                // capturedCleartext now has two 'error' handlers (on from upgrade, once from attach).
+                // Emitting error must NOT throw even though the first handler removes all
+                // listeners from the outer socket before the second fires.
+                const tlsError = new Error('dh key too small')
+                assert.doesNotThrow(() => capturedCleartext.emit('error', tlsError))
+            } finally {
+                net.connect = originalNetConnect
+                tls.connect = originalTlsConnect
+                tls_socket.tls_valid = originalTlsValid
+            }
+        })
     })
 
     await t.test('getSocketOpts', async (t) => {

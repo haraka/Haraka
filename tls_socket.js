@@ -76,7 +76,7 @@ class pluggableStream extends stream.Stream {
         this.targetsocket.once('error', (exception) => {
             this.writable = this.targetsocket.writable
             exception.source = 'tls'
-            this.emit('error', exception)
+            if (this.listenerCount('error') > 0) this.emit('error', exception)
         })
         this.targetsocket.on('timeout', () => {
             this.emit('timeout')
