@@ -12,7 +12,6 @@
 # status
 # process_title
 # syslog
-# watch
 
 # CONNECT
 # ----------
@@ -20,7 +19,6 @@
 # karma
 # relay
 # access
-# p0f
 # geoip
 # asn
 # fcrdns
@@ -49,7 +47,6 @@ mail_from.is_resolvable
 # At least one rcpt_to plugin is REQUIRED for inbound email.
 rcpt_to.in_host_list
 # qmail-deliverable
-# rcpt_to.routes
 
 # DATA
 # ----------

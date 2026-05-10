@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: master
+    branches: [master]
 
 env:
   CI: true
@@ -16,11 +16,12 @@ jobs:
       contents: read
 
   prettier:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
     uses: haraka/.github/.github/workflows/prettier.yml@master
     permissions:
       contents: write
     with:
-      branch: ${{ github.head_ref }}
+      branch: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
 
   coverage:
     uses: haraka/.github/.github/workflows/coverage.yml@master
