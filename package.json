@@ -26,7 +26,6 @@
     "haraka-constants": "^1.0.7",
     "haraka-dsn": "^1.1.0",
     "haraka-email-message": "^1.3.3",
-    "haraka-message-stream": "^2.0.4",
     "haraka-net-utils": "^1.8.1",
     "haraka-notes": "^1.1.1",
     "haraka-plugin-redis": "^2.0.11",
