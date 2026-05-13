@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - dep(ocsp): replaced fork with local (more maintained) fork #3550
 - dep(npid, sockaddr): removed #3550
 - dep(daemon): removed, unmaintained #3550
+- doc(SECURITY): added threat model #3557
 - doc(SECURITY): added #3550
 - package.json: remove optional lesser used plugins #3550
   - avg, elasticsearch, esets, p0f, recip-routes, watch

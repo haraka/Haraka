@@ -148,13 +148,13 @@ Haraka trust boundary shown above. A finding that lets a remote peer
 cause any of the following under documented or default-safe configuration
 is generally a vulnerability.
 
-| Category | Example threats at the Haraka boundary |
-| --- | --- |
-| **S**poofing | Forged HELO/EHLO or AUTH, identity bypass, unvalidated XCLIENT or proxy metadata accepted as authoritative |
-| **T**ampering | SMTP smuggling, CRLF or header injection, parser inconsistencies that change how a message is delivered or interpreted |
-| **R**epudiation | Remote input that erases or forges the Received: trail, or otherwise defeats logging under default configuration |
-| **I**nformation disclosure | Leakage of message content, credentials, or internal state through SMTP responses, DSNs, error messages, or logs |
-| **D**enial of service | Deterministic resource exhaustion or crashes triggered by remote input without operator misconfiguration |
+| Category                   | Example threats at the Haraka boundary                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **S**poofing               | Forged HELO/EHLO or AUTH, identity bypass, unvalidated XCLIENT or proxy metadata accepted as authoritative             |
+| **T**ampering              | SMTP smuggling, CRLF or header injection, parser inconsistencies that change how a message is delivered or interpreted |
+| **R**epudiation            | Remote input that erases or forges the Received: trail, or otherwise defeats logging under default configuration       |
+| **I**nformation disclosure | Leakage of message content, credentials, or internal state through SMTP responses, DSNs, error messages, or logs       |
+| **D**enial of service      | Deterministic resource exhaustion or crashes triggered by remote input without operator misconfiguration               |
 | **E**levation of privilege | Remote code execution, or escape of documented SMTP/plugin semantics into arbitrary behavior inside the Haraka process |
 
 Plugins execute inside the trust boundary by design, so a malicious or
