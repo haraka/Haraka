@@ -91,6 +91,4 @@ below; see [Outbound.md](Outbound.md) for the full set.
 
 ## outbound.bounce_message
 
-Template used when an outbound message bounces. The default is usually
-fine. Available template variables are documented in the source of
-`outbound/hmail.js`.
+Template used when an outbound message bounces. The default is usually fine. Available template variables are documented in the source of `outbound/hmail.js`.
