@@ -155,9 +155,9 @@ Specifies minimum allowable TLS protocol version to use. Example:
 
      minVersion=TLSv1.1
 
-If unset, the default is node's tls.DEFAULT_MIN_VERSION constant.
-
-(**Node.js 11.4+ required**, for older instances you can use _secureProtocol_ settings)
+If unset, the default is Node's `tls.DEFAULT_MIN_VERSION` constant
+(currently `'TLSv1.2'`). Valid values: `'TLSv1.3'`, `'TLSv1.2'`,
+`'TLSv1.1'`, `'TLSv1'`.
 
 ### honorCipherOrder
 
@@ -195,10 +195,10 @@ requireAuthorized[]=465
 
 ### secureProtocol
 
-Specifies the OpenSSL API function used for handling the TLS session. Choose
-one of the methods described at the
-[OpenSSL API page](https://www.openssl.org/docs/manmaster/ssl/ssl.html).
-The default is `SSLv23_method`.
+Legacy. Specifies the OpenSSL API function used to negotiate TLS — see
+the [OpenSSL API page](https://www.openssl.org/docs/manmaster/ssl/ssl.html).
+Prefer `minVersion` for modern setups; `secureProtocol` is only useful
+to lock to a specific historic protocol.
 
 ### requestOCSP
 

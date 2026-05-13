@@ -5,11 +5,17 @@ latency is too high.
 
 See https://github.com/STRML/node-toobusy for details.
 
-To use this plugin you have to install the 'toobusy-js' module by running
-'npm install toobusy-js' in your Haraka configuration directory.
+To use this plugin you must install the [`toobusy-js`](https://www.npmjs.com/package/toobusy-js)
+module — it is not bundled with Haraka. From your Haraka install
+directory:
 
-This plugin should be listed at the top of your config/plugins file so that
-it runs before any other plugin that hooks lookup_rdns.
+```sh
+npm install toobusy-js
+```
+
+This plugin registers on the `connect` hook with priority `-100`, so it
+runs ahead of other `connect`/`lookup_rdns` plugins. Listing it near the
+top of `config/plugins` is still a good idea for clarity.
 
 ## Configuration
 

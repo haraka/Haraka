@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - dep(daemon): removed, unmaintained #3550
 - doc(SECURITY): added threat model #3557
 - doc(SECURITY): added #3550
+- doc(Connection): added 15 undocumented methods
+- doc: add a fresh coat of paint to README and docs/*
+  - add missing properties and functions
+  - sync with codebase, fix inaccuracies, and add examples
+  - improve formatting and readability
 - package.json: remove optional lesser used plugins #3550
   - avg, elasticsearch, esets, p0f, recip-routes, watch
 

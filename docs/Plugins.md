@@ -1,7 +1,6 @@
 # Plugins
 
-Most aspects of receiving an email in Haraka are controlled by plugins. Mail cannot even be received unless at least a 'rcpt' and 'queue' plugin are
-enabled.
+Most aspects of receiving an email in Haraka are controlled by plugins. Mail cannot even be received unless at least a 'rcpt' and 'queue' plugin are enabled.
 
 Recipient (_rcpt_) plugins determine if a particular recipient is allowed to be relayed or received for. A _queue_ plugin queues the message somewhere - normally to disk or to an another SMTP server.
 
@@ -9,7 +8,7 @@ Recipient (_rcpt_) plugins determine if a particular recipient is allowed to be 
 
 Get a list of installed plugins by running `haraka -l`. To include locally installed plugins, add the `-c /path/to/config` option.
 
-We also have a [registry of known plugins](https://github.com/haraka/Haraka/blob/master/Plugins.md).
+The [top-level Plugins.md](../Plugins.md) is the registry of known plugins — both core and community.
 
 Display the help text for a plugin by running:
 
@@ -21,12 +20,9 @@ Display the help text for a plugin by running:
 
 ## Anatomy of a Plugin
 
-Plugins in Haraka are JS files in the `plugins` directory (legacy) and npm
-modules in the node_modules directory. See "Plugins as Modules" below.
+Plugins in Haraka are JS files in the `plugins` directory (legacy) and npm modules in the node_modules directory. See "Plugins as Modules" below.
 
-Plugins can be installed in the Haraka global directory (default:
-/$os/$specific/lib/node_modules/Haraka) or in the Haraka install directory
-(whatever you chose when you typed `haraka -i`. Example: `haraka -i /etc/haraka`
+Plugins can be installed in the Haraka global directory (default: /$os/$specific/lib/node_modules/Haraka) or in the Haraka install directory (whatever you chose when you typed `haraka -i`. Example: `haraka -i /etc/haraka`
 
 To enable a plugin, add its name to `config/plugins`. For npm packaged plugins, the name does not include the `haraka-plugin` prefix.
 
@@ -123,6 +119,8 @@ need to define them:
 
 - DENYDISCONNECT - Reject with a 5xx error and immediately disconnect.
 
+- DENYSOFTDISCONNECT - Reject with a 4xx error and immediately disconnect.
+
 - DISCONNECT - Immediately disconnect
 
 - OK
@@ -178,6 +176,7 @@ These are the hook and their parameters (next excluded):
 - delivered (hmail, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]) - called when outbound mail is delivered
 - send_email (hmail) - called when outbound is about to be sent
 - pre_send_trans_email (fake_connection) - called just before an email is queued to disk with a faked connection object
+- log (logger, log_item) - called for every log message; log plugins (e.g. haraka-plugin-syslog) use this hook to ship logs elsewhere
 
 ### rcpt
 
@@ -287,47 +286,28 @@ Plugins inherit all the logging methods of `logger.js`, which are:
 - logalert
 - logemerg
 
-If plugins throw an exception when in a hook, the exception will be caught
-and generate a logcrit level error. However, exceptions will not be caught
-as gracefully when plugins are running async code. Use error codes for that,
-log the error, and run your next() function appropriately.
+If plugins throw an exception when in a hook, the exception will be caught and generate a logcrit level error. However, exceptions will not be caught as gracefully when plugins are running async code. Use error codes for that, log the error, and run your next() function appropriately.
 
 ## Sharing State
 
-There are several cases where you might need to share information between
-plugins. This is done using `notes` - there are three types available:
+There are several cases where you might need to share information between plugins. This is done using `notes` - there are three types available:
 
 - server.notes
 
-  Available in all plugins. This is created at PID start-up and is shared
-  amongst all plugins on the same PID and listener.
-  Typical uses for notes at this level would be to share database
-  connections between multiple plugins or connection pools etc.
+  Available in all plugins. This is created at PID start-up and is shared amongst all plugins on the same PID and listener. Typical uses for notes at this level would be to share database connections between multiple plugins or connection pools etc.
 
 - connection.notes
 
-  Available on any hook that passes 'connection' as a function parameter.
-  This is shared amongst all plugins for a single connection and is
-  destroyed after the client disconnects.
-  Typical uses for notes at this level would be to store information
-  about the connected client e.g. rDNS names, HELO/EHLO, white/black
-  list status etc.
+  Available on any hook that passes 'connection' as a function parameter. This is shared amongst all plugins for a single connection and is destroyed after the client disconnects. Typical uses for notes at this level would be to store information about the connected client e.g. rDNS names, HELO/EHLO, white/black list status etc.
 
 - connection.transaction.notes
 
-  Available on any hook that passes 'connection' as a function parameter
-  between hook_mail and hook_data_post.
-  This is shared amongst all plugins for this transaction (e.g. MAIL FROM
-  through until a message is received or the connection is reset).
-  Typical uses for notes at this level would be to store information
-  on things like greylisting which uses client, sender and recipient
-  information etc.
+  Available on any hook that passes 'connection' as a function parameter between hook_mail and hook_data_post.
+  This is shared amongst all plugins for this transaction (e.g. MAIL FROM through until a message is received or the connection is reset). Typical uses for notes at this level would be to store information on things like greylisting which uses client, sender and recipient information etc.
 
 - hmail.todo.notes
 
-  Available on any outbound hook that passes `hmail` as a function parameter.
-  This is the same object as 'connection.transaction.notes', so anything
-  you store in the transaction notes is automatically available in the
+  Available on any outbound hook that passes `hmail` as a function parameter. This is the same object as 'connection.transaction.notes', so anything you store in the transaction notes is automatically available in the
   outbound functions here.
 
 All of these notes are JS objects - use them as simple key/value store e.g.
@@ -336,39 +316,40 @@ All of these notes are JS objects - use them as simple key/value store e.g.
 
 ## Plugins as Modules
 
-Plugins as NPM modules are named with the `haraka-plugin` prefix. Therefore, a
-plugin that frobnobricates might be called `haraka-plugin-frobnobricate` and
-published to NPM with that name. The prefix is not required in the
+Plugins as NPM modules are named with the `haraka-plugin` prefix. Therefore, a plugin that frobnobricates might be called `haraka-plugin-frobnobricate` and published to NPM with that name. The prefix is not required in the
 `config/plugins` file.
 
-Plugins loaded as NPM modules behave slightly different than plugins loaded
-as plain JS files.
+Plugins loaded as NPM modules behave slightly different than plugins loaded as plain JS files.
 
-Plain JS plugins have a custom `require()` which allows loading core Haraka
-modules via specifying `require('./name')` (note the `./` prefix). Although
-the core modules aren't in the same folder, the custom `require` intercepts
-this and look for core modules. Note that if there is a module in your plugins
-folder of the same name that will not take preference, so avoid using names
-similar to core modules.
+Plain JS plugins have a custom `require()` which allows loading core Haraka modules via specifying `require('./name')` (note the `./` prefix). Although the core modules aren't in the same folder, the custom `require` intercepts
+this and look for core modules. Note that if there is a module in your plugins folder of the same name that will not take preference, so avoid using names similar to core modules.
 
-Plugins loaded as modules do not have the special `require()`. To load
-a core Haraka module you must use `this.haraka_require('name')`.
-This should also be preferred for plain JS plugins, as the
-`./` hack is likely to be removed in the future.
+Plugins loaded as modules do not have the special `require()`. To load a core Haraka module you must use `this.haraka_require('name')`. This should also be preferred for plain JS plugins, as the `./` hack is likely to be removed in the future.
 
-Plugins loaded as modules are not compiled in the Haraka plugin sandbox,
-which blocks access to certain globals and provides a global `server` object.
-To access the `server` object, use `connection.server` instead.
+Plugins loaded as modules are not compiled in the Haraka plugin sandbox, which blocks access to certain globals and provides a global `server` object. To access the `server` object, use `connection.server` instead.
 
-Module plugins support default config in their local `config` directory. See the
-"Default Config and Overrides" section in [Config](Config.md).
+Module plugins support default config in their local `config` directory. See the "Default Config and Overrides" section in [haraka-config](https://github.com/haraka/haraka-config#default-config-and-overrides).
+
+### Inheriting from another plugin
+
+A plugin can inherit methods from another plugin by calling `plugin.inherits(name)` from its `register()`. The parent's exported methods become available on `this` (without overwriting any methods the child has already defined), and the parent's `register()` runs in the child's context. `rcpt_to.host_list_base` is a typical parent used by multiple `rcpt_to.*` plugins.
+
+```js
+exports.register = function () {
+    this.inherits('rcpt_to.host_list_base')
+    this.register_hook('rcpt', 'my_rcpt')
+}
+```
+
+### Deprecated plugin names
+
+Some plugin names have been folded into newer packages — for example `connect.fcrdns` is now `fcrdns`, `dnsbl` is now `dns-list`, and `rate_limit` / `max_unrecognized_commands` are now `limit`. Haraka logs a notice and loads the replacement automatically; the full mapping lives in `plugins.js → plugins.deprecated`.
 
 ## Shutdown
 
 On graceful reload, Haraka will call a plugin's `shutdown` method.
 
-This is so you can clear any timers or intervals, or shut down any connections
-to remote servers. See [Issue 2024](https://github.com/haraka/Haraka/issues/2024).
+This is so you can clear any timers or intervals, or shut down any connections to remote servers. See [Issue 2024](https://github.com/haraka/Haraka/issues/2024).
 
 e.g.
 
@@ -378,9 +359,7 @@ exports.shutdown = function () {
 }
 ```
 
-If you don't implement this in your plugin and have a connection open or a
-timer running then Haraka will take 30 seconds to shut down and have to
-forcibly kill your process.
+If you don't implement this in your plugin and have a connection open or a timer running then Haraka will take 30 seconds to shut down and have to forcibly kill your process.
 
 Note: This only applies when running with a `nodes=...` value in smtp.ini.
 

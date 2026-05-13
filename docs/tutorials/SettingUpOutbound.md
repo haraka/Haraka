@@ -1,70 +1,62 @@
 # Configuring Haraka For Outbound Email
 
-It is trivially easy to configure Haraka as an outbound email server. But
-first there are external things you may want to sort out:
+It is straightforward to run Haraka as an outbound (submission) mail server. Before turning on the server itself, get a few external things in order:
 
-- Get your DNS PTR record working - make sure it matches the A record of the
-  host you are sending from.
-- Consider implementing an SPF record. I don't personally do this, but some
-  people seem to think it helps.
+- **DNS PTR record** — make sure it matches the A/AAAA record of the host you are sending from. Receivers that disagree on `HELO`/PTR will treat your mail with suspicion.
+- **SPF, DKIM, and DMARC** — publish records for any domain you send from. Most receivers downgrade or reject mail without them. Haraka signs outbound with [haraka-plugin-dkim](https://github.com/haraka/haraka-plugin-dkim).
+- **Reverse DNS at the IP owner** — if your hosting provider controls the PTR, set the value through their console.
 
-There's lots of information elsewhere on the internet about getting these
-things working, and they are specific to your network and your DNS hosting.
+How to provision DNS varies by provider; the records are network-specific so no one-size-fits-all command applies.
 
-## First Some Background
+## Background
 
-Sending outbound mail through Haraka is called "relaying", and that is the
-term the internals use. The process is simple - if a plugin in Haraka tells
-the internals that this mail is to be relayed, then it gets queued in the
-"queue" directory for delivery. Then it will go through several delivery
-attempts until it is either successful or fails hard for some reason. A
-hard failure will result in a bounce email being sent to the "MAIL FROM"
-address used when connecting to Haraka. If that address also bounces then
-it is considered a "double bounce" and Haraka will log an error and drop it
-on the floor.
+Haraka treats outbound mail as "relaying". When any plugin sets `connection.relaying = true`, the message is queued for outbound delivery once `DATA` ends. The outbound engine then tries each MX in sequence; on permanent failure a DSN is generated and sent to the `MAIL FROM` address. If the DSN itself bounces, Haraka logs the "double bounce" and drops it.
 
-## The Setup
+## Setup
 
-Outbound mail servers should run on port 587 and enforce authentication. This
-is slightly different from the "old" model where there would simply be a
-check based on the connecting IP address to see if it was valid to relay.
-Note however that Haraka doesn't stop you doing it this way - we just don't
-provide a plugin to do that by default - you will have to write one. The
-reason is purely based on security and personal preference.
+Modern submission uses **implicit TLS on port 465** (RFC 8314); port 587 with `STARTTLS` is also still common. Plain port 25 is for server-to-server traffic and should not be used for submission.
 
-Let's create a new Haraka instance:
+Create a new Haraka instance:
 
-    haraka -i haraka-outbound
-    cd haraka-outbound
+```sh
+haraka -i haraka-outbound
+cd haraka-outbound
+```
 
-Now edit config/smtp.ini - change the port to 587.
+In `config/smtp.ini`, set the listener:
 
-Next we setup our plugins - all we need is the tls and auth plugin. AUTH capability is only advertised after TLS/SSL negotiation (except for connections from the local host):
+```ini
+listen=[::0]:465,[::0]:587
+smtps_port=465
+```
 
-    echo "tls
-    auth/flat_file" > config/plugins
+Anything in `smtps_port` runs implicit TLS; the other ports advertise `STARTTLS`.
 
-Now edit the flat file password file, and put in an appropriate username
-and password:
+Enable just the TLS and auth plugins. AUTH is only advertised after TLS is established (except for connections from localhost):
 
-    vi config/auth_flat_file.ini
+```sh
+cat > config/plugins <<'EOF'
+tls
+auth/flat_file
+EOF
+```
 
-See the documentation in docs/plugins/auth/flat_file.md for information about
-what can go in that file.
+Add a user to `config/auth_flat_file.ini`. See [`docs/plugins/auth/flat_file.md`](../plugins/auth/flat_file.md) for the format.
 
-Now you can start Haraka. That's all the configuration you need.
+Start Haraka:
 
-    haraka -c .
+```sh
+haraka -c .
+```
 
-Now in another window you can run swaks to test this - be sure to substitute
-an email address you can monitor in place of youremail@yourdomain.com, and the
-username and password you added for the --auth-user and --auth-password params:
+In another shell, test with [swaks](https://www.jetmore.org/john/code/swaks/) — substitute your real test address and the credentials you configured:
 
-    swaks --to youremail@yourdomain.com --from test@example.com --server localhost \
-      --port 587 --auth-user testuser --auth-password testpassword
+```sh
+swaks --to youremail@yourdomain.com --from test@example.com \
+    --server localhost --port 587 --tls \
+    --auth-user testuser --auth-password testpassword
+```
 
-Watch the output of swaks and ensure no errors have occurred. Then watch
-the recipient email address (easiest to make this your webmail account) and
-see that the email arrived.
+For port 465 (implicit TLS), use `--tls-on-connect` instead of `--tls`.
 
-You are done!
+Watch the swaks output for errors and confirm the message arrives. That's all the basic configuration you need; once you're satisfied, turn on DKIM signing for the domains you send from.

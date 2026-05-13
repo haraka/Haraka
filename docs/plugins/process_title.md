@@ -37,6 +37,6 @@ across all workers, with the exception of outbound stats.
 All of the counts shown are since the process started, so if a
 worker has been re-started then the counts may not add up.
 
-Note: this plugin will only work on node >= 0.8 and should be
-added at the top of config/plugins to ensure that it functions
-correctly.
+Note: this plugin should be added at the top of `config/plugins` so
+that its `connect_init`, `rcpt`, `data`, and `disconnect` hooks run
+before any plugin that might short-circuit those hooks.

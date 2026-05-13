@@ -1,43 +1,59 @@
-# HAProxy PROXY protocol extension support
+# HAProxy PROXY Protocol Support
 
-Haraka supports PROXY protocol [1].
+Haraka supports version 1 (text format) of the HAProxy [PROXY protocol][proxy-spec], which allows an upstream proxy to tell Haraka the real client IP and port. DNSBLs, allow-lists, and other IP-based plugins then see the original client rather than the proxy.
 
-This allows an upstream proxy to pass the IP address and port of the remote client. Haraka will use the remote IP instead of the socket IP address (which is the proxy). This allows DNSBLs and access control lists to use the correct source address.
+The PROXY v2 binary header is not currently supported.
 
-Support is disabled by default. Attempts to send a PROXY command will return a DENYSOFTDISCONNECT error. DENYSOFT is used to prevent configuration errors from rejecting valid mail.
+## Configuration
 
-To enable support for PROXY you must populate connection.ini[haproxy]hosts[] with the IP addresses of the HAProxy hosts that MUST send the PROXY command. Ranges can be specified with CIDR notation.
+PROXY support is disabled by default. To enable it, list the IPs (or CIDRs) of trusted proxies in `connection.ini`:
 
-When a proxy host connects to Haraka, a banner is not sent. Instead Haraka awaits the PROXY command. The connection will timeout with `421 PROXY timed out` if the command is not sent within 30 seconds.
+```ini
+[haproxy]
+hosts[] = 192.0.2.4
+hosts[] = 192.0.2.5/30
+hosts[] = 2001:db8::1
+```
 
-NOTE: because Haraka does not send a banner when a listed HAProxy host connects you must set check-send-proxy to ensure that the service checks send a PROXY command before they run.
+Connections from any other IP get a `DENYSOFTDISCONNECT` if they send a `PROXY` command. `DENYSOFT` is deliberate — it avoids permanently rejecting valid mail when a misconfiguration causes a legitimate proxy to fall outside the allow-list.
 
-[1] http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
+When a listed proxy connects, Haraka **does not** send the SMTP banner; it waits for the `PROXY` command. If none arrives within 30 seconds the connection is closed with `421 PROXY timed out`.
 
-HAProxy supports the PROXY protocol in version 1.5 or later.
+## What plugins see after PROXY is parsed
 
-Here is an example listener section for haproxy.cfg:
+| Property | Value |
+| --- | --- |
+| `connection.remote.ip` / `.port` | the **real** client address from the PROXY header |
+| `connection.local.ip` / `.port` | the destination IP/port from the PROXY header |
+| `connection.proxy.allowed` | `true` |
+| `connection.proxy.ip` | the proxy's address (i.e. the original socket peer) |
+| `connection.proxy.type` | `'haproxy'` |
+| `connection.notes.proxy` | full parsed record: `{ type, proto, src_ip, src_port, dst_ip, dst_port, proxy_ip }` |
+
+## HAProxy configuration
+
+You need HAProxy ≥ 1.5. The `send-proxy` option on each backend server tells HAProxy to emit the v1 header on every connection.
 
 ```
 listen smtp :25
-        mode tcp
-        option tcplog
-        option smtpchk
-        balance roundrobin
-        server smtp1 ip.of.haraka.server1:25 check-send-proxy check inter 10s send-proxy
-        server smtp2 ip.of.haraka.server2:25 check-send-proxy check inter 10s send-proxy
-        server smtp3 ip.of.haraka.server3:25 check-send-proxy check inter 10s send-proxy
-        server smtp4 ip.of.haraka.server4:25 check-send-proxy check inter 10s send-proxy
-        server smtp5 ip.of.haraka.server5:25 check-send-proxy check inter 10s send-proxy
+    mode tcp
+    option tcplog
+    balance roundrobin
+    server smtp1 ip.of.haraka1:25 check-send-proxy check inter 10s send-proxy
+    server smtp2 ip.of.haraka2:25 check-send-proxy check inter 10s send-proxy
 ```
 
-The important part is `send-proxy` which causes HAProxy to send the PROXY extension on connection.
+The `check-send-proxy` flag is required for HAProxy's health checks because Haraka does not respond with a banner before the PROXY header arrives.
 
-When using `option smtpchk` you will see CONNRESET errors reported in the Haraka logs as smtpchk drops the connection before the HELO response is still being written. You can use the `option tcp-check` instead to provide a better service check by having the check wait for the banner, send QUIT and then check the response:
+### Health checks
+
+`option smtpchk` drops the connection mid-handshake and shows up as `CONNRESET` in Haraka's logs. A cleaner check is to use `tcp-check` and politely close with `QUIT`:
 
 ```
-        option tcp-check
-        tcp-check expect rstring ^220\
-        tcp-check send QUIT\r\n
-        tcp-check expect rstring ^221\
+    option tcp-check
+    tcp-check expect rstring ^220
+    tcp-check send QUIT\r\n
+    tcp-check expect rstring ^221
 ```
+
+[proxy-spec]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt

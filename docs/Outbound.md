@@ -1,265 +1,211 @@
 # Outbound Mail with Haraka
 
-A default installation of Haraka will queue outbound mail for delivery in the queue directory. Those mails will be delivered to the appropriate MX record for that domain. Mails are queued onto your disk, and will deal appropriately with temporary failures to retry delivery later.
+A default Haraka installation queues outbound mail to disk and delivers it to the appropriate MX for each recipient domain. Temporary failures are retried automatically using the configured backoff schedule.
 
-Outbound mails are defined as those that have set the `connection.relaying` flag to `true` via a plugin. The simplest way of doing that is to use SMTP AUTH, and have the client authenticate. For example using the `auth/flat_file` plugin. The `relay` plugin provides common ways to set it and it is simple to write a custom plugin to do this.
+A mail is treated as outbound when a plugin sets `connection.relaying` to `true`. The simplest way is SMTP AUTH using `auth/flat_file` or one of the [auth plugins](plugins/auth/); the `relay` plugin offers allow-list-based variants, and a custom plugin can apply any policy.
 
-For statistics on outbound mail use the `process_title` plugin. See the documentation for that plugin for details.
+For live stats on the outbound queue see the [`process_title`](plugins/process_title.md) plugin.
 
-To flush the outbound queue (for temporary failed mails) hit the Haraka master process with the SIGHUP signal (via the `kill` command line tool).
+To flush the temp-fail queue (e.g. after fixing network or DNS), send `SIGHUP` to the Haraka master process.
 
-## Outbound Configuration Files
+## Outbound Configuration
 
 ### outbound.ini
 
-- `disabled`
+| Key | Default | Description |
+| --- | --- | --- |
+| `disabled` | `false` | Pause outbound delivery while still queuing inbound mail. Reloadable at runtime. |
+| `concurrency_max` | `10000` | Maximum concurrent outbound deliveries **per worker**. Effective total is `concurrency_max × nodes`. |
+| `enable_tls` | `true` | Use opportunistic STARTTLS on outbound. |
+| `maxTempFailures` | `13` | Maximum temp-fail retries before the message bounces. Ignored if `temp_fail_intervals` is set. |
+| `temp_fail_intervals` | derived | Comma-separated `<n><unit>[*<count>]` pattern. `1m, 5m*2, 1h*3` → `[60,300,300,3600,3600,3600]` seconds. `none` bounces on first temp-fail. |
+| `always_split` | `false` | Create one queue file per recipient (instead of one per destination domain). Hurts throughput but simplifies bounce handling. |
+| `received_header` | `Haraka outbound` | Text used in the outbound `Received:` header. Set to the literal `disabled` to omit it. |
+| `connect_timeout` | `30` | Seconds to wait for TCP connect to the remote MX. |
+| `local_mx_ok` | `false` | Allow outbound delivery to local/private IPs (otherwise blocked to prevent loops). |
+| `inet_prefer` | `default` | `default` (prefer IPv6 at equal MX priority), `v4`, or `v6`. Delivery still follows MX priority. |
 
-Default: false. Allows one to temporarily disable outbound delivery, while still receiving and queuing emails. This can be changed while Haraka is running.
-
-- `concurrency_max`
-
-Default: 100. Specifies the maximum concurrent connections to make. Note that if using cluster (multiple CPUs) this will be multiplied by the number of CPUs that you have.
-
-- `enable_tls`
-
-Default: true. Switch to false to disable TLS for outbound mail.
-
-This uses the same `tls_key.pem` and `tls_cert.pem` files that the `TLS` plugin uses, along with other values in `tls.ini`. See the [TLS plugin docs][url-tls] for more information.
-
-Within `tls.ini` you can specify global options for the values `ciphers`, `minVersion`, `requestCert` and `rejectUnauthorized`, alternatively you can provide separate values by putting them under a key: `[outbound]`, such as:
+TLS configuration is shared with the `tls` plugin (`tls_key.pem`, `tls_cert.pem`, and `tls.ini`). Outbound-specific overrides go under `[outbound]` in `tls.ini`:
 
 ```ini
 [outbound]
 ciphers=!DES
+minVersion=TLSv1.2
 ```
-
-- `always_split`
-
-Default: false. By default, Haraka groups message recipients by domain so that messages with multiple recipients at the same domain get sent in a single SMTP session. When `always_split` is enabled, each recipient gets a queue entry and delivery in its own SMTP session. This carries a performance penalty but enables more flexibility in mail delivery and bounce handling.
-
-- `received_header`
-
-Default: "Haraka outbound". If this text is any string except _disabled_, the string is attached as a `Received` header to all outbound mail just before it is queued.
-
-- `connect_timeout`
-
-Timeout for connecting to remote servers. Default: 30s
-
-- `local_mx_ok`
-
-Default: false. By default, outbound to a local IP is disabled, to avoid creating mail loops. Set this to true if you want to allow outbound to local IPs. This could be useful if you want to deliver mail to private IPs or localhost on another port.
-
-- `temp_fail_intervals`
-
-Set this to specify the delay intervals to use between trying to re-send an email that has a temporary failure condition. The setting is a comma separated list of time spans and multipliers. The time span is a number followed by `s`, `m`, `h`, or `d` to represent seconds, minutes, hours, and days, respectively. The multiplier is an asterisk followed by an integer representing the number of times to repeat the interval. For example, the entry `1m, 5m*2, 1h*3` results in an array of delay times of `[60,300,300,3600,3600,3600]` in seconds. The email will be bounced when the array runs out of intervals (the 7th failure in this case). Set this to `none` to bounce the email on the first temporary failure.
-
-* `inet_prefer`
-
-Default: default. Selects the preferred address family (IP version) to deliver messages.
-
-| Value              | Description |
-|------------------------|-------------|
-| `default` | Prefer IPv6 when IPv4 and IPv6 IPs exist at the same MX priority |
-| `v4`    | Try IPv4 addresses first, then IPv6 |
-| `v6`    | Try IPv6 addresses first, then IPv4 |
-
-Note: Delivery attempts follow MX priority order. Socket-based deliveries ignore this setting.
 
 ### outbound.bounce_message
 
-See "Bounce Messages" below for details.
+Template for the bounce message body. See "Bounce Messages" below.
 
 ## The HMail Object
 
-Many hooks (see below) pass in a `hmail` object.
+Most outbound hooks pass an `hmail` (HMailItem). You rarely need its methods, but these properties are useful:
 
-You likely won't ever need to call methods on this object, so they are left undocumented here.
+| Property | Description |
+| --- | --- |
+| `path` | Full filesystem path to the queue file. |
+| `filename` | Queue file's base name. |
+| `num_failures` | Number of temp-fail attempts so far. |
+| `notes` | Plain object for plugin state, scoped to this queue item. |
+| `todo` | The `TODOItem` describing what to deliver (see below). |
 
-The attributes of an `hmail` object that may be of use are:
+## The TODO Object
 
-- path - the full path to the queue file
-- filename - the filename within the queue dir
-- num_failures - the number of times this mail has been temp failed
-- notes - notes you can store on a hmail object (similar to `transaction.notes`) to allow you to pass information between outbound hooks
-- todo - see below
+`hmail.todo` describes the delivery:
 
-## The ToDo Object
+| Property | Description |
+| --- | --- |
+| `mail_from` | `Address`<sup>[1](#fn1)</sup> — the envelope sender. |
+| `rcpt_to` | `Address`<sup>[1](#fn1)</sup> array — envelope recipients. |
+| `domain` | Recipient domain (a single domain unless `always_split` is set). |
+| `notes` | The original `transaction.notes`. Keys you may set: |
+| `notes.outbound_ip` | IP to bind the outbound socket to. **Set via the `get_mx` hook**, not directly. |
+| `notes.outbound_helo` | EHLO domain. **Set via the `get_mx` hook**, not directly. |
+| `queue_time` | When the mail was queued (epoch ms). |
+| `uuid` | Inherited from the source `transaction.uuid`. |
+| `force_tls` | If `true`, defer instead of delivering in plaintext. |
 
-The `todo` object contains information about how to deliver this mail. Keys you may be interested in are:
+## Outbound Hooks
 
-- rcpt_to - an Array of `Address`<sup>[1](#fn1)</sup> objects - the rfc.2821 recipients of this mail
-- mail_from - an Address<sup>[1](#fn1)</sup> object - the rfc.2821 sender of this mail
-- domain - the domain this mail is going to (see `always_split` above)
-- notes - the original transaction.notes for this mail, also contains the following useful keys:
-  - outbound_ip - the IP address to bind to (do not set manually, use the `get_mx` hook)
-  - outbound_helo - the EHLO domain to use (again, do not set manually)
-- queue_time - the epoch milliseconds time when this mail was queued
-- uuid - the original transaction.uuid
-- force_tls - if true, this mail will be sent over TLS or defer
+### queue_outbound
 
-## Outbound Mail Hooks
+Runs before queuing. Returning `CONT` (or having no hook) queues the mail. `OK` indicates the plugin queued it itself; the `DENY*` codes reject the message.
 
-### The queue_outbound hook
+### pre_send_trans_email
 
-The first hook that is called prior to queueing an outbound mail is the `queue_outbound` hook. Only if all these hooks return `CONT` (or if there are no hooks) will the mail be queued for outbound delivery. A return of `OK` will indicate that the mail has been queued in some custom manner for outbound delivery. Any of the `DENY` return codes will cause the message to be appropriately rejected.
+Parameters: `next, connection`
 
-### The send_email hook
+Fired by `outbound.send_trans_email()` before the transaction is serialized to disk. Useful for plugins that synthesize mail programmatically — they can attach final headers or notes here.
+
+### send_email
 
 Parameters: `next, hmail`
 
-Called just as the email is about to be sent.
+Called just before delivery starts. `next(DELAY, seconds)` defers the attempt.
 
-Respond with `next(DELAY, delay_seconds)` to defer sending the email at this time.
-
-### The get_mx hook
+### get_mx
 
 Parameters: `next, hmail, domain`
 
-Upon starting delivery the `get_mx` hook is called, with the parameter set to the domain in question (for example a mail to `user@example.com` will call the `get_mx` hook with `(next, hmail, domain)` as parameters). This is to allow you to implement a custom handler to find MX records. For most installations there is no reason to implement this hook - Haraka will find the MX records via DNS.
+Called when delivery begins, with the destination domain. Plugins can override MX lookup; most installs leave Haraka to do DNS. Respond with `next(OK, mx)` where `mx` is a [HarakaMx][url-harakamx] object, an array of them, or any HarakaMx-compatible input. Set `mx.auth_user` / `mx.auth_pass` to AUTH against the remote, or `mx.bind` / `mx.bind_helo`
+to control source address and EHLO.
 
-The MX is sent via next(OK, mx). `mx` is a [HarakaMx][url-harakamx] object, an array of HarakaMx objects, or any suitable HarakaMx input.
+### deferred
 
-### The deferred hook
+Parameters: `next, hmail, { delay, err }`
 
-Parameters: `next, hmail, {delay: ..., err: ...}`
+Fired on temporary failure. Return `OK` to drop the mail silently; return `DENYSOFT, seconds` to override the retry delay (useful for custom backoff indexed on `hmail.num_failures`).
 
-If the mail is temporarily deferred, the `deferred` hook is called. The hook parameter is an object with keys: `delay` and `err`, which explain the delay (in seconds) and error message.
-
-If you want to stop at this point, and drop the mail completely, then you can call `next(OK)`.
-
-If you want to change the delay, then call `next(DENYSOFT, delay_in_seconds)`. Using this you can define a custom delay algorithm indexed by `hmail.num_failures`.
-
-### The bounce hook
+### bounce
 
 Parameters: `next, hmail, error`
 
-If the mail completely bounces then the `bounce` hook is called. This is _not_ called if the mail is issued a temporary failure (a 4xx error code). The hook parameter is the error message received from the remote end as an `Error` object. The object may also have the following properties:
+Fired on permanent failure (5xx). Not called for temp-fails. `error` may carry:
 
-- mx - the MX object that caused the bounce
-- deferred_rcpt - the deferred recipients that eventually bounced
-- bounced_rcpt - the bounced recipients
+- `mx` — the MX that caused the bounce
+- `deferred_rcpt` — recipients that eventually bounced after deferrals
+- `bounced_rcpt` — recipients that bounced outright
 
-If you do not wish to have a bounce message sent to the originating sender of the email then you can return `OK` from this hook to stop it from sending a bounce message.
+Return `OK` to suppress the DSN to the original sender.
 
-### The delivered hook
+### delivered
 
-Parameters: `next, hmail, params`
+Parameters: `next, hmail, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]`
 
-Params is a list of: `[host, ip, response, delay, port, mode, ok_recips, secured]`
+Fired after a successful delivery. Return codes are ignored; the hook is for logging / accounting.
 
-When mails are successfully delivered to the remote end then the `delivered` hook is called. The return codes from this hook have no effect, so it is only useful for logging the fact that a successful delivery occurred.
+| Element | Description |
+| --- | --- |
+| `host` | Hostname of the receiving MX. |
+| `ip` | IP we delivered to. |
+| `response` | Remote SMTP response text (typically includes the remote queue ID). |
+| `delay` | Seconds between queue write and delivery. |
+| `port` | Destination port. |
+| `mode` | `'smtp'` or `'lmtp'`. |
+| `ok_recips` | `Address`<sup>[1](#fn1)</sup> array of successfully delivered recipients. |
+| `secured` | `true` if STARTTLS succeeded. |
+| `authenticated` | `true` if outbound AUTH succeeded. |
 
-- `host` - Hostname of the MX that the message was delivered to,
-- `ip` - IP address of the host that the message was delivered to,
-- `response` - Variable contains the SMTP response text returned by the host that received the message and will typically contain the remote queue ID and
-- `delay` - Time taken between the queue file being created and the message being delivered.
-- `port` - Port number that the message was delivered to.
-- `mode` - Shows whether SMTP or LMTP was used to deliver the mail.
-- `ok_recips` - an `Address`<sup>[1](#fn1)</sup> array containing all of the recipients that were successfully delivered to.
-- `secured` - A boolean denoting if the connection used TLS or not.
+## Outbound IP Address
 
-## Outbound IP address
+By default the OS routing table chooses the source IP. To pin outbound to a specific IP (per-sender, per-domain, etc.), bind that address to a local interface or alias, then set `mx.bind` (source IP) and `mx.bind_helo` (EHLO domain) in your `get_mx` hook.
 
-Normally the OS will decide which IP address will be used for outbound connections using the IP routing table.
+## Outbound AUTH
 
-There are instances where you may want to separate outbound traffic on different IP addresses based on sender, domain or some other identifier. To do this, the IP address that you want to use _must_ be bound to an interface (or alias) on the local system.
-
-As described above, the outbound IP can be set using the `bind` parameter and also the outbound helo for the IP can be set using the `bind_ehlo` parameter returned by the `get_mx` hook.
-
-## AUTH
-
-If you wish to use AUTH for a particular domain or domains, or you wish to force all mail to an outbound service or smart host that requires authentication then you can use the `get_mx` hook documented above to do this by supplying both `auth_user` and `auth_pass` properties in an MX object.
-
-If AUTH properties are supplied and the remote end does not offer AUTH or there are no compatible AUTH methods, then the message will be sent without AUTH and a warning will be logged.
+Force AUTH for a domain or smart host by returning an MX with `auth_user` and `auth_pass` set from the `get_mx` hook. If the remote end does not advertise AUTH (or no compatible mechanism is found), delivery proceeds without AUTH and a warning is logged.
 
 ## Bounce Messages
 
-The contents of the bounce message are configured by a file called `config/outbound.bounce_message`. If you look at this file you will see it contains several template entries wrapped in curly brackets. These will be populated as follows:
+The bounce body comes from `config/outbound.bounce_message`. Curly-brace template variables are filled in at bounce time:
 
-Optional: Possibility to add HTML code (with optional image) to the bounce message is possible by adding the files `config/outbound.bounce_message_html`. An image can be attached to the mail by using `config/outbound.bounce_message_image`.
+- `pid` — current process id
+- `date` — bounce timestamp
+- `me` — contents of `config/me`
+- `from` — original sender
+- `msgid` — original message UUID
+- `to` — original recipient (or first, for multi-recipient mail)
+- `reason` — remote server's rejection text
 
-- pid - the current process id
-- date - the current date when the bounce occurred
-- me - the contents of `config/me`
-- from - the originating sender of the message
-- msgid - a uuid for the mail
-- to - the end recipient of the message, or the first recipient if it was to
-  multiple people
-- reason - the text from the remote server indicating why it bounced
+The original message is appended to the bounce.
 
-Following the bounce message itself will be a copy of the entire original message.
+For HTML bounces, add `config/outbound.bounce_message_html` (and optionally an inline image in `config/outbound.bounce_message_image`).
 
-## Creating a mail internally for outbound delivery
+## Generating Mail from a Plugin
 
-Sometimes it is necessary to generate a new mail from within a plugin.
-
-To do that, you can use the `outbound` module directly:
+To create and queue a new message from inside a plugin, use the `outbound` module:
 
 ```js
 const outbound = require('./outbound')
 
-const to = 'user@example.com'
 const from = 'sender@example.com'
+const to = 'user@example.com'
 
 const contents = [
-  'From: ' + from,
-  'To: ' + to,
-  'MIME-Version: 1.0',
-  'Content-type: text/plain; charset=us-ascii',
-  'Subject: Some subject here',
-  '',
-  'Some email body here',
-  '',
+    `From: ${from}`,
+    `To: ${to}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=us-ascii',
+    'Subject: Hello',
+    '',
+    'Body here.',
+    '',
 ].join('\n')
 
-const outnext = (code, msg) => {
-  switch (code) {
-    case DENY:
-      this.logerror('Sending mail failed: ' + msg)
-      break
-    case OK:
-      this.loginfo('mail sent')
-      next()
-      break
-    default:
-      this.logerror('Unrecognized return code from sending email: ' + msg)
-      next()
-  }
-}
-
-outbound.send_email(from, to, contents, outnext)
+outbound.send_email(from, to, contents, (code, msg) => {
+    switch (code) {
+        case OK:
+            plugin.loginfo('queued')
+            break
+        case DENY:
+            plugin.logerror(`queue failed: ${msg}`)
+            break
+    }
+})
 ```
 
-The callback on `send_email()` is passed `OK` if the mail is successfully queued, not when it is successfully delivered. To check delivery status, you need to hook `delivered` and `bounce`.
+The callback fires when the mail is **queued**, not delivered — hook `delivered` and `bounce` to observe delivery outcomes.
 
-The callback parameter may be omitted if you don't need to handle errors should queueing to disk fail e.g:
+The callback may be omitted if you don't need to handle queue failure:
 
 ```js
 outbound.send_email(from, to, contents)
 ```
 
-Various options can be passed to `outbound.send_email` like so:
+Options accepted by `send_email(from, to, contents, next, options)`:
 
-```js
-outbound.send_email(from, to, contents, outnext, options)
-```
+| Option | Description |
+| --- | --- |
+| `dot_stuffed: true` | Content is already SMTP dot-stuffed. |
+| `notes: { … }` | Seed the new transaction's `notes`. |
+| `remove_msgid: true` | Drop any existing `Message-Id:` so Haraka generates one. Useful when releasing from quarantine. |
+| `remove_date: true` | Drop any existing `Date:` so Haraka generates one. |
+| `origin: <object>` | Object passed to the logger to identify the source plugin / connection / HMailItem. |
 
-Where `options` is a Object that may contain the following keys:
-
-| Key/Value              | Description                                                                                                                                                                                                                                                           |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dot_stuffed: true`    | Use this if you are passing your content dot-stuffed (a dot at the start of a line is doubled, like it is in SMTP conversation, see [RFC 2821][url-rfc2821].                                                                                                          |
-| `notes: { key: value}` | In case you need notes in the new transaction that `send_email()` creates.                                                                                                                                                                                            |
-| `remove_msgid: true`   | Remove any Message-Id header found in the message. If you are reading a message in from the filesystem and you want to ensure that a generated Message-Id header is used in preference over the original. This is useful if you are releasing mail from a quarantine. |
-| `remove_date: true`    | Remove any Date header found in the message. If you are reading a message in from the filesystem and you want to ensure that a generated Date header is used in preference over the original. This is useful if you are releasing mail from a quarantine.             |
-| `origin: Object`       | Adds object as argument to logger.log calls inside outbound.send_email. Useful for tracking which Plugin/Connection/HMailItem object generated email.                                                                                                                 |
-
-```js
-outbound.send_email(from, to, contents, outnext, { notes: transaction.notes })
-```
+To send an already-built `Transaction` directly, use `outbound.send_trans_email(transaction, next)`. This is what
+`send_email()` calls internally and fires the `pre_send_trans_email` hook.
 
 <a name="fn1">1</a>: `Address` objects are [address-rfc2821](https://github.com/haraka/node-address-rfc2821) objects.
 
-[url-tls]: https://haraka.github.io/plugins/tls
+[url-tls]: plugins/tls.md
 [url-harakamx]: https://github.com/haraka/haraka-net-utils?tab=readme-ov-file#harakamx
 [url-rfc2821]: https://tools.ietf.org/html/rfc2821#section-4.5.2

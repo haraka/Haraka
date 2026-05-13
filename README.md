@@ -9,8 +9,7 @@ thousands of messages per second. Haraka and its plugins are written in
 asynchronous JavaScript, optimised for throughput and low latency.
 
 Haraka offers strong spam protection (see [Plugins.md][plugins]) and is widely
-deployed as a filtering [MTA][3] or as a [MSA][5] on port 587 with the auth
-and [DKIM][6] plugins enabled.
+deployed as a filtering [MTA][3] or as a [MSA][5] on port 465 (and legacy 587) with the auth and [DKIM][6] plugins enabled.
 
 Haraka is not a mail store, an [LDA][7], or an IMAP server. It is designed to
 work **alongside** those systems. A scalable outbound delivery engine is built
