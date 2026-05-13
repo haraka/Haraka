@@ -32,10 +32,10 @@ roughly like this:
 
 ```js
 exports.hook_rcpt = (next, connection, params) => {
-    const rcpt = params[0]
-    const [user] = rcpt.user.split('-')
-    rcpt.user = user
-    next()
+  const rcpt = params[0]
+  const [user] = rcpt.user.split('-')
+  rcpt.user = user
+  next()
 }
 ```
 
