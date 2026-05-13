@@ -1,83 +1,109 @@
 # Haraka Logging
 
-Haraka has built-in logging (see API docs below) and support for log plugins.
+Haraka has a built-in logger (described below) and a plugin hook (`log`) that lets log plugins ship messages elsewhere — for example to syslog via [haraka-plugin-syslog](https://github.com/haraka/haraka-plugin-syslog).
 
-- log.ini
+## Configuration
 
-Contains settings for log level, timestamps, and format. See the example log.ini file for examples.
+### log.ini
 
-- loglevel
+```ini
+[main]
+; data, protocol, debug, info, notice, warn, error, crit, alert, emerg
+level=info
 
-The loglevel file provides a finger-friendly way to change the loglevel on the CLI. Use it like so: `echo DEBUG > config/loglevel`. When the level in log.ini is set and the loglevel file is present, the loglevel file wins. During runtime, whichever was edited most recently wins.
+; prepend ISO-8601 timestamps to log entries (built-in logger only)
+timestamps=false
+
+; default, logfmt, json
+format=default
+```
+
+### loglevel
+
+A single-line file for quick CLI tweaks:
+
+```sh
+echo DEBUG > config/loglevel
+```
+
+When both `log.ini` and the `loglevel` file are present, whichever was edited most recently wins at runtime — `loglevel` is convenient for an interactive bump without touching `log.ini`.
+
+### log_timestamps
+
+A single-value file that toggles timestamp prepending. Equivalent to `main.timestamps` in `log.ini`. If either source enables timestamps, they are enabled.
+
+## Log Levels
+
+In ascending severity (and decreasing verbosity):
+
+| Level    | Numeric | Use |
+| -------- | ------- | --- |
+| DATA     | 9       | message body bytes — extremely verbose |
+| PROTOCOL | 8       | SMTP wire protocol |
+| DEBUG    | 7       | developer diagnostics |
+| INFO     | 6       | general informational |
+| NOTICE   | 5       | normal but significant events (connect/disconnect, summary lines) |
+| WARN     | 4       | recoverable problems |
+| ERROR    | 3       | non-fatal errors |
+| CRIT     | 2       | critical errors |
+| ALERT    | 1       | needs immediate attention |
+| EMERG    | 0       | unusable |
+
+A message is emitted when its level ≤ the configured level.
 
 ## Logging API
 
-Logging conventions within Haraka
-
-This section pertains to the built in logging. For log plugins like ([haraka-plugin-syslog](https://github.com/haraka/haraka-plugin-syslog)), refer to the plugin's docs.
-
-The logline by default will be in the form of:
+Every log call ultimately produces:
 
     [level] [uuid] [origin] message
 
-Where origin is "core" or the name of the plugin which triggered the message, and "uuid" is the ID of the connection associated with the message.
+`origin` is `core` or the plugin name; `uuid` is the connection UUID (with `.N` appended for the Nth transaction).
 
-When calling a log method on logger, you should provide the plugin object and the connection object anywhere in the arguments
-to the log method.
+The simplest call is on the connection or plugin object — origin and uuid are filled in automatically:
 
-    logger.logdebug("i like turtles", plugin, connection);
-
-Will yield, for example,
-
-    [DEBUG] [7F1C820F-DC79-4192-9AA6-5307354B20A6] [dnsbl] i like turtles
-
-If you call the log method on the connection object, you can forego the connection as argument:
-
-    connection.logdebug("turtles all the way down", plugin);
-
-and similarly for the log methods on the plugin object:
-
-    plugin.logdebug("he just really likes turtles", connection);
-
-failing to provide a connection and/or plugin object will leavethe default values in the log (currently "core").
-
-This is implemented by testing for argument type in the logger.js log\* method. objects-as-arguments are then sniffed to try to determine if they're a connection or plugin instance.
-
-### Log formats
-
-Apart from the default log format described above, Haraka also supports logging as [`logfmt`](https://brandur.org/logfmt) and JSON. These can be used by changing the `format` attribute in `log.ini` to the desired format, e.g.:
-
-```ini
-; format=default
-; format=json
-format=logfmt
+```js
+connection.logdebug('turtles all the way down')
+plugin.loginfo('checking sender', connection)
 ```
 
-Here's an example of a log line generated with `logfmt`:
+Each of the level names has a matching method:
+`logdata`, `logprotocol`, `logdebug`, `loginfo`, `lognotice`, `logwarn`,
+`logerror`, `logcrit`, `logalert`, `logemerg`.
 
-    level=PROTOCOL uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message="S: 354 go ahead, make my day"
+Calling the logger directly works too — pass the plugin and/or connection anywhere in the arguments and the logger sniffs them:
 
-And the same line formatted as JSON:
+```js
+logger.logdebug('i like turtles', plugin, connection)
+// → [DEBUG] [7F1C820F-…] [dnsbl] i like turtles
+```
+
+Plain objects mixed into the arguments are merged into the log record (in `logfmt` / `json` formats) or stringified (`key=value` pairs in the default format).
+
+## Log Formats
+
+Set `main.format` in `log.ini` to one of `default`, `logfmt`, or `json`.
+
+`logfmt`:
+
+    level=PROTOCOL uuid=9FF7F70E-…1 source=core message="S: 354 go ahead, make my day"
+
+`json`:
 
 ```json
 {
   "level": "PROTOCOL",
-  "uuid": "9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1",
+  "uuid": "9FF7F70E-…1",
   "source": "core",
   "message": "S: 354 go ahead, make my day"
 }
 ```
 
-Any objects passed to the log methods will also have their properties included in the log line. For example, using `logfmt`:
-
-    level=NOTICE uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message=disconnect ip=127.0.0.1 rdns=Unknown helo=3h2dnz8a0if relay=N early=N esmtp=N tls=N pipe=N errors=0 txns=1 rcpts=1/0/0 msgs=1/0/0 bytes=222 lr="" time=0.052
-
-And using JSON:
+A typical structured disconnect line looks like:
 
 ```json
 {
   "level": "NOTICE",
-  "uuid": "9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1",
+  "uuid": "9FF7F70E-…1",
   "source": "core",
   "message": "disconnect",
   "ip": "127.0.0.1",
@@ -97,3 +123,7 @@ And using JSON:
   "time": 0.052
 }
 ```
+
+## The `log` hook
+
+Each log message becomes a `log` hook invocation. The built-in handler writes to stdout (with ANSI colour when stdout is a TTY); log plugins can return `OK` or `STOP` to suppress the built-in output and ship the message elsewhere. Messages emitted before plugins finish loading are buffered and replayed once the plugin chain is ready.

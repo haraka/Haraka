@@ -1,144 +1,119 @@
-## Haraka - a Node.js Mail Server
+# Haraka — a Node.js Mail Server
 
 ![Tests](https://github.com/haraka/Haraka/actions/workflows/ci.yml/badge.svg)
 [![Coverage Status][cov-img]][cov-url]
 
-Haraka is a highly scalable [node.js][1] email server with a modular
-plugin architecture. Haraka can serve thousands of concurrent connections
-and deliver thousands of messages per second. Haraka and plugins are written
-in asynchronous JS and are very fast.
+Haraka is a highly scalable [Node.js][1] SMTP server with a modular plugin architecture. It handles thousands of concurrent connections and delivers thousands of messages per second. Haraka and its plugins are written in asynchronous JavaScript, optimised for throughput and low latency.
 
-Haraka has very good spam protection (see [plugins][4]) and works
-well as a filtering [MTA][3]. It also works well as a [MSA][5] running on
-port 587 with auth and [dkim][6] plugins enabled.
+Haraka offers strong spam protection (see [Plugins.md][plugins]) and is widely deployed as a filtering [MTA][3] or as a [MSA][5] on port 465 (and legacy 587) with the auth and [DKIM][6] plugins enabled.
 
-Haraka makes no attempt to be a mail store (like Exchange or Postfix/Exim/Qmail),
-a [LDA][7], nor an IMAP server (like Dovecot or Courier). Haraka is
-typically used **with** such systems.
+Haraka is not a mail store, an [LDA][7], or an IMAP server. It is designed to work **alongside** those systems. A scalable outbound delivery engine is built in: mail flagged as `relaying` (for example, by an auth plugin) is queued for
+outbound delivery automatically.
 
-Haraka has a scalable outbound mail delivery engine built in. Mail
-marked as `relaying` (such as via an `auth` plugin) is automatically
-queued for outbound delivery.
+## Plugin Architecture
 
-### Getting Help
+Haraka's defining feature is its plugin system. Every SMTP transaction is a sequence of well-defined hooks — `connect`, `helo`, `mail`, `rcpt`, `data`, `data_post`, `queue`, and more — and each hook can be extended with a few lines of JavaScript. Plugins are asynchronous by default, so a slow lookup against DNS, Redis, or an HTTP API never blocks the server.
 
-- [Join the mailing list][8] (implemented as a Haraka plugin)
-- [GitHub Issues][15]
+The result is that behaviours which would require a custom MTA elsewhere are typically a small file in Haraka. For example, accepting qmail-style tagged addresses (`user-anything@domain.com`) and rewriting them to `user@domain.com` before forwarding to an Exchange or IMAP backend looks roughly like this:
 
-### Screencast
+```js
+exports.hook_rcpt = (next, connection, params) => {
+  const rcpt = params[0]
+  const [user] = rcpt.user.split('-')
+  rcpt.user = user
+  next()
+}
+```
 
-[Getting started with Haraka][2]
+A comprehensive registry of community and core plugins — auth, DNSBLs, DKIM, SpamAssassin, rspamd, Redis, ClamAV, queue backends, and many others — lives in [Plugins.md][plugins]. To write your own, see the [plugin tutorial][tutorial].
 
-### Why Use Haraka?
+## Documentation
 
-Haraka's plugin architecture provides an easily extensible MTA that
-complements traditional MTAs that excel at managing mail stores but do
-not have sufficient filtering.
+- [Plugins.md][plugins] — plugin registry and configuration reference
+- [docs/][docs] — core documentation (Connection, Transaction, Outbound, …)
+- [Tutorial][tutorial] — step-by-step getting started guide
+- [CHANGELOG.md][changelog] — release notes
+- [SECURITY.md][security] — security policy and reporting
 
-The plugin system makes it easy to code new features. A typical example
-is providing qmail-like extended addresses to an Exchange system,
-whereby you could receive mail as `user-anyword@domain.com`, and yet
-still have it correctly routed to `user@domain.com`. This is a few lines of
-code in Haraka.
+## Getting Help
 
-Plugins are provided for running mail through [SpamAssassin][9], validating
-[HELO][10] names, checking [DNS Blocklists][11], and [many others][12].
+- [GitHub Issues][issues]
+- [Mailing list][mailing-list] (implemented as a Haraka plugin)
+- [Screencast: Getting started with Haraka][screencast]
 
-### Installing Haraka
+## Installation
 
-Haraka requires [node.js][1] to run. Install Haraka with [npm][2]:
+Haraka requires [Node.js][1]. Install via [npm][npm]:
 
 ```sh
-# If the second command gives "nobody" errors, uncomment & run the next command
-# npm -g config set user root
 npm install -g Haraka
 ```
 
-After installation, use the `haraka` binary to set up the service.
-
-### Running Haraka
-
-First, create the service:
+Create a service directory:
 
 ```sh
 haraka -i /path/to/haraka_test
 ```
 
-That creates the directory `haraka_test` with `config` and `plugin`
-directories within. It also sets the host name used by Haraka
-to the output of `hostname`.
+This creates `haraka_test` with `config/` and `plugins/` subdirectories and sets the host name from `hostname(1)`. Edit `config/host_list` to add the domains for which Haraka should accept mail.
 
-If `hostname` is not correct, edit `config/host_list`. For example,
-to receive mail addressed to `user@domain.com`, add `domain.com` to the
-`config/host_list` file.
-
-Finally, start Haraka using root permissions:
+Start Haraka:
 
 ```sh
 haraka -c /path/to/haraka_test
 ```
 
-And it will run.
+## Configuration
 
-### Configure Haraka
+Edit `config/plugins` to select active plugins. By default, mail addressed to domains in `config/host_list` is accepted and forwarded via the `smtp-forward` plugin (configured in `config/smtp_forward.ini`).
 
-To choose which plugins run, edit `config/plugins`. Plugins control the
-overall behaviour of Haraka. By default, only messages to domains listed
-in `config/host_list` will be accepted and then delivered via the
-`smtp-forward` plugin. Configure the destination in `config/smtp_forward.ini`.
-
-### Read the Fine Manual
+Per-plugin documentation is available via:
 
 ```sh
-haraka -h plugins/$name
+haraka -h plugins/<name>
 ```
 
-The docs detail how each plugin is configured. After editing
-`config/plugins`, restart Haraka and enjoy!
+See [Plugins.md][plugins] for the full registry.
 
-### Running from git
+## Running from Source
 
-If you are unable to use npm to install Haraka, you can run from git by
-following these steps:
+```sh
+git clone https://github.com/haraka/Haraka.git
+cd Haraka
+npm install
+node haraka.js
+```
 
-First clone the repository:
+## Authorship and Maintenance
 
-    $ git clone https://github.com/haraka/Haraka.git
-    $ cd Haraka
+Haraka was created by [Matt Sergeant][matt-sergeant] (`baudehlo`), formerly project leader of [SpamAssassin][spamassassin] and a contributor to [Qpsmtpd][qpsmtpd]. The project is currently maintained by
+[Matt Simerson][msimerson] (`msimerson`).
 
-Install Haraka's node.js dependencies locally:
+Haraka is the work of many hands. See [CONTRIBUTORS.md][contributors] for the full list of people who have contributed code, documentation, and plugins.
 
-    $ npm install
+## License
 
-Edit `config/plugins` and `config/smtp.ini` to specify the plugins and
-config you want.
+Haraka is released under the MIT License. See [LICENSE][license] for details.
 
-Finally run Haraka:
-
-    $ node haraka.js
-
-### License and Author
-
-Haraka is MIT licensed - see the [LICENSE][16] file for details.
-
-Haraka is a project started by [Matt Sergeant][17], a 10 year veteran of the email and anti-spam world. Previous projects have been the project leader for
-SpamAssassin and a hacker on [Qpsmtpd][13].
-
-[1]: http://nodejs.org/
-[2]: http://youtu.be/6twKXMAsPsw
-[3]: http://en.wikipedia.org/wiki/Message_transfer_agent
-[4]: https://github.com/haraka/Haraka/blob/master/Plugins.md
-[5]: http://en.wikipedia.org/wiki/Mail_submission_agent
+[1]: https://nodejs.org/
+[3]: https://en.wikipedia.org/wiki/Message_transfer_agent
+[5]: https://en.wikipedia.org/wiki/Message_submission_agent
 [6]: https://github.com/haraka/haraka-plugin-dkim
 [7]: https://en.wikipedia.org/wiki/Mail_delivery_agent
-[8]: mailto:haraka-sub@harakamail.com
-[9]: https://haraka.github.io/plugins/spamassassin
-[10]: https://haraka.github.io/plugins/helo.checks
-[11]: https://haraka.github.io/plugins/dnsbl
-[12]: https://github.com/haraka/Haraka/blob/master/Plugins.md
-[13]: https://github.com/smtpd/qpsmtpd/
-[15]: https://github.com/haraka/Haraka/issues
-[16]: https://github.com/haraka/Haraka/blob/master/LICENSE
-[17]: https://github.com/baudehlo
+[npm]: https://www.npmjs.com/package/Haraka
+[plugins]: https://github.com/haraka/Haraka/blob/master/Plugins.md
+[docs]: https://github.com/haraka/Haraka/tree/master/docs
+[tutorial]: https://github.com/haraka/Haraka/blob/master/docs/Tutorial.md
+[changelog]: https://github.com/haraka/Haraka/blob/master/CHANGELOG.md
+[security]: https://github.com/haraka/Haraka/blob/master/SECURITY.md
+[contributors]: https://github.com/haraka/Haraka/blob/master/CONTRIBUTORS.md
+[license]: https://github.com/haraka/Haraka/blob/master/LICENSE
+[issues]: https://github.com/haraka/Haraka/issues
+[mailing-list]: mailto:haraka-sub@harakamail.com
+[screencast]: https://youtu.be/6twKXMAsPsw
+[matt-sergeant]: https://github.com/baudehlo
+[msimerson]: https://github.com/msimerson
+[spamassassin]: https://spamassassin.apache.org/
+[qpsmtpd]: https://github.com/smtpd/qpsmtpd/
 [cov-img]: https://codecov.io/github/haraka/Haraka/coverage.svg
 [cov-url]: https://codecov.io/github/haraka/Haraka?branch=master
