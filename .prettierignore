@@ -1,5 +1,5 @@
 docs/*.md
-Changes.md
+CHANGELOG.md
 CONTRIBUTORS.md
 Plugins.md
 .github/copilot-instructions.md
