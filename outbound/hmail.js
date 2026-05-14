@@ -1321,12 +1321,14 @@ class HMailItem extends events.EventEmitter {
     }
 
     convert_temp_failed_to_bounce(err, extra) {
-        this.todo.rcpt_to.forEach((rcpt_to) => {
-            rcpt_to.dsn_action = 'failed'
-            if (rcpt_to.dsn_status) {
-                rcpt_to.dsn_status = `${rcpt_to.dsn_status}`.replace(/^4/, '5')
-            }
-        })
+        if (this.todo) {
+            this.todo.rcpt_to.forEach((rcpt_to) => {
+                rcpt_to.dsn_action = 'failed'
+                if (rcpt_to.dsn_status) {
+                    rcpt_to.dsn_status = `${rcpt_to.dsn_status}`.replace(/^4/, '5')
+                }
+            })
+        }
         return this.bounce(err, extra)
     }
 

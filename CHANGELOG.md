@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(outbound): fix reading from null this.todo in temp fail bounce
 - fix(outbound): guard against error emit after listeners removed #3554
 - fix(outbound): yield before delivery attempts #3552
 - test(outbound,conn,endpoint,server,tls_socket): added tests #3552
