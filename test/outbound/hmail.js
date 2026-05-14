@@ -167,6 +167,25 @@ describe('outbound/hmail.HMailItem — queue file loading', () => {
         assert.ok(h)
     })
 
+    it('releases queue slot when stat fails on exhausted-retry item (regression #3560)', async () => {
+        // When fs.stat fails and num_failures already equals temp_fail_intervals.length,
+        // temp_fail() calls convert_temp_failed_to_bounce() while this.todo is null.
+        // That must not crash, and must call next_cb() to release the queue slot.
+        // attempts=12 in the filename causes num_failures=12 at construction; after
+        // temp_fail() increments it to 13 (> temp_fail_intervals.length=12) the
+        // overflow path fires with this.todo still null.
+        const fname = '1508455115683_1508455115683_12_90253_9Q4o4V_1_haraka'
+        const h = new Hmail(fname, '/nonexistent/path/that/cannot/be/stat/ed', {})
+        await new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('next_cb was never called')), 2000)
+            h.next_cb = () => {
+                clearTimeout(timer)
+                resolve()
+            }
+        })
+        assert.equal(h.todo, null, 'todo must remain null — file was never readable')
+    })
+
     it('lifecycle: reads and writes a queue file', async () => {
         const h = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_qfile', 'test/fixtures/todo_qfile.txt', {})
 

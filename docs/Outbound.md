@@ -201,8 +201,7 @@ Options accepted by `send_email(from, to, contents, next, options)`:
 | `remove_date: true` | Drop any existing `Date:` so Haraka generates one. |
 | `origin: <object>` | Object passed to the logger to identify the source plugin / connection / HMailItem. |
 
-To send an already-built `Transaction` directly, use `outbound.send_trans_email(transaction, next)`. This is what
-`send_email()` calls internally and fires the `pre_send_trans_email` hook.
+To send an already-built `Transaction` directly, use `outbound.send_trans_email(transaction, next)`. This is what `send_email()` calls internally and fires the `pre_send_trans_email` hook.
 
 <a name="fn1">1</a>: `Address` objects are [address-rfc2821](https://github.com/haraka/node-address-rfc2821) objects.
 
