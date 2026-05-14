@@ -87,9 +87,10 @@ class HMailItem extends events.EventEmitter {
             this.file_size = stats.size
             this.read_todo()
         } catch (err) {
-            // we are fucked... guess I need somewhere for this to go
+            // The file is unreadable (deleted, permissions, I/O error) and this.todo
+            // is still null, so there is no sender to bounce to. Release the queue slot.
             this.logerror(`Error obtaining file size: ${err}`)
-            this.temp_fail('Error obtaining file size')
+            this.next_cb()
         }
     }
 
