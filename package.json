@@ -20,7 +20,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "address-rfc2821": "^2.1.5",
+    "address-rfc2821": "^2.2.0",
     "address-rfc2822": "^2.2.3",
     "haraka-config": "^1.5.0",
     "haraka-constants": "^1.0.7",
