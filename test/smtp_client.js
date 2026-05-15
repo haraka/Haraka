@@ -5,7 +5,7 @@ const assert = require('node:assert/strict')
 const { PassThrough } = require('node:stream')
 const path = require('node:path')
 
-const { Address } = require('address-rfc2821')
+const { Address } = require('../address')
 const fixtures = require('haraka-test-fixtures')
 const net_utils = require('haraka-net-utils')
 const message = require('haraka-email-message')

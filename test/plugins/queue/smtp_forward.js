@@ -5,7 +5,7 @@ const assert = require('node:assert/strict')
 const { EventEmitter } = require('node:events')
 const path = require('node:path')
 
-const { Address } = require('address-rfc2821')
+const { Address } = require('../../../address')
 const fixtures = require('haraka-test-fixtures')
 const Notes = require('haraka-notes')
 

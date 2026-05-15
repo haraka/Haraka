@@ -4,7 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.2.0] - 2026-05-NN
+
 - fix(status): merge worker status into summary #3574
+- dep: replace address-rfc282{1,2} with @haraka/email-address #3566
+- change(BREAKING for some plugins), see https://github.com/haraka/Haraka/issues/3564
 
 ### [3.1.7] - 2026-05-19
 
@@ -1864,3 +1868,4 @@ config files.
 [3.1.5]: https://github.com/haraka/Haraka/releases/tag/v3.1.5
 [3.1.6]: https://github.com/haraka/Haraka/releases/tag/v3.1.6
 [3.1.7]: https://github.com/haraka/Haraka/releases/tag/v3.1.7
+[3.2.0]: https://github.com/haraka/Haraka/releases/tag/v3.2.0

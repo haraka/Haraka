@@ -3,7 +3,7 @@
 const fs = require('node:fs/promises')
 const path = require('node:path')
 
-const { Address } = require('address-rfc2821')
+const { Address } = require('../address')
 const config = require('haraka-config')
 const constants = require('haraka-constants')
 const net_utils = require('haraka-net-utils')
