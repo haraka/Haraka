@@ -4,7 +4,7 @@ const child_process = require('node:child_process')
 const fs = require('node:fs/promises')
 const path = require('node:path')
 
-const { Address } = require('address-rfc2821')
+const { Address } = require('../address')
 const config = require('haraka-config')
 
 const logger = require('../logger')

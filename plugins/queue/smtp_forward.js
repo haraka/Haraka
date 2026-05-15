@@ -61,7 +61,7 @@ exports.get_config = function (conn) {
     if (this.cfg.main.domain_selector === 'mail_from') {
         if (!conn.transaction.mail_from) return this.cfg.main
         dom = conn.transaction.mail_from.host
-        address = conn.transaction.mail_from.address()
+        address = conn.transaction.mail_from.address
     } else {
         if (!conn.transaction.rcpt_to[0]) return this.cfg.main
         dom = conn.transaction.rcpt_to[0].host
@@ -84,7 +84,7 @@ exports.check_sender = function (next, connection, params) {
     const txn = connection?.transaction
     if (!txn) return
 
-    const email = params[0].address()
+    const email = params[0].address
     if (!email) {
         txn.results.add(this, { skip: 'mail_from.null', emit: true })
         return next()

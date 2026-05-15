@@ -406,7 +406,7 @@ if (parsed.version) {
   plugins.load_plugins(parsed.test && parsed.test[0] !== 'all' ? parsed.test : null)
   const Connection = require(path.join(base, 'connection'))
   // var Transaction = require(path.join(base, "transaction"));
-  const Address = require('address-rfc2821').Address
+  const Address = require('../address').Address
   const Notes = require('haraka-notes')
   const constants = require('haraka-constants')
   const client = {

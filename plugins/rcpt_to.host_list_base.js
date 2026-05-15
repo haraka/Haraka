@@ -26,7 +26,7 @@ exports.hook_mail = function (next, connection, params) {
     const txn = connection?.transaction
     if (!txn) return
 
-    const email = params[0].address()
+    const email = params[0].address
     if (!email) {
         txn.results.add(this, { skip: 'mail_from.null', emit: true })
         return next()

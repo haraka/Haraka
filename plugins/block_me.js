@@ -24,12 +24,12 @@ exports.hook_data_post = function (next, connection) {
     }
 
     // Check recipient is the right one
-    if (connection.transaction.rcpt_to[0].address().toLowerCase() != recip) {
+    if (connection.transaction.rcpt_to[0].address.toLowerCase() != recip) {
         return next()
     }
 
     // Check sender is in list
-    const sender = connection.transaction.mail_from.address()
+    const sender = connection.transaction.mail_from.address
     if (!utils.in_array(sender, senders)) {
         return next(DENY, `You are not allowed to block mail, ${sender}`)
     }
