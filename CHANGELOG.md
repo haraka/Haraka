@@ -4,7 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.1.6] - 2026-05-15
+
 - fix(outbound): release queue slot when qfile unreadable #3561
+- fix(message-stream): add `unpipe` for pipe cleanup after errors
 - fix(outbound): guard against error emit after listeners removed #3554
 - fix(outbound): yield before delivery attempts #3552
 - test(outbound,conn,endpoint,server,tls_socket): added tests #3552
@@ -1827,3 +1830,4 @@ config files.
 [3.1.3]: https://github.com/haraka/Haraka/releases/tag/v3.1.3
 [3.1.4]: https://github.com/haraka/Haraka/releases/tag/v3.1.4
 [3.1.5]: https://github.com/haraka/Haraka/releases/tag/v3.1.5
+[3.1.6]: https://github.com/haraka/Haraka/releases/tag/v3.1.6

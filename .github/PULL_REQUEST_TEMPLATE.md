@@ -9,4 +9,4 @@ Checklist:
 
 - [ ] docs updated
 - [ ] tests updated
-- [ ] [Changes](https://github.com/haraka/Haraka/blob/master/Changes.md) updated
+- [ ] [CHANGELOG](https://github.com/haraka/Haraka/blob/master/CHANGELOG.md) updated
