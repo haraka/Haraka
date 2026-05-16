@@ -1,6 +1,6 @@
 'use strict'
 
-const assert = require('node:assert/strict')
+const assert = require('node:assert')
 const { describe, it, beforeEach } = require('node:test')
 
 const { Address } = require('../../address')
