@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- dep: replace address-rfc2821 + rfc2822 with @haraka/email-address
+- change(BREAKING for some plugins), see https://github.com/haraka/Haraka/issues/3564
+
 ### [3.1.6] - 2026-05-15
 
 - fix(outbound): release queue slot when qfile unreadable #3561

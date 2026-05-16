@@ -77,14 +77,14 @@ exports.hook_queue = function (next, connection) {
         const buf = Buffer.alloc(4096)
         let p = 0
         buf[p++] = 70
-        const mail_from = connection.transaction.mail_from.address()
+        const mail_from = connection.transaction.mail_from.address
         for (let i = 0; i < mail_from.length; i++) {
             buf[p++] = mail_from.charCodeAt(i)
         }
         buf[p++] = 0
         connection.transaction.rcpt_to.forEach((rcpt) => {
             buf[p++] = 84
-            const rcpt_to = rcpt.address()
+            const rcpt_to = rcpt.address
             for (let j = 0; j < rcpt_to.length; j++) {
                 buf[p++] = rcpt_to.charCodeAt(j)
             }

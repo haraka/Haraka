@@ -7,7 +7,7 @@ const dns = require('node:dns')
 const net = require('node:net')
 const path = require('node:path')
 
-const { Address } = require('address-rfc2821')
+const { Address } = require('../address')
 const config = require('haraka-config')
 const constants = require('haraka-constants')
 const DSN = require('haraka-dsn')
@@ -1148,7 +1148,7 @@ class HMailItem extends events.EventEmitter {
         }
         this.todo.rcpt_to.forEach((rcpt_to) => {
             bounce_body.push(CRLF)
-            bounce_body.push(`Final-Recipient: rfc822;${rcpt_to.address()}${CRLF}`)
+            bounce_body.push(`Final-Recipient: rfc822;${rcpt_to.address}${CRLF}`)
             let dsn_action = null
             if (rcpt_to.dsn_action) {
                 dsn_action = rcpt_to.dsn_action
