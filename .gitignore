@@ -12,6 +12,7 @@ coverage
 /test/queue/plain
 /test/queue/multibyte
 /test/test-queue
+/test/config/mail_from.blocklist
 /config/me
 /config/dhparams.pem
 /config/tls_cert.pem
