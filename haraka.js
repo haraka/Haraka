@@ -25,7 +25,7 @@ exports.version = utils.getVersion(__dirname)
 
 process.on('uncaughtException', (err) => {
     if (err.stack) {
-        err.stack.split('\n').forEach((line) => logger.crit(line))
+        for (const line of err.stack.split('\n')) logger.crit(line)
     } else {
         logger.crit(`Caught exception: ${JSON.stringify(err)}`)
     }

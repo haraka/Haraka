@@ -329,7 +329,7 @@ class Connection {
                 } catch (err) {
                     if (err.stack) {
                         this.logerror(`${method} failed: ${err}`)
-                        err.stack.split('\n').forEach(this.logerror)
+                        for (const line of err.stack.split('\n')) this.logerror(line)
                     } else {
                         this.logerror(`${method} failed: ${err}`)
                     }
@@ -1320,10 +1320,10 @@ class Connection {
 
         // Get rest of key=value pairs
         const params = {}
-        results.forEach((param) => {
+        for (const param of results) {
             const kv = param.match(/^([^=]+)(?:=(.+))?$/)
             if (kv) params[kv[1].toUpperCase()] = kv[2] || null
-        })
+        }
 
         // Parameters are only valid if EHLO was sent
         if (!this.esmtp && Object.keys(params).length > 0) {
@@ -1379,10 +1379,10 @@ class Connection {
 
         // Get rest of key=value pairs
         const params = {}
-        results.forEach((param) => {
+        for (const param of results) {
             const kv = param.match(/^([^=]+)(?:=(.+))?$/)
             if (kv) params[kv[1].toUpperCase()] = kv[2] || null
-        })
+        }
 
         // Parameters are only valid if EHLO was sent
         if (!this.esmtp && Object.keys(params).length > 0) {

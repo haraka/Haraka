@@ -678,12 +678,12 @@ class HMailItem extends events.EventEmitter {
                 processing_mail = false
                 // Release back to the pool and instruct it to terminate this connection
                 client_pool.release_client(socket, mx)
-                self.todo.rcpt_to.forEach((rcpt) => {
+                for (const rcpt of self.todo.rcpt_to) {
                     self.extend_rcpt_with_dsn(
                         rcpt,
                         DSN.proto_invalid_command(`Unrecognized response from upstream server: ${line}`),
                     )
-                })
+                }
                 self.bounce(`Unrecognized response from upstream server: ${line}`, { mx })
                 return
             }
@@ -720,14 +720,14 @@ class HMailItem extends events.EventEmitter {
                 }
                 // Error
                 reason = response.join(' ')
-                recipients.forEach((rcpt) => {
+                for (const rcpt of recipients) {
                     rcpt.dsn_action = 'delayed'
                     rcpt.dsn_smtp_code = code
                     rcpt.dsn_smtp_extc = extc
                     rcpt.dsn_status = extc
                     rcpt.dsn_smtp_response = response.join(' ')
                     rcpt.dsn_remote_mta = mx.exchange
-                })
+                }
                 send_command('QUIT')
                 processing_mail = false
                 return self.temp_fail(`Upstream error: ${code} ${extc ? `${extc} ` : ''}${reason}`)
@@ -756,14 +756,14 @@ class HMailItem extends events.EventEmitter {
                     }
                 } else if (processing_mail) {
                     reason = response.join(' ')
-                    recipients.forEach((rcpt) => {
+                    for (const rcpt of recipients) {
                         rcpt.dsn_action = 'delayed'
                         rcpt.dsn_smtp_code = code
                         rcpt.dsn_smtp_extc = extc
                         rcpt.dsn_status = extc
                         rcpt.dsn_smtp_response = response.join(' ')
                         rcpt.dsn_remote_mta = mx.exchange
-                    })
+                    }
                     send_command('QUIT')
                     processing_mail = false
                     return self.temp_fail(`Upstream error: ${code} ${extc ? `${extc} ` : ''}${reason}`)
@@ -803,14 +803,14 @@ class HMailItem extends events.EventEmitter {
                         }
                     }
                 } else {
-                    recipients.forEach((rcpt) => {
+                    for (const rcpt of recipients) {
                         rcpt.dsn_action = 'failed'
                         rcpt.dsn_smtp_code = code
                         rcpt.dsn_smtp_extc = extc
                         rcpt.dsn_status = extc
                         rcpt.dsn_smtp_response = response.join(' ')
                         rcpt.dsn_remote_mta = mx.exchange
-                    })
+                    }
                     send_command('QUIT')
                     processing_mail = false
                     return self.bounce(reason, { mx })
@@ -1036,7 +1036,7 @@ class HMailItem extends events.EventEmitter {
             msgid: `<${utils.uuid()}@${net_utils.get_primary_host_name()}>`,
         }
 
-        bounce_msg_.forEach((line) => {
+        for (let line of bounce_msg_) {
             line = line.replace(/\{(\w+)\}/g, (i, word) => values[word] || '?')
 
             if (bounce_headers_done == false && line == '') {
@@ -1046,7 +1046,7 @@ class HMailItem extends events.EventEmitter {
             } else if (bounce_headers_done == true) {
                 bounce_body_lines.push(line)
             }
-        })
+        }
 
         const escaped_chars = {
             '&': 'amp',
@@ -1059,7 +1059,7 @@ class HMailItem extends events.EventEmitter {
         }
         const escape_pattern = new RegExp(`[${Object.keys(escaped_chars).join('')}]`, 'g')
 
-        bounce_msg_html_.forEach((line) => {
+        for (let line of bounce_msg_html_) {
             line = line.replace(/\{(\w+)\}/g, (i, word) => {
                 if (word in values) {
                     return String(values[word]).replace(escape_pattern, (m) => `&${escaped_chars[m]};`)
@@ -1069,18 +1069,18 @@ class HMailItem extends events.EventEmitter {
             })
 
             bounce_html_lines.push(line)
-        })
+        }
 
-        bounce_msg_image_.forEach((line) => {
+        for (const line of bounce_msg_image_) {
             bounce_image_lines.push(line)
-        })
+        }
 
         const boundary = `boundary_${utils.uuid()}`
         const bounce_body = []
 
-        bounce_header_lines.forEach((line) => {
+        for (const line of bounce_header_lines) {
             bounce_body.push(`${line}${CRLF}`)
-        })
+        }
         bounce_body.push(
             `Content-Type: multipart/report; report-type=delivery-status;${CRLF}    boundary="${boundary}"${CRLF}`,
         )
@@ -1108,18 +1108,18 @@ class HMailItem extends events.EventEmitter {
         bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
         bounce_body.push(`Content-Type: text/plain; charset=us-ascii${CRLF}`)
         bounce_body.push(CRLF)
-        bounce_body_lines.forEach((line) => {
+        for (const line of bounce_body_lines) {
             bounce_body.push(`${line}${CRLF}`)
-        })
+        }
         bounce_body.push(CRLF)
 
         if (bounce_html_lines.length > 1) {
             bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
             bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`)
             bounce_body.push(CRLF)
-            bounce_html_lines.forEach((line) => {
+            for (const line of bounce_html_lines) {
                 bounce_body.push(`${line}${CRLF}`)
-            })
+            }
             bounce_body.push(CRLF)
             bounce_body.push(`--${boundary}${boundary_incr}--${CRLF}`)
 
@@ -1128,9 +1128,9 @@ class HMailItem extends events.EventEmitter {
                 bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
                 //bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
                 //bounce_body.push(CRLF);
-                bounce_image_lines.forEach((line) => {
+                for (const line of bounce_image_lines) {
                     bounce_body.push(`${line}${CRLF}`)
-                })
+                }
                 bounce_body.push(CRLF)
                 bounce_body.push(`--${boundary}${boundary_incr}--${CRLF}`)
             }
@@ -1146,7 +1146,7 @@ class HMailItem extends events.EventEmitter {
         if (this.todo.queue_time) {
             bounce_body.push(`Arrival-Date: ${utils.date_to_str(new Date(this.todo.queue_time))}${CRLF}`)
         }
-        this.todo.rcpt_to.forEach((rcpt_to) => {
+        for (const rcpt_to of this.todo.rcpt_to) {
             bounce_body.push(CRLF)
             bounce_body.push(`Final-Recipient: rfc822;${rcpt_to.address()}${CRLF}`)
             let dsn_action = null
@@ -1208,16 +1208,16 @@ class HMailItem extends events.EventEmitter {
             if (diag_code != null) {
                 bounce_body.push(`Diagnostic-Code: ${diag_code}${CRLF}`)
             }
-        })
+        }
         bounce_body.push(CRLF)
 
         bounce_body.push(`--${boundary}${CRLF}`)
         bounce_body.push(`Content-Description: Undelivered Message Headers${CRLF}`)
         bounce_body.push(`Content-Type: text/rfc822-headers${CRLF}`)
         bounce_body.push(CRLF)
-        header.header_list.forEach((line) => {
+        for (const line of header.header_list) {
             bounce_body.push(line)
-        })
+        }
         bounce_body.push(CRLF)
 
         bounce_body.push(`--${boundary}--${CRLF}`)
@@ -1322,12 +1322,12 @@ class HMailItem extends events.EventEmitter {
     }
 
     convert_temp_failed_to_bounce(err, extra) {
-        this.todo.rcpt_to.forEach((rcpt_to) => {
+        for (const rcpt_to of this.todo.rcpt_to) {
             rcpt_to.dsn_action = 'failed'
             if (rcpt_to.dsn_status) {
                 rcpt_to.dsn_status = `${rcpt_to.dsn_status}`.replace(/^4/, '5')
             }
-        })
+        }
         return this.bounce(err, extra)
     }
 
@@ -1446,9 +1446,9 @@ class HMailItem extends events.EventEmitter {
         })
         function err_handler(err, location) {
             logger.error(this, `Error while splitting to new recipients (${location}): ${err}`)
-            hmail.todo.rcpt_to.forEach((rcpt) => {
+            for (const rcpt of hmail.todo.rcpt_to) {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error splitting to new recipients: ${err}`))
-            })
+            }
             hmail.bounce(`Error splitting to new recipients: ${err}`)
         }
 
@@ -1486,9 +1486,9 @@ class HMailItem extends events.EventEmitter {
         ws.on('error', (err) => {
             logger.error(this, `Unable to write queue file (${fname}): ${err}`)
             ws.destroy()
-            hmail.todo.rcpt_to.forEach((rcpt) => {
+            for (const rcpt of hmail.todo.rcpt_to) {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error re-queueing some recipients: ${err}`))
-            })
+            }
             hmail.bounce(`Error re-queueing some recipients: ${err}`)
         })
 

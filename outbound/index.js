@@ -200,16 +200,16 @@ function get_deliveries(transaction) {
 
     // First get each domain
     const recips = {}
-    transaction.rcpt_to.forEach((rcpt) => {
+    for (const rcpt of transaction.rcpt_to) {
         const domain = rcpt.host
         if (!recips[domain]) {
             recips[domain] = []
         }
         recips[domain].push(rcpt)
-    })
-    Object.keys(recips).forEach((domain) => {
+    }
+    for (const domain of Object.keys(recips)) {
         deliveries.push({ domain, rcpts: recips[domain] })
-    })
+    }
     return deliveries
 }
 

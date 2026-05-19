@@ -354,10 +354,10 @@ exports.get_mx = function (next, hmail, domain) {
     }
 
     // apply auth/mx options
-    mx_opts.forEach((o) => {
-        if (cfg[o] === undefined) return
+    for (const o of mx_opts) {
+        if (cfg[o] === undefined) continue
         mx[o] = this.cfg[dom][o]
-    })
+    }
 
     next(OK, mx)
 }

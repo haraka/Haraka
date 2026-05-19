@@ -82,14 +82,14 @@ exports.hook_queue = function (next, connection) {
             buf[p++] = mail_from.charCodeAt(i)
         }
         buf[p++] = 0
-        connection.transaction.rcpt_to.forEach((rcpt) => {
+        for (const rcpt of connection.transaction.rcpt_to) {
             buf[p++] = 84
             const rcpt_to = rcpt.address()
             for (let j = 0; j < rcpt_to.length; j++) {
                 buf[p++] = rcpt_to.charCodeAt(j)
             }
             buf[p++] = 0
-        })
+        }
         buf[p++] = 0
         qmail_queue.stdout.on('error', (err) => {}) // stdout throws an error on close
         qmail_queue.stdout.end(buf)

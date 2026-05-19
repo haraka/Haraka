@@ -64,17 +64,17 @@ exports.hook_init_master = function (next, server) {
                     server.notes.pt_connections++
                     server.notes.pt_concurrent_cluster[msg.wid]++
                     count = 0
-                    Object.keys(server.notes.pt_concurrent_cluster).forEach((id) => {
+                    for (const id of Object.keys(server.notes.pt_concurrent_cluster)) {
                         count += server.notes.pt_concurrent_cluster[id]
-                    })
+                    }
                     server.notes.pt_concurrent = count
                     break
                 case 'process_title.disconnect':
                     server.notes.pt_concurrent_cluster[msg.wid]--
                     count = 0
-                    Object.keys(server.notes.pt_concurrent_cluster).forEach((id) => {
+                    for (const id of Object.keys(server.notes.pt_concurrent_cluster)) {
                         count += server.notes.pt_concurrent_cluster[id]
-                    })
+                    }
                     server.notes.pt_concurrent = count
                     break
                 case 'process_title.recipient':
@@ -109,9 +109,9 @@ exports.hook_init_master = function (next, server) {
             delete server.notes.pt_concurrent_cluster[worker.id]
             // Update concurrency
             let count = 0
-            Object.keys(server.notes.pt_concurrent_cluster).forEach((id) => {
+            for (const id of Object.keys(server.notes.pt_concurrent_cluster)) {
                 count += server.notes.pt_concurrent_cluster[id]
-            })
+            }
             server.notes.pt_concurrent = count
             server.notes.pt_child_exits++
         })
