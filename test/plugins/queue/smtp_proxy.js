@@ -2,39 +2,14 @@
 
 const assert = require('node:assert')
 const path = require('node:path')
-const Module = require('node:module')
-const { describe, it, beforeEach, before, after } = require('node:test')
+const { describe, it, beforeEach, afterEach, before } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
 
-// smtp_proxy.js requires './smtp_client' at the top level. Since
-// plugins/queue/smtp_client.js does not exist in this environment,
-// we intercept Module._resolveFilename and pre-populate the require cache.
-const smtpClientPath = path.resolve('plugins/queue/smtp_client.js')
-let mockSmtpClientMod
-let origResolve
+const tls_socket = require('../../../tls_socket')
 
 before(() => {
     require('haraka-constants').import(global)
-
-    mockSmtpClientMod = { get_client_plugin: () => {} }
-    require.cache[smtpClientPath] = {
-        id: smtpClientPath,
-        filename: smtpClientPath,
-        loaded: true,
-        exports: mockSmtpClientMod,
-    }
-
-    origResolve = Module._resolveFilename
-    Module._resolveFilename = function (request, parent, isMain, options) {
-        if (request === './smtp_client') return smtpClientPath
-        return origResolve.call(this, request, parent, isMain, options)
-    }
-})
-
-after(() => {
-    Module._resolveFilename = origResolve
-    delete require.cache[smtpClientPath]
 })
 
 describe('queue/smtp_proxy', () => {
@@ -125,6 +100,40 @@ describe('queue/smtp_proxy', () => {
                 assert.equal(rc, undefined)
                 done()
             }, conn)
+        })
+    })
+
+    describe('tls_options', () => {
+        let origTlsConfig, origTlsCfg
+
+        beforeEach(() => {
+            origTlsConfig = tls_socket.config
+            origTlsCfg = tls_socket.cfg
+            tls_socket.config = require('haraka-config').module_config(path.resolve('test'))
+            tls_socket.cfg = undefined
+            // re-derive with test/config in scope
+            plugin.load_smtp_proxy_ini()
+        })
+
+        afterEach(() => {
+            tls_socket.config = origTlsConfig
+            tls_socket.cfg = origTlsCfg
+        })
+
+        it('populates tls_options from tls.ini [main]', () => {
+            assert.ok(plugin.tls_options)
+            assert.equal(plugin.tls_options.rejectUnauthorized, false)
+            assert.equal(plugin.tls_options.minVersion, 'TLSv1')
+            assert.ok(plugin.tls_options.ciphers)
+            assert.ok(Array.isArray(plugin.tls_options.no_tls_hosts))
+            assert.ok(Array.isArray(plugin.tls_options.force_tls_hosts))
+        })
+
+        it('reload re-derives tls_options', () => {
+            const first = plugin.tls_options
+            plugin.load_smtp_proxy_ini()
+            assert.ok(plugin.tls_options)
+            assert.notEqual(plugin.tls_options, first)
         })
     })
 })

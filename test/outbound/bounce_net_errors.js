@@ -98,9 +98,10 @@ const testCases = [
         trigger: (h) => HMailItem.prototype.get_mx_error.apply(h, [{ code: 'SOME-OTHER-ERR' }, {}]),
     },
     {
-        name: 'found_mx with empty exchange triggers bounce with dsn_status 5.1.2',
+        // RFC 7505 NULL MX → DSN.addr_null_mx → 5.1.10 (per haraka-dsn).
+        name: 'found_mx with NULL MX (RFC 7505) triggers bounce with dsn_status 5.1.10',
         method: 'bounce',
-        status: '5.1.2',
+        status: '5.1.10',
         trigger: (h) => HMailItem.prototype.found_mx.apply(h, [[{ priority: 0, exchange: '' }]]),
     },
     {

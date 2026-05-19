@@ -22,9 +22,11 @@ exports.hook_data_post = (next, connection) => {
     let user = connection.notes.auth_user
     let domain
     const idx = user.indexOf('@')
-    if (idx) {
+    if (idx > 0) {
         // If the username is qualified (e.g. user@domain.com)
         // then we make the @domain.com part optional in the regexp.
+        // (idx === -1 is "no @"; idx === 0 is a leading @ — neither is
+        // a qualified user@domain, so don't split.)
         domain = user.substring(idx)
         user = user.substring(0, idx)
     }

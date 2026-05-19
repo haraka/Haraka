@@ -7,6 +7,7 @@
 const url = require('node:url')
 
 const smtp_client_mod = require('../../smtp_client')
+const tls_socket = require('../../tls_socket')
 
 exports.register = function () {
     this.load_errs = []
@@ -46,12 +47,19 @@ exports.load_smtp_forward_ini = function () {
                 '-main.check_recipient',
                 '*.enable_tls',
                 '*.enable_outbound',
+                '+tls.requestCert',
+                '+tls.honorCipherOrder',
+                '-tls.rejectUnauthorized',
             ],
         },
         () => {
             this.load_smtp_forward_ini()
         },
     )
+
+    // Build backend TLS options from tls.ini [main] + this plugin's [tls] section.
+    // Re-derived on every (re)load so SIGHUP picks up edits.
+    this.tls_options = tls_socket.load_plugin_tls_options(this.cfg.tls || {})
 }
 
 exports.get_config = function (conn) {
@@ -264,7 +272,7 @@ exports.queue_forward = function (next, connection) {
                 smtp_client.send_command('DATA')
                 return
             }
-            smtp_client.send_command('RCPT', `TO:${txn.rcpt_to[rcpt].format(!smtp_client.smtp_utf8)}`)
+            smtp_client.send_command('RCPT', `TO:${txn.rcpt_to[rcpt].format(!smtp_client.smtputf8)}`)
             rcpt++
         }
 

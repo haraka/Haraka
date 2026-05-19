@@ -1234,6 +1234,13 @@ class Connection {
         if (!host) {
             return this.respond(501, 'HELO requires domain/address - see RFC-2821 4.1.1.1')
         }
+        // RFC 5321 §4.1.1.1: the domain/address-literal cannot contain
+        // control characters. process_line() only strips the first \r?\n,
+        // so a bare \r could otherwise survive into hello.host and the
+        // generated Received: header / logs (header injection).
+        if (/[\x00-\x1f\x7f]/.test(host)) {
+            return this.respond(501, 'HELO syntax error - see RFC-2821 4.1.1.1')
+        }
 
         this.reset_transaction(() => {
             this.set('hello', 'verb', 'HELO')
@@ -1247,6 +1254,10 @@ class Connection {
         const host = results[0]
         if (!host) {
             return this.respond(501, 'EHLO requires domain/address - see RFC-2821 4.1.1.1')
+        }
+        // RFC 5321 §4.1.1.1: reject control chars (see cmd_helo).
+        if (/[\x00-\x1f\x7f]/.test(host)) {
+            return this.respond(501, 'EHLO syntax error - see RFC-2821 4.1.1.1')
         }
 
         this.reset_transaction(() => {
@@ -1433,17 +1444,23 @@ class Connection {
             this.transaction.notes.authentication_results = []
         }
 
+        // Strip CR/LF and other control chars: an attacker-influenced
+        // value (e.g. a failed AUTH username, see auth_base) must not be
+        // able to inject extra header lines into Authentication-Results.
+        // The legitimate folding (;\r\n\t) is added by the join below.
+        const ar_clean = (s) => String(s).replace(/[\x00-\x1f\x7f]/g, '')
+
         // if message, store it in the appropriate note
         if (message) {
             if (has_tran === true) {
-                this.transaction.notes.authentication_results.push(message)
+                this.transaction.notes.authentication_results.push(ar_clean(message))
             } else {
-                this.notes.authentication_results.push(message)
+                this.notes.authentication_results.push(ar_clean(message))
             }
         }
 
         // assemble the new header
-        let header = [this.local.host, ...this.notes.authentication_results]
+        let header = [ar_clean(this.local.host), ...this.notes.authentication_results]
         if (has_tran === true) {
             header = [...header, ...this.transaction.notes.authentication_results]
         }

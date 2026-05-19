@@ -676,4 +676,28 @@ describe('connection', () => {
             assert.equal(this.connection.transaction.data_bytes, 0)
         })
     })
+
+    describe('header injection', () => {
+        beforeEach(setUp)
+
+        it('cmd_helo rejects control chars in the host', () => {
+            const r = this.connection.cmd_helo('evil\rINJECTED')
+            assert.match(String(r), /^501/)
+            assert.equal(this.connection.hello.host, null)
+        })
+
+        it('cmd_ehlo rejects control chars in the host', () => {
+            const r = this.connection.cmd_ehlo('evil\r\nINJECTED')
+            assert.match(String(r), /^501/)
+            assert.equal(this.connection.hello.host, null)
+        })
+
+        it('auth_results strips CR/LF so it cannot inject a header', () => {
+            const out = this.connection.auth_results('auth=fail smtp.auth=evil\r\nInjected-Header: pwned')
+            assert.ok(!out.includes('\r\nInjected-Header:'))
+            // the only CRLF present is the legitimate folding (;\r\n\t)
+            assert.equal(out.replace(/;\r\n\t/g, '').includes('\r'), false)
+            assert.equal(out.replace(/;\r\n\t/g, '').includes('\n'), false)
+        })
+    })
 })

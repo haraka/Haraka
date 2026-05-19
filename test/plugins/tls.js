@@ -60,4 +60,29 @@ describe('tls', () => {
             )
         })
     })
+
+    describe('upgrade_connection (STARTTLS injection)', () => {
+        // RFC 3207 §4: data pipelined after STARTTLS but before the TLS
+        // handshake must be discarded, not processed on the cleartext channel.
+        it('discards pipelined plaintext before the TLS handshake', () => {
+            const c = this.connection
+            c.tls = { advertised: true }
+            c.notes = {}
+            // attacker pipelined an injected command after STARTTLS
+            c.current_data = Buffer.from('RCPT TO:<victim@example.com>\r\n')
+            let dataAtUpgrade = 'UPGRADE_NOT_CALLED'
+            c.client = {
+                upgrade() {
+                    dataAtUpgrade = c.current_data
+                },
+            }
+            c.respond = () => {} // bypass the real _process_data path
+            this.plugin.timeout = 0
+
+            this.plugin.upgrade_connection(() => {}, c, ['STARTTLS'])
+
+            assert.equal(dataAtUpgrade, null, 'buffer cleared before upgrade()')
+            assert.equal(c.current_data, null)
+        })
+    })
 })

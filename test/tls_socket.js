@@ -239,4 +239,86 @@ test('tls_socket', async (t) => {
             }
         }
     })
+
+    await t.test('load_plugin_tls_options', async (t) => {
+        // Point haraka-config at test/config so tls.ini fixtures load.
+        const origConfig = tls_socket.config
+        const origCfg = tls_socket.cfg
+        const test_config = require('haraka-config').module_config(path.resolve(__dirname))
+
+        t.beforeEach(() => {
+            tls_socket.config = test_config
+            tls_socket.cfg = undefined // bust load_tls_ini cache between cases
+        })
+
+        t.after(() => {
+            tls_socket.config = origConfig
+            tls_socket.cfg = origCfg
+        })
+
+        await t.test('inherits tls.ini [main] when plugin cfg is empty', () => {
+            const opts = tls_socket.load_plugin_tls_options({})
+            // From test/config/tls.ini [main]
+            assert.equal(opts.rejectUnauthorized, false)
+            assert.equal(opts.minVersion, 'TLSv1')
+            assert.equal(opts.honorCipherOrder, true)
+            assert.ok(opts.ciphers && opts.ciphers.length)
+            assert.ok(Buffer.isBuffer(opts.key), 'key resolved to Buffer')
+            assert.ok(Buffer.isBuffer(opts.cert), 'cert resolved to Buffer')
+        })
+
+        await t.test('plugin cfg overrides [main]', () => {
+            const opts = tls_socket.load_plugin_tls_options({
+                rejectUnauthorized: true,
+                minVersion: 'TLSv1.3',
+                ciphers: 'ECDHE-RSA-AES256-GCM-SHA384',
+            })
+            assert.equal(opts.rejectUnauthorized, true)
+            assert.equal(opts.minVersion, 'TLSv1.3')
+            assert.equal(opts.ciphers, 'ECDHE-RSA-AES256-GCM-SHA384')
+        })
+
+        await t.test('resolves key/cert/dhparam file refs to Buffers', () => {
+            const opts = tls_socket.load_plugin_tls_options({
+                key: 'outbound_tls_key.pem',
+                cert: 'outbound_tls_cert.pem',
+                dhparam: 'dhparams.pem',
+            })
+            assert.ok(Buffer.isBuffer(opts.key) && opts.key.length > 0)
+            assert.ok(Buffer.isBuffer(opts.cert) && opts.cert.length > 0)
+            assert.ok(Buffer.isBuffer(opts.dhparam) && opts.dhparam.length > 0)
+        })
+
+        await t.test('drops missing dhparam rather than leaving null', () => {
+            const opts = tls_socket.load_plugin_tls_options({
+                dhparam: 'does_not_exist.pem',
+            })
+            assert.equal(opts.dhparam, undefined)
+        })
+
+        await t.test('normalises no_tls_hosts / force_tls_hosts to arrays', () => {
+            const opts = tls_socket.load_plugin_tls_options({
+                no_tls_hosts: '10.0.0.5',
+                force_tls_hosts: ['a.example.com', 'b.example.com'],
+            })
+            assert.deepEqual(opts.no_tls_hosts, ['10.0.0.5'])
+            assert.deepEqual(opts.force_tls_hosts, ['a.example.com', 'b.example.com'])
+
+            const opts2 = tls_socket.load_plugin_tls_options({})
+            assert.deepEqual(opts2.no_tls_hosts, [])
+            assert.deepEqual(opts2.force_tls_hosts, [])
+        })
+
+        await t.test('does not set servername', () => {
+            const opts = tls_socket.load_plugin_tls_options({})
+            assert.equal(opts.servername, undefined)
+        })
+
+        await t.test('does not mutate the input plugin cfg', () => {
+            const input = { rejectUnauthorized: true, no_tls_hosts: '10.0.0.5' }
+            const before = JSON.stringify(input)
+            tls_socket.load_plugin_tls_options(input)
+            assert.equal(JSON.stringify(input), before)
+        })
+    })
 })

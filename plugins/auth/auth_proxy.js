@@ -93,7 +93,9 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         if (cmd === 'dot') {
             line = '.'
         }
-        connection.logprotocol(self, `C: ${line}`)
+        // Don't leak proxied SASL credentials (AUTH PLAIN <base64>) to logs
+        const safe = line.replace(/^(AUTH\s+\S+\s+).+$/i, '$1[redacted]')
+        connection.logprotocol(self, `C: ${safe}`)
         command = cmd.toLowerCase()
         this.write(`${line}\r\n`)
         // Clear response buffer from previous command
@@ -128,18 +130,19 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
             for (const i in response) {
                 if (/^STARTTLS/.test(response[i])) {
                     if (secure) continue // silly remote, we've already upgraded
-                    // Use TLS opportunistically if we found the key and certificate
+                    // Opportunistic TLS: a client does not need its own
+                    // certificate to negotiate TLS, so always STARTTLS when
+                    // the backend offers it. The local key/cert are only
+                    // attached if configured (mutual TLS), not required.
                     key = self.config.get(self.tls_cfg.main.key || 'tls_key.pem', 'binary')
                     cert = self.config.get(self.tls_cfg.main.cert || 'tls_cert.pem', 'binary')
-                    if (key && cert) {
-                        this.on('secure', () => {
-                            if (secure) return
-                            secure = true
-                            socket.send_command('EHLO', connection.local.host)
-                        })
-                        socket.send_command('STARTTLS')
-                        return
-                    }
+                    this.on('secure', () => {
+                        if (secure) return
+                        secure = true
+                        socket.send_command('EHLO', connection.local.host)
+                    })
+                    socket.send_command('STARTTLS')
+                    return
                 } else if (/^AUTH /.test(response[i])) {
                     // Parse supported AUTH methods
                     const parse = /^AUTH (.+)$/.exec(response[i])

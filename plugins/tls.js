@@ -85,6 +85,14 @@ exports.upgrade_connection = function (next, connection, params) {
     /* Watch for STARTTLS directive from client. */
     if (params[0].toUpperCase() !== 'STARTTLS') return next()
 
+    // RFC 3207 §4: discard any plaintext the client pipelined after
+    // STARTTLS. Otherwise connection.respond() restores state to CMD and
+    // re-enters _process_data(), parsing and executing those buffered
+    // cleartext commands before the TLS handshake completes (STARTTLS
+    // command injection). Mirrors the buffer-nuke already used for
+    // SSL-over-plaintext detection in connection.process_line().
+    connection.current_data = null
+
     /* Respond to STARTTLS command. */
     connection.respond(220, 'Go ahead.')
 
@@ -109,7 +117,7 @@ exports.upgrade_connection = function (next, connection, params) {
     connection.notes.cleanUpDisconnect = nextOnce
 
     /* Upgrade the connection to TLS. */
-    connection.client.upgrade((verified, verifyErr, cert, cipher) => {
+    connection.client.upgrade((verified, verifyError, cert, cipher) => {
         if (called_next) return
         clearTimeout(connection.notes.tls_timer)
         called_next = true
@@ -117,12 +125,12 @@ exports.upgrade_connection = function (next, connection, params) {
             connection.setTLS({
                 cipher,
                 verified,
-                authorizationError: verifyErr,
+                verifyError,
                 peerCertificate: cert,
             })
 
             connection.results.add(plugin, connection.tls)
-            plugin.emit_upgrade_msg(connection, verified, verifyErr, cert, cipher)
+            plugin.emit_upgrade_msg(connection, verified, verifyError, cert, cipher)
             next(OK)
         })
     })
@@ -135,13 +143,13 @@ exports.hook_disconnect = (next, connection) => {
     next()
 }
 
-exports.emit_upgrade_msg = function (conn, verified, verifyErr, cert, cipher) {
+exports.emit_upgrade_msg = function (conn, verified, verifyError, cert, cipher) {
     let msg = 'secured:'
     if (cipher) {
         msg += ` cipher=${cipher.name} version=${cipher.version}`
     }
     msg += ` verified=${verified}`
-    if (verifyErr) msg += ` error="${verifyErr}"`
+    if (verifyError) msg += ` error="${verifyError}"`
     if (cert) {
         if (cert.subject) {
             msg += ` cn="${cert.subject.CN}" organization="${cert.subject.O}"`

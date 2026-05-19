@@ -42,7 +42,7 @@ function makeHmail(notes = {}) {
 class MockSMTPClient extends EventEmitter {
     constructor() {
         super()
-        this.smtp_utf8 = false
+        this.smtputf8 = false
         this.response = ['250 OK']
         this.next = null
         this.commands = []
@@ -140,11 +140,47 @@ describe('smtp_forward register', () => {
         assert.equal(plugin.hooks.queue, undefined)
     })
 
-    it('TLS enabled but no outbound config in tls.ini', () => {
-        const plugin = new fixtures.plugin('queue/smtp_forward')
-        plugin.register()
-        assert.equal(plugin.tls_options, undefined)
-        assert.ok(Object.keys(plugin.hooks).length)
+    it('populates tls_options after register (no-op shape)', () => {
+        const plugin = makePlugin()
+        assert.ok(plugin.tls_options, 'tls_options should be populated after register')
+        assert.ok(Array.isArray(plugin.tls_options.no_tls_hosts))
+        assert.ok(Array.isArray(plugin.tls_options.force_tls_hosts))
+    })
+})
+
+// ─── tls_options ─────────────────────────────────────────────────────────────
+
+describe('smtp_forward tls_options', () => {
+    const tls_socket = require('../../../tls_socket')
+    let origTlsConfig, origTlsCfg
+
+    beforeEach(() => {
+        // Redirect tls_socket.config at test/config so tls.ini fixtures load.
+        origTlsConfig = tls_socket.config
+        origTlsCfg = tls_socket.cfg
+        tls_socket.config = require('haraka-config').module_config(path.resolve('test'))
+        tls_socket.cfg = undefined
+    })
+
+    afterEach(() => {
+        tls_socket.config = origTlsConfig
+        tls_socket.cfg = origTlsCfg
+    })
+
+    it('inherits rejectUnauthorized/minVersion/ciphers from tls.ini [main]', () => {
+        const plugin = makePlugin()
+        assert.equal(plugin.tls_options.rejectUnauthorized, false)
+        assert.equal(plugin.tls_options.minVersion, 'TLSv1')
+        assert.ok(plugin.tls_options.ciphers)
+    })
+
+    it('reload re-derives tls_options', () => {
+        const plugin = makePlugin()
+        const first = plugin.tls_options
+        plugin.load_smtp_forward_ini()
+        assert.ok(plugin.tls_options)
+        assert.notEqual(plugin.tls_options, first, 'reload returns a fresh object')
+        assert.equal(plugin.tls_options.rejectUnauthorized, false)
     })
 })
 

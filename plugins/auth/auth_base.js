@@ -99,6 +99,12 @@ exports.check_user = function (next, connection, credentials, method) {
             (typeof opts === 'object' ? opts.message : opts) ||
             (valid ? '2.7.0 Authentication successful' : '5.7.8 Authentication failed')
 
+        // The AUTH username is attacker-controlled (base64-decoded). Strip
+        // control chars before it is stored in notes or emitted into the
+        // Authentication-Results header (header injection).
+        // eslint-disable-next-line no-control-regex
+        const safe_user = String(credentials[0] ?? '').replace(/[\x00-\x1f\x7f]/g, '')
+
         if (valid) {
             connection.relaying = true
             connection.results.add({ name: 'relay' }, { pass: plugin.name })
@@ -108,14 +114,14 @@ exports.check_user = function (next, connection, credentials, method) {
                 {
                     pass: plugin.name,
                     method,
-                    user: credentials[0],
+                    user: safe_user,
                 },
             )
 
             connection.respond(status_code, status_message, () => {
                 connection.authheader = '(authenticated bits=0)\n'
                 connection.auth_results(`auth=pass (${method.toLowerCase()})`)
-                connection.notes.auth_user = credentials[0]
+                connection.notes.auth_user = safe_user
                 if (!plugin.blankout_password) connection.notes.auth_passwd = credentials[1]
                 next(OK)
             })
@@ -133,7 +139,7 @@ exports.check_user = function (next, connection, credentials, method) {
         }
         connection.lognotice(plugin, `delaying for ${delay} seconds`)
         // here we include the username, as shown in RFC 5451 example
-        connection.auth_results(`auth=fail (${method.toLowerCase()}) smtp.auth=${credentials[0]}`)
+        connection.auth_results(`auth=fail (${method.toLowerCase()}) smtp.auth=${safe_user}`)
         setTimeout(() => {
             connection.respond(status_code, status_message, () => {
                 connection.reset_transaction(() => next(OK))

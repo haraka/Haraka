@@ -192,7 +192,7 @@ class SMTPClient extends events.EventEmitter {
         client.socket.on('end', closed('ended'))
     }
 
-    load_tls_config(opts = {}) {
+    load_tls_options(opts = {}) {
         this.tls_options = { servername: this.host, ...opts }
     }
 
@@ -312,8 +312,8 @@ exports.onCapabilitiesOutbound = (smtp_client, secured, connection, config, on_s
             // Check if there are any banned TLS hosts
             if (smtp_client.tls_options.no_tls_hosts) {
                 // If there are check if these hosts are in the blacklist
-                hostBanned = net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, config.host)
-                serverBanned = net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, smtp_client.remote_ip)
+                hostBanned = net_utils.ip_in_list(smtp_client.tls_options.no_tls_hosts, config.host)
+                serverBanned = net_utils.ip_in_list(smtp_client.tls_options.no_tls_hosts, smtp_client.remote_ip)
             }
 
             if (!hostBanned && !serverBanned && config.enable_tls) {
@@ -358,7 +358,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
 
     let secured = false
 
-    smtp_client.load_tls_config(plugin.tls_options)
+    smtp_client.load_tls_options(plugin.tls_options)
 
     smtp_client.call_next = function (retval, msg) {
         if (this.next) {
@@ -369,7 +369,10 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
     }
 
     smtp_client.on('client_protocol', (line) => {
-        connection.logprotocol(plugin, `C: ${line}`)
+        // Don't leak SASL credentials (e.g. AUTH PLAIN <base64>) into
+        // protocol logs.
+        const safe = String(line).replace(/^(AUTH\s+\S+\s+).+$/i, '$1[redacted]')
+        connection.logprotocol(plugin, `C: ${safe}`)
     })
 
     smtp_client.on('server_protocol', (line) => {
@@ -401,21 +404,27 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
         if (!c.auth || smtp_client.authenticated) {
             if (smtp_client.is_dead_sender(plugin, connection)) return
 
-            smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`)
+            smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtputf8)}`)
             return
         }
 
         if (c.auth.type === null || typeof c.auth.type === 'undefined') return // Ignore blank
         const auth_type = c.auth.type.toLowerCase()
+        // This listener runs from the socket line handler; an uncaught
+        // throw here crashes the forwarding worker. Route failures
+        // through the existing smtp_client 'error' flow (logwarn +
+        // call_next) so a misconfigured/hostile upstream degrades to a
+        // normal SMTP error path instead.
         if (!smtp_client.auth_capabilities.includes(auth_type)) {
-            throw new Error(
+            return smtp_client.emit(
+                'error',
                 `Auth type "${auth_type}" not supported by server (supports: ${smtp_client.auth_capabilities.join(',')})`,
             )
         }
         switch (auth_type) {
             case 'plain':
                 if (!c.auth.user || !c.auth.pass) {
-                    throw new Error('Must include auth.user and auth.pass for PLAIN auth.')
+                    return smtp_client.emit('error', 'Must include auth.user and auth.pass for PLAIN auth.')
                 }
                 logger.debug(`[smtp_client] uuid=${smtp_client.uuid} authenticating as "${c.auth.user}"`)
                 smtp_client.send_command(
@@ -424,9 +433,9 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
                 )
                 break
             case 'cram-md5':
-                throw new Error('Not implemented')
+                return smtp_client.emit('error', `AUTH ${auth_type} not implemented`)
             default:
-                throw new Error(`Unknown AUTH type: ${auth_type}`)
+                return smtp_client.emit('error', `Unknown AUTH type: ${auth_type}`)
         }
     })
 
@@ -437,7 +446,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
         if (smtp_client.is_dead_sender(plugin, connection)) return
 
         smtp_client.authenticated = true
-        smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`)
+        smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtputf8)}`)
     })
 
     // these errors only get thrown when the connection is still active

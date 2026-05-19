@@ -436,18 +436,18 @@ describe('SMTPClient closed() handler', () => {
     })
 })
 
-// ─── load_tls_config ──────────────────────────────────────────────────────────
+// ─── load_tls_options ──────────────────────────────────────────────────────────
 
-describe('SMTPClient#load_tls_config', () => {
+describe('SMTPClient#load_tls_options', () => {
     it('sets tls_options with servername equal to host', () => {
         const client = makeClient()
-        client.load_tls_config()
+        client.load_tls_options()
         assert.equal(client.tls_options.servername, 'mx.example.com')
     })
 
     it('merges additional opts into tls_options', () => {
         const client = makeClient()
-        client.load_tls_config({ key: Buffer.from('secret'), rejectUnauthorized: false })
+        client.load_tls_options({ key: Buffer.from('secret'), rejectUnauthorized: false })
         assert.equal(client.tls_options.servername, 'mx.example.com')
         assert.equal(client.tls_options.rejectUnauthorized, false)
         assert.ok(Buffer.isBuffer(client.tls_options.key))
@@ -728,10 +728,8 @@ describe('smtp_client.onCapabilitiesOutbound', () => {
 
     it('skips STARTTLS when host is in no_tls_hosts ban list', () => {
         client.response = ['STARTTLS']
-        // Note: the code checks tls_options.no_tls_hosts but reads tls_config.no_tls_hosts
-        // (a known quirk) — set both to exercise the branch
+        // no_tls_hosts is read from tls_options consistently
         client.tls_options = { no_tls_hosts: ['10.0.0.0/8'] }
-        client.tls_config = { no_tls_hosts: ['10.0.0.0/8'] }
         client.remote_ip = '10.0.0.1'
         const conn = makeConnection()
         smtp_client_module.onCapabilitiesOutbound(client, false, conn, { enable_tls: true, host: '10.0.0.1' }, () => {})
@@ -766,6 +764,25 @@ describe('smtp_client.get_client_plugin', () => {
         assert.ok(client instanceof SMTPClient)
     })
 
+    it('emits error (does not throw) when AUTH type is unsupported', async () => {
+        const c = {
+            host: 'relay.example.com',
+            port: 25,
+            auth_type: 'login',
+            auth_user: 'a',
+            auth_pass: 'b',
+        }
+        const client = await getClientPlugin(c)
+        client.auth_capabilities = [] // server advertised no AUTH
+        let errMsg
+        client.on('error', (m) => {
+            errMsg = m
+        })
+        // pre-fix this threw out of the event loop and crashed the worker
+        assert.doesNotThrow(() => client.emit('helo'))
+        assert.match(String(errMsg), /not supported by server/)
+    })
+
     it('merges auth_type / auth_user / auth_pass into c.auth', async () => {
         const c = { host: 'relay.example.com', port: 25, auth_type: 'plain', auth_user: 'alice', auth_pass: 's3cr3t' }
         await getClientPlugin(c)
@@ -789,6 +806,16 @@ describe('smtp_client.get_client_plugin', () => {
         client.socket.write = (data) => written.push(data)
         client.emit('greeting', 'EHLO')
         assert.ok(written.some((l) => /EHLO relay\.example\.com/.test(l)))
+    })
+
+    it('redacts AUTH credentials from protocol logs (S4)', async () => {
+        const client = await getClientPlugin()
+        const logged = []
+        conn.logprotocol = (p, msg) => logged.push(msg)
+        client.emit('client_protocol', 'AUTH PLAIN AGFsaWNlAHMzY3JldA==')
+        assert.equal(logged.length, 1)
+        assert.equal(logged[0], 'C: AUTH PLAIN [redacted]')
+        assert.ok(!logged[0].includes('AGFsaWNlAHMzY3JldA=='))
     })
 
     it('greeting handler sends EHLO with hello.host when xclient is set', async () => {
@@ -850,19 +877,25 @@ describe('smtp_client.get_client_plugin', () => {
         assert.ok(written.some((l) => /AUTH PLAIN/.test(l)))
     })
 
-    // Table-drive the helo-throws cases
+    // these used to throw out of the event loop (crashing the worker); they must
+    // now route through the smtp_client 'error' flow.
     for (const [desc, opts, capabilities, pattern] of [
         ['unsupported auth type', { type: 'plain', user: 'u', pass: 'p' }, ['cram-md5'], /not supported by server/],
         ['plain auth with no user/pass', { type: 'plain', user: '', pass: '' }, ['plain'], /Must include auth\.user/],
-        ['cram-md5 (not implemented)', { type: 'cram-md5', user: 'u', pass: 'p' }, ['cram-md5'], /Not implemented/],
+        ['cram-md5 (not implemented)', { type: 'cram-md5', user: 'u', pass: 'p' }, ['cram-md5'], /not implemented/i],
         ['unknown auth type', { type: 'gssapi', user: 'u', pass: 'p' }, ['gssapi'], /Unknown AUTH type/],
     ]) {
-        it(`helo handler throws for ${desc}`, async () => {
+        it(`helo handler emits error (no throw) for ${desc}`, async () => {
             const c = { host: 'relay.example.com', port: 25, auth: opts }
             const client = await getClientPlugin(c)
             client.authenticated = false
             client.auth_capabilities = capabilities
-            assert.throws(() => client.emit('helo'), pattern)
+            let errMsg
+            client.on('error', (m) => {
+                errMsg = m
+            })
+            assert.doesNotThrow(() => client.emit('helo'))
+            assert.match(String(errMsg), pattern)
         })
     }
 
@@ -1241,7 +1274,7 @@ describe('smtp_client', () => {
         }
 
         const client = new SMTPClient({ host: 'mx.example.com', port: 25, socket })
-        client.load_tls_config({ key: Buffer.from('OutboundTlsKeyLoaded') })
+        client.load_tls_options({ key: Buffer.from('OutboundTlsKeyLoaded') })
 
         client.command = 'starttls'
         cmds.line('250 Hello client.example.com\r\n')

@@ -28,6 +28,20 @@ exports.load_qmail_queue_ini = function () {
     )
 }
 
+// qmail-queue envelope: F<sender>\0 (T<rcpt>\0)* \0
+// Built dynamically, sized to exactly the bytes needed.
+//   doesn't emit zero padding after the terminating NUL.
+//   encodes non-ASCII (SMTPUTF8) addresses correctly
+exports.build_envelope = function (transaction) {
+    const NUL = Buffer.from([0])
+    const parts = [Buffer.from('F'), Buffer.from(transaction.mail_from.address), NUL]
+    for (const rcpt of transaction.rcpt_to) {
+        parts.push(Buffer.from('T'), Buffer.from(rcpt.address), NUL)
+    }
+    parts.push(NUL)
+    return Buffer.concat(parts)
+}
+
 exports.hook_queue = function (next, connection) {
     const plugin = this
 
@@ -72,25 +86,7 @@ exports.hook_queue = function (next, connection) {
             return
         }
         plugin.loginfo('Message Stream sent to qmail. Now sending envelope')
-        // now send envelope
-        // Hope this will be big enough...
-        const buf = Buffer.alloc(4096)
-        let p = 0
-        buf[p++] = 70
-        const mail_from = connection.transaction.mail_from.address()
-        for (let i = 0; i < mail_from.length; i++) {
-            buf[p++] = mail_from.charCodeAt(i)
-        }
-        buf[p++] = 0
-        for (const rcpt of connection.transaction.rcpt_to) {
-            buf[p++] = 84
-            const rcpt_to = rcpt.address()
-            for (let j = 0; j < rcpt_to.length; j++) {
-                buf[p++] = rcpt_to.charCodeAt(j)
-            }
-            buf[p++] = 0
-        }
-        buf[p++] = 0
+        const buf = plugin.build_envelope(connection.transaction)
         qmail_queue.stdout.on('error', (err) => {}) // stdout throws an error on close
         qmail_queue.stdout.end(buf)
     })

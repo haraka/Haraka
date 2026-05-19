@@ -99,4 +99,18 @@ describe('xclient', () => {
             })
         }
     })
+
+    describe('DESTPORT type', () => {
+        it('stores local.port as an integer (587/465 auth check)', async () => {
+            this.connection.remote.ip = '127.0.0.1'
+            await new Promise((resolve) => {
+                this.plugin.hook_unrecognized_command(() => resolve(), this.connection, [
+                    'XCLIENT',
+                    'ADDR=1.2.3.4 DESTPORT=587',
+                ])
+            })
+            assert.strictEqual(this.connection.local.port, 587)
+            assert.equal(typeof this.connection.local.port, 'number')
+        })
+    })
 })

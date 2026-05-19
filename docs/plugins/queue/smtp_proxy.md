@@ -44,8 +44,7 @@ Configuration is stored in smtp_proxy.ini in the following keys:
 
 - enable_tls=[true|yes|1]
 
-  Enable TLS with the forward host (if supported). TLS uses options from
-  the tls plugin.
+  Enable opportunistic TLS with the forward host via `STARTTLS` (if the host advertises it).
 
 - auth_type=[plain|login]
 
@@ -58,3 +57,12 @@ Configuration is stored in smtp_proxy.ini in the following keys:
 - auth_pass=PASSWORD
 
   SMTP AUTH password to use.
+
+- [tls]
+
+Client STARTTLS options are assembled by merging:
+
+1. `tls.ini` `[main]` — the global Haraka TLS config.
+2. `smtp_proxy.ini` `[tls]` — overrides. Anything set here wins.
+
+Changes to `tls.ini` require a Haraka restart to apply to the proxy path; changes to `smtp_proxy.ini` are picked up by the existing reload hook.

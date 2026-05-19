@@ -4,7 +4,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- change: replace forEach with es6 for...of
+### [3.1.7] - 2026-05-19
+
+- feat(smtp_forward,smtp_proxy): honor `tls.ini` `[main]` and plugin `[tls]`
+  section for backend STARTTLS (matches docs). Behavior change: installs
+  that set `[main] rejectUnauthorized=true` in `tls.ini` will now see it applied
+  to the forward/proxy paths. Untouched installs match the previous behavior.
+- fix(auth_proxy): try opportunistic STARTTLS w/o a key/cert, #matchTheDocs
+- feat(tls_socket): new `load_plugin_tls_options(plugin_tls_cfg)` helper that
+  merges a plugin's `[tls]` section over `tls.ini` `[main]` for client STARTTLS
+  - refactor: `outbound/tls.js#load_config()` delegates to `load_plugin_tls_options()`
+- change: update DSN.addr_bad_dest_system(...) to DSN.addr_null_mx(...)
+- fix(tls): buffer discard on STARTTLS (RFC 3207 §4)
+- fix(server): run the graceful restart/shutdown work queue
+- fix(xclient): parse DESTPORT to int so the 587/465 auth check applies
+- fix(smtp_client):
+  - no_tls_hosts works correctly by referencing the correct path
+  - unsupported AUTH no longer throws out of the event loop
+- fix(smtputf8): all code paths use it, no more smtp_utf8
+- fix(conn): reject control chars in HELO name (RFC 5321 §4.1.1.1)
+- fix: sanitize AUTH usernames before storing
+- fix: strip CR/LF from all strings passed into `auth_results()`
+- fix(smtp_client,auth_proxy): redact AUTH credentials in protocol logs
+- fix(prevent_credential_leaks): properly handle usernames w/o an `@`
+- fix(queue/qmail-queue): size envelope dynamically; UTF-8 safe
+- deps(some): bump patch versions to latest
+- change: replace forEach with es6 style for...of #3569
+- tests: add a few #3568
+- doc(Plugins): add publish year to each plugin #3567
+- deps(all): switch from ^ to ~ version ranges #3565
 
 ### [3.1.6] - 2026-05-15
 
@@ -133,7 +161,7 @@ AND
 
 - moves the following settings from smtp.ini to connection.ini:
   - headers.\*
-  - main.smtp_utf8
+  - main.smtputf8
   - main.strict_rfc1869
 - early_talker.pause, removed support, use earlytalker.ini
 
@@ -1833,3 +1861,4 @@ config files.
 [3.1.4]: https://github.com/haraka/Haraka/releases/tag/v3.1.4
 [3.1.5]: https://github.com/haraka/Haraka/releases/tag/v3.1.5
 [3.1.6]: https://github.com/haraka/Haraka/releases/tag/v3.1.6
+[3.1.7]: https://github.com/haraka/Haraka/releases/tag/v3.1.7

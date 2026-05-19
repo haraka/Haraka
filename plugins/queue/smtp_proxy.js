@@ -4,7 +4,8 @@
 // and passes back any errors seen on the ongoing server to the
 // originating server.
 
-const smtp_client_mod = require('./smtp_client')
+const smtp_client_mod = require('../../smtp_client')
+const tls_socket = require('../../tls_socket')
 
 exports.register = function () {
     this.load_smtp_proxy_ini()
@@ -18,12 +19,22 @@ exports.load_smtp_proxy_ini = function () {
     this.cfg = this.config.get(
         'smtp_proxy.ini',
         {
-            booleans: ['-main.enable_tls', '+main.enable_outbound'],
+            booleans: [
+                '-main.enable_tls',
+                '+main.enable_outbound',
+                '+tls.requestCert',
+                '+tls.honorCipherOrder',
+                '-tls.rejectUnauthorized',
+            ],
         },
         () => {
             this.load_smtp_proxy_ini()
         },
     )
+
+    // Build backend TLS options from tls.ini [main] + this plugin's [tls] section.
+    // Re-derived on every (re)load so SIGHUP picks up edits.
+    this.tls_options = tls_socket.load_plugin_tls_options(this.cfg.tls || {})
 
     if (this.cfg.main.enable_outbound) {
         this.lognotice('outbound enabled, will default to disabled in Haraka v3 (see #1472)')
@@ -82,7 +93,7 @@ exports.hook_rcpt_ok = (next, connection, recipient) => {
         return
     }
     smtp_client.next = next
-    smtp_client.send_command('RCPT', `TO:${recipient.format(!smtp_client.smtp_utf8)}`)
+    smtp_client.send_command('RCPT', `TO:${recipient.format(!smtp_client.smtputf8)}`)
 }
 
 exports.hook_data = (next, connection) => {

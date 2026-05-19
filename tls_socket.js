@@ -251,6 +251,56 @@ exports.load_tls_ini = (opts) => {
     return cfg
 }
 
+// Build a client tls_options, merges a consumers own [tls] section
+// over tls.ini [main].
+exports.load_plugin_tls_options = (plugin_tls_cfg = {}) => {
+    const tls_cfg = exports.load_tls_ini({ role: 'client' })
+    const cfg = JSON.parse(JSON.stringify(plugin_tls_cfg))
+
+    // Inheritance from tls.ini [main] deliberately omits no_tls_hosts: the
+    // [main].no_tls_hosts list is documented as inbound-only; outbound and
+    // queue plugins should opt in explicitly via their own section.
+    const inheritable_opts = [
+        'key',
+        'cert',
+        'ciphers',
+        'minVersion',
+        'dhparam',
+        'requestCert',
+        'honorCipherOrder',
+        'rejectUnauthorized',
+        'force_tls_hosts',
+    ]
+    for (const opt of inheritable_opts) {
+        if (cfg[opt] !== undefined) continue // set in plugin [tls]
+        if (tls_cfg.main[opt] === undefined) continue // unset in tls.ini [main]
+        cfg[opt] = tls_cfg.main[opt]
+    }
+
+    // Resolve key/cert/dhparam file references to buffers. Drop empty results
+    // so we never pass null to tls.connect.
+    for (const k of ['key', 'cert', 'dhparam']) {
+        if (!cfg[k]) {
+            delete cfg[k]
+            continue
+        }
+        const ref = Array.isArray(cfg[k]) ? cfg[k][0] : cfg[k]
+        const bin = exports.config.get(ref, 'binary')
+        if (bin) cfg[k] = bin
+        else delete cfg[k]
+    }
+
+    for (const k of ['no_tls_hosts', 'force_tls_hosts']) {
+        if (!cfg[k]) {
+            cfg[k] = []
+            continue
+        }
+        if (!Array.isArray(cfg[k])) cfg[k] = [cfg[k]]
+    }
+
+    return cfg
+}
+
 exports.applySocketOpts = (name) => {
     // https://nodejs.org/api/tls.html#tls_new_tls_tlssocket_socket_options
     const TLSSocketOptions = [

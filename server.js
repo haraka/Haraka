@@ -175,7 +175,7 @@ Server._graceful = async (shutdown) => {
     const todo = []
 
     for (const id of Object.keys(cluster.workers)) {
-        todo.push((id) => {
+        todo.push(() => {
             return new Promise((resolve) => {
                 Server.lognotice(`Killing worker: ${id}`)
                 const worker = cluster.workers[id]
@@ -223,8 +223,10 @@ Server._graceful = async (shutdown) => {
     }
 
     while (todo.length) {
-        // process batches of workers
-        await Promise.all(todo.splice(0, limit))
+        // process batches of workers: invoke each queued thunk so we
+        // actually await the worker shutdown promises (passing the bare
+        // functions to Promise.all would resolve immediately).
+        await Promise.all(todo.splice(0, limit).map((fn) => fn()))
     }
 
     if (shutdown) {

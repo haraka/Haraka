@@ -38,9 +38,7 @@ Configuration is stored in smtp_forward.ini in the following keys:
 
 - enable_tls=[true]
 
-  Enable TLS with the forward host (if supported). TLS uses options from the tls plugin. If key and cert are provided in the the outbound section of the tls plugin, that certificate will be used as a TLS Client Certificate.
-
-  This option controls the use of TLS via `STARTTLS`. This plugin does not work with SMTP over TLS.
+  Enable opportunistic TLS with the forward host via `STARTTLS` (if the host advertises it). This plugin does not work with implicit SMTP over TLS.
 
 - auth_type=[plain\|login]
 
@@ -68,6 +66,24 @@ Configuration is stored in smtp_forward.ini in the following keys:
 
   [example.com]
   [example.net]
+
+- [tls]
+
+Client STARTTLS options are assembled by merging:
+
+1. `tls.ini` `[main]` — the global Haraka TLS config
+2. `smtp_forward.ini` `[tls]` — overrides. Anything set here wins.
+
+Example `smtp_forward.ini` `[tls]` section:
+
+    [tls]
+    rejectUnauthorized=true
+    minVersion=TLSv1.2
+    no_tls_hosts[]=10.0.0.5
+
+Per-domain `enable_tls=false` still disables STARTTLS for that backend. Per-domain TLS cipher/cert overrides are not currently supported.
+
+Changes to `tls.ini` require a Haraka restart to apply to the forward path; changes to `smtp_forward.ini` are picked up by the existing reload hook.
 
 # Per-Domain Configuration
 

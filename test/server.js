@@ -527,3 +527,62 @@ describe('server', () => {
         })
     })
 })
+
+describe('_graceful (cluster restart)', () => {
+    it('actually disconnects workers (queued thunks are invoked)', async () => {
+        const cluster = require('node:cluster')
+        const Server = require('../server')
+        Server.cfg = Server.cfg || { main: {} }
+        Server.cfg.main = Server.cfg.main || {}
+        Server.cfg.main.force_shutdown_timeout = 1
+
+        const saved = {
+            cluster: Server.cluster,
+            workers: cluster.workers,
+            fork: cluster.fork,
+            rmAll: cluster.removeAllListeners,
+        }
+
+        let disconnected = 0
+        const mkWorker = () => ({
+            _cbs: {},
+            send() {},
+            kill() {},
+            once(ev, cb) {
+                ;(this._cbs[ev] ||= []).push(cb)
+            },
+            on(ev, cb) {
+                ;(this._cbs[ev] ||= []).push(cb)
+            },
+            _fire(ev) {
+                for (const cb of this._cbs[ev] || []) cb()
+            },
+            disconnect() {
+                disconnected++
+                setImmediate(() => {
+                    this._fire('disconnect')
+                    setImmediate(() => this._fire('exit'))
+                })
+            },
+        })
+
+        cluster.workers = { 1: mkWorker() }
+        cluster.removeAllListeners = () => {}
+        cluster.fork = () => {
+            const nw = mkWorker()
+            setImmediate(() => nw._fire('listening'))
+            return nw
+        }
+        Server.cluster = cluster
+
+        try {
+            await Server._graceful()
+            assert.equal(disconnected, 1, 'worker.disconnect() was invoked')
+        } finally {
+            Server.cluster = saved.cluster
+            cluster.workers = saved.workers
+            cluster.fork = saved.fork
+            cluster.removeAllListeners = saved.rmAll
+        }
+    })
+})

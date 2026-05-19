@@ -146,6 +146,20 @@ describe('prevent_credential_leaks', () => {
             }, conn)
         })
 
+        it('unqualified username (no @) is not split into a partial match', (t, done) => {
+            // Bug: `if (idx)` with idx === -1 treated 'admin' as qualified,
+            // splitting it to user='admi' which then matches 'admiral'.
+            const conn = makeConnection({
+                authUser: 'admin',
+                authPasswd: 'pw',
+                bodytext: 'the admiral said pw today',
+            })
+            plugin.hook_data_post((rc) => {
+                assert.equal(rc, undefined)
+                done()
+            }, conn)
+        })
+
         it('calls next when credentials appear in neither top nor child', (t, done) => {
             const conn = fixtures.connection.createConnection()
             conn.init_transaction()

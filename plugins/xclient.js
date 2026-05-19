@@ -110,7 +110,9 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     connection.set('remote.login', xclient.login ? xclient.login : undefined)
     connection.set('hello.host', xclient.helo ? xclient.helo : undefined)
     connection.set('local.ip', xclient.destaddr ? xclient.destaddr : undefined)
-    connection.set('local.port', xclient.destport ? xclient.destport : undefined)
+    // parseInt so downstream numeric checks (e.g. the 587/465 auth-required
+    // gate in connection.cmd_mail) work; matches the PROXY path.
+    connection.set('local.port', xclient.destport ? parseInt(xclient.destport, 10) : undefined)
     if (xclient.proto) {
         connection.set('hello', 'verb', xclient.proto === 'esmtp' ? 'EHLO' : 'HELO')
     }

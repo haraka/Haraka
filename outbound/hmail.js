@@ -266,12 +266,12 @@ class HMailItem extends events.EventEmitter {
     }
 
     async found_mx(mxs) {
-        // support draft-delany-nullmx-02
+        // support RFC 7505 null MX
         if (mxs.length === 1 && mxs[0].priority === 0 && mxs[0].exchange === '') {
             for (const rcpt of this.todo.rcpt_to) {
                 this.extend_rcpt_with_dsn(
                     rcpt,
-                    DSN.addr_bad_dest_system(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`),
+                    DSN.addr_null_mx(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`),
                 )
             }
             return this.bounce(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`)
@@ -459,7 +459,7 @@ class HMailItem extends events.EventEmitter {
                 } else if (r.toUpperCase() === 'ENHANCEDSTATUSCODES') {
                     smtp_properties.enh_status_codes = true
                 } else if (r.toUpperCase() === 'SMTPUTF8') {
-                    smtp_properties.smtp_utf8 = true
+                    smtp_properties.smtputf8 = true
                 } else {
                     // Check for SIZE parameter and limit
                     let matches = r.match(/^SIZE\s+(\d+)$/)
@@ -476,9 +476,9 @@ class HMailItem extends events.EventEmitter {
         }
 
         function get_reverse_path_with_params() {
-            const rp = self.todo.mail_from.format(!smtp_properties.smtp_utf8)
+            const rp = self.todo.mail_from.format(!smtp_properties.smtputf8)
             let rp_params = ''
-            if (smtp_properties.smtp_utf8 && has_non_ascii(rp)) rp_params += ' SMTPUTF8'
+            if (smtp_properties.smtputf8 && has_non_ascii(rp)) rp_params += ' SMTPUTF8'
             return `FROM:${rp}${rp_params}`
         }
 
@@ -871,7 +871,7 @@ class HMailItem extends events.EventEmitter {
                 case 'mail':
                     last_recip = recipients[recip_index]
                     recip_index++
-                    send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtp_utf8)}`)
+                    send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtputf8)}`)
                     break
                 case 'rcpt':
                     if (last_recip && code.match(/^250/)) {
@@ -887,7 +887,7 @@ class HMailItem extends events.EventEmitter {
                     } else {
                         last_recip = recipients[recip_index]
                         recip_index++
-                        send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtp_utf8)}`)
+                        send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtputf8)}`)
                     }
                     break
                 case 'data': {

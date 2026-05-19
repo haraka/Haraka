@@ -8,18 +8,6 @@ const hkredis = require('haraka-plugin-redis')
 const logger = require('../logger')
 const tls_socket = require('../tls_socket')
 
-const inheritable_opts = [
-    'key',
-    'cert',
-    'ciphers',
-    'minVersion',
-    'dhparam',
-    'requestCert',
-    'honorCipherOrder',
-    'rejectUnauthorized',
-    'force_tls_hosts',
-]
-
 class OutboundTLS {
     constructor() {
         this.config = config
@@ -34,37 +22,8 @@ class OutboundTLS {
 
     load_config() {
         const tls_cfg = tls_socket.load_tls_ini({ role: 'client' })
-        const cfg = JSON.parse(JSON.stringify(tls_cfg.outbound || {}))
-        cfg.redis = tls_cfg.redis // Don't clone - contains methods
-
-        for (const opt of inheritable_opts) {
-            if (cfg[opt] !== undefined) continue // option set in [outbound]
-            if (tls_cfg.main[opt] === undefined) continue // opt unset in tls.ini[main]
-            cfg[opt] = tls_cfg.main[opt] // use value from [main] section
-        }
-
-        if (cfg.key) {
-            if (Array.isArray(cfg.key)) {
-                cfg.key = cfg.key[0]
-            }
-            cfg.key = this.config.get(cfg.key, 'binary')
-        }
-
-        if (cfg.dhparam) {
-            cfg.dhparam = this.config.get(cfg.dhparam, 'binary')
-        }
-
-        if (cfg.cert) {
-            if (Array.isArray(cfg.cert)) {
-                cfg.cert = cfg.cert[0]
-            }
-            cfg.cert = this.config.get(cfg.cert, 'binary')
-        }
-
-        if (!cfg.no_tls_hosts) cfg.no_tls_hosts = []
-        if (!cfg.force_tls_hosts) cfg.force_tls_hosts = []
-
-        this.cfg = cfg
+        this.cfg = tls_socket.load_plugin_tls_options(tls_cfg.outbound || {})
+        this.cfg.redis = tls_cfg.redis // outbound-only: TLS NO-GO db (don't clone — has methods)
     }
 
     init(cb) {
