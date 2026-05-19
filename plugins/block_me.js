@@ -4,6 +4,7 @@
 // mail_from.blocklist plugin for this to work fully.
 
 const fs = require('node:fs')
+const path = require('node:path')
 const utils = require('haraka-utils')
 
 exports.hook_data = (next, connection) => {
@@ -45,8 +46,9 @@ exports.hook_data_post = function (next, connection) {
 
     connection.transaction.notes.block_me = 1
 
-    // add to mail_from.blocklist
-    fs.open('./config/mail_from.blocklist', 'a', (err, fd) => {
+    // add to mail_from.blocklist, in the same config dir the plugin reads from
+    const blocklist = path.join(this.config.root_path, 'mail_from.blocklist')
+    fs.open(blocklist, 'a', (err, fd) => {
         if (err) {
             connection.logerror(this, `Unable to append to mail_from.blocklist: ${err}`)
             return
