@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- change: replace forEach with es6 for...of
+
 ### [3.1.6] - 2026-05-15
 
 - fix(outbound): release queue slot when qfile unreadable #3561
