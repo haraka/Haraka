@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(status): merge worker status into summary #3574
+
 ### [3.1.7] - 2026-05-19
 
 - feat(smtp_forward,smtp_proxy): honor `tls.ini` `[main]` and plugin `[tls]`

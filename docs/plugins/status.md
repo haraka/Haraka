@@ -39,4 +39,3 @@ In cluster mode, `POOL LIST`, `QUEUE STATS`, and `QUEUE INSPECT` aggregate resul
 - `QUEUE INSPECT` — `delivery_queue` and `temp_fail_queue` arrays from all workers are concatenated
 
 `QUEUE LIST` always runs on the master process since it reads shared queue files from disk.
-

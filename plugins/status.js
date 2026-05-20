@@ -219,12 +219,7 @@ exports.call_workers = function (cmd, cb) {
 
 // Merge per-worker responses into a single result matching non-cluster output shape.
 exports.merge_worker_responses = (params, results) => {
-    const cmd = params
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .join(' ')
-        .toUpperCase()
+    const cmd = params.trim().split(/\s+/).slice(0, 2).join(' ').toUpperCase()
 
     switch (cmd) {
         case 'POOL LIST': {
