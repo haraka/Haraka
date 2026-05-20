@@ -134,4 +134,75 @@ describe('status', () => {
             this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE PUSH file'])
         })
     })
+
+    describe('merge_worker_responses', () => {
+        beforeEach(_set_up)
+
+        it('POOL LIST merges objects from all workers', () => {
+            const result = JSON.parse(
+                JSON.stringify(
+                    this.plugin.merge_worker_responses('POOL LIST', [
+                        { 'host1:25': { inUse: 1, size: 3 } },
+                        { 'host2:25': { inUse: 0, size: 2 } },
+                        {},
+                    ]),
+                ),
+            )
+            assert.deepEqual(result, {
+                'host1:25': { inUse: 1, size: 3 },
+                'host2:25': { inUse: 0, size: 2 },
+            })
+        })
+
+        it('POOL LIST with all empty workers returns empty object', () => {
+            const result = JSON.parse(JSON.stringify(this.plugin.merge_worker_responses('POOL LIST', [{}, {}, {}])))
+            assert.deepEqual(result, {})
+        })
+
+        it('QUEUE INSPECT merges queues from all workers', () => {
+            const result = JSON.parse(
+                JSON.stringify(
+                    this.plugin.merge_worker_responses('QUEUE INSPECT', [
+                        { delivery_queue: [{ id: 'a' }], temp_fail_queue: [{ id: 'x', fire_time: 1 }] },
+                        { delivery_queue: [{ id: 'b' }], temp_fail_queue: [] },
+                        { delivery_queue: [], temp_fail_queue: [{ id: 'y', fire_time: 2 }] },
+                    ]),
+                ),
+            )
+            assert.deepEqual(result, {
+                delivery_queue: [{ id: 'a' }, { id: 'b' }],
+                temp_fail_queue: [
+                    { id: 'x', fire_time: 1 },
+                    { id: 'y', fire_time: 2 },
+                ],
+            })
+        })
+
+        it('QUEUE INSPECT with all empty queues returns empty lists', () => {
+            const result = JSON.parse(
+                JSON.stringify(
+                    this.plugin.merge_worker_responses('QUEUE INSPECT', [
+                        { delivery_queue: [], temp_fail_queue: [] },
+                        { delivery_queue: [], temp_fail_queue: [] },
+                    ]),
+                ),
+            )
+            assert.deepEqual(result, { delivery_queue: [], temp_fail_queue: [] })
+        })
+
+        it('QUEUE STATS sums across workers', () => {
+            const result = this.plugin.merge_worker_responses('QUEUE STATS', ['1/2/3', '0/1/0', '2/0/1'])
+            assert.equal(result, '3/3/4')
+        })
+
+        it('QUEUE STATS with all zeros', () => {
+            const result = this.plugin.merge_worker_responses('QUEUE STATS', ['0/0/0', '0/0/0', '0/0/0'])
+            assert.equal(result, '0/0/0')
+        })
+
+        it('unknown command returns results array unchanged', () => {
+            const result = this.plugin.merge_worker_responses('POOL UNKNOWN', [{ foo: 1 }, { foo: 2 }])
+            assert.equal(result.length, 2)
+        })
+    })
 })

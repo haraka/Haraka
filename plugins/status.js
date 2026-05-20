@@ -171,7 +171,8 @@ exports.hook_init_master = function (next) {
         if (msg.event !== 'status.request') return
 
         plugin.call_workers(msg, (response) => {
-            msg.result = response.filter((el) => el != null)
+            const valid = response.filter((el) => el != null)
+            msg.result = plugin.merge_worker_responses(msg.params, valid)
             msg.event = 'status.result'
             sender.send(msg)
         })
@@ -212,11 +213,44 @@ exports.call_master = (cmd, cb) => {
 
 exports.call_workers = function (cmd, cb) {
     Promise.allSettled(Object.values(server.cluster.workers).map((w) => this.call_worker(w, cmd))).then((r) => {
-        cb(
-            // r.filter(s => s.status === 'rejected').flatMap(s => s.reason),
-            r.filter((s) => s.status === 'fulfilled').flatMap((s) => s.value),
-        )
+        cb(r.filter((s) => s.status === 'fulfilled').map((s) => s.value))
     })
+}
+
+// Merge per-worker responses into a single result matching non-cluster output shape.
+exports.merge_worker_responses = (params, results) => {
+    const cmd = params
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .join(' ')
+        .toUpperCase()
+
+    switch (cmd) {
+        case 'POOL LIST': {
+            return Object.assign({}, ...results)
+        }
+        case 'QUEUE INSPECT': {
+            const merged = { delivery_queue: [], temp_fail_queue: [] }
+            for (const r of results) {
+                if (!r) continue
+                if (Array.isArray(r.delivery_queue)) merged.delivery_queue.push(...r.delivery_queue)
+                if (Array.isArray(r.temp_fail_queue)) merged.temp_fail_queue.push(...r.temp_fail_queue)
+            }
+            return merged
+        }
+        case 'QUEUE STATS': {
+            const totals = [0, 0, 0]
+            for (const r of results) {
+                if (!r) continue
+                const parts = String(r).split('/')
+                for (let i = 0; i < 3; i++) totals[i] += parseInt(parts[i] ?? 0, 10)
+            }
+            return totals.join('/')
+        }
+        default:
+            return results
+    }
 }
 
 // sends command to worker and then wait for response or timeout
