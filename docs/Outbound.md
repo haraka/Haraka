@@ -203,7 +203,7 @@ Options accepted by `send_email(from, to, contents, next, options)`:
 
 To send an already-built `Transaction` directly, use `outbound.send_trans_email(transaction, next)`. This is what `send_email()` calls internally and fires the `pre_send_trans_email` hook.
 
-<a name="fn1">1</a>: `Address` objects are [address-rfc2821](https://github.com/haraka/node-address-rfc2821) objects.
+<a name="fn1">1</a>: `Address` objects are [@haraka/email-address](https://github.com/haraka/email-address) objects.
 
 [url-tls]: plugins/tls.md
 [url-harakamx]: https://github.com/haraka/haraka-net-utils?tab=readme-ov-file#harakamx

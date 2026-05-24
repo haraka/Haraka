@@ -132,4 +132,4 @@ Append a banner to the end of the message. If `html` is omitted, each newline in
 
 Register a filter applied to body parts. `ct_match` is either a regex matched against the content-type line, or a string matched as a prefix (e.g. `/^text\/html/` or `'text/plain'`). `filter` receives `(content_type, encoding, buffer)` and must return a `Buffer` with the replacement body (in the same encoding).
 
-[address]: https://github.com/haraka/node-address-rfc2821
+[address]: https://github.com/haraka/email-address

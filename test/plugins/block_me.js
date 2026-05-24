@@ -6,7 +6,7 @@ const assert = require('node:assert/strict')
 const { describe, it, beforeEach, after } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
-const { Address } = require('address-rfc2821')
+const { Address } = require('@haraka/email-address')
 require('haraka-constants').import(global)
 
 // block_me appends to <config>/mail_from.blocklist when a sender is blocked;
