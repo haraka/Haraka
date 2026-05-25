@@ -46,7 +46,7 @@
     "haraka-plugin-bounce": "~2.1.2",
     "haraka-plugin-clamd": "~1.0.2",
     "haraka-plugin-dcc": "~1.0.3",
-    "haraka-plugin-dkim": "~1.1.2",
+    "haraka-plugin-dkim": "~1.2.0",
     "haraka-plugin-dns-list": "~1.2.4",
     "haraka-plugin-early_talker": "~1.0.2",
     "haraka-plugin-fcrdns": "~1.1.2",
