@@ -363,15 +363,16 @@ Server.load_default_tls_config = (done) => {
 
 Server.create_smtps_server = (opts, onConnect) => {
     let server
-    const socket_tls_state = new WeakMap()
+    const socket_tls_state = new Map()
     const proxyPrefix = Buffer.from('PROXY ')
     // Defensive cap while waiting for a PROXY v1 line before TLS starts.
     const proxyLineReadLimit = 512
 
     const tlsServer = tls.createServer(opts, (cleartext) => {
-        const smtps_state = socket_tls_state.get(cleartext._parent)
+        const state_key = socket_tls_state_key(cleartext)
+        const smtps_state = socket_tls_state.get(state_key)
         if (smtps_state) cleartext.haraka_smtps = smtps_state
-        socket_tls_state.delete(cleartext._parent)
+        socket_tls_state.delete(state_key)
 
         onConnect(cleartext)
     })
@@ -384,6 +385,10 @@ Server.create_smtps_server = (opts, onConnect) => {
         })
     }
 
+    function socket_tls_state_key(socket) {
+        return JSON.stringify([socket.remoteAddress, socket.remotePort, socket.localAddress, socket.localPort])
+    }
+
     function start_tls(socket, proxy, peer_allowed) {
         if (proxy || peer_allowed) {
             const smtps_state = { peer_allowed }
@@ -393,14 +398,14 @@ Server.create_smtps_server = (opts, onConnect) => {
                     proxy_ip: net_utils.normalize_ip(socket.remoteAddress) || socket.remoteAddress,
                 }
             }
-            socket_tls_state.set(socket, smtps_state)
+            socket_tls_state.set(socket_tls_state_key(socket), smtps_state)
         }
 
         tlsServer.emit('connection', socket)
     }
 
     tlsServer.on('tlsClientError', (err, cleartext) => {
-        socket_tls_state.delete(cleartext?._parent)
+        if (cleartext) socket_tls_state.delete(socket_tls_state_key(cleartext))
         server.emit('tlsClientError', err, cleartext)
     })
 
