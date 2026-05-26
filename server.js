@@ -9,6 +9,7 @@ const os = require('node:os')
 const path = require('node:path')
 const tls = require('node:tls')
 const constants = require('haraka-constants')
+const net_utils = require('haraka-net-utils')
 
 const tls_socket = require('./tls_socket')
 const conn = require('./connection')
@@ -65,8 +66,16 @@ Server.load_http_ini = () => {
     }).main
 }
 
+Server.load_connection_ini = () => {
+    Server.connection = {}
+    Server.connection.cfg = Server.config.get('connection.ini', {
+        booleans: ['+haproxy.enabled'],
+    })
+}
+
 Server.load_smtp_ini()
 Server.load_http_ini()
+Server.load_connection_ini()
 
 Server.daemonize = function () {
     const c = this.cfg.main
@@ -381,7 +390,7 @@ Server.create_smtps_server = (opts, onConnect) => {
             if (proxy) {
                 smtps_state.proxy = {
                     ...proxy,
-                    proxy_ip: conn.normalize_ip(socket.remoteAddress) || socket.remoteAddress,
+                    proxy_ip: net_utils.normalize_ip(socket.remoteAddress) || socket.remoteAddress,
                 }
             }
             socket_tls_state.set(socket, smtps_state)
@@ -418,9 +427,9 @@ Server.create_smtps_server = (opts, onConnect) => {
     }
 
     server = net.createServer((socket) => {
-        const remote_ip = conn.normalize_ip(socket.remoteAddress) || socket.remoteAddress
+        const remote_ip = net_utils.normalize_ip(socket.remoteAddress) || socket.remoteAddress
 
-        if (!conn.is_haproxy_allowed(remote_ip, conn.haproxy_enabled, conn.haproxy_hosts_ipv6, conn.haproxy_hosts_ipv4)) {
+        if (!net_utils.is_haproxy_allowed(remote_ip)) {
             start_tls(socket)
             return
         }
@@ -463,7 +472,7 @@ Server.create_smtps_server = (opts, onConnect) => {
 
             cleanup()
 
-            const proxy = conn.parse_proxy_line(current_data.slice(0, offset + 1))
+            const proxy = net_utils.parse_proxy_line(current_data.slice(0, offset + 1))
             if (!proxy) {
                 close_with_proxy_error(socket, proxy_timer, 'Invalid PROXY format')
                 return
@@ -516,7 +525,9 @@ Server.get_smtp_server = async (ep, inactivity_timeout) => {
             tls_socket.cfg.main.requireAuthorized,
         )
 
-        server = conn.is_haproxy_enabled() ? Server.create_smtps_server(opts, onConnect) : tls.createServer(opts, onConnect)
+        server = Server.connection.cfg.haproxy.enabled
+            ? Server.create_smtps_server(opts, onConnect)
+            : tls.createServer(opts, onConnect)
         const tls_event_server = server.tlsServer || server
         tls_socket.addOCSP(tls_event_server)
         server.has_tls = true
