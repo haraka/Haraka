@@ -438,6 +438,7 @@ Server.create_smtps_server = (opts, onConnect) => {
 
         function cleanup() {
             clearTimeout(proxy_timer)
+            socket.pause()
             socket.removeListener('data', on_data)
             socket.removeListener('close', cleanup)
             socket.removeListener('error', cleanup)
