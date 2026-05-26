@@ -46,6 +46,41 @@ for (const ip of cfg.haproxy.hosts) {
     }
 }
 
+function normalize_ip(ip) {
+    if (!net.isIP(ip)) return null
+    return ipaddr.process(ip).toString()
+}
+
+function is_haproxy_allowed(ip) {
+    const normalized_ip = normalize_ip(ip)
+    if (!normalized_ip) return false
+
+    const ha_list = net.isIPv6(normalized_ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4
+    return ha_list.some((element) => ipaddr.parse(normalized_ip).match(element[0], element[1]))
+}
+
+function parse_proxy_line(line) {
+    const proxyLine = line.toString().replace(/\r?\n$/, '')
+    const match = /^(?:PROXY )?(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(proxyLine)
+    if (!match) return null
+
+    const proto = match[1]
+    const src_ip = match[2]
+    const dst_ip = match[3]
+    const src_port = match[4]
+    const dst_port = match[5]
+
+    if (proto === 'TCP4' && ipaddr.IPv4.isValid(src_ip) && ipaddr.IPv4.isValid(dst_ip)) {
+        return { type: 'haproxy', proto, src_ip, src_port, dst_ip, dst_port }
+    }
+
+    if (proto === 'TCP6' && ipaddr.IPv6.isValid(src_ip) && ipaddr.IPv6.isValid(dst_ip)) {
+        return { type: 'haproxy', proto, src_ip, src_port, dst_ip, dst_port }
+    }
+
+    return null
+}
+
 class Connection {
     constructor(client, server, smtp_cfg) {
         this.client = client
@@ -190,8 +225,19 @@ class Connection {
             self.process_data(data)
         })
 
-        const ha_list = net.isIPv6(self.remote.ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4
-        if (ha_list.some((element) => ipaddr.parse(self.remote.ip).match(element[0], element[1]))) {
+        // SMTPS pre-parses PROXY before TLS; don't wait for a second PROXY line here.
+        if (self.client.haraka_proxy) {
+            self.proxy.allowed = true
+            return
+        }
+
+        // SMTPS pre-parser already checked this allowed peer and found direct TLS.
+        if (self.client.haraka_proxy_checked) {
+            plugins.run_hooks('connect_init', self)
+            return
+        }
+
+        if (is_haproxy_allowed(self.remote.ip)) {
             self.proxy.allowed = true
             // Wait for PROXY command
             self.proxy.timer = setTimeout(() => {
@@ -1137,39 +1183,14 @@ class Connection {
     /////////////////////////////////////////////////////////////////////////////
     // HAProxy support
 
-    cmd_proxy(line) {
-        if (!this.proxy.allowed) {
-            this.respond(421, `PROXY not allowed from ${this.remote.ip}`)
-            return this.disconnect()
+    apply_proxy(proxy) {
+        if (this.proxy.timer) {
+            clearTimeout(this.proxy.timer)
+            this.proxy.timer = null
         }
 
-        const match = /(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line)
-        if (!match) {
-            this.respond(421, 'Invalid PROXY format')
-            return this.disconnect()
-        }
-        const proto = match[1]
-        const src_ip = match[2]
-        const dst_ip = match[3]
-        const src_port = match[4]
-        const dst_port = match[5]
-
-        // Validate source/destination IP
-        /*eslint no-fallthrough: 0 */
-        switch (proto) {
-            case 'TCP4':
-                if (ipaddr.IPv4.isValid(src_ip) && ipaddr.IPv4.isValid(dst_ip)) {
-                    break
-                }
-            case 'TCP6':
-                if (ipaddr.IPv6.isValid(src_ip) && ipaddr.IPv6.isValid(dst_ip)) {
-                    break
-                }
-            // case 'UNKNOWN':
-            default:
-                this.respond(421, 'Invalid PROXY format')
-                return this.disconnect()
-        }
+        const { proto, src_ip, src_port, dst_ip, dst_port } = proxy
+        const proxy_ip = proxy.proxy_ip || this.remote.ip
 
         // Apply changes
         this.loginfo('HAProxy', {
@@ -1185,11 +1206,11 @@ class Connection {
             src_port,
             dst_ip,
             dst_port,
-            proxy_ip: this.remote.ip,
+            proxy_ip,
         }
 
         this.reset_transaction(() => {
-            this.set('proxy.ip', this.remote.ip)
+            this.set('proxy.ip', proxy_ip)
             this.set('proxy.type', 'haproxy')
             this.relaying = false
             this.set('local.ip', dst_ip)
@@ -1200,6 +1221,21 @@ class Connection {
             this.set('hello.host', null)
             plugins.run_hooks('connect_init', this)
         })
+    }
+
+    cmd_proxy(line) {
+        if (!this.proxy.allowed) {
+            this.respond(421, `PROXY not allowed from ${this.remote.ip}`)
+            return this.disconnect()
+        }
+
+        const proxy = parse_proxy_line(line)
+        if (!proxy) {
+            this.respond(421, 'Invalid PROXY format')
+            return this.disconnect()
+        }
+
+        this.apply_proxy(proxy)
     }
     /////////////////////////////////////////////////////////////////////////////
     // SMTP Commands
@@ -1858,6 +1894,9 @@ class Connection {
 }
 
 exports.Connection = Connection
+exports.is_haproxy_allowed = is_haproxy_allowed
+exports.normalize_ip = normalize_ip
+exports.parse_proxy_line = parse_proxy_line
 
 exports.createConnection = (client, server, cfg) => {
     return new Connection(client, server, cfg)

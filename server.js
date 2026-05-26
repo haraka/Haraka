@@ -4,6 +4,7 @@
 const cluster = require('node:cluster')
 const { spawn } = require('node:child_process')
 const fs = require('node:fs')
+const net = require('node:net')
 const os = require('node:os')
 const path = require('node:path')
 const tls = require('node:tls')
@@ -351,6 +352,135 @@ Server.load_default_tls_config = (done) => {
     })
 }
 
+Server.create_smtps_server = (opts, onConnect) => {
+    let server
+    const proxyPrefix = Buffer.from('PROXY ')
+
+    function close_with_proxy_error(socket, timer, msg) {
+        clearTimeout(timer)
+        socket.removeAllListeners('data')
+        socket.end(`421 ${msg}\r\n`, () => {
+            socket.destroy()
+        })
+    }
+
+    function start_tls(socket, proxy, proxy_checked) {
+        const tls_opts = { ...opts, server }
+        const cleartext = new tls.TLSSocket(socket, tls_opts)
+
+        if (proxy) {
+            cleartext.haraka_proxy = {
+                ...proxy,
+                proxy_ip: conn.normalize_ip(socket.remoteAddress) || socket.remoteAddress,
+            }
+        }
+        if (proxy_checked) cleartext.haraka_proxy_checked = true
+
+        const handshake_timeout = setTimeout(() => {
+            const err = new Error('TLS handshake timeout')
+            err.code = 'ERR_TLS_HANDSHAKE_TIMEOUT'
+            server.emit('tlsClientError', err, cleartext)
+            cleartext.destroy()
+        }, tls_opts.handshakeTimeout || 120 * 1000)
+
+        function clear_handshake_timeout() {
+            clearTimeout(handshake_timeout)
+        }
+
+        function on_tls_error(err) {
+            clear_handshake_timeout()
+            err.source = 'tls'
+            server.emit('tlsClientError', err, cleartext)
+            cleartext.destroy()
+        }
+
+        cleartext.once('error', on_tls_error)
+        cleartext.once('close', clear_handshake_timeout)
+        cleartext.once('secure', () => {
+            clear_handshake_timeout()
+            cleartext.removeListener('error', on_tls_error)
+            server.emit('secureConnection', cleartext)
+            onConnect(cleartext)
+        })
+    }
+
+    function starts_with_proxy_prefix(data) {
+        if (!data.length) return true
+        if (data.length > proxyPrefix.length) return data.subarray(0, proxyPrefix.length).equals(proxyPrefix)
+
+        return proxyPrefix.subarray(0, data.length).equals(data)
+    }
+
+    function start_tls_with_buffer(socket, data, proxy, proxy_checked) {
+        socket.pause()
+        if (data?.length) socket.unshift(data)
+        setImmediate(() => {
+            start_tls(socket, proxy, proxy_checked)
+            socket.resume()
+        })
+    }
+
+    server = net.createServer((socket) => {
+        const remote_ip = conn.normalize_ip(socket.remoteAddress) || socket.remoteAddress
+
+        if (!conn.is_haproxy_allowed(remote_ip)) {
+            start_tls(socket)
+            return
+        }
+
+        let current_data = null
+        const proxy_timer = setTimeout(() => {
+            close_with_proxy_error(socket, proxy_timer, 'PROXY timeout')
+        }, 30 * 1000)
+
+        function cleanup() {
+            clearTimeout(proxy_timer)
+            socket.removeListener('data', on_data)
+            socket.removeListener('close', cleanup)
+            socket.removeListener('error', cleanup)
+        }
+
+        function on_data(data) {
+            current_data = current_data ? Buffer.concat([current_data, data]) : data
+
+            if (!starts_with_proxy_prefix(current_data)) {
+                cleanup()
+                start_tls_with_buffer(socket, current_data, null, true)
+                return
+            }
+
+            const offset = current_data.indexOf(0x0a)
+            if (offset === -1) {
+                if (current_data.length > 512) {
+                    close_with_proxy_error(socket, proxy_timer, 'Invalid PROXY format')
+                }
+                return
+            }
+            if (offset > 512) {
+                close_with_proxy_error(socket, proxy_timer, 'Invalid PROXY format')
+                return
+            }
+
+            cleanup()
+
+            const proxy = conn.parse_proxy_line(current_data.slice(0, offset + 1))
+            if (!proxy) {
+                close_with_proxy_error(socket, proxy_timer, 'Invalid PROXY format')
+                return
+            }
+
+            const rest = current_data.slice(offset + 1)
+            start_tls_with_buffer(socket, rest, proxy, true)
+        }
+
+        socket.once('close', cleanup)
+        socket.once('error', cleanup)
+        socket.on('data', on_data)
+    })
+
+    return server
+}
+
 Server.get_smtp_server = async (ep, inactivity_timeout) => {
     let server
 
@@ -358,17 +488,19 @@ Server.get_smtp_server = async (ep, inactivity_timeout) => {
         client.setTimeout(inactivity_timeout)
         const connection = conn.createConnection(client, server, Server.cfg)
 
-        if (!server.has_tls) return
+        if (server.has_tls) {
+            const cipher = client.getCipher()
+            cipher.version = client.getProtocol() // replace min with actual
 
-        const cipher = client.getCipher()
-        cipher.version = client.getProtocol() // replace min with actual
+            connection.setTLS({
+                cipher,
+                verified: client.authorized,
+                verifyError: client.authorizationError,
+                peerCertificate: client.getPeerCertificate(),
+            })
+        }
 
-        connection.setTLS({
-            cipher,
-            verified: client.authorized,
-            verifyError: client.authorizationError,
-            peerCertificate: client.getPeerCertificate(),
-        })
+        if (client.haraka_proxy) connection.apply_proxy(client.haraka_proxy)
     }
 
     if (ep.port === parseInt(Server.cfg.main.smtps_port, 10)) {
@@ -382,7 +514,7 @@ Server.get_smtp_server = async (ep, inactivity_timeout) => {
             tls_socket.cfg.main.requireAuthorized,
         )
 
-        server = tls.createServer(opts, onConnect)
+        server = Server.create_smtps_server(opts, onConnect)
         tls_socket.addOCSP(server)
         server.has_tls = true
         server.on('resumeSession', (id, rsDone) => {
