@@ -376,12 +376,15 @@ Server.create_smtps_server = (opts, onConnect) => {
         }
         if (proxy_checked) cleartext.haraka_proxy_checked = true
 
-        const handshake_timeout = setTimeout(() => {
-            const err = new Error('TLS handshake timeout')
-            err.code = 'ERR_TLS_HANDSHAKE_TIMEOUT'
-            server.emit('tlsClientError', err, cleartext)
-            cleartext.destroy()
-        }, tls_opts.handshakeTimeout || 120 * 1000)
+        const handshake_timeout = setTimeout(
+            () => {
+                const err = new Error('TLS handshake timeout')
+                err.code = 'ERR_TLS_HANDSHAKE_TIMEOUT'
+                server.emit('tlsClientError', err, cleartext)
+                cleartext.destroy()
+            },
+            tls_opts.handshakeTimeout || 120 * 1000,
+        )
 
         function clear_handshake_timeout() {
             clearTimeout(handshake_timeout)
