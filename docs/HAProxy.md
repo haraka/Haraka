@@ -6,14 +6,17 @@ The PROXY v2 binary header is not currently supported.
 
 ## Configuration
 
-PROXY support is disabled by default. To enable it, list the IPs (or CIDRs) of trusted proxies in `connection.ini`:
+PROXY support is enabled by default, but inactive until trusted proxy IPs or CIDRs are listed in `connection.ini`:
 
 ```ini
 [haproxy]
+enabled=true
 hosts[] = 192.0.2.4
 hosts[] = 192.0.2.5/30
 hosts[] = 2001:db8::1
 ```
+
+Set `enabled=false` to disable PROXY protocol handling entirely. On SMTPS listeners this bypasses pre-TLS PROXY parsing and uses the standard implicit TLS server.
 
 Connections from any other IP get a `DENYSOFTDISCONNECT` if they send a `PROXY` command. `DENYSOFT` is deliberate — it avoids permanently rejecting valid mail when a misconfiguration causes a legitimate proxy to fall outside the allow-list.
 

@@ -48,6 +48,7 @@ Per-connection limits and behaviours. See inline comments in the shipped
 | `main.spool_after` | `-1` | Size (bytes) at which to spool the message to disk. `-1` never spools; `0` always spools. |
 | `main.strict_rfc1869` | `false` | Reject `MAIL FROM` / `RCPT TO` that violates RFC 1869/821 (spurious spaces, missing brackets). |
 | `main.smtputf8` | `true` | Advertise `SMTPUTF8` (RFC 6531). |
+| `haproxy.enabled` | `true` | Enable HAProxy PROXY protocol handling. Set `false` to bypass PROXY support. |
 | `haproxy.hosts` | empty | Array of IPs/CIDRs allowed to send the PROXY protocol. See [HAProxy.md](HAProxy.md). |
 | `headers.add_received` | `true` | Add a `Received:` header to incoming mail. |
 | `headers.clean_auth_results` | `true` | Strip inbound `Authentication-Results:` headers before plugins run. |

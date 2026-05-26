@@ -31,31 +31,38 @@ const cfg = config.get('connection.ini', {
         '+headers.add_received',
         '+headers.show_version',
         '+headers.clean_auth_results',
+        '+haproxy.enabled',
     ],
 })
 
+const haproxy_enabled = cfg.haproxy.enabled !== false
 const haproxy_hosts_ipv4 = []
 const haproxy_hosts_ipv6 = []
 
-for (const ip of cfg.haproxy.hosts) {
-    if (!ip) continue
-    if (net.isIPv6(ip.split('/')[0])) {
-        haproxy_hosts_ipv6.push([ipaddr.IPv6.parse(ip.split('/')[0]), parseInt(ip.split('/')[1] || 64)])
-    } else {
-        haproxy_hosts_ipv4.push([ipaddr.IPv4.parse(ip.split('/')[0]), parseInt(ip.split('/')[1] || 32)])
+if (haproxy_enabled) {
+    for (const ip of cfg.haproxy.hosts) {
+        if (!ip) continue
+        if (net.isIPv6(ip.split('/')[0])) {
+            haproxy_hosts_ipv6.push([ipaddr.IPv6.parse(ip.split('/')[0]), parseInt(ip.split('/')[1] || 64)])
+        } else {
+            haproxy_hosts_ipv4.push([ipaddr.IPv4.parse(ip.split('/')[0]), parseInt(ip.split('/')[1] || 32)])
+        }
     }
 }
 
+// TODO: Move these three functions to net_utils
 function normalize_ip(ip) {
     if (!net.isIP(ip)) return null
     return ipaddr.process(ip).toString()
 }
 
-function is_haproxy_allowed(ip) {
+function is_haproxy_allowed(ip, enabled, ipv6_hosts, ipv4_hosts) {
+    if (!enabled) return false
+
     const normalized_ip = normalize_ip(ip)
     if (!normalized_ip) return false
 
-    const ha_list = net.isIPv6(normalized_ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4
+    const ha_list = net.isIPv6(normalized_ip) ? ipv6_hosts : ipv4_hosts
     return ha_list.some((element) => ipaddr.parse(normalized_ip).match(element[0], element[1]))
 }
 
@@ -225,19 +232,20 @@ class Connection {
             self.process_data(data)
         })
 
-        // SMTPS pre-parses PROXY before TLS; don't wait for a second PROXY line here.
-        if (self.client.haraka_proxy) {
+        // SMTPS pre-parser state: proxy means the PROXY line was already consumed;
+        // peer_allowed means a trusted PROXY peer sent direct TLS instead.
+        const smtps = self.client.haraka_smtps
+        if (smtps?.proxy) {
             self.proxy.allowed = true
             return
         }
 
-        // SMTPS pre-parser already checked this allowed peer and found direct TLS.
-        if (self.client.haraka_proxy_checked) {
+        if (smtps?.peer_allowed) {
             plugins.run_hooks('connect_init', self)
             return
         }
 
-        if (is_haproxy_allowed(self.remote.ip)) {
+        if (is_haproxy_allowed(self.remote.ip, haproxy_enabled, haproxy_hosts_ipv6, haproxy_hosts_ipv4)) {
             self.proxy.allowed = true
             // Wait for PROXY command
             self.proxy.timer = setTimeout(() => {
@@ -1894,6 +1902,8 @@ class Connection {
 }
 
 exports.Connection = Connection
+exports.is_haproxy_enabled = () => haproxy_enabled
+// TODO: Move these three functions to net_utils
 exports.is_haproxy_allowed = is_haproxy_allowed
 exports.normalize_ip = normalize_ip
 exports.parse_proxy_line = parse_proxy_line
