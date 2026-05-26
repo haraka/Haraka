@@ -14,6 +14,23 @@ const endpoint = require('../endpoint')
 const message = require('haraka-email-message')
 const { get_client } = require('../smtp_client')
 
+function fixtureConfig(name) {
+    const testRoot = path.resolve('test')
+    return require('haraka-config').module_config(testRoot, path.resolve('test/fixtures', name))
+}
+
+function useHaproxyFixture(server, name) {
+    const originalConfig = net_utils.config
+    const originalConnectionCfg = server.connection.cfg
+    const config = fixtureConfig(name)
+    net_utils.config = config
+    server.connection.cfg = config.get('connection.ini', { booleans: ['+haproxy.enabled'] })
+    return () => {
+        net_utils.config = originalConfig
+        server.connection.cfg = originalConnectionCfg
+    }
+}
+
 // ─── CRAM-MD5 helper ──────────────────────────────────────────────────────────
 
 /** Compute a CRAM-MD5 response to a server challenge. */
@@ -274,8 +291,7 @@ describe('server', () => {
         })
 
         it('accepts PROXY v1 before the SMTPS TLS handshake', async () => {
-            const originalAllowed = net_utils.is_haproxy_allowed
-            net_utils.is_haproxy_allowed = () => true
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_allowed')
             this.server.cfg.main.smtps_port = 0
 
             const server = await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 10000)
@@ -323,16 +339,15 @@ describe('server', () => {
                 assert.match(banner.toString(), /^220 /)
                 assert.equal(tlsErrors.length, 0)
             } finally {
-                net_utils.is_haproxy_allowed = originalAllowed
                 if (client) client.destroy()
                 else if (raw) raw.destroy()
                 await close(server)
+                restoreHaproxyConfig()
             }
         })
 
         it('accepts direct SMTPS from a PROXY-allowed peer', async () => {
-            const originalAllowed = net_utils.is_haproxy_allowed
-            net_utils.is_haproxy_allowed = () => true
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_allowed')
             this.server.cfg.main.smtps_port = 0
 
             const server = await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 10000)
@@ -367,9 +382,9 @@ describe('server', () => {
                 assert.match(banner.toString(), /^220 /)
                 assert.equal(tlsErrors.length, 0)
             } finally {
-                net_utils.is_haproxy_allowed = originalAllowed
                 if (client) client.destroy()
                 await close(server)
+                restoreHaproxyConfig()
             }
         })
 
@@ -443,9 +458,8 @@ describe('server', () => {
         })
 
         it('uses direct TLS for SMTPS when HAProxy support is disabled', async () => {
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_disabled')
             this.server.cfg.main.smtps_port = 0
-            const originalEnabled = this.server.connection.cfg.haproxy.enabled
-            this.server.connection.cfg.haproxy.enabled = false
 
             let server
             let client
@@ -474,15 +488,14 @@ describe('server', () => {
                     'direct TLS fallback handshake timed out',
                 )
             } finally {
-                this.server.connection.cfg.haproxy.enabled = originalEnabled
                 if (client) client.destroy()
                 if (server) await close(server)
+                restoreHaproxyConfig()
             }
         })
 
         it('accepts direct SMTPS from an untrusted PROXY peer', async () => {
-            const originalAllowed = net_utils.is_haproxy_allowed
-            net_utils.is_haproxy_allowed = () => false
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_untrusted')
             this.server.cfg.main.smtps_port = 0
 
             const server = await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 10000)
@@ -509,15 +522,14 @@ describe('server', () => {
                     'untrusted direct SMTPS handshake timed out',
                 )
             } finally {
-                net_utils.is_haproxy_allowed = originalAllowed
                 if (client) client.destroy()
                 await close(server)
+                restoreHaproxyConfig()
             }
         })
 
         it('rejects malformed SMTPS PROXY lines before TLS', async () => {
-            const originalAllowed = net_utils.is_haproxy_allowed
-            net_utils.is_haproxy_allowed = () => true
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_allowed')
             this.server.cfg.main.smtps_port = 0
 
             const server = await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 10000)
@@ -533,15 +545,14 @@ describe('server', () => {
                 const [response] = await withTimeout(once(raw, 'data'), 3000, 'malformed PROXY response timed out')
                 assert.match(response.toString(), /^421 Invalid PROXY format/)
             } finally {
-                net_utils.is_haproxy_allowed = originalAllowed
                 if (raw) raw.destroy()
                 await close(server)
+                restoreHaproxyConfig()
             }
         })
 
         it('rejects oversized SMTPS PROXY lines before TLS', async () => {
-            const originalAllowed = net_utils.is_haproxy_allowed
-            net_utils.is_haproxy_allowed = () => true
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_allowed')
             this.server.cfg.main.smtps_port = 0
 
             const server = await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 10000)
@@ -557,16 +568,15 @@ describe('server', () => {
                 const [response] = await withTimeout(once(raw, 'data'), 3000, 'oversized PROXY response timed out')
                 assert.match(response.toString(), /^421 Invalid PROXY format/)
             } finally {
-                net_utils.is_haproxy_allowed = originalAllowed
                 if (raw) raw.destroy()
                 await close(server)
+                restoreHaproxyConfig()
             }
         })
 
         it('times out waiting for SMTPS PROXY from an allowed peer', async () => {
-            const originalAllowed = net_utils.is_haproxy_allowed
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_allowed')
             const originalSetTimeout = global.setTimeout
-            net_utils.is_haproxy_allowed = () => true
             global.setTimeout = (fn, ms, ...args) => originalSetTimeout(fn, ms === 30 * 1000 ? 20 : ms, ...args)
             this.server.cfg.main.smtps_port = 0
 
@@ -582,16 +592,15 @@ describe('server', () => {
                 const [response] = await withTimeout(once(raw, 'data'), 3000, 'PROXY timeout response timed out')
                 assert.match(response.toString(), /^421 PROXY timeout/)
             } finally {
-                net_utils.is_haproxy_allowed = originalAllowed
                 global.setTimeout = originalSetTimeout
                 if (raw) raw.destroy()
                 await close(server)
+                restoreHaproxyConfig()
             }
         })
 
         it('accepts byte-by-byte direct SMTPS from a PROXY-allowed peer', async () => {
-            const originalAllowed = net_utils.is_haproxy_allowed
-            net_utils.is_haproxy_allowed = () => true
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_allowed')
             this.server.cfg.main.smtps_port = 0
 
             const server = await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 10000)
@@ -648,10 +657,10 @@ describe('server', () => {
                 )
                 assert.match(banner.toString(), /^220 /)
             } finally {
-                net_utils.is_haproxy_allowed = originalAllowed
                 if (client) client.destroy()
                 else if (raw) raw.destroy()
                 await close(server)
+                restoreHaproxyConfig()
             }
         })
     })
