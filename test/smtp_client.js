@@ -340,8 +340,6 @@ describe('SMTPClient socket connect event', () => {
         socket.setTimeout = (ms) => {
             lastTimeout = ms
         }
-        // constructing the client is what registers the 'connect' handler on
-        // the socket; the binding is unused, but the side effect is required
         makeClient({ socket, idle_timeout: 120 })
         socket.emit('connect')
         assert.equal(lastTimeout, 120_000)
