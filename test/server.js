@@ -10,7 +10,7 @@ const tls = require('node:tls')
 const constants = require('haraka-constants')
 const net_utils = require('haraka-net-utils')
 
-const endpoint = require('../endpoint')
+const { endpoint } = require('haraka-net-utils')
 const message = require('haraka-email-message')
 const { get_client } = require('../smtp_client')
 

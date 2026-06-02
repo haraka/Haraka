@@ -1,40 +1,13 @@
 'use strict'
-// A subclass of Socket which reads data by line
+// Back-compat shim. The Socket class lives in haraka-net-utils as LineSocket;
+// the line-processing helper is `add_line_processor` there. The connect()
+// helper stays here because it depends on Haraka's tls_socket.
 
-const net = require('node:net')
-const utils = require('haraka-utils')
+const { LineSocket, add_line_processor } = require('haraka-net-utils')
 
 const tls_socket = require('./tls_socket')
 
-class Socket extends net.Socket {
-    constructor(options) {
-        super(options)
-        setup_line_processor(this)
-    }
-}
-
-function setup_line_processor(socket) {
-    let current_data = ''
-
-    socket.on('data', function on_socket_data(data) {
-        current_data += data
-        let results
-        while ((results = utils.line_regexp.exec(current_data))) {
-            const this_line = results[1]
-            current_data = current_data.slice(this_line.length)
-            socket.emit('line', this_line)
-        }
-    })
-
-    socket.on('end', function on_socket_end() {
-        if (current_data.length) {
-            socket.emit('line', current_data)
-        }
-        current_data = ''
-    })
-}
-
-exports.Socket = Socket
+exports.Socket = LineSocket
 
 // New interface - uses TLS
 exports.connect = (port, host) => {
@@ -46,6 +19,6 @@ exports.connect = (port, host) => {
         options.host = host
     }
     const sock = tls_socket.connect(options)
-    setup_line_processor(sock)
+    add_line_processor(sock)
     return sock
 }
