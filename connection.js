@@ -1313,9 +1313,13 @@ class Connection {
         }
 
         let from
+        const from_raw = results.shift()
         try {
-            from = new Address(results.shift())
+            from = new Address(from_raw)
         } catch (err) {
+            this.lognotice(
+                `Invalid MAIL FROM address ${JSON.stringify(from_raw)}: ${err.message}`,
+            )
             return this.respond(501, `Invalid MAIL FROM address`)
         }
 
@@ -1372,9 +1376,13 @@ class Connection {
         }
 
         let recip
+        const recip_raw = results.shift()
         try {
-            recip = new Address(results.shift())
+            recip = new Address(recip_raw)
         } catch (err) {
+            this.lognotice(
+                `Invalid RCPT TO address ${JSON.stringify(recip_raw)}: ${err.message}`,
+            )
             return this.respond(501, `Invalid RCPT TO address`)
         }
 
