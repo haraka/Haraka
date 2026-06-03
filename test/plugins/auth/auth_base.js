@@ -3,23 +3,23 @@ const assert = require('node:assert')
 const { describe, it, beforeEach } = require('node:test')
 
 const { Address } = require('../../../address')
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 const utils = require('haraka-utils')
 
 const _set_up = () => {
-    this.plugin = new fixtures.plugin('auth/auth_base')
+    this.plugin = makePlugin('auth/auth_base', { register: false })
 
     this.plugin.get_plain_passwd = (user, cb) => {
         if (user === 'test') return cb('testpass')
         return cb(null)
     }
 
-    this.connection = fixtures.connection.createConnection()
+    this.connection = makeConnection()
     this.connection.capabilities = null
 }
 
 const _set_up_2 = () => {
-    this.plugin = new fixtures.plugin('auth/auth_base')
+    this.plugin = makePlugin('auth/auth_base', { register: false })
 
     this.plugin.get_plain_passwd = (user, connection, cb) => {
         connection.notes.auth_custom_note = 'custom_note'
@@ -27,12 +27,12 @@ const _set_up_2 = () => {
         return cb(null)
     }
 
-    this.connection = fixtures.connection.createConnection()
+    this.connection = makeConnection()
     this.connection.capabilities = null
 }
 
 const _set_up_custom_pwcb_opts = () => {
-    this.plugin = new fixtures.plugin('auth/auth_base')
+    this.plugin = makePlugin('auth/auth_base', { register: false })
 
     this.plugin.check_plain_passwd = (connection, user, passwd, pwok_cb) => {
         switch (user) {
@@ -53,7 +53,7 @@ const _set_up_custom_pwcb_opts = () => {
         }
     }
 
-    this.connection = fixtures.connection.createConnection()
+    this.connection = makeConnection()
     this.connection.capabilities = null
     this.connection.notes.resp_strings = []
     this.connection.respond = (code, msg, cb) => {
@@ -266,7 +266,7 @@ describe('auth_base', () => {
 
         it('legacyok_nomessage', (t, done) => {
             this.plugin.check_user(
-                (code, msg) => {
+                (code) => {
                     assert.equal(code, OK)
                     assert.equal(this.connection.relaying, true)
                     assert.deepEqual(this.connection.notes.resp_strings, [[235, '2.7.0 Authentication successful']])
@@ -280,7 +280,7 @@ describe('auth_base', () => {
 
         it('legacyfail_nomessage', (t, done) => {
             this.plugin.check_user(
-                (code, msg) => {
+                (code) => {
                     assert.equal(code, OK)
                     assert.equal(this.connection.relaying, false)
                     assert.deepEqual(this.connection.notes.resp_strings, [[535, '5.7.8 Authentication failed']])
@@ -294,7 +294,7 @@ describe('auth_base', () => {
 
         it('legacyok_message', (t, done) => {
             this.plugin.check_user(
-                (code, msg) => {
+                (code) => {
                     assert.equal(code, OK)
                     assert.equal(this.connection.relaying, true)
                     assert.deepEqual(this.connection.notes.resp_strings, [[235, 'GREAT SUCCESS']])
@@ -308,7 +308,7 @@ describe('auth_base', () => {
 
         it('legacyfail_message', (t, done) => {
             this.plugin.check_user(
-                (code, msg) => {
+                (code) => {
                     assert.equal(code, OK)
                     assert.equal(this.connection.relaying, false)
                     assert.deepEqual(this.connection.notes.resp_strings, [[535, 'FAIL 123']])
@@ -322,7 +322,7 @@ describe('auth_base', () => {
 
         it('newok', (t, done) => {
             this.plugin.check_user(
-                (code, msg) => {
+                (code) => {
                     assert.equal(code, OK)
                     assert.equal(this.connection.relaying, true)
                     assert.deepEqual(this.connection.notes.resp_strings, [[215, 'KOKOKO']])
@@ -336,7 +336,7 @@ describe('auth_base', () => {
 
         it('newfail', (t, done) => {
             this.plugin.check_user(
-                (code, msg) => {
+                (code) => {
                     assert.equal(code, OK)
                     assert.equal(this.connection.relaying, false)
                     assert.deepEqual(this.connection.notes.resp_strings, [[555, 'OHOHOH']])
@@ -355,7 +355,7 @@ describe('auth_base', () => {
         it('bad auth: no notes should be set', (t, done) => {
             const credentials = ['matt', 'ttam']
             this.plugin.check_user(
-                (code) => {
+                () => {
                     assert.equal(this.connection.notes.auth_user, undefined)
                     assert.equal(this.connection.notes.auth_passwd, undefined)
                     done()
@@ -370,7 +370,7 @@ describe('auth_base', () => {
             const creds = ['test', 'testpass']
             this.plugin.blankout_password = true
             this.plugin.check_user(
-                (code) => {
+                () => {
                     assert.equal(this.connection.notes.auth_user, creds[0])
                     assert.equal(this.connection.notes.auth_passwd, undefined)
                     done()
@@ -384,7 +384,7 @@ describe('auth_base', () => {
         it('good auth: store password (default)', (t, done) => {
             const creds = ['test', 'testpass']
             this.plugin.check_user(
-                (code) => {
+                () => {
                     assert.equal(this.connection.notes.auth_user, creds[0])
                     assert.equal(this.connection.notes.auth_passwd, creds[1])
                     done()

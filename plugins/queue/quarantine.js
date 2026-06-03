@@ -10,7 +10,7 @@ exports.register = function () {
     this.register_hook('queue_outbound', 'quarantine')
 }
 
-exports.hook_init_master = function (next, server) {
+exports.hook_init_master = function (next) {
     this.init_quarantine_dir(() => {
         this.clean_tmp_directory(next)
     })
@@ -62,8 +62,8 @@ exports.init_quarantine_dir = function (done) {
     const tmp_dir = path.join(this.get_base_dir(), 'tmp')
     fs.promises
         .mkdir(tmp_dir, { recursive: true })
-        .then((made) => this.loginfo(`created ${tmp_dir}`))
-        .catch((err) => this.logerror(`Unable to create ${tmp_dir}`))
+        .then(() => this.loginfo(`created ${tmp_dir}`))
+        .catch(() => this.logerror(`Unable to create ${tmp_dir}`))
         .finally(done)
 }
 
@@ -98,11 +98,11 @@ exports.quarantine = function (next, connection) {
     // final destination.
     fs.promises
         .mkdir(msg_dir, { recursive: true })
-        .catch((err) => {
+        .catch(() => {
             connection.logerror(this, `Error creating directory: ${msg_dir}`)
             next()
         })
-        .then((ok) => {
+        .then(() => {
             const ws = fs.createWriteStream(tmp_path)
 
             ws.on('error', (err) => {

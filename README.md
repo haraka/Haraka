@@ -1,7 +1,6 @@
 # Haraka — a Node.js Mail Server
 
-![Tests](https://github.com/haraka/Haraka/actions/workflows/ci.yml/badge.svg)
-[![Coverage Status][cov-img]][cov-url]
+[![Build][ci-img]][ci-url] [![Cover][cov-img]][cov-url] [![Qlty][qlty-img]][qlty-url]
 
 Haraka is a highly scalable [Node.js][1] SMTP server with a modular plugin architecture. It handles thousands of concurrent connections and delivers thousands of messages per second. Haraka and its plugins are written in asynchronous JavaScript, optimised for throughput and low latency.
 
@@ -115,5 +114,9 @@ Haraka is released under the MIT License. See [LICENSE][license] for details.
 [msimerson]: https://github.com/msimerson
 [spamassassin]: https://spamassassin.apache.org/
 [qpsmtpd]: https://github.com/smtpd/qpsmtpd/
+[ci-img]: https://github.com/haraka/Haraka/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/haraka/Haraka/actions/workflows/ci.yml
 [cov-img]: https://codecov.io/github/haraka/Haraka/coverage.svg
-[cov-url]: https://codecov.io/github/haraka/Haraka?branch=master
+[cov-url]: https://codecov.io/github/haraka/Haraka
+[qlty-img]: https://qlty.sh/gh/haraka/projects/Haraka/maintainability.svg
+[qlty-url]: https://qlty.sh/gh/haraka/projects/Haraka

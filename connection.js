@@ -2,7 +2,6 @@
 // a single connection
 
 const dns = require('node:dns')
-const net = require('node:net')
 const os = require('node:os')
 
 // npm libs
@@ -19,7 +18,7 @@ const ResultStore = require('haraka-results')
 const logger = require('./logger')
 const trans = require('./transaction')
 const plugins = require('./plugins')
-const rfc1869 = require('./rfc1869')
+const rfc1869 = utils.rfc1869
 const outbound = require('./outbound')
 
 const states = constants.connection.state
@@ -35,7 +34,7 @@ const cfg = config.get('connection.ini', {
 })
 
 class Connection {
-    constructor(client, server, smtp_cfg) {
+    constructor(client, server) {
         this.client = client
         this.server = server
 
@@ -148,7 +147,7 @@ class Connection {
             self.fail()
         })
 
-        self.client.on('close', (has_error) => {
+        self.client.on('close', () => {
             if (self.state >= states.DISCONNECTING) return
             self.remote.closed = true
             self.loginfo('client dropped connection', log_data)
@@ -678,8 +677,7 @@ class Connection {
     }
     /////////////////////////////////////////////////////////////////////////////
     // SMTP Responses
-    connect_init_respond(retval, msg) {
-        // retval and message are ignored
+    connect_init_respond() {
         this.logdebug('running connect_init_respond')
         plugins.run_hooks('lookup_rdns', this)
     }
@@ -889,7 +887,7 @@ class Connection {
             }
         }
     }
-    capabilities_respond(retval, msg) {
+    capabilities_respond() {
         this.respond(250, this.capabilities)
     }
     quit_respond(retval, msg) {
@@ -940,7 +938,7 @@ class Connection {
                 this.respond(250, 'OK')
         }
     }
-    rset_respond(retval, msg) {
+    rset_respond() {
         this.respond(250, 'OK', () => {
             this.reset_transaction()
         })
@@ -1273,7 +1271,7 @@ class Connection {
         }
         plugins.run_hooks('rset', this)
     }
-    cmd_vrfy(line) {
+    cmd_vrfy() {
         // only supported via plugins
         plugins.run_hooks('vrfy', this)
     }
@@ -1664,7 +1662,7 @@ class Connection {
                 }
         }
     }
-    max_data_exceeded_respond(retval, msg) {
+    max_data_exceeded_respond(retval) {
         // TODO: Maybe figure out what to do with other return codes
         this.respond(retval === constants.denysoft ? 450 : 550, 'Message too big!', () => {
             this.reset_transaction()

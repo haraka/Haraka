@@ -3,11 +3,11 @@
 const assert = require('node:assert/strict')
 const { describe, it, beforeEach } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 const _set_up = () => {
-    this.plugin = new fixtures.plugin('xclient')
-    this.connection = fixtures.connection.createConnection()
+    this.plugin = makePlugin('xclient', { register: false })
+    this.connection = makeConnection()
     this.connection.capabilities = []
 }
 
@@ -45,7 +45,10 @@ describe('xclient', () => {
             },
             {
                 desc: 'denies XCLIENT when transaction is in progress',
-                setup: () => this.connection.init_transaction(),
+                setup: () => {
+                    this.connection = makeConnection({ withTxn: true })
+                    this.connection.capabilities = []
+                },
                 params: ['XCLIENT', 'ADDR=127.0.0.1'],
                 check: (code) => assert.equal(code, DENY),
             },

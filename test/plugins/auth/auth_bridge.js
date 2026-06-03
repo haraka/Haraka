@@ -3,13 +3,13 @@
 const assert = require('node:assert')
 const { describe, it, beforeEach } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 describe('auth/auth_bridge', () => {
     let plugin
 
     beforeEach(() => {
-        plugin = new fixtures.plugin('auth/auth_bridge')
+        plugin = makePlugin('auth/auth_bridge', { register: false })
         plugin.load_flat_ini()
     })
 
@@ -28,7 +28,7 @@ describe('auth/auth_bridge', () => {
         let conn
 
         beforeEach(() => {
-            conn = fixtures.connection.createConnection()
+            conn = makeConnection()
         })
 
         it('calls try_auth_proxy with just host when no port configured', (t, done) => {

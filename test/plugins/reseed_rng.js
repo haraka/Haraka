@@ -3,12 +3,12 @@
 const assert = require('node:assert/strict')
 const { describe, it } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makePlugin } = require('haraka-test-fixtures')
 
 describe('reseed_rng', () => {
     describe('hook_init_child', () => {
         it('calls Math.seedrandom with a hex string and calls next', (t, done) => {
-            const plugin = new fixtures.plugin('reseed_rng')
+            const plugin = makePlugin('reseed_rng', { register: false })
             let called = false
             let calledArg
             Math.seedrandom = (arg) => {
@@ -26,7 +26,7 @@ describe('reseed_rng', () => {
         })
 
         it('throws when Math.seedrandom is not defined', () => {
-            const plugin = new fixtures.plugin('reseed_rng')
+            const plugin = makePlugin('reseed_rng', { register: false })
             delete Math.seedrandom
             assert.throws(() => plugin.hook_init_child(() => {}), /Math\.seedrandom is not a function/)
         })

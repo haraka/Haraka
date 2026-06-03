@@ -101,7 +101,7 @@ exports.hook_deny = function (next, connection, params) {
     }
 }
 
-exports.hook_rcpt_ok = function (next, connection, rcpt) {
+exports.hook_rcpt_ok = function (next, connection) {
     const transaction = connection?.transaction
     if (!transaction) return next()
 

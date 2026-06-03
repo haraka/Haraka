@@ -4,15 +4,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- build: add qlty config and README badge
+- refactor: move rfc1869 to haraka-utils
+- refactor: move FsyncWriteStream to haraka-utils
+- refactor: move TimerQueue to haraka-utils
+- refactor: move cram_md5_response to haraka-utils
 - refactor(auth_proxy): parse target host via net_utils.endpoint
 - refactor: move endpoint to haraka-net-utils
 - refactor: move HostPool to haraka-net-utils
 - refactor: move LineSocket to haraka-net-utils
-
+- dep(many): bump dependencies and plugins to latest
+- dep(eslint): update @haraka/eslint-config to v3 and fix surfaced warnings
 - fix(deps): update haraka-plugin-dkim to 1.2.0 to match new addresses handling #3564
 - fix(deps): update haraka-plugin-rspamd to 1.6.0 to match new addresses handling #3564
+- test: migrate suite to haraka-test-fixtures 1.7.0 helpers
 
-### [3.2.0] - 2026-05-NN
+### [3.2.0] - 2026-05-24
 
 - fix(status): merge worker status into summary #3574
 - dep: replace address-rfc282{1,2} with @haraka/email-address #3566

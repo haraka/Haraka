@@ -6,7 +6,6 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const constants = require('haraka-constants')
-const logger = require('../../logger')
 
 const lines = [
     'From: John Johnson <john@example.com>',
@@ -281,7 +280,7 @@ describe('outbound', () => {
             const transaction = {
                 uuid: 'txn-add-headers',
                 header: {
-                    get_all(_name) {
+                    get_all() {
                         return []
                     },
                     get() {
@@ -344,12 +343,12 @@ describe('outbound', () => {
     })
 
     describe('timer_queue', () => {
-        let outbound, ob_timer_queue
+        let ob_timer_queue
 
         beforeEach(() => {
             process.env.HARAKA_TEST_DIR = path.resolve('test')
-            outbound = require('../../outbound')
-            const TimerQueue = require('../../outbound/timer_queue')
+            require('../../outbound')
+            const { TimerQueue } = require('haraka-utils')
             ob_timer_queue = new TimerQueue(500)
         })
 

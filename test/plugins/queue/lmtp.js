@@ -3,7 +3,7 @@
 const assert = require('node:assert')
 const { describe, it, beforeEach, before } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 before(() => {
     require('haraka-constants').import(global)
@@ -14,7 +14,7 @@ describe('queue/lmtp', () => {
         let plugin
 
         beforeEach(() => {
-            plugin = new fixtures.plugin('queue/lmtp')
+            plugin = makePlugin('queue/lmtp', { register: false })
             plugin.load_lmtp_ini()
         })
 
@@ -113,14 +113,13 @@ describe('queue/lmtp', () => {
         let plugin, conn
 
         beforeEach(() => {
-            plugin = new fixtures.plugin('queue/lmtp')
+            plugin = makePlugin('queue/lmtp', { register: false })
             plugin.load_lmtp_ini()
-            conn = fixtures.connection.createConnection()
-            conn.init_transaction()
+            conn = makeConnection({ withTxn: true })
         })
 
         it('calls next() when there is no transaction', (t, done) => {
-            const connNoTxn = fixtures.connection.createConnection()
+            const connNoTxn = makeConnection()
             plugin.hook_queue((rc) => {
                 assert.equal(rc, undefined)
                 done()

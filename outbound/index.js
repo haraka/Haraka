@@ -13,7 +13,7 @@ const ResultStore = require('haraka-results')
 const logger = require('../logger')
 const trans = require('../transaction')
 const plugins = require('../plugins')
-const FsyncWriteStream = require('./fsync_writestream')
+const FsyncWriteStream = utils.FsyncWriteStream
 
 const obc = require('./config')
 const queuelib = require('./queue')
@@ -241,7 +241,7 @@ exports.send_trans_email = function (transaction, next) {
         transaction.results = new ResultStore(connection)
     }
 
-    connection.pre_send_trans_email_respond = async (retval) => {
+    connection.pre_send_trans_email_respond = async () => {
         const deliveries = get_deliveries(transaction)
         const hmails = []
         const ok_paths = []

@@ -4,19 +4,19 @@ const assert = require('node:assert/strict')
 const path = require('node:path')
 const { describe, it, beforeEach } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 const _set_up = () => {
     this.backup = {}
 
-    this.plugin = new fixtures.plugin('auth/auth_vpopmaild')
+    this.plugin = makePlugin('auth/auth_vpopmaild', { register: false })
     this.plugin.inherits('auth/auth_base')
 
     // reset the config/root_path
     this.plugin.config.root_path = path.resolve(__dirname, '../../../config')
     this.plugin.cfg = this.plugin.config.get('auth_vpopmaild.ini')
 
-    this.connection = fixtures.connection.createConnection()
+    this.connection = makeConnection()
     this.connection.capabilities = null
 }
 

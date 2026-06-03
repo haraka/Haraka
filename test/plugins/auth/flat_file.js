@@ -3,22 +3,13 @@
 const assert = require('node:assert')
 const { describe, it, beforeEach } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
-
-function makeConnection(opts = {}) {
-    const conn = fixtures.connection.createConnection()
-    conn.capabilities = []
-    conn.notes.allowed_auth_methods = []
-    conn.remote = { is_private: opts.is_private ?? false }
-    conn.tls = { enabled: opts.tls_enabled ?? false }
-    return conn
-}
+const { callHook, makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 describe('auth/flat_file', () => {
     let plugin
 
     beforeEach(() => {
-        plugin = new fixtures.plugin('auth/flat_file')
+        plugin = makePlugin('auth/flat_file', { register: false })
         plugin.inherits('auth/auth_base')
         plugin.load_flat_ini()
     })
@@ -39,55 +30,59 @@ describe('auth/flat_file', () => {
 
         beforeEach(() => {
             conn = makeConnection()
+            conn.capabilities = []
+            conn.notes.allowed_auth_methods = []
+            conn.remote.is_private = false
+            conn.tls.enabled = false
         })
 
         it('skips for public non-TLS connection', (t, done) => {
-            plugin.hook_capabilities((rc) => {
+            callHook(plugin, 'hook_capabilities', conn).then(({ rc }) => {
                 assert.equal(rc, undefined)
                 assert.equal(conn.capabilities.length, 0)
                 done()
-            }, conn)
+            })
         })
 
         it('adds AUTH methods for private connection (non-TLS)', (t, done) => {
             conn.remote.is_private = true
             plugin.cfg.core.methods = 'PLAIN,LOGIN'
-            plugin.hook_capabilities((rc) => {
+            callHook(plugin, 'hook_capabilities', conn).then(({ rc }) => {
                 assert.equal(rc, undefined)
                 assert.ok(
                     conn.capabilities.some((c) => c.startsWith('AUTH ')),
                     'AUTH capability should be present',
                 )
                 done()
-            }, conn)
+            })
         })
 
         it('adds AUTH methods when TLS is enabled', (t, done) => {
             conn.tls.enabled = true
             plugin.cfg.core.methods = 'PLAIN,LOGIN'
-            plugin.hook_capabilities((rc) => {
+            callHook(plugin, 'hook_capabilities', conn).then(({ rc }) => {
                 assert.equal(rc, undefined)
                 assert.ok(conn.capabilities.some((c) => c.startsWith('AUTH ')))
                 done()
-            }, conn)
+            })
         })
 
         it('sets allowed_auth_methods on connection notes', (t, done) => {
             conn.tls.enabled = true
             plugin.cfg.core.methods = 'PLAIN,LOGIN'
-            plugin.hook_capabilities(() => {
+            callHook(plugin, 'hook_capabilities', conn).then(() => {
                 assert.deepEqual(conn.notes.allowed_auth_methods, ['PLAIN', 'LOGIN'])
                 done()
-            }, conn)
+            })
         })
 
         it('does not add AUTH when no methods configured', (t, done) => {
             conn.tls.enabled = true
             plugin.cfg.core.methods = null
-            plugin.hook_capabilities(() => {
+            callHook(plugin, 'hook_capabilities', conn).then(() => {
                 assert.equal(conn.capabilities.length, 0)
                 done()
-            }, conn)
+            })
         })
     })
 

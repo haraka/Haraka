@@ -136,8 +136,8 @@ exports.queue_inspect = function (cb) {
 exports.queue_discard = function (file, cb) {
     try {
         this.outbound.temp_fail_queue.discard(file)
-    } catch (e) {
-        // we ignore not found error
+    } catch {
+        // ignore not found error
     }
 
     fs.unlink(path.join(this.queue_dir || '', file), () => {

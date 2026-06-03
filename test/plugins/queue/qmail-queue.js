@@ -3,7 +3,7 @@
 const assert = require('node:assert')
 const { describe, it, beforeEach, before } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 before(() => {
     require('haraka-constants').import(global)
@@ -12,14 +12,14 @@ before(() => {
 describe('queue/qmail-queue', () => {
     describe('register', () => {
         it('throws when qmail-queue binary is not found', () => {
-            const plugin = new fixtures.plugin('queue/qmail-queue')
+            const plugin = makePlugin('queue/qmail-queue', { register: false })
             assert.throws(() => plugin.register(), /Cannot find qmail-queue binary/)
         })
     })
 
     describe('load_qmail_queue_ini', () => {
         it('loads config with enable_outbound boolean', () => {
-            const plugin = new fixtures.plugin('queue/qmail-queue')
+            const plugin = makePlugin('queue/qmail-queue', { register: false })
             plugin.load_qmail_queue_ini()
             assert.ok(typeof plugin.cfg.main.enable_outbound === 'boolean')
         })
@@ -29,15 +29,14 @@ describe('queue/qmail-queue', () => {
         let plugin, conn
 
         beforeEach(() => {
-            plugin = new fixtures.plugin('queue/qmail-queue')
+            plugin = makePlugin('queue/qmail-queue', { register: false })
             plugin.load_qmail_queue_ini()
             plugin.queue_exec = '/bin/echo' // use a real binary that exists
-            conn = fixtures.connection.createConnection()
-            conn.init_transaction()
+            conn = makeConnection({ withTxn: true })
         })
 
         it('calls next() when there is no transaction', (t, done) => {
-            const connNoTxn = fixtures.connection.createConnection()
+            const connNoTxn = makeConnection()
             plugin.hook_queue((rc) => {
                 assert.equal(rc, undefined)
                 done()
@@ -64,7 +63,7 @@ describe('queue/qmail-queue', () => {
     describe('build_envelope', () => {
         let plugin
         beforeEach(() => {
-            plugin = new fixtures.plugin('queue/qmail-queue')
+            plugin = makePlugin('queue/qmail-queue', { register: false })
         })
 
         it('formats F<sender>\\0(T<rcpt>\\0)*\\0 with no padding', () => {

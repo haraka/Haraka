@@ -5,7 +5,7 @@ const path = require('node:path')
 const Module = require('node:module')
 const { describe, it, beforeEach, before, after } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 // deliver.js does `require('./outbound')` at the top level. In a running
 // Haraka that resolves to the core outbound module (Haraka/outbound/index.js),
@@ -40,9 +40,8 @@ after(() => {
     delete require.cache[outboundPath]
 })
 
-function makeConnection(opts = {}) {
-    const conn = fixtures.connection.createConnection()
-    conn.init_transaction()
+function buildConnection(opts = {}) {
+    const conn = makeConnection({ withTxn: true })
     if (opts.relaying !== undefined) conn.relaying = opts.relaying
     return conn
 }
@@ -52,12 +51,12 @@ describe('queue/deliver', () => {
         let plugin, conn
 
         beforeEach(() => {
-            plugin = new fixtures.plugin('queue/deliver')
+            plugin = makePlugin('queue/deliver')
             mockOutbound.send_trans_email = () => {}
         })
 
         it('calls next() when connection is not relaying', (t, done) => {
-            conn = makeConnection({ relaying: false })
+            conn = buildConnection({ relaying: false })
             plugin.hook_queue_outbound((rc) => {
                 assert.equal(rc, undefined)
                 done()
@@ -72,7 +71,7 @@ describe('queue/deliver', () => {
         })
 
         it('calls outbound.send_trans_email when relaying is true', (t, done) => {
-            conn = makeConnection({ relaying: true })
+            conn = buildConnection({ relaying: true })
             mockOutbound.send_trans_email = (txn, next) => {
                 assert.equal(txn, conn.transaction)
                 next(OK)
@@ -84,7 +83,7 @@ describe('queue/deliver', () => {
         })
 
         it('passes transaction to outbound.send_trans_email', (t, done) => {
-            conn = makeConnection({ relaying: true })
+            conn = buildConnection({ relaying: true })
             let capturedTxn
             mockOutbound.send_trans_email = (txn, next) => {
                 capturedTxn = txn

@@ -4,6 +4,7 @@ const assert = require('node:assert/strict')
 const { describe, it, beforeEach } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = fixtures
 const Notes = require('haraka-notes')
 
 function makeServer(extra = {}) {
@@ -30,13 +31,14 @@ describe('process_title', () => {
     let plugin
 
     beforeEach(() => {
-        plugin = new fixtures.plugin('process_title')
+        plugin = makePlugin('process_title', { register: false })
     })
 
     describe('hook_connect_init', () => {
         it('increments connection and concurrent counts', (t, done) => {
             const server = makeServer()
-            const conn = fixtures.connection.createConnection({}, server)
+            const conn = makeConnection()
+            conn.server = server
             plugin.hook_connect_init((rc) => {
                 assert.equal(rc, undefined)
                 assert.equal(server.notes.pt_connections, 1)
@@ -50,7 +52,8 @@ describe('process_title', () => {
     describe('hook_disconnect', () => {
         it('decrements concurrent count when connect_init ran', (t, done) => {
             const server = makeServer({ pt_connections: 1, pt_concurrent: 1 })
-            const conn = fixtures.connection.createConnection({}, server)
+            const conn = makeConnection()
+            conn.server = server
             conn.notes.pt_connect_run = true
             plugin.hook_disconnect((rc) => {
                 assert.equal(rc, undefined)
@@ -62,7 +65,8 @@ describe('process_title', () => {
 
         it('increments connection count when connect_init did not run', (t, done) => {
             const server = makeServer({ pt_connections: 0, pt_concurrent: 0 })
-            const conn = fixtures.connection.createConnection({}, server)
+            const conn = makeConnection()
+            conn.server = server
             // pt_connect_run is NOT set: disconnect does connect bookkeeping then decrements
             plugin.hook_disconnect((rc) => {
                 assert.equal(rc, undefined)
@@ -76,7 +80,8 @@ describe('process_title', () => {
     describe('hook_rcpt', () => {
         it('increments recipient count', (t, done) => {
             const server = makeServer()
-            const conn = fixtures.connection.createConnection({}, server)
+            const conn = makeConnection()
+            conn.server = server
             plugin.hook_rcpt((rc) => {
                 assert.equal(rc, undefined)
                 assert.equal(server.notes.pt_recipients, 1)
@@ -88,7 +93,8 @@ describe('process_title', () => {
     describe('hook_data', () => {
         it('increments message count', (t, done) => {
             const server = makeServer()
-            const conn = fixtures.connection.createConnection({}, server)
+            const conn = makeConnection()
+            conn.server = server
             plugin.hook_data((rc) => {
                 assert.equal(rc, undefined)
                 assert.equal(server.notes.pt_messages, 1)

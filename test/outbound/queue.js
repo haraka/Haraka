@@ -96,7 +96,7 @@ describe('outbound/queue', () => {
             let renameAttempts = 0
 
             const originalRename = queue.rename_to_actual_pid
-            queue.rename_to_actual_pid = (_file, _parts) => {
+            queue.rename_to_actual_pid = () => {
                 renameAttempts++
                 throw new Error('test skip')
             }
@@ -107,7 +107,7 @@ describe('outbound/queue', () => {
                     '1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka',
                     '1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka',
                 ],
-                (_file) => {},
+                () => {},
             )
             queue.rename_to_actual_pid = originalRename
             assert.equal(renameAttempts, 1)

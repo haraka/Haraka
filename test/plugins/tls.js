@@ -4,15 +4,13 @@ const assert = require('node:assert/strict')
 const path = require('node:path')
 const { describe, it, beforeEach } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
-const Plugin = fixtures.plugin
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 const _set_up = () => {
-    this.plugin = new Plugin('tls')
-    this.connection = new fixtures.connection.createConnection()
+    this.plugin = makePlugin('tls', { register: false, configDir: 'test' })
+    this.connection = makeConnection()
 
     // use test/config instead of ./config
-    this.plugin.config = this.plugin.config.module_config(path.resolve('test'))
     this.plugin.net_utils.config = this.plugin.net_utils.config.module_config(path.resolve('test'))
 
     this.plugin.tls_opts = {}

@@ -6,9 +6,10 @@ const path = require('node:path')
 
 const { Address } = require('../address')
 const config = require('haraka-config')
+const utils = require('haraka-utils')
 
 const logger = require('../logger')
-const TimerQueue = require('./timer_queue')
+const TimerQueue = utils.TimerQueue
 const HMailItem = require('./hmail')
 const obc = require('./config')
 const _qfile = require('./qfile')
@@ -101,7 +102,7 @@ const delivery_queue = (exports.delivery_queue = new Queue(async (hmail) => {
     })
 }))
 
-const temp_fail_queue = (exports.temp_fail_queue = new TimerQueue())
+const temp_fail_queue = (exports.temp_fail_queue = new TimerQueue(1000, { logger }))
 
 let queue_count = 0
 
@@ -111,7 +112,7 @@ exports.list_queue = async () => {
     return exports._load_cur_queue(null, exports._list_file)
 }
 
-exports._stat_file = async (file) => {
+exports._stat_file = async () => {
     queue_count++
 }
 
@@ -180,7 +181,9 @@ exports.rename_to_actual_pid = async (file, parts) => {
         await fs.rename(path.join(exports.queue_dir, file), path.join(exports.queue_dir, new_filename))
         return new_filename
     } catch (err) {
-        throw new Error(`Unable to rename queue file: ${file} to ${new_filename} : ${err}`)
+        throw new Error(`Unable to rename queue file: ${file} to ${new_filename}`, {
+            cause: err,
+        })
     }
 }
 

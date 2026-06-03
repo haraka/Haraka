@@ -12,7 +12,7 @@ if (!process.env.HARAKA) {
 process.env.HARAKA = process.env.HARAKA || path.resolve('.')
 try {
     require.paths.push(makePathJoin())
-} catch (e) {
+} catch {
     process.env.NODE_PATH = process.env.NODE_PATH ? `${process.env.NODE_PATH}:${makePathJoin()}` : makePathJoin()
     require('module')._initPaths() // Horrible hack
 }
@@ -60,7 +60,7 @@ process.on('SIGHUP', () => {
     server.flushQueue()
 })
 
-process.on('exit', (code) => {
+process.on('exit', () => {
     if (shutting_down) return
     const [, filename] = process.argv
     process.title = path.basename(filename, '.js')

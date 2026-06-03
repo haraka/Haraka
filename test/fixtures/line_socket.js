@@ -18,4 +18,4 @@ class Socket extends events.EventEmitter {
 
 exports.Socket = Socket
 
-exports.connect = (port, host, cb) => new Socket(port, host)
+exports.connect = (port, host) => new Socket(port, host)

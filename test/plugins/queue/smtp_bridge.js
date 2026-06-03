@@ -3,7 +3,7 @@
 const assert = require('node:assert')
 const { describe, it, beforeEach, before } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 before(() => {
     require('haraka-constants').import(global)
@@ -14,14 +14,13 @@ describe('queue/smtp_bridge', () => {
         let plugin, conn
 
         beforeEach(() => {
-            plugin = new fixtures.plugin('queue/smtp_bridge')
+            plugin = makePlugin('queue/smtp_bridge')
             plugin.load_flat_ini()
-            conn = fixtures.connection.createConnection()
-            conn.init_transaction()
+            conn = makeConnection({ withTxn: true })
         })
 
         it('calls next() when no transaction', (t, done) => {
-            const connNoTxn = fixtures.connection.createConnection()
+            const connNoTxn = makeConnection()
             plugin.hook_data_post((rc) => {
                 assert.equal(rc, undefined)
                 done()
@@ -60,8 +59,7 @@ describe('queue/smtp_bridge', () => {
         let plugin
 
         beforeEach(() => {
-            plugin = new fixtures.plugin('queue/smtp_bridge')
-            plugin.load_flat_ini()
+            plugin = makePlugin('queue/smtp_bridge')
         })
 
         it('returns OK with default priority 10 and configured host', (t, done) => {

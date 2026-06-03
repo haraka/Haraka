@@ -87,7 +87,7 @@ exports.hook_queue = function (next, connection) {
         }
         plugin.loginfo('Message Stream sent to qmail. Now sending envelope')
         const buf = plugin.build_envelope(connection.transaction)
-        qmail_queue.stdout.on('error', (err) => {}) // stdout throws an error on close
+        qmail_queue.stdout.on('error', () => {}) // stdout throws an error on close
         qmail_queue.stdout.end(buf)
     })
 }

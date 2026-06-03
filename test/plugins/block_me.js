@@ -5,8 +5,7 @@ const path = require('node:path')
 const assert = require('node:assert/strict')
 const { describe, it, beforeEach, after } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
-const { Address } = require('@haraka/email-address')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 require('haraka-constants').import(global)
 
 // block_me appends to <config>/mail_from.blocklist when a sender is blocked;
@@ -15,20 +14,6 @@ after(() => {
     fs.rmSync(path.resolve('test/config/mail_from.blocklist'), { force: true })
 })
 
-function makeConnection({
-    relaying = false,
-    mailFrom = 'sender@example.com',
-    rcptTo = ['blocklist@example.com'],
-} = {}) {
-    const conn = fixtures.connection.createConnection()
-    conn.init_transaction()
-    conn.relaying = relaying
-    conn.transaction.mail_from = new Address(`<${mailFrom}>`)
-    conn.transaction.rcpt_to = rcptTo.map((r) => new Address(`<${r}>`))
-    conn.transaction.body = { bodytext: '', children: [] }
-    return conn
-}
-
 describe('block_me', () => {
     let plugin
 
@@ -36,13 +21,12 @@ describe('block_me', () => {
     // than the real config dir. block_me also appends matched senders to
     // mail_from.blocklist; with this override that write lands in test/config too.
     beforeEach(() => {
-        plugin = new fixtures.plugin('block_me')
-        plugin.config = plugin.config.module_config(path.resolve('test'))
+        plugin = makePlugin('block_me', { register: false, configDir: 'test' })
     })
 
     describe('hook_data', () => {
         it('enables body parsing and calls next', (t, done) => {
-            const conn = makeConnection()
+            const conn = makeConnection({ withTxn: true })
             conn.transaction.parse_body = false
             plugin.hook_data((rc) => {
                 assert.equal(rc, undefined)
@@ -54,7 +38,7 @@ describe('block_me', () => {
 
     describe('hook_data_post', () => {
         it('calls next when not relaying', (t, done) => {
-            const conn = makeConnection({ relaying: false })
+            const conn = makeConnection({ withTxn: true })
             plugin.hook_data_post((rc) => {
                 assert.equal(rc, undefined)
                 done()
@@ -62,7 +46,7 @@ describe('block_me', () => {
         })
 
         it('calls next when transaction is missing', (t, done) => {
-            const conn = fixtures.connection.createConnection()
+            const conn = makeConnection()
             conn.relaying = true
             conn.transaction = null
             plugin.hook_data_post((rc) => {
@@ -138,7 +122,7 @@ describe('block_me', () => {
 
     describe('hook_queue', () => {
         it('returns OK when block_me note is set on transaction', (t, done) => {
-            const conn = makeConnection()
+            const conn = makeConnection({ withTxn: true })
             conn.transaction.notes.block_me = 1
             plugin.hook_queue((rc) => {
                 assert.equal(rc, OK)
@@ -147,7 +131,7 @@ describe('block_me', () => {
         })
 
         it('calls next when block_me note is not set', (t, done) => {
-            const conn = makeConnection()
+            const conn = makeConnection({ withTxn: true })
             plugin.hook_queue((rc) => {
                 assert.equal(rc, undefined)
                 done()

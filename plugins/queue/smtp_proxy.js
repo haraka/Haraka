@@ -41,7 +41,7 @@ exports.load_smtp_proxy_ini = function () {
     }
 }
 
-exports.hook_mail = function (next, connection, params) {
+exports.hook_mail = function (next, connection) {
     const c = this.cfg.main
     connection.loginfo(
         this,
@@ -70,7 +70,7 @@ exports.hook_mail = function (next, connection, params) {
             delete connection.notes.smtp_client
         })
 
-        smtp_client.on('bad_code', (code, msg) => {
+        smtp_client.on('bad_code', (code) => {
             smtp_client.call_next(code.match(/^4/) ? DENYSOFT : DENY, smtp_client.response.slice())
 
             if (smtp_client.command !== 'rcpt') {
