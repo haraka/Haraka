@@ -1,7 +1,5 @@
 // Proxy AUTH requests selectively by domain
 
-const net = require('node:net')
-
 const utils = require('haraka-utils')
 const net_utils = require('haraka-net-utils')
 
@@ -138,6 +136,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     // certificate to negotiate TLS, so always STARTTLS when
                     // the backend offers it. The local key/cert are only
                     // attached if configured (mutual TLS), not required.
+                    /* eslint no-useless-assignment: 0 */
                     key = self.config.get(self.tls_cfg.main.key || 'tls_key.pem', 'binary')
                     cert = self.config.get(self.tls_cfg.main.cert || 'tls_cert.pem', 'binary')
                     this.on('secure', () => {

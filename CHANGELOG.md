@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- dep(eslint): update @haraka/eslint-config to v3 and fix surfaced warnings
+
 - refactor(auth_proxy): parse target host via net_utils.endpoint
 - refactor: move endpoint to haraka-net-utils
 - refactor: move HostPool to haraka-net-utils

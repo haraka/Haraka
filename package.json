@@ -68,7 +68,7 @@
     "haraka-plugin-uribl": "~1.0.10"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "~2.0.4",
+    "@haraka/eslint-config": "~3.0.0",
     "haraka-test-fixtures": "~1.6.0",
     "mock-require": "~3.0.3"
   },
@@ -82,8 +82,8 @@
   },
   "scripts": {
     "format": "npm run prettier:fix && npm run lint:fix",
-    "lint": "npx eslint *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
-    "lint:fix": "npx eslint --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js bin/haraka",
+    "lint": "npx eslint *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js",
+    "lint:fix": "npx eslint --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js",
     "prettier": "npx prettier . --check",
     "prettier:fix": "npx prettier . --write --log-level=warn",
     "test": "sh ./run_tests",

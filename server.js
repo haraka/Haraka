@@ -272,14 +272,7 @@ Server.receiveAsMaster = (command, params) => {
     Server[command].apply(Server, params)
 }
 
-function messageHandler(worker, msg, handle) {
-    // sunset Haraka v3 (Node < 6)
-    if (arguments.length === 2) {
-        handle = msg
-        msg = worker
-        worker = undefined
-    }
-    // console.log("received cmd: ", msg);
+function messageHandler(worker, msg) {
     if (msg?.cmd) {
         Server.receiveAsMaster(msg.cmd, msg.params)
     }
@@ -545,7 +538,7 @@ Server.get_smtp_server = async (ep, inactivity_timeout) => {
     } else {
         server = tls_socket.createServer(onConnect)
         server.has_tls = false
-        const opts = await tls_socket.getSocketOpts('*')
+        await tls_socket.getSocketOpts('*')
         Server.listeners.push(server)
         return server
     }
@@ -554,7 +547,7 @@ Server.get_smtp_server = async (ep, inactivity_timeout) => {
 Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
     const errors = []
 
-    for (const [ifName, ifObj] of Object.entries(os.networkInterfaces())) {
+    for (const [, ifObj] of Object.entries(os.networkInterfaces())) {
         for (const addr of ifObj) {
             if (addr.family === 'IPv6') {
                 if (!Server.notes.IPv6) Server.notes.IPv6 = true
@@ -627,7 +620,7 @@ Server.setup_http_listeners = async () => {
     try {
         Server.http.express = require('express')
         Server.loginfo('express loaded at Server.http.express')
-    } catch (err) {
+    } catch {
         Server.logerror('express failed to load. No http server. Install express with: npm install -g express')
         return
     }
@@ -682,7 +675,7 @@ Server.init_master_respond = async (retval, msg) => {
     if (!(cluster && c.nodes)) {
         try {
             await outbound.init_queue()
-        } catch (err) {
+        } catch {
             Server.logcrit('Loading queue failed. Shutting down.')
             return logger.dump_and_exit(1)
         }
@@ -717,7 +710,7 @@ Server.init_master_respond = async (retval, msg) => {
             Server.lognotice(`worker ${worker.id} listening on ${endpoint(address)}`)
         })
         cluster.on('exit', cluster_exit_listener)
-    } catch (err) {
+    } catch {
         Server.logcrit('Scanning queue failed. Shutting down.')
         logger.dump_and_exit(1)
     }
@@ -756,7 +749,7 @@ Server.init_child_respond = (retval, msg) => {
             process.kill(pid)
             Server.logerror(`Killing master (pid=${pid})`)
         }
-    } catch (err) {
+    } catch {
         Server.logerror('Terminating child')
     }
     logger.dump_and_exit(1)
@@ -786,7 +779,7 @@ Server.init_http_respond = () => {
     let WebSocketServer
     try {
         WebSocketServer = require('ws').Server
-    } catch (e) {
+    } catch {
         Server.logerror(`unable to load ws.\n  did you: npm install -g ws?`)
         return
     }

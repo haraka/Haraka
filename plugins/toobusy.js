@@ -29,7 +29,7 @@ exports.loadConfig = function () {
     }
 }
 
-exports.check_busy = function (next, connection) {
+exports.check_busy = function (next) {
     if (!toobusy()) {
         was_busy = false
         return next()

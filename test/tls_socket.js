@@ -8,9 +8,6 @@ const tls = require('node:tls')
 const fs = require('node:fs')
 const { EventEmitter } = require('node:events')
 
-// Mock dependencies before requiring the target
-const mock = require('node:test').mock
-
 const tls_socket = require('../tls_socket')
 
 const TEST_CERT = fs.readFileSync(path.join(__dirname, 'config/tls_cert.pem'))
@@ -55,12 +52,12 @@ test('tls_socket', async (t) => {
         })
     })
 
-    await t.test('pluggableStream', async (t) => {
+    await t.test('pluggableStream', async () => {
         // This is a class inside the file, but not exported.
         // We can test it via createServer or connect if we mock net.
     })
 
-    await t.test('connect', async (t) => {
+    await t.test('connect', async () => {
         // Exercise the `new tls.connect` bug
         // We can't easily catch the 'new' keyword usage without proxying tls.connect
         assert.strictEqual(typeof tls_socket.connect, 'function')
@@ -141,7 +138,7 @@ test('tls_socket', async (t) => {
         })
     })
 
-    await t.test('getSocketOpts', async (t) => {
+    await t.test('getSocketOpts', async () => {
         // Exercise the typo path (would requires failing config.getDir)
         assert.strictEqual(typeof tls_socket.getSocketOpts, 'function')
     })

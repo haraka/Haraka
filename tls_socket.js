@@ -95,7 +95,7 @@ class pluggableStream extends stream.Stream {
         }
     }
 
-    clean(data) {
+    clean() {
         if (this.targetsocket?.removeAllListeners) {
             for (const name of ['data', 'secure', 'secureConnect', 'end', 'close', 'error', 'drain']) {
                 this.targetsocket.removeAllListeners(name)
@@ -540,7 +540,7 @@ exports.getSocketOpts = async (name) => {
 function pipe(cleartext, socket) {
     cleartext.socket = socket
 
-    function onError(e) {}
+    function onError() {}
 
     function onClose() {
         socket.removeListener('error', onError)
@@ -570,7 +570,7 @@ exports.ensureDhparams = (done) => {
         log.debug(data)
     })
 
-    o.stderr.on('data', (data) => {
+    o.stderr.on('data', () => {
         // this is the status gibberish `openssl dhparam` spews as it works
     })
 

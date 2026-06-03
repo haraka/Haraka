@@ -111,7 +111,7 @@ exports.list_queue = async () => {
     return exports._load_cur_queue(null, exports._list_file)
 }
 
-exports._stat_file = async (file) => {
+exports._stat_file = async () => {
     queue_count++
 }
 
@@ -180,7 +180,9 @@ exports.rename_to_actual_pid = async (file, parts) => {
         await fs.rename(path.join(exports.queue_dir, file), path.join(exports.queue_dir, new_filename))
         return new_filename
     } catch (err) {
-        throw new Error(`Unable to rename queue file: ${file} to ${new_filename} : ${err}`)
+        throw new Error(`Unable to rename queue file: ${file} to ${new_filename}`, {
+            cause: err,
+        })
     }
 }
 

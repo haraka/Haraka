@@ -975,7 +975,7 @@ class HMailItem extends events.EventEmitter {
             data_stream.on('error', (err) => {
                 cb(err)
             })
-        } catch (err) {
+        } catch {
             this.populate_bounce_message_with_headers(from, to, reason, header, cb)
         }
     }
@@ -1247,7 +1247,7 @@ class HMailItem extends events.EventEmitter {
         plugins.run_hooks('bounce', this, err)
     }
 
-    bounce_respond(retval, msg) {
+    bounce_respond(retval) {
         if (retval !== constants.cont) {
             this.loginfo(`Plugin responded with: ${retval}. Not sending bounce.`)
             return this.discard() // calls next_cb
@@ -1272,7 +1272,7 @@ class HMailItem extends events.EventEmitter {
                 from,
                 recip,
                 data_lines.join(''),
-                (code, msg2) => {
+                (code) => {
                     if (code === constants.deny) {
                         // failed to even queue the mail
                         return self.double_bounce('Unable to queue the bounce message. Not sending bounce!')

@@ -45,7 +45,7 @@ class Transaction {
         if (this.body) return
 
         this.body = new message.Body(this.header)
-        this.body.on('mime_boundary', (m) => this.incr_mime_count())
+        this.body.on('mime_boundary', () => this.incr_mime_count())
 
         for (const hook of this.attachment_start_hooks) {
             this.body.on('attachment_start', hook)
@@ -226,7 +226,7 @@ class Transaction {
         if (this.found_hb_sep) this.reset_headers()
     }
 
-    attachment_hooks(start, data, end) {
+    attachment_hooks(start) {
         this.parse_body = true
         this.attachment_start_hooks.push(start)
     }
@@ -255,7 +255,7 @@ class Transaction {
         }
     }
 
-    incr_mime_count(line) {
+    incr_mime_count() {
         this.mime_part_count++
     }
 }

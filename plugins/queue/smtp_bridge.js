@@ -21,7 +21,7 @@ exports.hook_data_post = (next, connection) => {
     return next()
 }
 
-exports.hook_get_mx = function (next, hmail, domain) {
+exports.hook_get_mx = function (next, hmail) {
     let priority = 10
     if (this.cfg.main.priority) {
         priority = this.cfg.main.priority

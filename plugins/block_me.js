@@ -53,7 +53,7 @@ exports.hook_data_post = function (next, connection) {
             connection.logerror(this, `Unable to append to mail_from.blocklist: ${err}`)
             return
         }
-        fs.write(fd, `${to_block}\n`, null, 'UTF-8', (err2, written) => {
+        fs.write(fd, `${to_block}\n`, null, 'UTF-8', () => {
             fs.close(fd)
         })
     })
