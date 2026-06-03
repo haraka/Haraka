@@ -2,7 +2,6 @@
 // a single connection
 
 const dns = require('node:dns')
-const net = require('node:net')
 const os = require('node:os')
 
 // npm libs
