@@ -14,7 +14,7 @@ const net_utils = require('haraka-net-utils')
 const tls_socket = require('./tls_socket')
 const conn = require('./connection')
 const outbound = require('./outbound')
-const endpoint = require('./endpoint')
+const { endpoint } = net_utils
 
 const Server = exports
 Server.logger = require('./logger')

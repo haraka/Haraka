@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- refactor(auth_proxy): parse target host via net_utils.endpoint
+- refactor: move endpoint to haraka-net-utils
+- refactor: move HostPool to haraka-net-utils
+- refactor: move LineSocket to haraka-net-utils
+
 - fix(deps): update haraka-plugin-dkim to 1.2.0 to match new addresses handling #3564
 - fix(deps): update haraka-plugin-rspamd to 1.6.0 to match new addresses handling #3564
 

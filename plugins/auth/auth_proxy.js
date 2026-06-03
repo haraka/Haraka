@@ -56,8 +56,12 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     }
 
     const self = this
-    let [host, port] = hosts.shift().split(':') /* eslint prefer-const: 0 */
-    if (!port) port = 25
+    const ep = net_utils.endpoint(hosts.shift(), 25)
+    if (ep instanceof Error) {
+        connection.logerror(this, `invalid host: ${ep.message}`)
+        return this.try_auth_proxy(connection, hosts, user, passwd, cb)
+    }
+    const { host, port } = ep
     let methods = []
     let auth_complete = false
     let auth_success = false

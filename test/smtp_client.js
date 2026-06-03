@@ -964,7 +964,7 @@ describe('smtp_client.get_client_plugin', () => {
     })
 
     it('reuses existing host_pool from server.notes', async () => {
-        const HostPool = require('../host_pool')
+        const { HostPool } = require('haraka-net-utils')
         const pool = new HostPool('10.0.0.3:25')
         conn.server.notes.host_pool = pool
         await getClientPlugin({ forwarding_host_pool: '10.0.0.3:25' })

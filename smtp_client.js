@@ -15,7 +15,7 @@ const utils = require('haraka-utils')
 
 const tls_socket = require('./tls_socket')
 const logger = require('./logger')
-const HostPool = require('./host_pool')
+const HostPool = net_utils.HostPool
 
 const smtp_regexp = /^(\d{3})([ -])(.*)/
 const STATE = {
@@ -486,6 +486,7 @@ function get_hostport(connection, cfg) {
             server.notes.host_pool = new HostPool(
                 cfg.forwarding_host_pool, // 1.2.3.4:420, 5.6.7.8:420
                 cfg.dead_forwarding_host_retry_secs,
+                { logger },
             )
         }
 
