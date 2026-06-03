@@ -1317,10 +1317,9 @@ class Connection {
         try {
             from = new Address(from_raw)
         } catch (err) {
-            this.lognotice(
-                `Invalid MAIL FROM address ${JSON.stringify(from_raw)}: ${err.message}`,
-            )
-            return this.respond(501, `Invalid MAIL FROM address`)
+            const msg = `Invalid MAIL FROM address ${JSON.stringify(from_raw)}: ${err.message}`
+            this.lognotice(msg)
+            return this.respond(501, msg)
         }
 
         // Get rest of key=value pairs
@@ -1379,11 +1378,10 @@ class Connection {
         const recip_raw = results.shift()
         try {
             recip = new Address(recip_raw)
-        } catch (err) {
-            this.lognotice(
-                `Invalid RCPT TO address ${JSON.stringify(recip_raw)}: ${err.message}`,
-            )
-            return this.respond(501, `Invalid RCPT TO address`)
+        } catch (err) {            
+            const msg = `Invalid RCPT TO address ${JSON.stringify(recip_raw)}: ${err.message}`
+            this.lognotice(msg)
+            return this.respond(501, msg)
         }
 
         // Get rest of key=value pairs
