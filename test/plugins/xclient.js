@@ -45,7 +45,10 @@ describe('xclient', () => {
             },
             {
                 desc: 'denies XCLIENT when transaction is in progress',
-                setup: () => this.connection.init_transaction(),
+                setup: () => {
+                    this.connection = makeConnection({ withTxn: true })
+                    this.connection.capabilities = []
+                },
                 params: ['XCLIENT', 'ADDR=127.0.0.1'],
                 check: (code) => assert.equal(code, DENY),
             },
