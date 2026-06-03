@@ -14,16 +14,6 @@ after(() => {
     fs.rmSync(path.resolve('test/config/mail_from.blocklist'), { force: true })
 })
 
-function buildConnection({
-    relaying = false,
-    mailFrom = 'sender@example.com',
-    rcptTo = ['blocklist@example.com'],
-} = {}) {
-    const conn = makeConnection({ relaying, mailFrom, rcptTo })
-    conn.transaction.body = { bodytext: '', children: [] }
-    return conn
-}
-
 describe('block_me', () => {
     let plugin
 
@@ -36,7 +26,7 @@ describe('block_me', () => {
 
     describe('hook_data', () => {
         it('enables body parsing and calls next', (t, done) => {
-            const conn = buildConnection()
+            const conn = makeConnection({ withTxn: true })
             conn.transaction.parse_body = false
             plugin.hook_data((rc) => {
                 assert.equal(rc, undefined)
@@ -48,7 +38,7 @@ describe('block_me', () => {
 
     describe('hook_data_post', () => {
         it('calls next when not relaying', (t, done) => {
-            const conn = buildConnection({ relaying: false })
+            const conn = makeConnection({ withTxn: true })
             plugin.hook_data_post((rc) => {
                 assert.equal(rc, undefined)
                 done()
@@ -66,7 +56,7 @@ describe('block_me', () => {
         })
 
         it('calls next when more than one recipient', (t, done) => {
-            const conn = buildConnection({
+            const conn = makeConnection({
                 relaying: true,
                 rcptTo: ['blocklist@example.com', 'other@example.com'],
             })
@@ -77,7 +67,7 @@ describe('block_me', () => {
         })
 
         it('calls next when recipient does not match configured address', (t, done) => {
-            const conn = buildConnection({ relaying: true, rcptTo: ['other@example.com'] })
+            const conn = makeConnection({ relaying: true, rcptTo: ['other@example.com'] })
             plugin.hook_data_post((rc) => {
                 assert.equal(rc, undefined)
                 done()
@@ -85,7 +75,7 @@ describe('block_me', () => {
         })
 
         it('denies when sender is not in the allowed senders list', (t, done) => {
-            const conn = buildConnection({
+            const conn = makeConnection({
                 relaying: true,
                 mailFrom: 'notallowed@example.com',
                 rcptTo: ['blocklist@example.com'],
@@ -98,7 +88,7 @@ describe('block_me', () => {
         })
 
         it('calls next when no From header found in body', (t, done) => {
-            const conn = buildConnection({
+            const conn = makeConnection({
                 relaying: true,
                 mailFrom: 'sender@example.com',
                 rcptTo: ['blocklist@example.com'],
@@ -113,7 +103,7 @@ describe('block_me', () => {
         })
 
         it('sets block_me note and calls next when From is extracted', (t, done) => {
-            const conn = buildConnection({
+            const conn = makeConnection({
                 relaying: true,
                 mailFrom: 'sender@example.com',
                 rcptTo: ['blocklist@example.com'],
@@ -132,7 +122,7 @@ describe('block_me', () => {
 
     describe('hook_queue', () => {
         it('returns OK when block_me note is set on transaction', (t, done) => {
-            const conn = buildConnection()
+            const conn = makeConnection({ withTxn: true })
             conn.transaction.notes.block_me = 1
             plugin.hook_queue((rc) => {
                 assert.equal(rc, OK)
@@ -141,7 +131,7 @@ describe('block_me', () => {
         })
 
         it('calls next when block_me note is not set', (t, done) => {
-            const conn = buildConnection()
+            const conn = makeConnection({ withTxn: true })
             plugin.hook_queue((rc) => {
                 assert.equal(rc, undefined)
                 done()
