@@ -13,7 +13,7 @@ const ResultStore = require('haraka-results')
 const logger = require('../logger')
 const trans = require('../transaction')
 const plugins = require('../plugins')
-const FsyncWriteStream = require('./fsync_writestream')
+const FsyncWriteStream = utils.FsyncWriteStream
 
 const obc = require('./config')
 const queuelib = require('./queue')

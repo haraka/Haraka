@@ -19,7 +19,7 @@ const ResultStore = require('haraka-results')
 const logger = require('./logger')
 const trans = require('./transaction')
 const plugins = require('./plugins')
-const rfc1869 = require('./rfc1869')
+const rfc1869 = utils.rfc1869
 const outbound = require('./outbound')
 
 const states = constants.connection.state

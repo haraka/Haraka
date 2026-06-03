@@ -6,9 +6,10 @@ const path = require('node:path')
 
 const { Address } = require('../address')
 const config = require('haraka-config')
+const utils = require('haraka-utils')
 
 const logger = require('../logger')
-const TimerQueue = require('./timer_queue')
+const TimerQueue = utils.TimerQueue
 const HMailItem = require('./hmail')
 const obc = require('./config')
 const _qfile = require('./qfile')
@@ -101,7 +102,7 @@ const delivery_queue = (exports.delivery_queue = new Queue(async (hmail) => {
     })
 }))
 
-const temp_fail_queue = (exports.temp_fail_queue = new TimerQueue())
+const temp_fail_queue = (exports.temp_fail_queue = new TimerQueue(1000, { logger }))
 
 let queue_count = 0
 

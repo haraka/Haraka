@@ -24,7 +24,7 @@ const _qfile = require('./qfile')
 const outbound = require('./index')
 const obtls = require('./tls')
 
-const FsyncWriteStream = require('./fsync_writestream')
+const FsyncWriteStream = utils.FsyncWriteStream
 
 let queue_dir
 let temp_fail_queue
@@ -713,7 +713,7 @@ class HMailItem extends events.EventEmitter {
                             break
                         case 'CRAM-MD5':
                             // The response is our challenge
-                            return send_command(cram_md5_response(mx.auth_user, mx.auth_pass, resp))
+                            return send_command(utils.cram_md5_response(mx.auth_user, mx.auth_pass, resp))
                         default:
                         // This shouldn't happen...
                     }
@@ -1466,20 +1466,18 @@ class HMailItem extends events.EventEmitter {
             rs.on('error', (err) => {
                 err_handler(err, 'hmail.data_stream reader')
             })
-            rs.on('end', () => {
-                ws.on('close', async () => {
-                    try {
-                        const dest_path = path.join(queue_dir, fname)
-                        await fs.rename(tmp_path, dest_path)
-                        const split_mail = new HMailItem(fname, dest_path, hmail.notes)
-                        split_mail.once('ready', () => {
-                            cb(split_mail)
-                        })
-                    } catch (err) {
-                        err_handler(err, 'tmp file rename')
-                    }
-                })
-                ws.destroySoon()
+            rs.on('end', async () => {
+                try {
+                    await ws.close()
+                    const dest_path = path.join(queue_dir, fname)
+                    await fs.rename(tmp_path, dest_path)
+                    const split_mail = new HMailItem(fname, dest_path, hmail.notes)
+                    split_mail.once('ready', () => {
+                        cb(split_mail)
+                    })
+                } catch (err) {
+                    err_handler(err, 'tmp file close/rename')
+                }
             })
         }
 
@@ -1505,11 +1503,3 @@ logger.add_log_methods(HMailItem)
 
 const smtp_regexp = /^([2345]\d\d)([ -])#?(?:(\d\.\d\.\d)\s)?(.*)/
 
-function cram_md5_response(username, password, challenge) {
-    const crypto = require('crypto')
-    const c = utils.unbase64(challenge)
-    const hmac = crypto.createHmac('md5', password)
-    hmac.update(c)
-    const digest = hmac.digest('hex')
-    return utils.base64(`${username} ${digest}`)
-}

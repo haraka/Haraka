@@ -5,7 +5,7 @@ const { describe, it, beforeEach } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
 const outbound = require('../../outbound')
-const TimerQueue = require('../../outbound/timer_queue')
+const { TimerQueue } = require('haraka-utils')
 
 const Connection = fixtures.connection
 

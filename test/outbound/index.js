@@ -349,7 +349,7 @@ describe('outbound', () => {
         beforeEach(() => {
             process.env.HARAKA_TEST_DIR = path.resolve('test')
             outbound = require('../../outbound')
-            const TimerQueue = require('../../outbound/timer_queue')
+            const { TimerQueue } = require('haraka-utils')
             ob_timer_queue = new TimerQueue(500)
         })
 
