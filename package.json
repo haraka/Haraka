@@ -81,11 +81,13 @@
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
+    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "format": "npm run prettier:fix && npm run lint:fix",
     "lint": "npx eslint *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js",
     "lint:fix": "npx eslint --fix *.js outbound plugins plugins/*/*.js test test/*/*.js test/*/*/*.js",
     "prettier": "npx prettier . --check",
     "prettier:fix": "npx prettier . --write --log-level=warn",
+    "qlty": "qlty smells --all",
     "test": "sh ./run_tests",
     "versions": "npx npm-dep-mgr check",
     "versions:fix": "npx npm-dep-mgr update",

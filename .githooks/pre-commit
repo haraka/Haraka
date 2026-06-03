@@ -1,0 +1,41 @@
+#!/bin/sh
+# pre-commit: if package.json has a `prettier` script AND prettier is
+# resolvable without triggering npx auto-install, run it and block the
+# commit on formatting violations.
+
+[ -f package.json ] || exit 0
+command -v npm >/dev/null 2>&1 || exit 0
+
+has_script() {
+  # Detect a "scriptname": "..." entry. Prefers jq; falls back to grep so
+  # the hook works on minimal environments. The grep pattern requires a
+  # string value (opening quote after the colon), which avoids matching
+  # the top-level "prettier": { ... } config block.
+  if command -v jq >/dev/null 2>&1; then
+    jq -e ".scripts[\"$1\"]" package.json >/dev/null 2>&1
+  else
+    grep -qE "\"$1\"[[:space:]]*:[[:space:]]*\"" package.json
+  fi
+}
+
+has_script prettier || exit 0
+
+# Bail if prettier isn't locally or globally installed — `npx prettier`
+# would otherwise prompt to install it, which a hook can't answer.
+if [ ! -x node_modules/.bin/prettier ] && ! command -v prettier >/dev/null 2>&1; then
+  exit 0
+fi
+
+npm run --silent prettier && exit 0
+
+echo
+echo "Prettier reported formatting violations. To fix:"
+if has_script format; then
+  echo "  npm run format          # prettier:fix + lint:fix"
+elif has_script prettier:fix; then
+  echo "  npm run prettier:fix"
+else
+  echo "  npx prettier . --write"
+fi
+echo "Or bypass with: git commit --no-verify"
+exit 1
