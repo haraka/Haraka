@@ -6,7 +6,7 @@ const { EventEmitter } = require('node:events')
 const path = require('node:path')
 
 const { Address } = require('../../../address')
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 const Notes = require('haraka-notes')
 
 // Haraka result codes (haraka-constants)
@@ -16,21 +16,8 @@ const DENYSOFT = 903
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makePlugin() {
-    const p = new fixtures.plugin('queue/smtp_forward')
-    p.config = p.config.module_config(path.resolve('test'))
-    p.register()
-    // Deep-clone cfg to prevent shared haraka-config reference mutations across tests
-    p.cfg = JSON.parse(JSON.stringify(p.cfg))
-    return p
-}
-
-function makeConnection() {
-    const conn = fixtures.connection.createConnection()
-    conn.init_transaction()
-    conn.server = { notes: {} }
-    return conn
-}
+// repo `test/` dir (holds config/), independent of cwd
+const TEST_DIR = path.resolve(__dirname, '../..')
 
 function makeHmail(notes = {}) {
     const n = new Notes()
@@ -68,7 +55,7 @@ class MockSMTPClient extends EventEmitter {
         this.commands.push(data !== undefined ? `${cmd} ${data}` : cmd)
     }
 
-    start_data(stream) {
+    start_data() {
         this.started = true
     }
 }
@@ -88,18 +75,17 @@ function stubGetClientPlugin(factory) {
 
 describe('smtp_forward register', () => {
     it('registers the queue hook', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         assert.ok(plugin.hooks.queue)
     })
 
     it('registers the get_mx hook', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         assert.ok(plugin.hooks.get_mx)
     })
 
     it('registers check_sender hook when check_sender=true', () => {
-        const plugin = new fixtures.plugin('queue/smtp_forward')
-        plugin.config = plugin.config.module_config(path.resolve('test'))
+        const plugin = makePlugin('queue/smtp_forward', { register: false, configDir: TEST_DIR })
         plugin.load_smtp_forward_ini = function () {
             this.cfg = {
                 main: { check_sender: true, check_recipient: true, enable_outbound: true, host: 'localhost', port: 25 },
@@ -110,8 +96,7 @@ describe('smtp_forward register', () => {
     })
 
     it('registers check_recipient hook when check_recipient=true', () => {
-        const plugin = new fixtures.plugin('queue/smtp_forward')
-        plugin.config = plugin.config.module_config(path.resolve('test'))
+        const plugin = makePlugin('queue/smtp_forward', { register: false, configDir: TEST_DIR })
         plugin.load_smtp_forward_ini = function () {
             this.cfg = { main: { check_recipient: true, host: 'localhost', port: 25 } }
         }
@@ -120,8 +105,7 @@ describe('smtp_forward register', () => {
     })
 
     it('registers queue_outbound hook when enable_outbound=true', () => {
-        const plugin = new fixtures.plugin('queue/smtp_forward')
-        plugin.config = plugin.config.module_config(path.resolve('test'))
+        const plugin = makePlugin('queue/smtp_forward', { register: false, configDir: TEST_DIR })
         plugin.load_smtp_forward_ini = function () {
             this.cfg = { main: { enable_outbound: true, host: 'localhost', port: 25 } }
         }
@@ -130,8 +114,7 @@ describe('smtp_forward register', () => {
     })
 
     it('aborts registration when load_errs is non-empty', () => {
-        const plugin = new fixtures.plugin('queue/smtp_forward')
-        plugin.config = plugin.config.module_config(path.resolve('test'))
+        const plugin = makePlugin('queue/smtp_forward', { register: false, configDir: TEST_DIR })
         plugin.load_smtp_forward_ini = function () {
             this.cfg = { main: {} }
             this.load_errs.push('simulated error')
@@ -141,7 +124,7 @@ describe('smtp_forward register', () => {
     })
 
     it('populates tls_options after register (no-op shape)', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         assert.ok(plugin.tls_options, 'tls_options should be populated after register')
         assert.ok(Array.isArray(plugin.tls_options.no_tls_hosts))
         assert.ok(Array.isArray(plugin.tls_options.force_tls_hosts))
@@ -158,7 +141,7 @@ describe('smtp_forward tls_options', () => {
         // Redirect tls_socket.config at test/config so tls.ini fixtures load.
         origTlsConfig = tls_socket.config
         origTlsCfg = tls_socket.cfg
-        tls_socket.config = require('haraka-config').module_config(path.resolve('test'))
+        tls_socket.config = require('haraka-config').module_config(TEST_DIR)
         tls_socket.cfg = undefined
     })
 
@@ -168,14 +151,14 @@ describe('smtp_forward tls_options', () => {
     })
 
     it('inherits rejectUnauthorized/minVersion/ciphers from tls.ini [main]', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         assert.equal(plugin.tls_options.rejectUnauthorized, false)
         assert.equal(plugin.tls_options.minVersion, 'TLSv1')
         assert.ok(plugin.tls_options.ciphers)
     })
 
     it('reload re-derives tls_options', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         const first = plugin.tls_options
         plugin.load_smtp_forward_ini()
         assert.ok(plugin.tls_options)
@@ -188,14 +171,14 @@ describe('smtp_forward tls_options', () => {
 
 describe('smtp_forward load_smtp_forward_ini', () => {
     it('loads configuration from ini file', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         assert.ok(plugin.cfg.main)
         assert.equal(plugin.cfg.main.host, 'localhost')
     })
 
     it('sets up a reload callback', () => {
         // Calling load_smtp_forward_ini again should not crash
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         assert.doesNotThrow(() => plugin.load_smtp_forward_ini())
         assert.ok(plugin.cfg.main)
     })
@@ -207,8 +190,9 @@ describe('smtp_forward get_config', () => {
     let plugin, connection
 
     beforeEach(() => {
-        plugin = makePlugin()
-        connection = makeConnection()
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        connection = makeConnection({ withTxn: true })
     })
 
     it('returns main cfg when no transaction', () => {
@@ -284,8 +268,8 @@ describe('smtp_forward check_sender', () => {
     let plugin, connection
 
     beforeEach(() => {
-        plugin = makePlugin()
-        connection = makeConnection()
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        connection = makeConnection({ withTxn: true })
     })
 
     it('returns without calling next when no transaction', () => {
@@ -363,8 +347,9 @@ describe('smtp_forward set_queue', () => {
     let plugin, connection
 
     beforeEach(() => {
-        plugin = makePlugin()
-        connection = makeConnection()
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        connection = makeConnection({ withTxn: true })
     })
 
     it('returns false when transaction has no notes (no transaction)', () => {
@@ -440,8 +425,8 @@ describe('smtp_forward check_recipient', () => {
     let plugin, connection
 
     beforeEach(() => {
-        plugin = makePlugin()
-        connection = makeConnection()
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        connection = makeConnection({ withTxn: true })
     })
 
     it('returns without calling next when no transaction', () => {
@@ -532,8 +517,8 @@ describe('smtp_forward auth', () => {
     let plugin, connection, smtp_client
 
     beforeEach(() => {
-        plugin = makePlugin()
-        connection = makeConnection()
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        connection = makeConnection({ withTxn: true })
         smtp_client = new MockSMTPClient()
     })
 
@@ -603,8 +588,9 @@ describe('smtp_forward forward_enabled', () => {
     let plugin, connection
 
     beforeEach(() => {
-        plugin = makePlugin()
-        connection = makeConnection()
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        connection = makeConnection({ withTxn: true })
     })
 
     it('returns false when queue.wants is set to a non smtp_forward value', () => {
@@ -641,10 +627,12 @@ describe('smtp_forward queue_forward', () => {
     let plugin, connection, restore
 
     beforeEach(() => {
-        plugin = makePlugin()
-        connection = makeConnection()
-        connection.transaction.rcpt_to = [new Address('<rcpt@example.com>')]
-        connection.transaction.mail_from = new Address('<sender@example.com>')
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        connection = makeConnection({
+            mailFrom: '<sender@example.com>',
+            rcptTo: ['<rcpt@example.com>'],
+        })
         connection.relaying = false
     })
 
@@ -839,8 +827,7 @@ describe('smtp_forward queue_forward', () => {
 
 describe('smtp_forward get_mx_next_hop', () => {
     it('parses smtp URL with port', () => {
-        const mx = smtp_client_mod.smtp_client // not used; just accessing exports
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         const mx_val = plugin.get_mx_next_hop('smtp://10.0.0.1:587')
         assert.equal(mx_val.exchange, '10.0.0.1')
         assert.equal(mx_val.port, '587')
@@ -848,20 +835,20 @@ describe('smtp_forward get_mx_next_hop', () => {
     })
 
     it('defaults port to 25 for smtp without explicit port', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         const mx_val = plugin.get_mx_next_hop('smtp://10.0.0.1')
         assert.equal(mx_val.port, 25)
     })
 
     it('parses lmtp URL and sets using_lmtp=true with port 24', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         const mx_val = plugin.get_mx_next_hop('lmtp://10.0.0.2')
         assert.equal(mx_val.using_lmtp, true)
         assert.equal(mx_val.port, 24)
     })
 
     it('extracts auth credentials from URL', () => {
-        const plugin = makePlugin()
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         const mx_val = plugin.get_mx_next_hop('smtp://user:secret@10.0.0.1:25')
         assert.equal(mx_val.auth_type, 'plain')
         assert.equal(mx_val.auth_user, 'user')
@@ -875,7 +862,8 @@ describe('smtp_forward get_mx', () => {
     let plugin, hmail
 
     beforeEach(() => {
-        plugin = makePlugin()
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
         hmail = makeHmail()
     })
 
@@ -894,7 +882,7 @@ describe('smtp_forward get_mx', () => {
     it('returns no route when queue.wants is not smtp_forward or outbound', (t, done) => {
         hmail.todo.notes.set('queue.wants', 'some_other_queue')
         plugin.get_mx(
-            (code, mx) => {
+            (code) => {
                 assert.equal(code, undefined)
                 done()
             },
@@ -936,7 +924,7 @@ describe('smtp_forward get_mx', () => {
     it('returns no route (DNS MX) for unconfigured domain when queue.wants=outbound', (t, done) => {
         hmail.todo.notes.set('queue.wants', 'outbound')
         plugin.get_mx(
-            (code, mx) => {
+            (code) => {
                 assert.equal(code, undefined)
                 done()
             },
@@ -996,8 +984,9 @@ describe('smtp_forward is_outbound_enabled', () => {
     let plugin, connection
 
     beforeEach(() => {
-        plugin = makePlugin()
-        connection = makeConnection()
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        connection = makeConnection({ withTxn: true })
     })
 
     it('enable_outbound is false by default (global)', () => {

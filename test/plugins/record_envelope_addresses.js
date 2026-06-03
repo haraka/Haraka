@@ -3,13 +3,11 @@
 const assert = require('node:assert')
 const { describe, it, beforeEach } = require('node:test')
 
-const { Address } = require('../../address')
-const fixtures = require('haraka-test-fixtures')
+const { callMail, callRcpt, makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 const _set_up = () => {
-    this.plugin = new fixtures.plugin('record_envelope_addresses')
-    this.connection = fixtures.connection.createConnection()
-    this.connection.init_transaction()
+    this.plugin = makePlugin('record_envelope_addresses')
+    this.connection = makeConnection({ withTxn: true })
 }
 
 describe('record_envelope_addresses', () => {
@@ -17,77 +15,52 @@ describe('record_envelope_addresses', () => {
 
     describe('hook_mail', () => {
         it('adds X-Envelope-From header from MAIL FROM address', (t, done) => {
-            const addr = new Address('<sender@example.com>')
-            this.plugin.hook_mail(
-                () => {
-                    const vals = this.connection.transaction.header.get_all('X-Envelope-From')
-                    assert.equal(vals.length, 1, 'header was added')
-                    assert.equal(vals[0], 'sender@example.com')
-                    done()
-                },
-                this.connection,
-                [addr],
-            )
+            callMail(this.plugin, this.connection, 'sender@example.com').then(() => {
+                const vals = this.connection.transaction.header.get_all('X-Envelope-From')
+                assert.equal(vals.length, 1, 'header was added')
+                assert.equal(vals[0], 'sender@example.com')
+                done()
+            })
         })
 
         it('does not throw when connection has no transaction', (t, done) => {
             this.connection.transaction = null
-            const addr = new Address('<sender@example.com>')
-            this.plugin.hook_mail(
-                () => {
-                    assert.ok(true, 'next was called without error')
-                    done()
-                },
-                this.connection,
-                [addr],
-            )
+            callMail(this.plugin, this.connection, 'sender@example.com').then(() => {
+                assert.ok(true, 'next was called without error')
+                done()
+            })
         })
     })
 
     describe('hook_rcpt', () => {
         it('adds X-Envelope-To header from RCPT TO address', (t, done) => {
-            const addr = new Address('<rcpt@example.com>')
-            this.plugin.hook_rcpt(
-                () => {
-                    const vals = this.connection.transaction.header.get_all('X-Envelope-To')
-                    assert.equal(vals.length, 1, 'header was added')
-                    assert.equal(vals[0], 'rcpt@example.com')
-                    done()
-                },
-                this.connection,
-                [addr],
-            )
+            callRcpt(this.plugin, this.connection, 'rcpt@example.com').then(() => {
+                const vals = this.connection.transaction.header.get_all('X-Envelope-To')
+                assert.equal(vals.length, 1, 'header was added')
+                assert.equal(vals[0], 'rcpt@example.com')
+                done()
+            })
         })
 
         it('adds X-Envelope-To header for each recipient', (t, done) => {
-            const addr1 = new Address('<one@example.com>')
-            const addr2 = new Address('<two@example.com>')
-            let calls = 0
-            const next = () => {
-                calls++
-                if (calls === 2) {
-                    const vals = this.connection.transaction.header.get_all('X-Envelope-To')
-                    assert.equal(vals.length, 2, 'two headers added')
-                    assert.equal(vals[0], 'one@example.com')
-                    assert.equal(vals[1], 'two@example.com')
-                    done()
-                }
-            }
-            this.plugin.hook_rcpt(next, this.connection, [addr1])
-            this.plugin.hook_rcpt(next, this.connection, [addr2])
+            Promise.all([
+                callRcpt(this.plugin, this.connection, 'one@example.com'),
+                callRcpt(this.plugin, this.connection, 'two@example.com'),
+            ]).then(() => {
+                const vals = this.connection.transaction.header.get_all('X-Envelope-To')
+                assert.equal(vals.length, 2, 'two headers added')
+                assert.equal(vals[0], 'one@example.com')
+                assert.equal(vals[1], 'two@example.com')
+                done()
+            })
         })
 
         it('does not throw when connection has no transaction', (t, done) => {
             this.connection.transaction = null
-            const addr = new Address('<rcpt@example.com>')
-            this.plugin.hook_rcpt(
-                () => {
-                    assert.ok(true, 'next was called without error')
-                    done()
-                },
-                this.connection,
-                [addr],
-            )
+            callRcpt(this.plugin, this.connection, 'rcpt@example.com').then(() => {
+                assert.ok(true, 'next was called without error')
+                done()
+            })
         })
     })
 })

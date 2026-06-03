@@ -4,19 +4,16 @@ const { describe, it, beforeEach } = require('node:test')
 
 const { Address } = require('../../address')
 const fixtures = require('haraka-test-fixtures')
+const { assertResult, makeConnection, makePlugin } = fixtures
 require('haraka-constants').import(global)
 
 const _set_up = () => {
-    this.plugin = new fixtures.plugin('rcpt_to.in_host_list')
+    this.plugin = makePlugin('rcpt_to.in_host_list', { register: false })
     this.plugin.inherits('rcpt_to.host_list_base')
     this.plugin.cfg = {}
     this.plugin.host_list = {}
 
-    this.connection = fixtures.connection.createConnection()
-    this.connection.transaction = {
-        results: new fixtures.results(this.connection),
-        notes: {},
-    }
+    this.connection = makeConnection({ withTxn: true })
 }
 
 describe('in_host_list', () => {
@@ -81,8 +78,7 @@ describe('in_host_list', () => {
             const { rc, msg } = await callMailHook('<user@example.com>')
             assert.equal(rc, undefined)
             assert.equal(msg, undefined)
-            const res = this.connection.transaction.results.get('rcpt_to.in_host_list')
-            assert.ok(res.msg.includes('mail_from!local'))
+            assertResult(this.connection.transaction, 'rcpt_to.in_host_list', 'msg', /^mail_from!local$/)
         })
 
         for (const [desc, setup] of [
@@ -100,8 +96,7 @@ describe('in_host_list', () => {
                 const { rc, msg } = await callMailHook('<user@example.com>')
                 assert.equal(rc, undefined)
                 assert.equal(msg, undefined)
-                const res = this.connection.transaction.results.get('rcpt_to.in_host_list')
-                assert.ok(res.pass.includes('mail_from'))
+                assertResult(this.connection.transaction, 'rcpt_to.in_host_list', 'pass', /^mail_from$/)
             })
         }
     })

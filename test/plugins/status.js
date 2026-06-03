@@ -4,16 +4,15 @@ const assert = require('node:assert/strict')
 const { describe, it, beforeEach } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = fixtures
 const outbound = require('../../outbound')
 const { TimerQueue } = require('haraka-utils')
 
-const Connection = fixtures.connection
-
 const _set_up = () => {
-    this.plugin = new fixtures.plugin('status')
+    this.plugin = makePlugin('status', { register: false })
     this.plugin.outbound = outbound
 
-    this.connection = Connection.createConnection()
+    this.connection = makeConnection()
     this.connection.remote.is_local = true
 }
 

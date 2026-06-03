@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict')
 const { describe, it, beforeEach } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 require('haraka-constants').import(global)
 
 // params layout: [code, msg, pi_name, pi_function, pi_params, pi_hook]
@@ -15,10 +15,9 @@ describe('delay_deny', () => {
     let plugin, conn
 
     beforeEach(() => {
-        plugin = new fixtures.plugin('delay_deny')
+        plugin = makePlugin('delay_deny', { register: false })
         plugin.config.get = () => ({ main: {} })
-        conn = fixtures.connection.createConnection()
-        conn.init_transaction()
+        conn = makeConnection({ withTxn: true })
     })
 
     describe('hook_deny', () => {

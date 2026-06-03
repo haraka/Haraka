@@ -3,13 +3,13 @@
 const assert = require('node:assert')
 const { describe, it, beforeEach } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 describe('queue/quarantine', () => {
     let plugin
 
     beforeEach(() => {
-        plugin = new fixtures.plugin('queue/quarantine')
+        plugin = makePlugin('queue/quarantine', { register: false })
         plugin.load_quarantine_ini()
     })
 
@@ -51,8 +51,7 @@ describe('queue/quarantine', () => {
         let conn
 
         beforeEach(() => {
-            conn = fixtures.connection.createConnection()
-            conn.init_transaction()
+            conn = makeConnection({ withTxn: true })
         })
 
         it('calls next() when no quarantine conditions are met', (t, done) => {

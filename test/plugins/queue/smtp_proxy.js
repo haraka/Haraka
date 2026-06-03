@@ -4,7 +4,7 @@ const assert = require('node:assert')
 const path = require('node:path')
 const { describe, it, beforeEach, afterEach, before } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 const tls_socket = require('../../../tls_socket')
 
@@ -16,10 +16,9 @@ describe('queue/smtp_proxy', () => {
     let plugin, conn
 
     beforeEach(() => {
-        plugin = new fixtures.plugin('queue/smtp_proxy')
+        plugin = makePlugin('queue/smtp_proxy', { register: false })
         plugin.load_smtp_proxy_ini()
-        conn = fixtures.connection.createConnection()
-        conn.init_transaction()
+        conn = makeConnection({ withTxn: true })
     })
 
     describe('hook_rset', () => {
@@ -37,7 +36,7 @@ describe('queue/smtp_proxy', () => {
                     released = true
                 },
             }
-            plugin.hook_rset((rc) => {
+            plugin.hook_rset(() => {
                 assert.equal(released, true)
                 assert.equal(conn.notes.smtp_client, undefined)
                 done()
@@ -77,7 +76,7 @@ describe('queue/smtp_proxy', () => {
                     callNextCalled = true
                 },
             }
-            plugin.hook_disconnect((rc) => {
+            plugin.hook_disconnect(() => {
                 assert.equal(released, true)
                 assert.equal(callNextCalled, true)
                 assert.equal(conn.notes.smtp_client, undefined)
@@ -88,7 +87,7 @@ describe('queue/smtp_proxy', () => {
 
     describe('hook_queue', () => {
         it('calls next() when transaction is missing', (t, done) => {
-            const connNoTxn = fixtures.connection.createConnection()
+            const connNoTxn = makeConnection()
             plugin.hook_queue((rc) => {
                 assert.equal(rc, undefined)
                 done()

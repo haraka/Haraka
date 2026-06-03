@@ -3,12 +3,12 @@
 const assert = require('node:assert/strict')
 const { describe, it } = require('node:test')
 
-const fixtures = require('haraka-test-fixtures')
+const { makePlugin } = require('haraka-test-fixtures')
 
 describe('toobusy', () => {
     describe('register', () => {
         it('handles missing toobusy-js gracefully (does not throw)', () => {
-            const plugin = new fixtures.plugin('toobusy')
+            const plugin = makePlugin('toobusy', { register: false })
             // toobusy-js is not installed; register should catch the error and return
             let registered = false
             plugin.register_hook = () => {

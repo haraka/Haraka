@@ -57,19 +57,18 @@ function restoreTlsConnect() {
 }
 
 function makeConnection(overrides = {}) {
-    const conn = fixtures.connection.createConnection()
+    const conn = fixtures.makeConnection({ ip: '1.2.3.4' })
     conn.server = { notes: {} }
     conn.hello = { host: 'client.example.com' }
     conn.local = { host: 'relay.example.com' }
-    conn.remote = { ip: '1.2.3.4' }
     conn.transaction = null
     return Object.assign(conn, overrides)
 }
 
 function makePlugin() {
-    const p = new fixtures.plugin('queue/smtp_forward')
-    p.config = p.config.module_config(path.resolve('test'))
-    p.register()
+    const p = fixtures.makePlugin('queue/smtp_forward', {
+        configDir: path.resolve('test'),
+    })
     p.tls_options = {}
     return p
 }
@@ -228,7 +227,7 @@ describe('SMTPClient line handler', () => {
         client.command = 'starttls'
         client.tls_options = { servername: 'mx.example.com' }
         let upgradeCalled = false
-        client.socket.upgrade = (opts, cb) => {
+        client.socket.upgrade = () => {
             upgradeCalled = true
         }
         client.socket.emit('line', '220 Go ahead\r\n')
@@ -249,10 +248,7 @@ describe('SMTPClient line handler', () => {
     it('returns early after bad_code when state is not ACTIVE', () => {
         client.command = 'mail'
         client.state = STATE.IDLE
-        let heloFired = false
-        client.on('helo', () => {
-            heloFired = true
-        }) // shouldn't fire
+        client.on('helo', () => {}) // shouldn't fire
         let badCodeFired = false
         client.on('bad_code', () => {
             badCodeFired = true
@@ -344,7 +340,9 @@ describe('SMTPClient socket connect event', () => {
         socket.setTimeout = (ms) => {
             lastTimeout = ms
         }
-        const client = makeClient({ socket, idle_timeout: 120 })
+        // constructing the client is what registers the 'connect' handler on
+        // the socket; the binding is unused, but the side effect is required
+        makeClient({ socket, idle_timeout: 120 })
         socket.emit('connect')
         assert.equal(lastTimeout, 120_000)
     })
@@ -513,7 +511,7 @@ describe('SMTPClient#start_data', () => {
         const client = makeClient()
         let pipeTarget = null
         const mockStream = {
-            pipe: (dest, opts) => {
+            pipe: (dest) => {
                 pipeTarget = dest
             },
         }
@@ -591,7 +589,7 @@ describe('SMTPClient#upgrade', () => {
     it('delegates to socket.upgrade with tls_options', () => {
         const socket = makeSocket()
         let upgradeOpts = null
-        socket.upgrade = (opts, cb) => {
+        socket.upgrade = (opts) => {
             upgradeOpts = opts
         }
         const client = makeClient({ socket })
@@ -1021,7 +1019,6 @@ describe('smtp_client.get_client_plugin', () => {
             return s
         }
 
-        const written = []
         const mockPlugin = makePlugin()
 
         smtp_client_module.get_client_plugin(
@@ -1257,8 +1254,6 @@ describe('smtp_client full session (auth)', () => {
 
 describe('smtp_client', () => {
     it('testUpgradeIsCalledOnSTARTTLS', () => {
-        const plugin = makePlugin()
-
         const cmds = {}
         let upgradeArgs = {}
 

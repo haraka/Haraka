@@ -44,8 +44,7 @@ exports.createHMailItem = (outbound_context, options, callback) => {
     const delivery_domain = options.delivery_domain || 'domain'
     const mail_recipients = options.mail_recipients || [new Address('recipient@domain')]
 
-    const conn = fixtures.connection.createConnection()
-    conn.init_transaction()
+    const conn = fixtures.makeConnection({ withTxn: true })
     conn.transaction.mail_from = new Address(mail_from)
 
     const todo = new outbound_context.TODOItem(delivery_domain, mail_recipients, conn.transaction)
