@@ -5,15 +5,6 @@ const { describe, it, beforeEach } = require('node:test')
 
 const { callHook, makeConnection, makePlugin } = require('haraka-test-fixtures')
 
-function buildConnection(opts = {}) {
-    const conn = makeConnection()
-    conn.capabilities = []
-    conn.notes.allowed_auth_methods = []
-    conn.remote = { is_private: opts.is_private ?? false }
-    conn.tls = { enabled: opts.tls_enabled ?? false }
-    return conn
-}
-
 describe('auth/flat_file', () => {
     let plugin
 
@@ -38,7 +29,11 @@ describe('auth/flat_file', () => {
         let conn
 
         beforeEach(() => {
-            conn = buildConnection()
+            conn = makeConnection()
+            conn.capabilities = []
+            conn.notes.allowed_auth_methods = []
+            conn.remote = { is_private: opts.is_private ?? false }
+            conn.tls = { enabled: opts.tls_enabled ?? false }
         })
 
         it('skips for public non-TLS connection', (t, done) => {
