@@ -7,8 +7,7 @@ const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 require('haraka-constants').import(global)
 
 function buildConnection({ authUser, authPasswd, bodytext = '', children = [] } = {}) {
-    const conn = makeConnection()
-    conn.init_transaction()
+    const conn = makeConnection({ withTxn: true })
     if (authUser) conn.notes.auth_user = authUser
     if (authPasswd) conn.notes.auth_passwd = authPasswd
     conn.transaction.body = { bodytext, children }
@@ -55,8 +54,7 @@ describe('prevent_credential_leaks', () => {
 
         it('handles missing connection gracefully', (t, done) => {
             // Simulate a null-ish connection by calling with empty notes
-            const conn = makeConnection()
-            conn.init_transaction()
+            const conn = makeConnection({ withTxn: true })
             conn.notes = {}
             plugin.hook_data((rc) => {
                 assert.equal(rc, undefined)
@@ -120,8 +118,7 @@ describe('prevent_credential_leaks', () => {
         })
 
         it('denies when credentials appear in a child body part', (t, done) => {
-            const conn = makeConnection()
-            conn.init_transaction()
+            const conn = makeConnection({ withTxn: true })
             conn.notes.auth_user = 'bob@example.com'
             conn.notes.auth_passwd = 's3cr3t'
             conn.transaction.body = {
@@ -161,8 +158,7 @@ describe('prevent_credential_leaks', () => {
         })
 
         it('calls next when credentials appear in neither top nor child', (t, done) => {
-            const conn = makeConnection()
-            conn.init_transaction()
+            const conn = makeConnection({ withTxn: true })
             conn.notes.auth_user = 'dave@example.com'
             conn.notes.auth_passwd = 'xyzzy'
             conn.transaction.body = {
