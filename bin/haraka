@@ -165,6 +165,14 @@ function setupRequire() {
 
 function noop() {}
 
+function tryCreateFile(filePath, data, info = {}, force = false) {
+  try {
+    utils.createFile(...arguments)
+  } catch (e) {
+    warning(`EEXIST, File exists '${filePath}'`)
+  }
+}
+
 const readme = `Haraka
 
 Congratulations on creating a new installation of Haraka.
@@ -549,10 +557,10 @@ if (parsed.version) {
     utils.mkDir(path.join(pa, d))
   }
   utils.copyFile(path.join(base, 'docs', 'Plugins.md'), path.join(pa, 'docs', 'Plugins.md'))
-  utils.createFile(path.join(pa, 'README'), readme, {}, parsed.force)
-  utils.createFile(path.join(pa, 'package.json'), packageJson, {}, parsed.force)
+  tryCreateFile(path.join(pa, 'README'), readme, {}, parsed.force)
+  tryCreateFile(path.join(pa, 'package.json'), packageJson, {}, parsed.force)
   const bytes = require('crypto').randomBytes(32)
-  utils.createFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'), {}, parsed.force)
+  tryCreateFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'), {}, parsed.force)
   setupHostname(path.join(pa, 'config'))
   setupBaseConfig(path.join(pa, 'config'))
 } else {

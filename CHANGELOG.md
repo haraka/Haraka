@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(haraka): wrap util.createFile in a try
 - fix(conn): update local and remote results after proxy #3593
 - feat(conn): add main.postel option #3592
 - change: log when MFROM or RCPT fail to parse #3581
