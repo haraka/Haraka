@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(proxy): update local and remote results to new values after proxy header is parsed
 - build: add qlty config and README badge
 - refactor: move rfc1869 to haraka-utils
 - refactor: move FsyncWriteStream to haraka-utils
