@@ -4,27 +4,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- fix(proxy): update local and remote results to new values after proxy header is parsed
-- build: add qlty config and README badge
-- refactor: move rfc1869 to haraka-utils
-- refactor: move FsyncWriteStream to haraka-utils
-- refactor: move TimerQueue to haraka-utils
-- refactor: move cram_md5_response to haraka-utils
-- refactor(auth_proxy): parse target host via net_utils.endpoint
-- refactor: move endpoint to haraka-net-utils
-- refactor: move HostPool to haraka-net-utils
-- refactor: move LineSocket to haraka-net-utils
-- dep(many): bump dependencies and plugins to latest
-- dep(eslint): update @haraka/eslint-config to v3 and fix surfaced warnings
-- fix(deps): update haraka-plugin-dkim to 1.2.0 to match new addresses handling #3564
-- fix(deps): update haraka-plugin-rspamd to 1.6.0 to match new addresses handling #3564
-- test: migrate suite to haraka-test-fixtures 1.7.0 helpers
+- fix(conn): update local and remote results after proxy #3593
+- feat(conn): add main.postel option #3592
+- change: log when MFROM or RCPT fail to parse #3581
+- feat: proxy support for smtps (465) #3577
+- refactor(auth_proxy): use net_utils.endpoint #3584
+- refactor: move endpoint, HostPool, LineSocket to net-utils #3583
+- refactor: move rfc1869, FsyncWriteStream, TimerQueue to haraka-utils #3585
+- refactor: move cram_md5_response to haraka-utils #3585
+- dep(many): bump to latest #3587
+- dep(eslint): update @haraka/eslint-config to v3, #3586
+- dep(haraka-utils): ~2.1.1 for position-aware MAIL/RCPT address errors
+- build: add qlty config and README badge #3588
+- test: update to test-fixtures 1.7.0 helpers #3589
+
+### [3.2.1] - 2026-05-24
+
+- fix(deps): update rspamd, dkim plugins to latest #3576
 
 ### [3.2.0] - 2026-05-24
 
 - fix(status): merge worker status into summary #3574
 - dep: replace address-rfc282{1,2} with @haraka/email-address #3566
-- change(BREAKING for some plugins), see https://github.com/haraka/Haraka/issues/3564
+  - change(BREAKING for some plugins), see https://github.com/haraka/Haraka/issues/3564
 
 ### [3.1.7] - 2026-05-19
 
@@ -1885,3 +1887,4 @@ config files.
 [3.1.6]: https://github.com/haraka/Haraka/releases/tag/v3.1.6
 [3.1.7]: https://github.com/haraka/Haraka/releases/tag/v3.1.7
 [3.2.0]: https://github.com/haraka/Haraka/releases/tag/v3.2.0
+[3.2.1]: https://github.com/haraka/Haraka/releases/tag/v3.2.1

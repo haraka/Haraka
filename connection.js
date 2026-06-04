@@ -1172,8 +1172,8 @@ class Connection {
             this.set('remote.port', parseInt(src_port, 10))
             this.set('remote.host', null)
             this.set('hello.host', null)
-            this.results.add({name: 'local'},  this.local);
-            this.results.add({name: 'remote'}, this.remote);
+            this.results.add({ name: 'local' }, this.local)
+            this.results.add({ name: 'remote' }, this.remote)
             plugins.run_hooks('connect_init', this)
         })
     }
