@@ -28,9 +28,9 @@
     "haraka-net-utils": "~1.9.1",
     "haraka-notes": "~1.1.3",
     "haraka-plugin-redis": "~2.1.0",
-    "haraka-results": "~2.3.1",
+    "haraka-results": "~2.3.2",
     "haraka-tld": "~1.3.5",
-    "haraka-utils": "~2.1.1",
+    "haraka-utils": "~2.2.0",
     "ipaddr.js": "~2.4.0",
     "node-gyp": "~12.3.0",
     "nopt": "~10.0.0",
@@ -65,11 +65,11 @@
     "haraka-plugin-spamassassin": "~1.1.0",
     "haraka-plugin-spf": "~1.3.0",
     "haraka-plugin-syslog": "~1.1.1",
-    "haraka-plugin-uribl": "~1.0.10"
+    "haraka-plugin-uribl": "~2.0.0"
   },
   "devDependencies": {
     "@haraka/eslint-config": "~3.0.0",
-    "haraka-test-fixtures": "^1.7.0",
+    "haraka-test-fixtures": "^1.7.1",
     "mock-require": "~3.0.3"
   },
   "bugs": {
