@@ -654,6 +654,120 @@ describe('connection', () => {
             assert.equal(responses[2][0], 503)
         })
 
+        it('cmd_mail strips control chars from invalid address logs', () => {
+            const notices = []
+            const responses = []
+            this.connection.hello.host = 'example.test'
+            this.connection.lognotice = (msg) => notices.push(msg)
+            this.connection.respond = (code, msg) => {
+                responses.push({ code, msg })
+            }
+
+            this.connection.cmd_mail('FROM:<mail\x00@example.com>')
+
+            assert.equal(responses[0].code, 501)
+            assert.match(responses[0].msg, /^Invalid MAIL FROM address /)
+            assert.equal(responses[0].msg.includes('\r'), false)
+            assert.equal(responses[0].msg.includes('\n'), false)
+            assert.equal(responses[0].msg.includes('\\u0000'), false)
+            assert.equal(notices[0], responses[0].msg)
+        })
+
+        it('cmd_rcpt strips control chars from invalid address logs', () => {
+            const notices = []
+            const responses = []
+            this.connection.transaction = { mail_from: new Address('<from@example.com>'), rcpt_to: [] }
+            this.connection.lognotice = (msg) => notices.push(msg)
+            this.connection.respond = (code, msg) => {
+                responses.push({ code, msg })
+            }
+
+            this.connection.cmd_rcpt('TO:<rcpt\x00@example.com>')
+
+            assert.equal(responses[0].code, 501)
+            assert.match(responses[0].msg, /^Invalid RCPT TO address /)
+            assert.equal(responses[0].msg.includes('\r'), false)
+            assert.equal(responses[0].msg.includes('\n'), false)
+            assert.equal(responses[0].msg.includes('\\u0000'), false)
+            assert.equal(notices[0], responses[0].msg)
+        })
+
+        it('cmd_mail rejects a postel-only address when main.postel is false', () => {
+            const responses = []
+            this.connection.hello.host = 'example.test'
+            this.connection.lognotice = () => {}
+            this.connection.respond = (code, msg) => responses.push({ code, msg })
+
+            this.connection.cmd_mail('FROM:<foo@[IPv6:bogus::xyz]>')
+
+            assert.equal(responses[0].code, 501)
+            assert.match(responses[0].msg, /^Invalid MAIL FROM address /)
+        })
+
+        it('cmd_mail accepts a postel-only address when main.postel is true', () => {
+            const responses = []
+            let started = false
+            this.connection.hello.host = 'example.test'
+            this.connection.respond = (code, msg) => responses.push({ code, msg })
+            this.connection.init_transaction = () => {
+                started = true
+            }
+
+            connection.cfg.main.postel = true
+            try {
+                this.connection.cmd_mail('FROM:<foo@[IPv6:bogus::xyz]>')
+            } finally {
+                connection.cfg.main.postel = false
+            }
+
+            assert.equal(started, true)
+            assert.equal(
+                responses.some((r) => r.code === 501),
+                false,
+            )
+        })
+
+        it('cmd_rcpt rejects a postel-only address when main.postel is false', () => {
+            const responses = []
+            this.connection.transaction = {
+                mail_from: new Address('<from@example.com>'),
+                rcpt_to: [],
+            }
+            this.connection.lognotice = () => {}
+            this.connection.respond = (code, msg) => responses.push({ code, msg })
+
+            this.connection.cmd_rcpt('TO:<foo@[IPv6:bogus::xyz]>')
+
+            assert.equal(responses[0].code, 501)
+            assert.match(responses[0].msg, /^Invalid RCPT TO address /)
+        })
+
+        it('cmd_rcpt accepts a postel-only address when main.postel is true', () => {
+            const plugins = require('../plugins')
+            const originalRunHooks = plugins.run_hooks
+            const responses = []
+            this.connection.transaction = {
+                mail_from: new Address('<from@example.com>'),
+                rcpt_to: [],
+            }
+            this.connection.respond = (code, msg) => responses.push({ code, msg })
+            plugins.run_hooks = () => {}
+
+            connection.cfg.main.postel = true
+            try {
+                this.connection.cmd_rcpt('TO:<foo@[IPv6:bogus::xyz]>')
+            } finally {
+                connection.cfg.main.postel = false
+                plugins.run_hooks = originalRunHooks
+            }
+
+            assert.equal(this.connection.transaction.rcpt_to.length, 1)
+            assert.equal(
+                responses.some((r) => r.code === 501),
+                false,
+            )
+        })
+
         it('data_respond denysoftdisconnect disconnects and default enters DATA', () => {
             const responses = []
             let disconnected = 0

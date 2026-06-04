@@ -26,6 +26,7 @@ const states = constants.connection.state
 const cfg = config.get('connection.ini', {
     booleans: [
         '-main.strict_rfc1869',
+        '-main.postel',
         '+main.smtputf8',
         '+headers.add_received',
         '+headers.show_version',
@@ -1313,9 +1314,9 @@ class Connection {
         let from
         const from_raw = results.shift()
         try {
-            from = new Address(from_raw)
+            from = new Address(from_raw, { postel: cfg.main.postel })
         } catch (err) {
-            const msg = `Invalid MAIL FROM address ${JSON.stringify(from_raw)}: ${err.message}`
+            const msg = `Invalid MAIL FROM address ${utils.sanitize(from_raw)}: ${err.message}`
             this.lognotice(msg)
             return this.respond(501, msg)
         }
@@ -1375,9 +1376,9 @@ class Connection {
         let recip
         const recip_raw = results.shift()
         try {
-            recip = new Address(recip_raw)
-        } catch (err) {            
-            const msg = `Invalid RCPT TO address ${JSON.stringify(recip_raw)}: ${err.message}`
+            recip = new Address(recip_raw, { postel: cfg.main.postel })
+        } catch (err) {
+            const msg = `Invalid RCPT TO address ${utils.sanitize(recip_raw)}: ${err.message}`
             this.lognotice(msg)
             return this.respond(501, msg)
         }
@@ -1442,19 +1443,17 @@ class Connection {
         // value (e.g. a failed AUTH username, see auth_base) must not be
         // able to inject extra header lines into Authentication-Results.
         // The legitimate folding (;\r\n\t) is added by the join below.
-        const ar_clean = (s) => String(s).replace(/[\x00-\x1f\x7f]/g, '')
-
         // if message, store it in the appropriate note
         if (message) {
             if (has_tran === true) {
-                this.transaction.notes.authentication_results.push(ar_clean(message))
+                this.transaction.notes.authentication_results.push(utils.sanitize(message))
             } else {
-                this.notes.authentication_results.push(ar_clean(message))
+                this.notes.authentication_results.push(utils.sanitize(message))
             }
         }
 
         // assemble the new header
-        let header = [ar_clean(this.local.host), ...this.notes.authentication_results]
+        let header = [utils.sanitize(this.local.host), ...this.notes.authentication_results]
         if (has_tran === true) {
             header = [...header, ...this.transaction.notes.authentication_results]
         }
@@ -1852,6 +1851,8 @@ class Connection {
 }
 
 exports.Connection = Connection
+
+exports.cfg = cfg
 
 exports.createConnection = (client, server, cfg) => {
     return new Connection(client, server, cfg)
