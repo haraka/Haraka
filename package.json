@@ -70,7 +70,8 @@
   "devDependencies": {
     "@haraka/eslint-config": "~3.0.0",
     "haraka-test-fixtures": "^1.7.1",
-    "mock-require": "~3.0.3"
+    "mock-require": "~3.0.3",
+    "toobusy-js": "^0.5.1"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
