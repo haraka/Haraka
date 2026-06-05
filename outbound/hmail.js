@@ -7,7 +7,7 @@ const dns = require('node:dns')
 const net = require('node:net')
 const path = require('node:path')
 
-const { Address } = require('../address')
+const { Address } = require('@haraka/email-address')
 const config = require('haraka-config')
 const constants = require('haraka-constants')
 const DSN = require('haraka-dsn')

@@ -11,7 +11,7 @@ const constants = require('haraka-constants')
 const net_utils = require('haraka-net-utils')
 const Notes = require('haraka-notes')
 const utils = require('haraka-utils')
-const { Address } = require('./address')
+const { Address } = require('@haraka/email-address')
 const ResultStore = require('haraka-results')
 
 // Haraka libs

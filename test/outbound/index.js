@@ -210,7 +210,7 @@ describe('outbound', () => {
         it('yields to setImmediate before opening process_delivery pipes', async () => {
             const stream = require('node:stream')
             const Transaction = require('../../transaction')
-            const Address = require('../../address').Address
+            const Address = require('@haraka/email-address').Address
             const outbound = require('../../outbound')
             const plugins = require('../../plugins')
 
@@ -270,7 +270,7 @@ describe('outbound', () => {
 
         it('adds missing Message-Id/Date and prepends Received before queueing', async () => {
             process.env.HARAKA_TEST_DIR = path.resolve('test')
-            const Address = require('../../address').Address
+            const Address = require('@haraka/email-address').Address
             const outbound = require('../../outbound')
             const plugins = require('../../plugins')
 

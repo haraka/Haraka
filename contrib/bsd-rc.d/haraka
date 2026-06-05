@@ -6,6 +6,8 @@
 # REQUIRE: NETWORKING ldconfig
 # KEYWORD: shutdown
 
+PATH="$PATH:/usr/local/bin"
+
 . /etc/rc.subr
 
 name="haraka"

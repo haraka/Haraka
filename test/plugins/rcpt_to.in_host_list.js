@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict')
 const { describe, it, beforeEach } = require('node:test')
 
-const { Address } = require('../../address')
+const { Address } = require('@haraka/email-address')
 const fixtures = require('haraka-test-fixtures')
 const { assertResult, makeConnection, makePlugin } = fixtures
 require('haraka-constants').import(global)
