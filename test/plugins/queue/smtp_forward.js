@@ -5,7 +5,7 @@ const assert = require('node:assert/strict')
 const { EventEmitter } = require('node:events')
 const path = require('node:path')
 
-const { Address } = require('../../../address')
+const { Address } = require('@haraka/email-address')
 const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 const Notes = require('haraka-notes')
 

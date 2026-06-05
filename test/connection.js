@@ -5,7 +5,7 @@ const assert = require('node:assert/strict')
 
 const constants = require('haraka-constants')
 const DSN = require('haraka-dsn')
-const { Address } = require('../address')
+const { Address } = require('@haraka/email-address')
 
 const connection = require('../connection')
 const Server = require('../server')

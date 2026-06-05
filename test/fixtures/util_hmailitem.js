@@ -2,7 +2,7 @@
 
 const assert = require('node:assert')
 
-const { Address } = require('../../address')
+const { Address } = require('@haraka/email-address')
 const fixtures = require('haraka-test-fixtures')
 
 /**

@@ -4,7 +4,7 @@ const child_process = require('node:child_process')
 const fs = require('node:fs/promises')
 const path = require('node:path')
 
-const { Address } = require('../address')
+const { Address } = require('@haraka/email-address')
 const config = require('haraka-config')
 const utils = require('haraka-utils')
 
