@@ -30,12 +30,12 @@
     "haraka-plugin-redis": "~2.1.0",
     "haraka-results": "~2.3.2",
     "haraka-tld": "~1.3.5",
-    "haraka-utils": "~2.2.0",
+    "haraka-utils": "~2.2.1",
     "ipaddr.js": "~2.4.0",
     "node-gyp": "~12.3.0",
-    "nopt": "~10.0.0",
+    "nopt": "~10.0.1",
     "redis": "~6.0.0",
-    "semver": "~7.8.1"
+    "semver": "~7.8.2"
   },
   "optionalDependencies": {
     "@haraka/ocsp": "~1.2.0",
@@ -64,7 +64,7 @@
     "haraka-plugin-rspamd": "~1.6.0",
     "haraka-plugin-spamassassin": "~1.1.0",
     "haraka-plugin-spf": "~1.3.0",
-    "haraka-plugin-syslog": "~1.1.1",
+    "haraka-plugin-syslog": "~1.1.2",
     "haraka-plugin-uribl": "~2.0.0"
   },
   "devDependencies": {
@@ -90,10 +90,10 @@
     "prettier:fix": "npx prettier . --write --log-level=warn",
     "qlty": "qlty smells --all",
     "test": "sh ./run_tests",
+    "test:coverage": "node --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include=*.js --test-coverage-include=plugins/**/*.js --test-coverage-include=outbound/*.js",
+    "test:coverage:lcov": "mkdir -p coverage && node --test --test-concurrency=1 --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info --test-coverage-include=*.js --test-coverage-include=plugins/**/*.js --test-coverage-include=outbound/*.js",
     "versions": "npx npm-dep-mgr check",
-    "versions:fix": "npx npm-dep-mgr update",
-    "test:coverage": "node --test --test-concurrency=1 --experimental-test-coverage",
-    "test:coverage:lcov": "mkdir -p coverage && node --test --test-concurrency=1 --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info"
+    "versions:fix": "npx npm-dep-mgr update"
   },
   "prettier": {
     "singleQuote": true,
