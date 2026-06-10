@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- feat: expose fetch to plugins
 - fix: change package name from Haraka to haraka #3596
 - fix(haraka): wrap util.createFile in a try
 - fix(conn): update local and remote results after proxy #3593
