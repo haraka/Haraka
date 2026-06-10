@@ -197,11 +197,12 @@ class Plugin {
             __filename: pp,
             __dirname: path.dirname(pp),
             exports: this,
-            setTimeout,
+            fetch,
             clearTimeout,
-            setInterval,
             clearInterval,
             process,
+            setInterval,
+            setTimeout,
             Buffer,
             Math,
             server: plugins.server,
@@ -585,7 +586,7 @@ function get_denyfn(object, hook, params, retval, msg, respond_method) {
         switch (deny_retval) {
             case constants.ok:
                 // Override rejection
-                object.loginfo(`deny(soft?) overriden by deny hook${deny_msg ? ': deny_msg' : ''}`)
+                object.loginfo(`deny(soft?) overridden by deny hook${deny_msg ? ': deny_msg' : ''}`)
                 // Restore hooks_to_run with saved copy so that
                 // any other plugins on this hook can also run.
                 if (object.saved_hooks_to_run.length > 0) {
