@@ -4,13 +4,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.3.1] - 2026-06-12
+
 - fix(conn): flag soft queue denials in results
 - feat: expose fetch to plugins
+- change: remove @haraka/email-address wrapper #3598
+- change: log when MFROM or RCPT fail to parse #3581
 - fix: change package name from Haraka to haraka #3596
-- fix(haraka): wrap util.createFile in a try
+- fix(haraka): wrap util.createFile in a try #3595
 - fix(conn): update local and remote results after proxy #3593
 - feat(conn): add main.postel option #3592
-- change: log when MFROM or RCPT fail to parse #3581
 - feat: proxy support for smtps (465) #3577
 - refactor(auth_proxy): use net_utils.endpoint #3584
 - refactor: move endpoint, HostPool, LineSocket to net-utils #3583
@@ -1892,3 +1895,4 @@ config files.
 [3.1.7]: https://github.com/haraka/Haraka/releases/tag/v3.1.7
 [3.2.0]: https://github.com/haraka/Haraka/releases/tag/v3.2.0
 [3.2.1]: https://github.com/haraka/Haraka/releases/tag/v3.2.1
+[3.3.1]: https://github.com/haraka/Haraka/releases/tag/v3.3.1
