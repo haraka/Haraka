@@ -2,8 +2,7 @@ name: Release branch with package-lock
 
 on:
   push:
-    branches:
-      - master
+    branches: [main, master]
 
 jobs:
   update-release:

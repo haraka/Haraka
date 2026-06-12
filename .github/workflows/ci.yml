@@ -20,6 +20,7 @@ jobs:
     uses: haraka/.github/.github/workflows/prettier.yml@master
     permissions:
       contents: write
+    secrets: inherit
     with:
       branch: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
 

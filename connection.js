@@ -1698,9 +1698,11 @@ class Connection {
                 break
             case constants.deny:
             case constants.denydisconnect:
+                this.transaction.results.add(res_as, { fail: msg })
+                break
             case constants.denysoft:
             case constants.denysoftdisconnect:
-                this.transaction.results.add(res_as, { fail: msg })
+                this.transaction.results.add(res_as, { fail: msg, soft: true })
                 break
             case constants.cont:
                 break
