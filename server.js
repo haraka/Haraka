@@ -11,10 +11,10 @@ const tls = require('node:tls')
 const constants = require('haraka-constants')
 const net_utils = require('haraka-net-utils')
 
+const { endpoint } = require('haraka-net-utils')
 const tls_socket = require('./tls_socket')
 const conn = require('./connection')
 const outbound = require('./outbound')
-const { endpoint } = net_utils
 
 const Server = exports
 Server.logger = require('./logger')
