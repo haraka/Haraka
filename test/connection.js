@@ -508,7 +508,10 @@ describe('connection', () => {
                 assert.equal(this.connection.msg_count.tempfail, 1)
                 assert.equal(this.connection.transaction.msg_status, 'deferred')
                 assert.equal(harness.calls.reset, 1)
-                assert.deepEqual(harness.calls.results[0], { fail: 'Message denied temporarily' })
+                assert.deepEqual(harness.calls.results[0], {
+                    fail: 'Message denied temporarily',
+                    soft: true,
+                })
             } finally {
                 harness.restore()
             }

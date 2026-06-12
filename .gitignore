@@ -24,5 +24,4 @@ coverage
 /config/tls_cert.pem
 /config/tls_key.pem
 /queue
-CLAUDE.md
-GEMINI.md
+.claude

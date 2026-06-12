@@ -54,9 +54,7 @@ If a package-level instruction file exists, it is authoritative for that package
 - Results: `connection.transaction.results.add(this, { pass|fail|skip|msg|err, emit })`; query with `results.has(plugin, list, search)`. `emit: true` already logs the collated line — don't also `loginfo`/`logerror` the same thing. results.add(this, {err}) always logs.
 - Config loads via `config.get` with a hot-reload callback; declare every boolean or it stays a string and `=== true/false` silently fails:
   ```js
-  this.cfg = this.config.get('name.ini', { booleans: ['+a.b', '-c.d'] }, () =>
-    this.load(),
-  )
+  this.cfg = this.config.get('name.ini', { booleans: ['+a.b', '-c.d'] }, () => this.load())
   ```
 - Keep handlers thin. Push pure decision logic and I/O into `lib/*.js` as pure functions that return a verdict/value; the handler just maps that to `results.add` + `next`. For external I/O (DNS, network), expose an injectable seam — a swappable function whose default is the real implementation — so tests run without mocks.
 - If you add files outside `index.js` (e.g. a `lib/` dir), add them to `package.json` `files` so they publish.

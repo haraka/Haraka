@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    branches: [master, main]
+    branches: [main, master]
     paths:
       - package.json
 
