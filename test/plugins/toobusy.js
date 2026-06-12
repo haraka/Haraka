@@ -54,7 +54,7 @@ describe('toobusy', () => {
         it('gets toobusy.maxlag config value', () => {
             let configArgs = []
 
-            plugin.config.get = function (key, type, callback) {
+            plugin.config.get = function (key, type) {
                 configArgs = [key, type]
                 return '70'
             }
