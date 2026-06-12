@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-### [3.3.0] - 2026-06-05
+### [3.3.1] - 2026-06-12
 
 - fix(conn): flag soft queue denials in results
 - feat: expose fetch to plugins
