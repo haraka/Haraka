@@ -639,9 +639,9 @@ Server.setup_http_listeners = async () => {
         if (443 == ep.port) {
             const tlsOpts = { ...tls_socket.certsByHost['*'] }
             tlsOpts.requestCert = false // not appropriate for HTTPS
-            Server.http.server = require('https').createServer(tlsOpts, app)
+            Server.http.server = require('node:https').createServer(tlsOpts, app)
         } else {
-            Server.http.server = require('http').createServer(app)
+            Server.http.server = require('node:http').createServer(app)
         }
 
         Server.listeners.push(Server.http.server)
