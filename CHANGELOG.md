@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Unreleased
 
 ### [3.3.2] - 2026-07-20
+
+- deps: bump versions to latest
 - npm ignore, remove tests and clutter (#3602)
 
 ### [3.3.1] - 2026-06-12
