@@ -173,7 +173,7 @@ class Plugin {
                 // escape the c:\path\back\slashes else they disappear
                 packageDir = packageDir.replace(/\\/g, '\\\\')
             }
-            return `var _p = require("${packageDir}"); for (var k in _p) { exports[k] = _p[k] }`
+            return `const _p = require("${packageDir}"); for (const k in _p) { exports[k] = _p[k] }`
         }
 
         try {
