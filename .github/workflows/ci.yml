@@ -9,11 +9,12 @@ on:
 env:
   CI: true
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     uses: haraka/.github/.github/workflows/lint.yml@master
-    permissions:
-      contents: read
 
   prettier:
     if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -27,20 +28,12 @@ jobs:
   coverage:
     uses: haraka/.github/.github/workflows/coverage.yml@master
     secrets: inherit
-    permissions:
-      contents: read
 
   ubuntu:
     uses: haraka/.github/.github/workflows/ubuntu.yml@master
-    permissions:
-      contents: read
 
   windows:
     uses: haraka/.github/.github/workflows/windows.yml@master
-    permissions:
-      contents: read
 
   macos:
     uses: haraka/.github/.github/workflows/macos.yml@master
-    permissions:
-      contents: read

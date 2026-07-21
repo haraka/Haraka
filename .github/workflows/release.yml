@@ -12,16 +12,16 @@ env:
 jobs:
   release:
     uses: haraka/.github/.github/workflows/release.yml@master
-    secrets: inherit
     permissions:
       contents: write
+    secrets: inherit
 
   publish:
     needs: release
     if: needs.release.outputs.changed == 'true'
     uses: haraka/.github/.github/workflows/publish.yml@master
-    secrets: inherit
     permissions:
       contents: read
       packages: write
       id-token: write
+    secrets: inherit

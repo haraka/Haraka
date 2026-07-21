@@ -936,9 +936,9 @@ class HMailItem extends events.EventEmitter {
         rcpt.dsn_code = dsn.code
         rcpt.dsn_msg = dsn.msg
         rcpt.dsn_status = `${dsn.cls}.${dsn.sub}.${dsn.det}`
-        if (dsn.cls == 4) {
+        if (dsn.cls === 4) {
             rcpt.dsn_action = 'delayed'
-        } else if (dsn.cls == 5) {
+        } else if (dsn.cls === 5) {
             rcpt.dsn_action = 'failed'
         }
     }
@@ -957,7 +957,7 @@ class HMailItem extends events.EventEmitter {
                     let results
                     while ((results = utils.line_regexp.exec(buf))) {
                         const this_line = results[1]
-                        if (this_line === '\n' || this_line == '\r\n') {
+                        if (this_line === '\n' || this_line === '\r\n') {
                             headers_done = true
                             break
                         }
@@ -1039,11 +1039,11 @@ class HMailItem extends events.EventEmitter {
         for (let line of bounce_msg_) {
             line = line.replace(/\{(\w+)\}/g, (i, word) => values[word] || '?')
 
-            if (bounce_headers_done == false && line == '') {
+            if (bounce_headers_done === false && line === '') {
                 bounce_headers_done = true
-            } else if (bounce_headers_done == false) {
+            } else if (bounce_headers_done === false) {
                 bounce_header_lines.push(line)
-            } else if (bounce_headers_done == true) {
+            } else if (bounce_headers_done === true) {
                 bounce_body_lines.push(line)
             }
         }

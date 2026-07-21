@@ -1,4 +1,4 @@
-<!-- agents-version: 1 -->
+<!-- agents-version: 2 -->
 
 # AGENTS.md
 
@@ -8,16 +8,16 @@ If a package-level instruction file exists, it is authoritative for that package
 
 ## Repository model
 
-- A monorepo of independent npm packages — each has its own `package.json`, tests, and version history. There is no root workspace and no root test runner. Run every command from the target package directory.
-- Package map:
-  - `Haraka/` — core SMTP server (has `./run_tests`).
-  - `plugin/*` — 40+ optional plugins (`haraka-plugin-<name>`); plugins may depend on each other (e.g. bounce → spf).
-  - `haraka-config/` — config loader with hot-reload.
-  - `results/`, `notes/` — per-connection result / note tracking.
-  - `net-utils/`, `utils/`, `constants/`, `dsn/`, `tld/`, `message-stream/` — shared libraries.
-  - `email-address/` — `@haraka/email-address`, the RFC 5321/5322 parser (supersedes the deprecated `address-rfc282x`).
-  - `eslint/` — `@haraka/eslint-config`
-  - `test-fixtures/` — `haraka-test-fixtures`.
+- This file is shared verbatim across every Haraka repository, so it describes the whole family — not just the repo you are in. Each repo is an independent npm package with its own `package.json`, tests, and version history; there is no root workspace or shared test runner. Run every command from the package root.
+- Repos are worked on both standalone and as sibling checkouts in a combined tree (`Haraka/`, `plugin/<name>/`, …). Don't assume sibling packages are present on disk.
+- The family:
+  - `Haraka` — core SMTP server (has `./run_tests`).
+  - `haraka-plugin-<name>` — optional plugins; may depend on each other (e.g. bounce → spf).
+  - `haraka-config` — config loader with hot-reload.
+  - `haraka-results`, `haraka-notes` — per-connection result / note tracking.
+  - `haraka-net-utils`, `haraka-utils`, `haraka-constants`, `haraka-dsn`, `haraka-tld`, `haraka-message-stream` — shared libraries.
+  - `@haraka/email-address` — the RFC 5321/5322 parser (supersedes the deprecated `address-rfc282x`).
+  - `@haraka/eslint-config`, `haraka-test-fixtures`.
 
 ## Working agreement
 
@@ -45,18 +45,16 @@ If a package-level instruction file exists, it is authoritative for that package
 - Keep only WHY comments — a hidden constraint, an invariant, a workaround for a specific bug, or an RFC citation that explains otherwise-surprising behavior.
 - Delete WHAT comments that restate the code, and comments that narrate history or audit findings. If a rename makes a comment redundant, delete it rather than updating it.
 
-## Haraka plugins (`plugin/*`)
+## Haraka plugins
 
-- Full hook/API reference: `Haraka/docs/Plugins.md`.
+- Full hook/API reference: `docs/Plugins.md` in the `Haraka` core repo.
 - A plugin is an npm package: `index.js` (`exports.register` + hook handlers), `config/` (default `.ini`/`.json`/`.yaml`), `test/`, `README.md`.
 - Register hooks in `exports.register` with `this.register_hook('phase', 'method'[, priority])`.
 - Hook handlers take `(next, connection)` (rcpt hooks also take `rcpt`) and must call `next` exactly once. Gate early — return `next()` on missing transaction, disabled config, or skip conditions. Signal a verdict with `next(DENY|DENYSOFT|OK, msg)`; `DENY`/`OK`/etc. are plugin-scope globals (no import).
 - Results: `connection.transaction.results.add(this, { pass|fail|skip|msg|err, emit })`; query with `results.has(plugin, list, search)`. `emit: true` already logs the collated line — don't also `loginfo`/`logerror` the same thing. results.add(this, {err}) always logs.
 - Config loads via `config.get` with a hot-reload callback; declare every boolean or it stays a string and `=== true/false` silently fails:
   ```js
-  this.cfg = this.config.get('name.ini', { booleans: ['+a.b', '-c.d'] }, () =>
-    this.load(),
-  )
+  this.cfg = this.config.get('name.ini', { booleans: ['+a.b', '-c.d'] }, () => this.load())
   ```
 - Keep handlers thin. Push pure decision logic and I/O into `lib/*.js` as pure functions that return a verdict/value; the handler just maps that to `results.add` + `next`. For external I/O (DNS, network), expose an injectable seam — a swappable function whose default is the real implementation — so tests run without mocks.
 - If you add files outside `index.js` (e.g. a `lib/` dir), add them to `package.json` `files` so they publish.
@@ -73,7 +71,7 @@ If a package-level instruction file exists, it is authoritative for that package
 ## Commands (run inside the target package)
 
 - Test: `npm test`. Single file: `node --test test/path/to/file.js`.
-- Haraka core: `cd Haraka && ./run_tests [test/plugins/foo.js]`.
+- Haraka core repo only: `./run_tests [test/plugins/foo.js]`.
 - Coverage: `npm run test:coverage`; lcov: `npm run test:coverage:lcov`. Keep coverage at/above ~90%.
 - If coverage output includes non-source files (e.g. `package.json`, `test/*`), scope it with `--test-coverage-include` (preferred when the list is short) or `--test-coverage-exclude`.
 - Lint/format: `npm run lint` / `prettier` / `format`. Version drift: `npm run versions[:fix]`.
