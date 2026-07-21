@@ -68,7 +68,7 @@
     "haraka-plugin-uribl": "~2.0.0"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "~3.0.0",
+    "@haraka/eslint-config": "^3.0.0",
     "haraka-test-fixtures": "^1.7.2",
     "mock-require": "~3.0.3",
     "toobusy-js": "^0.5.1"
