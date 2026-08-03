@@ -88,6 +88,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 | [discard][url-qdisc]               | queues messages to /dev/null                                                 | 2026      |
 | [kafka][url-kafka]                 | Queue inbound mail to a Kafka topic                                          | 2023      |
 | [lmtp][url-qlmtp]                  | deliver queued messages via LMTP                                             | 2026      |
+| [mailkite][url-mailkite]           | Deliver mail to a MailKite backend (self-hosted or Cloud) as signed webhooks | 2026      |
 | [mongodb][mongo-url]               | Queue emails to MongoDB                                                      | 2024      |
 | [qmail-queue][url-qmail]           | queue to qmail                                                               | 2026      |
 | [quarantine][url-qquart]           | queue to a quarantine directory                                              | 2026      |
@@ -225,3 +226,4 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-mailauth]: https://www.npmjs.com/package/haraka-plugin-mailauth
 [url-save-sent]: https://github.com/AprilGrimoire/haraka-plugin-save-sent
 [url-dropbox]: https://github.com/dspangenberg/haraka-plugin-dropbox
+[url-mailkite]: https://github.com/mailkite/server/tree/main/packages/haraka-plugin-mailkite
