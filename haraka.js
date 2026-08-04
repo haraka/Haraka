@@ -24,11 +24,7 @@ const server = require('./server')
 exports.version = utils.getVersion(__dirname)
 
 process.on('uncaughtException', (err) => {
-    if (err.stack) {
-        for (const line of err.stack.split('\n')) logger.crit(line)
-    } else {
-        logger.crit(`Caught exception: ${JSON.stringify(err)}`)
-    }
+    logger.crit('Caught exception:', err)
     logger.dump_and_exit(1)
 })
 

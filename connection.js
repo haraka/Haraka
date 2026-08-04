@@ -327,12 +327,7 @@ class Connection {
                 try {
                     this[method](remaining)
                 } catch (err) {
-                    if (err.stack) {
-                        this.logerror(`${method} failed: ${err}`)
-                        for (const line of err.stack.split('\n')) this.logerror(line)
-                    } else {
-                        this.logerror(`${method} failed: ${err}`)
-                    }
+                    this.logerror(`${method} failed:`, err)
                     this.respond(421, 'Internal Server Error', () => {
                         this.disconnect()
                     })
@@ -685,7 +680,7 @@ class Connection {
     lookup_rdns_respond(retval, msg) {
         switch (retval) {
             case constants.ok:
-                this.set('remote', 'host', msg || 'Unknown')
+                this.set('remote', 'host', utils.sanitize(msg) || 'Unknown')
                 this.set('remote', 'info', this.remote.info || this.remote.host)
                 plugins.run_hooks('connect', this)
                 break
@@ -730,7 +725,7 @@ class Connection {
                     break
             }
         } else {
-            this.set('remote', 'host', domains[0] || 'Unknown')
+            this.set('remote', 'host', utils.sanitize(domains[0]) || 'Unknown')
             this.results.add({ name: 'remote' }, this.remote)
         }
         this.set('remote', 'info', this.remote.info || this.remote.host)
@@ -1612,9 +1607,9 @@ class Connection {
     data_post_respond(retval, msg) {
         if (!this.transaction) return
         this.transaction.data_post_delay = (Date.now() - this.transaction.data_post_start) / 1000
-        const mid = this.transaction.header.get('Message-ID') || ''
+        const mid = utils.sanitize(this.transaction.header.get('Message-ID') || '', { replacement: ' ' }).trim()
         this.lognotice('message', {
-            mid: mid.replace(/\r?\n/, ''),
+            mid,
             size: this.transaction.data_bytes,
             rcpts: `${this.transaction.rcpt_count.accept}/${this.transaction.rcpt_count.tempfail}/${this.transaction.rcpt_count.reject}`,
             delay: this.transaction.data_post_delay,

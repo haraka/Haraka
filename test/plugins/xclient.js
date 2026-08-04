@@ -103,6 +103,31 @@ describe('xclient', () => {
         }
     })
 
+    describe('control characters in forwarded attributes', () => {
+        // XCLIENT forwards the *client's* attributes, so these are attacker
+        // controlled even though only trusted relays may send the command.
+        const applyXclient = (args) =>
+            new Promise((resolve) => {
+                this.connection.remote.ip = '127.0.0.1'
+                this.plugin.hook_unrecognized_command(() => resolve(), this.connection, ['XCLIENT', args])
+            })
+
+        it('strips them from NAME before it becomes remote.host', async () => {
+            await applyXclient('ADDR=1.2.3.4 NAME=evil\rinjected')
+            assert.equal(this.connection.remote.host, 'evilinjected')
+        })
+
+        it('strips them from HELO before it becomes hello.host', async () => {
+            await applyXclient('ADDR=1.2.3.4 NAME=example.com HELO=evil\rinjected')
+            assert.equal(this.connection.hello.host, 'evilinjected')
+        })
+
+        it('strips them from LOGIN before it becomes remote.login', async () => {
+            await applyXclient('ADDR=1.2.3.4 NAME=example.com LOGIN=evil\rinjected')
+            assert.equal(this.connection.remote.login, 'evilinjected')
+        })
+    })
+
     describe('DESTPORT type', () => {
         it('stores local.port as an integer (587/465 auth check)', async () => {
             this.connection.remote.ip = '127.0.0.1'
