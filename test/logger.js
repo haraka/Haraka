@@ -196,6 +196,52 @@ describe('logger', () => {
         })
     })
 
+    describe('CR/LF neutralization', () => {
+        const capture = (fmt, ...args) => {
+            const lines = []
+            const orig_log = this.logger.log
+            const orig_format = this.logger.format
+            this.logger.format = this.logger.formats[fmt]
+            this.logger.log = (level, msg) => {
+                lines.push(msg)
+                return true
+            }
+            try {
+                this.logger.lognotice(...args)
+            } finally {
+                this.logger.log = orig_log
+                this.logger.format = orig_format
+            }
+            return lines
+        }
+
+        const forged = 'mid\n[NOTICE] [-] [core] forged'
+
+        for (const fmt of ['DEFAULT', 'LOGFMT', 'JSON']) {
+            it(`${fmt} emits one physical line for an object value`, () => {
+                const [line] = capture(fmt, 'message', { mid: forged })
+                assert.equal(line.split('\n').length, 1)
+                assert.match(line, /forged/)
+            })
+
+            it(`${fmt} emits one physical line for a string argument`, () => {
+                const [line] = capture(fmt, `C: ${forged}`)
+                assert.equal(line.split('\n').length, 1)
+            })
+
+            it(`${fmt} keeps a literal backslash sequence distinct from a line break`, () => {
+                const [literal] = capture(fmt, 'C: a\\nb')
+                const [line_break] = capture(fmt, 'C: a\nb')
+                assert.notEqual(literal, line_break)
+            })
+
+            it(`${fmt} escapes a bare CR`, () => {
+                const [line] = capture(fmt, 'message', { mid: 'a\rb' })
+                assert.ok(!line.includes('\r'))
+            })
+        }
+    })
+
     describe('add_log_methods', () => {
         it('ignores non-objects', () => {
             assert.equal(undefined, this.logger.add_log_methods(''))

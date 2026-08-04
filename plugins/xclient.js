@@ -83,7 +83,9 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                 case 'login':
                 case 'destport':
                     if (!/\[(UNAVAILABLE|TEMPUNAVAIL)\]/i.test(match[2])) {
-                        xclient[match[1]] = match[2]
+                        // These describe the *client*, not the relay sending
+                        // XCLIENT, and bypass the checks in cmd_helo / rdns.
+                        xclient[match[1]] = utils.sanitize(match[2])
                     }
                     break
                 default:

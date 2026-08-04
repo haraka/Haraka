@@ -43,6 +43,12 @@ const obc = require('./config')
 
 function dummy_func() {}
 
+// Values interpolated into a bounce template come from the message being
+// bounced, so they must not be able to start a new header or body line.
+function single_line(val) {
+    return utils.sanitize(String(val ?? ''), { replacement: ' ' }).trim()
+}
+
 class HMailItem extends events.EventEmitter {
     constructor(filename, filePath, notes) {
         super()
@@ -1005,7 +1011,7 @@ class HMailItem extends events.EventEmitter {
     populate_bounce_message_with_headers(from, to, reason, header, cb) {
         const CRLF = '\r\n'
 
-        const originalMessageId = header.get('Message-Id')
+        const originalMessageId = single_line(header.get('Message-Id'))
 
         const bounce_msg_ = config.get('outbound.bounce_message', 'data')
         const bounce_msg_html_ = config.get('outbound.bounce_message_html', 'data')
@@ -1020,15 +1026,16 @@ class HMailItem extends events.EventEmitter {
         const values = {
             date: utils.date_to_str(new Date()),
             me: net_utils.get_primary_host_name(),
-            from,
-            to,
-            subject: header.get_decoded('Subject').trim(),
-            recipients: this.todo.rcpt_to.join(', '),
-            reason,
+            from: single_line(from),
+            to: single_line(to),
+            subject: single_line(header.get_decoded('Subject')),
+            recipients: single_line(this.todo.rcpt_to.join(', ')),
+            reason: single_line(reason),
+            // one line per recipient, so each is neutralized before the join
             extended_reason: this.todo.rcpt_to
                 .map((recip) => {
                     if (recip.reason) {
-                        return `${recip.original}: ${recip.reason}`
+                        return `${single_line(recip.original)}: ${single_line(recip.reason)}`
                     }
                 })
                 .join('\n'),
@@ -1054,8 +1061,8 @@ class HMailItem extends events.EventEmitter {
             '>': 'gt',
             '"': 'quot',
             "'": 'apos',
-            '\r': '#10',
-            '\n': '#13',
+            '\r': '#13',
+            '\n': '#10',
         }
         const escape_pattern = new RegExp(`[${Object.keys(escaped_chars).join('')}]`, 'g')
 
@@ -1086,7 +1093,7 @@ class HMailItem extends events.EventEmitter {
         )
         // Adding references to original msg id
         if (originalMessageId != '') {
-            bounce_body.push(`References: ${originalMessageId.replace(/(\r?\n)*$/, '')}${CRLF}`)
+            bounce_body.push(`References: ${originalMessageId}${CRLF}`)
         }
 
         bounce_body.push(CRLF)
@@ -1140,7 +1147,7 @@ class HMailItem extends events.EventEmitter {
         bounce_body.push(`Content-type: message/delivery-status${CRLF}`)
         bounce_body.push(CRLF)
         if (originalMessageId != '') {
-            bounce_body.push(`Original-Envelope-Id: ${originalMessageId.replace(/(\r?\n)*$/, '')}${CRLF}`)
+            bounce_body.push(`Original-Envelope-Id: ${originalMessageId}${CRLF}`)
         }
         bounce_body.push(`Reporting-MTA: dns;${net_utils.get_primary_host_name()}${CRLF}`)
         if (this.todo.queue_time) {

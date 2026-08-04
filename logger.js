@@ -9,8 +9,18 @@ const constants = require('haraka-constants')
 
 let plugins
 
-const regex = /(^$|[ ="\\])/
-const escape_replace_regex = /["\\]/g
+const escapes = { '"': '\\"', '\\': '\\\\', '\r': '\\r', '\n': '\\n' }
+const escape_char = (c) => escapes[c]
+
+const needs_quoting = /(^$|[ ="\\\r\n])/
+const needs_escaping = /["\\\r\n]/g
+const line_breaks = /[\r\n]/g
+
+// A free-form message is not a quoted value, so there is no escape character to
+// make `\n` unambiguous. Collapse instead of escaping.
+function collapse_line_breaks(str) {
+    return str.replace(line_breaks, ' ')
+}
 
 function stringify(obj) {
     let str = ''
@@ -22,8 +32,8 @@ function stringify(obj) {
             continue
         }
         v = v.toString()
-        if (regex.test(v)) {
-            str += `${key}="${v.replace(escape_replace_regex, '\\$&')}" `
+        if (needs_quoting.test(v)) {
+            str += `${key}="${v.replace(needs_escaping, escape_char)}" `
         } else {
             str += `${key}=${v} `
         }
@@ -278,7 +288,10 @@ logger.log_if_level = (level, key, origin) =>
                 break
             case logger.formats.DEFAULT:
             default:
-                logger.log(level, `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${logobj.message}`)
+                logger.log(
+                    level,
+                    `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${collapse_line_breaks(logobj.message)}`,
+                )
         }
         return true
     }

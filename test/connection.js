@@ -6,6 +6,7 @@ const assert = require('node:assert/strict')
 const constants = require('haraka-constants')
 const DSN = require('haraka-dsn')
 const { Address } = require('@haraka/email-address')
+const { Header } = require('haraka-email-message')
 
 const connection = require('../connection')
 const Server = require('../server')
@@ -554,6 +555,119 @@ describe('connection', () => {
             } finally {
                 harness.restore()
             }
+        })
+    })
+
+    describe('received_line', () => {
+        beforeEach(setUp)
+
+        // Every CR must open a fold, and every fold must be a continuation.
+        const assertWellFolded = (header) => {
+            assert.ok(!/\r(?!\n)/.test(header), 'no bare CR')
+            assert.ok(!/\n(?!\t)/.test(header), 'every line break starts a folded line')
+        }
+
+        const receivedWith = ({ helo, info, mail_from }) => {
+            this.connection.hello.verb = 'EHLO'
+            this.connection.hello.host = helo
+            this.connection.set('remote', 'info', info)
+            this.connection.transaction = {
+                uuid: 'txn-123',
+                mail_from: { format: () => mail_from },
+            }
+            return this.connection.received_line()
+        }
+
+        it('builds a folded header from well formed values', () => {
+            const header = receivedWith({
+                helo: 'mail.example.com',
+                info: 'client.example.com',
+                mail_from: '<a@example.com>',
+            })
+            assertWellFolded(header)
+            assert.match(header, /^from mail\.example\.com \(client\.example\.com/)
+        })
+
+        it('stays folded when rDNS carries control characters', () => {
+            const hostile = 'evil\r\nX-Injected: yes'
+            const plugins = require('../plugins')
+            const originalRunHooks = plugins.run_hooks
+            plugins.run_hooks = () => {}
+            try {
+                this.connection.rdns_response(null, [hostile])
+            } finally {
+                plugins.run_hooks = originalRunHooks
+            }
+
+            assert.equal(this.connection.remote.host, 'evilX-Injected: yes', 'rDNS host is clean at rest')
+            assertWellFolded(
+                receivedWith({
+                    helo: 'mail.example.com',
+                    info: this.connection.remote.info,
+                    mail_from: '<a@example.com>',
+                }),
+            )
+        })
+
+        it('rejects control characters in MAIL FROM before they reach the header', () => {
+            assert.throws(() => new Address('<a\r\nX-Injected: yes@example.com>'))
+        })
+    })
+
+    describe('data_post_respond Message-ID logging', () => {
+        beforeEach(setUp)
+
+        const logMessageFor = (header_lines) => {
+            const logger = require('../logger')
+            const header = new Header()
+            header.parse(header_lines)
+
+            this.connection.transaction = {
+                uuid: 'txn-123',
+                data_post_start: Date.now(),
+                data_bytes: 10,
+                rcpt_count: { accept: 1, tempfail: 0, reject: 0 },
+                header,
+            }
+            this.connection.respond = (code, msg, cb) => {
+                if (cb) cb()
+            }
+            this.connection.reset_transaction = (cb) => {
+                if (cb) cb()
+            }
+            this.connection.resume = () => {}
+
+            const lines = []
+            const orig_log = logger.log
+            logger.log = (level, msg) => {
+                lines.push(msg)
+                return true
+            }
+            try {
+                this.connection.data_post_respond(constants.deny, 'nope')
+            } finally {
+                logger.log = orig_log
+            }
+            return lines.find((l) => l.includes('mid='))
+        }
+
+        it('logs a well formed Message-ID unchanged', () => {
+            assert.match(logMessageFor(['Message-ID: <a@example.com>\r\n']), /mid=<a@example\.com>/)
+        })
+
+        it('cannot forge a log line via multiple Message-ID headers', () => {
+            const line = logMessageFor([
+                'Message-ID: <a@example.com>\r\n',
+                'Message-ID: [NOTICE] [-] [core] forged\r\n',
+            ])
+            assert.equal(line.split('\n').length, 1)
+            assert.ok(!line.includes('\\n'), 'line breaks are gone, not merely escaped')
+        })
+
+        it('cannot forge a log line via a folded Message-ID header', () => {
+            const line = logMessageFor(['Message-ID: <a\r\n[NOTICE] [-] [core] forged\r\n b@example.com>\r\n'])
+            assert.equal(line.split('\n').length, 1)
+            assert.ok(!line.includes('\\n'), 'line breaks are gone, not merely escaped')
         })
     })
 

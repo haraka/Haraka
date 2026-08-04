@@ -4,6 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.3.3] - 2026-08-04
+
+- fix(conn): sanitize Message-ID before logging (GHSA-4gxg-q43p-hfr2)
+- fix(conn): sanitize rDNS hostnames where they are set
+- fix(xclient): sanitize forwarded NAME, HELO and LOGIN
+- fix(logger): escape CR/LF in DEFAULT and LOGFMT output
+- fix(logger): collapse line breaks in free-form messages
+- fix(outbound): neutralize CR/LF in values interpolated into bounce messages
+- fix(outbound): swap transposed CR/LF entities in bounce HTML escaping
+- doc(Plugins): add mailkite queue plugin (#3610)
+- deps(several): bump to latest
+
 ### [3.3.2] - 2026-07-20
 
 - deps: bump versions to latest
@@ -1902,3 +1914,4 @@ config files.
 [3.2.1]: https://github.com/haraka/Haraka/releases/tag/v3.2.1
 [3.3.1]: https://github.com/haraka/Haraka/releases/tag/v3.3.1
 [3.3.2]: https://github.com/haraka/Haraka/releases/tag/v3.3.2
+[3.3.3]: https://github.com/haraka/Haraka/releases/tag/v3.3.3
