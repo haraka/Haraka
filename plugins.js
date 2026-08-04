@@ -451,9 +451,10 @@ plugins.run_next_hook = (hook, object, params) => {
         }
         if (called_once && hook !== 'log') {
             if (!timed_out) {
-                object.logerror(`${item[0].name} plugin ran callback ` + `multiple times - ignoring subsequent calls`)
-                // Write a stack trace to the log to aid debugging
-                object.logerror(new Error().stack)
+                object.logerror(
+                    `${item[0].name} plugin ran callback multiple times - ignoring subsequent calls`,
+                    new Error(),
+                )
             }
             return
         }
@@ -511,7 +512,7 @@ plugins.run_next_hook = (hook, object, params) => {
         item[0][item[1]].call(item[0], callback, object, params)
     } catch (err) {
         if (hook !== 'log') {
-            object.logcrit(`Plugin ${item[0].name} failed: ${err.stack || err}`)
+            object.logcrit(`Plugin ${item[0].name} failed:`, err)
         }
         callback()
     }

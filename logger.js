@@ -235,6 +235,21 @@ logger._init_timestamps = function () {
 
 logger._init()
 
+function emit(level, logobj) {
+    switch (logger.format) {
+        case logger.formats.LOGFMT:
+            return logger.log(level, stringify(logobj))
+        case logger.formats.JSON:
+            return logger.log(level, JSON.stringify(logobj))
+        case logger.formats.DEFAULT:
+        default:
+            return logger.log(
+                level,
+                `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${collapse_line_breaks(logobj.message)}`,
+            )
+    }
+}
+
 logger.log_if_level = (level, key, origin) =>
     function () {
         if (logger.loglevel < logger[key]) return
@@ -245,6 +260,10 @@ logger.log_if_level = (level, key, origin) =>
             origin: origin || 'core',
             message: '',
         }
+        // JSON escapes line breaks, so it keeps a stack inside one record. The
+        // line-oriented formats get a log line per frame instead.
+        const split_stacks = logger.format !== logger.formats.JSON
+        const stack_frames = []
 
         for (const data of arguments) {
             if (typeof data !== 'object') {
@@ -252,6 +271,21 @@ logger.log_if_level = (level, key, origin) =>
                 continue
             }
             if (!data) continue
+
+            if (data instanceof Error) {
+                const [summary, ...frames] = util.inspect(data).split('\n')
+                // an Error raised only to capture a stack has nothing to say
+                if (data.message) {
+                    if (logobj.message && !logobj.message.endsWith(' ')) logobj.message += ' '
+                    logobj.message += summary
+                }
+                if (split_stacks) {
+                    stack_frames.push(...frames)
+                } else {
+                    logobj.message += frames.map((f) => `\n${f}`).join('')
+                }
+                continue
+            }
 
             // if the object is a connection, add the connection id
             if (data.constructor?.name === 'Connection') {
@@ -279,20 +313,8 @@ logger.log_if_level = (level, key, origin) =>
             }
         }
 
-        switch (logger.format) {
-            case logger.formats.LOGFMT:
-                logger.log(level, stringify(logobj))
-                break
-            case logger.formats.JSON:
-                logger.log(level, JSON.stringify(logobj))
-                break
-            case logger.formats.DEFAULT:
-            default:
-                logger.log(
-                    level,
-                    `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${collapse_line_breaks(logobj.message)}`,
-                )
-        }
+        emit(level, logobj)
+        for (const frame of stack_frames) emit(level, { ...logobj, message: frame })
         return true
     }
 

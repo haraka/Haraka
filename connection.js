@@ -327,12 +327,7 @@ class Connection {
                 try {
                     this[method](remaining)
                 } catch (err) {
-                    if (err.stack) {
-                        this.logerror(`${method} failed: ${err}`)
-                        for (const line of err.stack.split('\n')) this.logerror(line)
-                    } else {
-                        this.logerror(`${method} failed: ${err}`)
-                    }
+                    this.logerror(`${method} failed:`, err)
                     this.respond(421, 'Internal Server Error', () => {
                         this.disconnect()
                     })

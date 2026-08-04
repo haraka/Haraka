@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(xclient): sanitize forwarded NAME, HELO and LOGIN
 - fix(logger): escape CR/LF in DEFAULT and LOGFMT output
 - fix(logger): collapse line breaks in free-form messages
+- feat(logger): an Error argument logs one record per stack frame
 - fix(outbound): neutralize CR/LF in values interpolated into bounce messages
 - fix(outbound): swap transposed CR/LF entities in bounce HTML escaping
 - doc(Plugins): add mailkite queue plugin (#3610)

@@ -242,6 +242,79 @@ describe('logger', () => {
         }
     })
 
+    describe('Error arguments', () => {
+        const capture = (fmt, ...args) => {
+            const records = []
+            const orig_log = this.logger.log
+            const orig_format = this.logger.format
+            this.logger.format = this.logger.formats[fmt]
+            this.logger.log = (level, msg) => {
+                records.push(msg)
+                return true
+            }
+            try {
+                this.logger.logcrit(...args)
+            } finally {
+                this.logger.log = orig_log
+                this.logger.format = orig_format
+            }
+            return records
+        }
+
+        const err = () => {
+            const e = new Error('boom')
+            e.stack = ['Error: boom', '    at one (a.js:1:1)', '    at two (b.js:2:2)'].join('\n')
+            return e
+        }
+
+        for (const fmt of ['DEFAULT', 'LOGFMT']) {
+            it(`${fmt} emits one record per stack frame`, () => {
+                const records = capture(fmt, err())
+                assert.equal(records.length, 3)
+                assert.match(records[0], /Error: boom/)
+                assert.match(records[1], /at one \(a\.js:1:1\)/)
+                assert.match(records[2], /at two \(b\.js:2:2\)/)
+            })
+
+            it(`${fmt} keeps every record on one physical line`, () => {
+                for (const record of capture(fmt, err())) {
+                    assert.equal(record.split('\n').length, 1)
+                }
+            })
+
+            it(`${fmt} keeps the level, uuid and origin on every frame`, () => {
+                const records = capture(fmt, err())
+                assert.match(records[2], /CRIT/)
+                assert.match(records[2], /core/)
+            })
+
+            it(`${fmt} joins a leading message to the error summary`, () => {
+                assert.match(capture(fmt, 'hook failed:', err())[0], /hook failed: Error: boom/)
+            })
+
+            it(`${fmt} says nothing extra for a bare stack-capture Error`, () => {
+                const bare = new Error()
+                bare.stack = ['Error', '    at one (a.js:1:1)'].join('\n')
+                const records = capture(fmt, 'ran callback twice', bare)
+                assert.match(records[0], /ran callback twice/)
+                assert.ok(!/twice\s*Error/.test(records[0]), 'no empty "Error" tacked on')
+                assert.equal(records.length, 2)
+            })
+        }
+
+        it('JSON keeps the whole stack inside one record', () => {
+            const records = capture('JSON', err())
+            assert.equal(records.length, 1)
+            const parsed = JSON.parse(records[0])
+            assert.equal(parsed.message, 'Error: boom\n    at one (a.js:1:1)\n    at two (b.js:2:2)')
+        })
+
+        it('a non-Error argument is unaffected', () => {
+            assert.equal(capture('DEFAULT', 'plain message').length, 1)
+            assert.equal(capture('DEFAULT', 'with obj', { a: 1 }).length, 1)
+        })
+    })
+
     describe('add_log_methods', () => {
         it('ignores non-objects', () => {
             assert.equal(undefined, this.logger.add_log_methods(''))
