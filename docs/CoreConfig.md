@@ -21,7 +21,7 @@ Controls the SMTP listener and the master process.
 | `listen` | `[::0]:25` | Comma-separated `IP:port` pairs to listen on (e.g. `127.0.0.1:25,127.0.0.1:587`). |
 | `listen_host` / `port` | — | Legacy. If set, a `<listen_host>:<port>` entry is prepended to `listen`. Prefer `listen`. |
 | `smtps_port` | `465` | Port used by the optional implicit-TLS listener. |
-| `public_ip` | none | The server's public IP. Helps NAT-aware plugins (SPF, GeoIP) when Haraka is behind NAT. If `stun` is on `$PATH` Haraka will try to discover it automatically. |
+| `public_ip` | none | The server's public IP. Helps NAT-aware plugins (SPF, GeoIP) when Haraka is behind NAT. If unset and the optional `@msimerson/stun` module is installed, Haraka discovers it via STUN on first use. Setting it explicitly skips that lookup. |
 | `inactivity_timeout` | `300` | Idle seconds before a client socket is dropped. |
 | `nodes` | `1` | Number of worker processes to fork. The string `cpus` forks one per CPU. |
 | `user` / `group` | — | User and group to drop privileges to (name or numeric ID). |

@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- doc(CoreConfig): update stun docs
+
 ### [3.3.3] - 2026-08-04
 
 - fix(conn): sanitize Message-ID before logging (GHSA-4gxg-q43p-hfr2)
