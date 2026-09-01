@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix: page docs in-process on Windows when $PAGER is unset
 - doc(CoreConfig): update stun docs
 
 ### [3.3.3] - 2026-08-04

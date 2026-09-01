@@ -289,17 +289,26 @@ if (parsed.version) {
     warning(`No documentation found for: ${parsed.help}`)
     process.exit()
   }
-  let pager = 'less'
-  if (process.env.PAGER) {
-    const pager_split = process.env.PAGER.split(/ +/)
-    pager = pager_split.shift()
-    md_path = [...pager_split, ...md_path]
-  }
 
-  const less = child.spawn(pager, md_path, { stdio: 'inherit' })
-  less.on('exit', function () {
-    process.exit(0)
-  })
+  if (!process.env.PAGER && process.platform === 'win32') {
+    ;(async () => {
+      const { default: pager } = await import('less-pager-mini')
+      await pager(md_path, ['--examine-file'])
+      process.exit(0)
+    })()
+  } else {
+    let pager = 'less'
+    if (process.env.PAGER) {
+      const pager_split = process.env.PAGER.split(/ +/)
+      pager = pager_split.shift()
+      md_path = [...pager_split, ...md_path]
+    }
+
+    const less = child.spawn(pager, md_path, { stdio: 'inherit' })
+    less.on('exit', function () {
+      process.exit(0)
+    })
+  }
 } else if (parsed.configs && parsed.plugin) {
   const js_path = path.join(parsed.configs, 'plugins', `${parsed.plugin}.js`)
   utils.createFile(js_path, plugin_src, { plugin: parsed.plugin, config: parsed.configs }, parsed.force)
