@@ -18,7 +18,7 @@ exports.load_lmtp_ini = function () {
 exports.hook_get_mx = function (next, hmail, domain) {
     if (!hmail.todo.notes.using_lmtp) return next()
 
-    const section = this.cfg[domain] || this.cfg.main
+    const section = (Object.hasOwn(this.cfg, domain) ? this.cfg[domain] : undefined) || this.cfg.main
 
     const mx = {
         using_lmtp: true,

@@ -77,6 +77,7 @@ class Connection {
         this.state = states.PAUSE
         this.encoding = 'utf8'
         this.prev_state = null
+        this.awaiting_data_reply = false
         this.loop_code = null
         this.loop_msg = null
         this.uuid = utils.uuid()
@@ -498,6 +499,23 @@ class Connection {
             if (func) func()
             return
         }
+
+        // First reply after end-of-DATA: the socket is still paused, so bytes
+        // buffered now were pipelined before the client saw this reply (RFC 2920
+        // sec 3.1, SMTP smuggling). The message is already committed, so send its
+        // true result but drop the pipelined commands by closing the connection.
+        if (this.awaiting_data_reply) {
+            this.awaiting_data_reply = false
+            const sock = this.client?.targetsocket ?? this.client
+            if (this.current_data?.length || sock?.readableLength) {
+                this.lognotice('command pipelined after end of DATA - disconnecting', {
+                    remote: this.remote.ip,
+                })
+                this.current_data = null
+                func = () => this.disconnect()
+            }
+        }
+
         // Check to see if DSN object was passed in
         if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
             // Override
@@ -557,8 +575,9 @@ class Connection {
         // Run optional closure before handling and further commands
         if (func) func()
 
-        // Process any buffered commands (PIPELINING)
-        this._process_data()
+        // Process any buffered commands (PIPELINING). Deferred so that a long
+        // pipeline does not recurse respond() -> _process_data()
+        setImmediate(() => this._process_data())
     }
     fail(err, err_data) {
         if (err) this.logwarn(err, err_data)
@@ -664,6 +683,7 @@ class Connection {
     }
     resume() {
         if (this.state >= states.DISCONNECTING) return
+
         this.client.resume()
         if (this.prev_state && this.state === states.PAUSE_DATA) {
             this.state = this.prev_state
@@ -1563,6 +1583,7 @@ class Connection {
     }
     data_done() {
         this.pause()
+        this.awaiting_data_reply = true
         this.totalbytes += this.transaction.data_bytes
 
         // Check message size limit

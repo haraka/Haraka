@@ -908,6 +908,138 @@ describe('connection', () => {
         })
     })
 
+    // GHSA-rp4q-8m6x-c43c receiving side: commands pipelined after end-of-DATA
+    // are the sink for dot-stuffing smuggling; refuse them.
+    // The end-of-DATA reply is the boundary: data_done() sets awaiting_data_reply
+    // and pauses, so any bytes buffered when we send that reply (in current_data,
+    // or unread on the paused socket) were pipelined before the client saw the
+    // reply -> SMTP smuggling (RFC 2920 sec 3.1). respond() refuses them.
+    describe('pipelining after end of DATA', () => {
+        beforeEach(setUp)
+
+        // arm the end-of-DATA reply window; client.write captures the wire bytes
+        const armReply = ({ current = null, readableLength = 0 } = {}) => {
+            this.connection.awaiting_data_reply = true
+            this.connection.current_data = current
+            const calls = { written: '', disconnect: 0, processed: 0 }
+            this.connection.client = {
+                targetsocket: { readableLength },
+                write(buf) {
+                    calls.written += buf
+                },
+            }
+            this.connection.disconnect = () => {
+                calls.disconnect++
+            }
+            this.connection._process_data = () => {
+                calls.processed++
+            }
+            return calls
+        }
+
+        // The message is already committed when we reply, so the true DATA result
+        // is preserved; the pipelined commands are dropped by disconnecting.
+        it('preserves a 250 and disconnects on data buffered in current_data', () => {
+            const calls = armReply({ current: Buffer.from('MAIL FROM:<a@b>\r\n') })
+            this.connection.respond(250, 'Message Queued')
+            assert.match(calls.written, /^250 /, 'true accept reply preserved (no false 554)')
+            assert.equal(calls.disconnect, 1)
+            assert.equal(this.connection.current_data, null)
+            assert.equal(this.connection.awaiting_data_reply, false)
+        })
+
+        it('preserves the reply and disconnects on data unread on the paused socket', () => {
+            const calls = armReply({ readableLength: 20 })
+            this.connection.respond(250, 'Message Queued')
+            assert.match(calls.written, /^250 /)
+            assert.equal(calls.disconnect, 1)
+        })
+
+        it('preserves a deny reply and disconnects (no result rewrite)', () => {
+            const calls = armReply({ current: Buffer.from('MAIL FROM:<a@b>\r\n') })
+            this.connection.respond(550, 'Message denied')
+            assert.match(calls.written, /^550 /, 'a rejected message still reports 550')
+            assert.equal(calls.disconnect, 1)
+        })
+
+        it('drops a pipelined QUIT by disconnecting (no exemptions)', () => {
+            const calls = armReply({ current: Buffer.from('QUIT\r\n') })
+            this.connection.respond(250, 'Message Queued')
+            assert.equal(calls.disconnect, 1)
+        })
+
+        it('sends the intended reply when nothing was pipelined', () => {
+            const calls = armReply()
+            this.connection.respond(250, 'Message Queued')
+            assert.match(calls.written, /^250 /)
+            assert.equal(calls.disconnect, 0)
+            assert.equal(this.connection.awaiting_data_reply, false, 'flag cleared')
+        })
+
+        it('leaves ordinary replies untouched (flag not set)', () => {
+            const calls = armReply({ current: Buffer.from('MAIL FROM:<x@y>\r\n') })
+            this.connection.awaiting_data_reply = false
+            this.connection.respond(250, 'OK')
+            assert.match(calls.written, /^250 /, 'a normal reply is not affected by buffered bytes')
+            assert.equal(calls.disconnect, 0)
+        })
+
+        // valid paths
+
+        it('data_done arms the reply window and proceeds to end_data', () => {
+            let ended = false
+            this.connection.transaction = {
+                data_bytes: 0,
+                header: { get_all: () => [] },
+                header_lines: [],
+                add_header() {},
+                end_data() {
+                    ended = true
+                },
+            }
+            this.connection.auth_results = () => ''
+            this.connection.auth_results_clean = () => {}
+            this.connection.client = { pause() {}, targetsocket: {} }
+            this.connection.data_done()
+            assert.equal(this.connection.awaiting_data_reply, true, 'reply window armed')
+            assert.equal(ended, true, 'no premature reject; end_data runs')
+        })
+
+        it('is one-shot: a compliant next command after the DATA reply is normal', () => {
+            const calls = armReply() // flag set, nothing pipelined
+            this.connection.respond(250, 'Message Queued') // the DATA reply
+            assert.equal(this.connection.awaiting_data_reply, false, 'flag cleared')
+
+            // the client received the reply and pipelines its next transaction;
+            // with the flag cleared this is a normal reply, not smuggling
+            this.connection.current_data = Buffer.from('MAIL FROM:<next@ok>\r\n')
+            calls.written = ''
+            this.connection.respond(250, 'sender OK')
+            assert.match(calls.written, /^250 /)
+            assert.equal(calls.disconnect, 0)
+        })
+
+        it('resume proceeds normally', (t, done) => {
+            let resumed = false
+            let processed = false
+            this.connection.client = {
+                resume() {
+                    resumed = true
+                },
+                targetsocket: {},
+            }
+            this.connection._process_data = () => {
+                processed = true
+            }
+            this.connection.resume()
+            assert.equal(resumed, true, 'socket resumed')
+            setImmediate(() => {
+                assert.equal(processed, true, 'buffered commands processed')
+                done()
+            })
+        })
+    })
+
     describe('header injection', () => {
         beforeEach(setUp)
 

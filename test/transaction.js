@@ -4,6 +4,7 @@ const { describe, it, beforeEach } = require('node:test')
 const assert = require('node:assert')
 const fs = require('node:fs')
 const path = require('node:path')
+const { Writable } = require('node:stream')
 
 const config = require('haraka-config')
 const transaction = require('../transaction')
@@ -12,6 +13,20 @@ const transaction = require('../transaction')
 
 const endData = (txn) => new Promise((resolve) => txn.end_data(resolve))
 const getData = (stream) => new Promise((resolve) => stream.get_data(resolve))
+
+// Serialise message_stream to a backend exactly as smtp_client.start_data() does.
+const relayBytes = (txn) =>
+    new Promise((resolve) => {
+        const chunks = []
+        const sink = new Writable({
+            write(c, e, cb) {
+                chunks.push(c)
+                cb()
+            },
+        })
+        sink.on('finish', () => resolve(Buffer.concat(chunks).toString('binary')))
+        txn.message_stream.pipe(sink, { dot_stuffed: false, ending_dot: true, end: true })
+    })
 
 const setUp = () => {
     this.transaction = transaction.createTransaction(undefined, config.get('smtp.ini'))
@@ -37,6 +52,42 @@ function write_file_data_to_transaction(test_transaction, filename) {
 
 describe('transaction', () => {
     beforeEach(setUp)
+
+    // GHSA-rp4q-8m6x-c43c: a '.' line dot-stuffed as '..\r\n' inside the header
+    // section must not reach the backend as a bare end-of-DATA terminator.
+    describe('SMTP transaction-injection (dot-stuffing on relay)', () => {
+        const countTerminators = (wire) => wire.split('\r\n').filter((l) => l === '.').length
+
+        const feed = async (lines) => {
+            for (const l of lines) this.transaction.add_data(Buffer.from(l, 'binary'))
+            await endData(this.transaction)
+            return relayBytes(this.transaction)
+        }
+
+        it('drops a dot-stuffed lone dot in the header section', async () => {
+            const wire = await feed([
+                'From: a@b.com\r\n',
+                'Subject: x\r\n',
+                '..\r\n',
+                'To: c@d.com\r\n',
+                '\r\n',
+                'body\r\n',
+            ])
+            assert.equal(countTerminators(wire), 1, 'only the real end-of-DATA terminator')
+            assert.match(wire, /Subject: x\r\nTo: c@d\.com/, 'the smuggled header line is removed entirely')
+        })
+
+        it('re-stuffs a dot-stuffed lone dot in the body section', async () => {
+            const wire = await feed(['From: a@b.com\r\n', '\r\n', 'body\r\n', '..\r\n', 'more\r\n'])
+            assert.equal(countTerminators(wire), 1)
+        })
+
+        it('preserves a legitimately dot-stuffed header on relay', async () => {
+            const wire = await feed(['From: a@b.com\r\n', '..leading: v\r\n', '\r\n', 'body\r\n'])
+            assert.match(wire, /\r\n\.\.leading: v\r\n/)
+            assert.equal(countTerminators(wire), 1)
+        })
+    })
 
     describe('createTransaction', () => {
         it('generates a UUID when none is provided', () => {

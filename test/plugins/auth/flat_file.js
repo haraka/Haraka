@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('node:assert')
+const crypto = require('node:crypto')
 const { describe, it, beforeEach } = require('node:test')
 
 const { callHook, makeConnection, makePlugin } = require('haraka-test-fixtures')
@@ -116,6 +117,106 @@ describe('auth/flat_file', () => {
             plugin.cfg.users.numericuser = 12345
             plugin.get_plain_passwd('numericuser', {}, (pw) => {
                 assert.equal(pw, '12345')
+                done()
+            })
+        })
+
+        // GHSA-xf4w-8v5p-24pc: inherited Object.prototype members are truthy
+        const inherited = [
+            '__proto__',
+            'constructor',
+            'valueOf',
+            'toString',
+            'hasOwnProperty',
+            'isPrototypeOf',
+            'propertyIsEnumerable',
+            'toLocaleString',
+        ]
+
+        for (const name of inherited) {
+            it(`refuses inherited prototype member '${name}'`, (t, done) => {
+                plugin.get_plain_passwd(name, {}, (pw) => {
+                    assert.equal(pw, undefined)
+                    done()
+                })
+            })
+
+            it(`refuses inherited '${name}' with no users configured`, (t, done) => {
+                plugin.cfg.users = {}
+                plugin.get_plain_passwd(name, {}, (pw) => {
+                    assert.equal(pw, undefined)
+                    done()
+                })
+            })
+        }
+
+        it('refuses an account configured with an empty password', (t, done) => {
+            plugin.cfg.users.nopass = ''
+            plugin.get_plain_passwd('nopass', {}, (pw) => {
+                assert.equal(pw, undefined)
+                done()
+            })
+        })
+    })
+
+    describe('authentication bypass regressions', () => {
+        const ticket = '<60c.1a005120380@haraka.test>'
+        let conn
+
+        beforeEach(() => {
+            conn = makeConnection()
+            conn.notes.auth_ticket = ticket
+            plugin.cfg.users = {}
+        })
+
+        const cram = (passwd) => crypto.createHmac('md5', passwd).update(ticket).digest('hex')
+
+        for (const name of ['__proto__', 'constructor', 'valueOf', 'hasOwnProperty']) {
+            const guess = {}[name].toString()
+
+            it(`AUTH PLAIN as '${name}' fails with no users configured`, (t, done) => {
+                plugin.check_plain_passwd(conn, name, guess, (valid) => {
+                    assert.equal(valid, false)
+                    done()
+                })
+            })
+
+            it(`AUTH CRAM-MD5 as '${name}' fails with no users configured`, (t, done) => {
+                plugin.check_cram_md5_passwd(conn, name, cram(guess), (valid) => {
+                    assert.equal(valid, false)
+                    done()
+                })
+            })
+        }
+
+        it('AUTH PLAIN still succeeds for a configured account', (t, done) => {
+            plugin.cfg.users = { matt: 'test' }
+            plugin.check_plain_passwd(conn, 'matt', 'test', (valid) => {
+                assert.equal(valid, true)
+                done()
+            })
+        })
+
+        it('AUTH CRAM-MD5 still succeeds for a configured account', (t, done) => {
+            plugin.cfg.users = { matt: 'test' }
+            plugin.check_cram_md5_passwd(conn, 'matt', cram('test'), (valid) => {
+                assert.equal(valid, true)
+                done()
+            })
+        })
+
+        it('AUTH PLAIN fails for a configured account with the wrong password', (t, done) => {
+            plugin.cfg.users = { matt: 'test' }
+            plugin.check_plain_passwd(conn, 'matt', 'wrong', (valid) => {
+                assert.equal(valid, false)
+                done()
+            })
+        })
+
+        it('AUTH CRAM-MD5 fails for an account with an empty password', (t, done) => {
+            plugin.cfg.users = { nopass: '' }
+            plugin.check_cram_md5_passwd(conn, 'nopass', cram(''), (valid) => {
+                assert.equal(valid, false)
                 done()
             })
         })

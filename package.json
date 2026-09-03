@@ -9,7 +9,7 @@
     "server",
     "email"
   ],
-  "version": "3.3.3",
+  "version": "3.3.4",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -21,20 +21,20 @@
   },
   "dependencies": {
     "@haraka/email-address": "~3.1.6",
-    "haraka-config": "~1.6.3",
+    "haraka-config": "~1.7.0",
     "haraka-constants": "~1.0.8",
     "haraka-dsn": "~1.2.1",
-    "haraka-email-message": "~1.4.3",
-    "haraka-net-utils": "~1.9.2",
+    "haraka-email-message": "~1.4.4",
+    "haraka-net-utils": "~1.9.3",
     "haraka-notes": "~1.1.3",
     "haraka-plugin-redis": "~2.1.0",
     "haraka-results": "~2.4.0",
     "haraka-tld": "~1.3.6",
     "haraka-utils": "~2.2.1",
     "ipaddr.js": "~2.5.0",
-    "node-gyp": "~13.0.1",
+    "node-gyp": "~13.0.2",
     "nopt": "~10.0.1",
-    "redis": "~6.2.0",
+    "redis": "~6.2.1",
     "semver": "~7.8.5"
   },
   "optionalDependencies": {
@@ -46,7 +46,7 @@
     "haraka-plugin-bounce": "~2.2.1",
     "haraka-plugin-clamd": "~1.0.6",
     "haraka-plugin-dcc": "~1.1.1",
-    "haraka-plugin-dkim": "~1.3.0",
+    "haraka-plugin-dkim": "~1.3.1",
     "haraka-plugin-dns-list": "~1.3.0",
     "haraka-plugin-early_talker": "~1.0.2",
     "haraka-plugin-fcrdns": "~1.2.1",

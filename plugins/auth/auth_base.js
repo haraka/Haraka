@@ -242,7 +242,11 @@ exports.auth_cram_md5 = function (next, connection, params) {
 exports.hexi = (number) => String(Math.abs(parseInt(number)).toString(16))
 
 exports.constrain_sender = function (next, connection, params) {
-    if (this?.cfg?.main?.constrain_sender === false) return next()
+    // Inheriting plugins declare this in different sections: flat_file uses
+    // `+core.constrain_sender`, auth_vpopmaild uses `+main.constrain_sender`.
+    // Only the declared section is populated, so consult both.
+    const constrain = this?.cfg?.main?.constrain_sender ?? this?.cfg?.core?.constrain_sender
+    if (constrain === false) return next()
 
     const au = connection.results.get('auth')?.user
     if (!au) return next()

@@ -1,4 +1,4 @@
-<!-- agents-version: 2 -->
+<!-- agents-version: 3 -->
 
 # AGENTS.md
 
@@ -8,7 +8,7 @@ If a package-level instruction file exists, it is authoritative for that package
 
 ## Repository model
 
-- This file is shared verbatim across every Haraka repository, so it describes the whole family — not just the repo you are in. Each repo is an independent npm package with its own `package.json`, tests, and version history; there is no root workspace or shared test runner. Run every command from the package root.
+- This file is shared across every Haraka repository. It describes the whole family — not just this repo. Each repo is an independent npm package, there is no root workspace. Run every command from the package root.
 - Repos are worked on both standalone and as sibling checkouts in a combined tree (`Haraka/`, `plugin/<name>/`, …). Don't assume sibling packages are present on disk.
 - The family:
   - `Haraka` — core SMTP server (has `./run_tests`).
@@ -21,15 +21,22 @@ If a package-level instruction file exists, it is authoritative for that package
 
 ## Working agreement
 
-- Do only what was asked. When you spot an adjacent bug or smell, surface it and ask before expanding scope — don't silently refactor, but don't ignore it either.
+- Do only what was asked. When you spot an adjacent bug or smell, surface it and ask before expanding scope. Don't silently refactor, and don't ignore it.
 - Preserve compatibility; break it only for an explicit, stated reason.
 - For protocol behavior, identify the relevant RFC and verify conformance against the existing implementation.
 
 ## Source control
 
-- Never run history- or remote-mutating commands (`git commit`, `git push`, `git tag`, `gh pr create`) unless explicitly asked. Stage diffs; the human reviews, commits, and pushes.
-- Propose a commit message in Conventional Commit format, imperative mood.
-- Update `CHANGELOG.md` under `### Unreleased`: one terse clause per change, least markup. Rationale belongs in the code or PR, not the bullet.
+- Never run history- or remote-mutating commands (`git commit`, `git push`, `git tag`, `gh pr create`) unless explicitly asked.
+- create diffs; the human reviews, commits, and pushes.
+- No trailers on commit messages or PR bodies.
+- When asked to generate a PR:
+  - keep it succinct, terse, and DRY
+  - Post a link to it in the console
+- Document changes relative to main in CHANGELOG.md
+  - one clear concise entry per change, < 50 chars
+  - prefer Conventional Commit format, imperative mood.
+  - Rationale belongs in the code or PR, not the bullet.
 
 ## Coding standards
 
@@ -39,11 +46,28 @@ If a package-level instruction file exists, it is authoritative for that package
 - Prefer: promise APIs (`fs/promises`), `for...of`/`for...in` over `forEach`, `node:readline` for line parsing, template literals over concatenation, `true`/`false` over `1`/`0`, and guard-style early returns.
 - Remove commented-out code (it lives in git history). `npm run qlty` must pass without warnings.
 
+## Concision
+
+- Don't Repeat Yourself: Say each thing exactly once, in the place it belongs.
+- Sentences: must carry non-obvious facts the reader cannot get from the surroundings.
+- Cut scaffolding, keep facts.
+
+Never write these:
+
+- **Announcements.** "One question:", "Two reasons:", "The point is:", "Here's the thing:". Say the thing. If you announce a count, the count must be right — so don't announce one.
+- **Justification tails.** A clause after a comma or dash that argues for the clause before it: "…and a guess there is worse than none", "…which is the failure this exists to prevent".
+- **The contrast tic.** "X, not Y" and "X rather than Y" where Y is obvious. State X.
+- **Clauses doing an adjective's job.** "a setting nobody has written" is "an unwritten setting"; "a copy nobody has opened" is "an unopened copy"; "still has to" is "must". A state with a name takes the name.
+- **Closing morals.** A final sentence restating the paragraph's point.
+
 ## Comments
 
-- Prefer self-documenting code: a better name beats a comment.
 - Keep only WHY comments — a hidden constraint, an invariant, a workaround for a specific bug, or an RFC citation that explains otherwise-surprising behavior.
-- Delete WHAT comments that restate the code, and comments that narrate history or audit findings. If a rename makes a comment redundant, delete it rather than updating it.
+- Delete WHAT comments that restate the code.
+- When a rename makes a comment redundant, delete it.
+- Never narrate history or audit findings.
+- Never count the code — counts rot.
+- Prefer self-documenting code: a better name beats any comment.
 
 ## Haraka plugins
 
