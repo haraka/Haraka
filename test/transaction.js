@@ -56,7 +56,8 @@ describe('transaction', () => {
     // GHSA-rp4q-8m6x-c43c: a '.' line dot-stuffed as '..\r\n' inside the header
     // section must not reach the backend as a bare end-of-DATA terminator.
     describe('SMTP transaction-injection (dot-stuffing on relay)', () => {
-        const countTerminators = (wire) => wire.split('\r\n').filter((l) => l === '.').length
+        // split on bare LF too: a '\n.\n' is the smuggling differential itself
+        const countTerminators = (wire) => wire.split(/\r?\n/).filter((l) => l === '.').length
 
         const feed = async (lines) => {
             for (const l of lines) this.transaction.add_data(Buffer.from(l, 'binary'))
@@ -80,6 +81,15 @@ describe('transaction', () => {
         it('re-stuffs a dot-stuffed lone dot in the body section', async () => {
             const wire = await feed(['From: a@b.com\r\n', '\r\n', 'body\r\n', '..\r\n', 'more\r\n'])
             assert.equal(countTerminators(wire), 1)
+        })
+
+        // no header/body separator: end_data() reclassifies the stored, de-stuffed
+        // header line as body, so it must be re-stuffed on the way to the stream
+        it('re-stuffs a dot-stuffed lone dot when the header/body separator is missing', async () => {
+            const wire = await feed(['From: a@b.com\r\n', '..\r\n', 'more\r\n'])
+            assert.equal(countTerminators(wire), 1, 'only the real end-of-DATA terminator')
+            assert.match(wire, /\r\n\.\.\r\n/, 'recovered body line keeps its wire-form stuffing')
+            assert.ok(!/[^\r]\n/.test(wire), 'recovered body lines are CRLF, never bare LF')
         })
 
         it('preserves a legitimately dot-stuffed header on relay', async () => {

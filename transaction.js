@@ -189,8 +189,12 @@ class Transaction {
                 }
             }
 
+            // header_lines holds de-stuffed values for the header parser; a line
+            // reclassified as body must go back to wire form
             for (const bodyLine of body_lines) {
-                if (!this.discard_data) this.message_stream.add_line(Buffer.from(`${bodyLine}\n`))
+                if (this.discard_data) continue
+                const wire = this.add_dot_stuffing_and_ensure_crlf_newlines(bodyLine.replace(/\r?\n?$/, '\n'))
+                this.message_stream.add_line(wire)
             }
         }
         if (this.header_pos && this.parse_body) {
