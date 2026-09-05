@@ -4,8 +4,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-### [3.3.4] - 2026-09-04
-
 - fix(connection): bound synchronous recursion
 - fix(auth_proxy): don't mutate hosts array
 - fix(security): preserve dot-stuffing on relay
