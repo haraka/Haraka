@@ -3,7 +3,7 @@
 const utils = require('haraka-utils')
 const net_utils = require('haraka-net-utils')
 
-const tls_socket = require('./tls_socket')
+const tls_socket = require('../../tls_socket')
 
 const smtp_regexp = /^(\d{3})([ -])(.*)/
 
@@ -28,36 +28,38 @@ exports.hook_capabilities = (next, connection) => {
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    let domain = /@([^@]+)$/.exec(user)
-    if (domain) {
-        domain = domain[1].toLowerCase()
-    } else {
-        // AUTH user not in user@domain.com format
+    const match = /@([^@]+)$/.exec(user)
+    if (!match) {
         connection.logerror(this, `AUTH user="${user}" error="not in required format"`)
         return cb(false)
     }
+    const domain = match[1].toLowerCase()
 
-    // Check if domain exists in configuration file
-    const config = this.config.get('auth_proxy.ini')
-    if (!config.domains[domain]) {
+    const { domains } = this.config.get('auth_proxy.ini')
+
+    const route = Object.hasOwn(domains ?? {}, domain) ? domains[domain] : undefined
+    const hosts = typeof route === 'string' ? route.split(/[,; ]/) : Array.isArray(route) ? route : null
+
+    if (!hosts?.length) {
         connection.logerror(this, `AUTH user="${user}" error="domain '${domain}' is not defined"`)
         return cb(false)
     }
 
-    this.try_auth_proxy(connection, config.domains[domain].split(/[,; ]/), user, passwd, cb)
+    this.try_auth_proxy(connection, hosts, user, passwd, cb)
 }
 
 exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
-    if (!hosts || (hosts && !hosts.length)) return cb(false)
-    if (typeof hosts !== 'object') {
-        hosts = [hosts]
-    }
+    if (typeof hosts === 'string') hosts = [hosts]
+    if (!hosts?.length) return cb(false)
 
     const self = this
-    const ep = net_utils.endpoint(hosts.shift(), 25)
+    // Take the head without mutating the caller's array: hosts may be the cached
+    // config route, and shift() would consume it across authentication attempts.
+    const [current, ...remaining] = hosts
+    const ep = net_utils.endpoint(current, 25)
     if (ep instanceof Error) {
         connection.logerror(this, `invalid host: ${ep.message}`)
-        return this.try_auth_proxy(connection, hosts, user, passwd, cb)
+        return this.try_auth_proxy(connection, remaining, user, passwd, cb)
     }
     const { host, port } = ep
     let methods = []
@@ -75,16 +77,14 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     socket.on('close', () => {
         if (!auth_complete) {
             // Try next host
-            return this.try_auth_proxy(connection, hosts, user, passwd, cb)
+            return this.try_auth_proxy(connection, remaining, user, passwd, cb)
         }
         connection.loginfo(this, `AUTH user="${user}" host="${host}" success=${auth_success}`)
         cb(auth_success)
     })
     socket.on('timeout', () => {
         connection.logerror(this, 'connection timed out')
-        socket.end()
-        // Try next host
-        this.try_auth_proxy(connection, hosts, user, passwd, cb)
+        socket.destroy()
     })
     socket.on('error', (err) => {
         connection.logerror(this, `connection failed to host ${host}: ${err}`)

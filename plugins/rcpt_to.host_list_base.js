@@ -2,7 +2,7 @@
 // Base class for plugins that use config/host_list
 
 exports.load_host_list = function () {
-    const lowered_list = {} // assemble
+    const lowered_list = Object.create(null)
     const raw_list = this.config.get('host_list', 'list', () => {
         this.load_host_list()
     })

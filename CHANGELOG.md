@@ -4,7 +4,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- doc(CoreConfig): update stun docs
+- fix(connection): bound synchronous recursion
+- fix(auth_proxy): don't mutate hosts array
+- fix(security): preserve dot-stuffing on relay
+- fix(security): block prototype-chain lookups
+- change(auth_proxy): load shared tls_socket
+- fix(auth_base): read the config set in the .ini
+- deps(several): bump to latest
+- doc(CoreConfig): update stun docs #3613
 
 ### [3.3.3] - 2026-08-04
 
@@ -1918,3 +1925,4 @@ config files.
 [3.3.1]: https://github.com/haraka/Haraka/releases/tag/v3.3.1
 [3.3.2]: https://github.com/haraka/Haraka/releases/tag/v3.3.2
 [3.3.3]: https://github.com/haraka/Haraka/releases/tag/v3.3.3
+[3.3.4]: https://github.com/haraka/Haraka/releases/tag/v3.3.4

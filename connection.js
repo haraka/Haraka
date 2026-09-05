@@ -557,8 +557,9 @@ class Connection {
         // Run optional closure before handling and further commands
         if (func) func()
 
-        // Process any buffered commands (PIPELINING)
-        this._process_data()
+        // Process any buffered commands (PIPELINING). Deferred so that a long
+        // pipeline does not recurse
+        setImmediate(() => this._process_data())
     }
     fail(err, err_data) {
         if (err) this.logwarn(err, err_data)

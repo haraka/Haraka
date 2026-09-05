@@ -186,6 +186,69 @@ describe('smtp_forward load_smtp_forward_ini', () => {
 
 // ─── get_config ───────────────────────────────────────────────────────────────
 
+describe('smtp_forward route_for', () => {
+    let plugin, connection
+
+    // Every inherited member is truthy, but only these are also valid RFC-5321
+    // domain labels. `__proto__` is not: @haraka/email-address rejects
+    // `matt@__proto__` outright, so it cannot arrive as an envelope domain.
+    const AS_DOMAIN = ['constructor', 'valueOf', 'toString', 'hasOwnProperty', 'isPrototypeOf']
+    const INHERITED = ['__proto__', ...AS_DOMAIN]
+
+    beforeEach(() => {
+        plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        // JSON round-trip restores Object.prototype, so this exercises the
+        // plugin guard rather than haraka-config's null-prototype sections.
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        connection = makeConnection({ withTxn: true })
+    })
+
+    for (const name of INHERITED) {
+        it(`route_for('${name}') is undefined`, () => {
+            assert.equal(plugin.route_for(name), undefined)
+        })
+
+        it(`set_queue uses main host for domain '${name}'`, () => {
+            assert.equal(plugin.set_queue(connection, 'smtp_forward', name), true)
+            assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://localhost')
+        })
+    }
+
+    for (const name of AS_DOMAIN) {
+        it(`get_config falls back to main for recipient domain '${name}'`, () => {
+            connection.transaction.rcpt_to.push(new Address(`<matt@${name}>`))
+            const cfg = plugin.get_config(connection)
+            assert.equal(cfg.host, 'localhost')
+            assert.equal(cfg.port, 2555)
+        })
+
+        it(`check_sender ignores sender domain '${name}'`, (t, done) => {
+            connection.relaying = false
+            plugin.check_sender(
+                (rc) => {
+                    assert.equal(rc, undefined)
+                    done()
+                },
+                connection,
+                [new Address(`<matt@${name}>`)],
+            )
+        })
+    }
+
+    it('route_for still resolves a configured domain', () => {
+        assert.equal(plugin.route_for('test.com').host, '1.2.3.4')
+    })
+
+    it('route_for returns undefined for an unconfigured domain', () => {
+        assert.equal(plugin.route_for('nosuch.com'), undefined)
+    })
+
+    it('route_for tolerates a missing key', () => {
+        assert.equal(plugin.route_for(undefined), undefined)
+        assert.equal(plugin.route_for(''), undefined)
+    })
+})
+
 describe('smtp_forward get_config', () => {
     let plugin, connection
 

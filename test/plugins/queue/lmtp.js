@@ -134,4 +134,44 @@ describe('queue/lmtp', () => {
             }, conn)
         })
     })
+
+    describe('inherited prototype members are not sections', () => {
+        let plugin
+
+        beforeEach(() => {
+            plugin = makePlugin('queue/lmtp', { register: false })
+            plugin.load_lmtp_ini()
+            plugin.cfg = { main: { host: '10.0.0.1', port: 2400 } }
+        })
+
+        for (const name of ['__proto__', 'constructor', 'valueOf', 'toString', 'hasOwnProperty']) {
+            it(`domain '${name}' falls back to [main]`, (t, done) => {
+                const hmail = { todo: { notes: { using_lmtp: true } } }
+                plugin.hook_get_mx(
+                    (rc, mx) => {
+                        assert.equal(rc, OK)
+                        assert.equal(mx.exchange, '10.0.0.1')
+                        assert.equal(mx.port, 2400)
+                        done()
+                    },
+                    hmail,
+                    name,
+                )
+            })
+        }
+
+        it('still resolves a configured domain section', (t, done) => {
+            plugin.cfg['test.com'] = { host: '1.2.3.4', port: 24 }
+            const hmail = { todo: { notes: { using_lmtp: true } } }
+            plugin.hook_get_mx(
+                (rc, mx) => {
+                    assert.equal(rc, OK)
+                    assert.equal(mx.exchange, '1.2.3.4')
+                    done()
+                },
+                hmail,
+                'test.com',
+            )
+        })
+    })
 })

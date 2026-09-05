@@ -62,6 +62,12 @@ exports.load_smtp_forward_ini = function () {
     this.tls_options = tls_socket.load_plugin_tls_options(this.cfg.tls || {})
 }
 
+exports.route_for = function (key) {
+    if (!key) return undefined
+
+    return Object.hasOwn(this.cfg, key) ? this.cfg[key] : undefined
+}
+
 exports.get_config = function (conn) {
     if (!conn.transaction) return this.cfg.main
 
@@ -75,11 +81,10 @@ exports.get_config = function (conn) {
         dom = conn.transaction.rcpt_to[0].host
     }
 
-    if (address && this.cfg[address]) return this.cfg[address]
-    if (!dom) return this.cfg.main
-    if (!this.cfg[dom]) return this.cfg.main // no specific route
+    const by_address = this.route_for(address)
+    if (by_address) return by_address
 
-    return this.cfg[dom]
+    return this.route_for(dom) || this.cfg.main // no specific route
 }
 
 exports.is_outbound_enabled = function (dom_cfg) {
@@ -99,7 +104,7 @@ exports.check_sender = function (next, connection, params) {
     }
 
     const domain = params[0].host.toLowerCase()
-    if (!this.cfg[domain]) return next()
+    if (!this.route_for(domain)) return next()
 
     // domain is defined in smtp_forward.ini
     txn.notes.local_sender = true
@@ -114,8 +119,7 @@ exports.check_sender = function (next, connection, params) {
 }
 
 exports.set_queue = function (connection, queue_wanted, domain) {
-    let dom_cfg = this.cfg[domain]
-    if (dom_cfg === undefined) dom_cfg = {}
+    const dom_cfg = this.route_for(domain) ?? {}
 
     if (!queue_wanted) queue_wanted = dom_cfg.queue || this.cfg.main.queue
     if (!queue_wanted) return true
@@ -161,7 +165,7 @@ exports.check_recipient = function (next, connection, params) {
     }
 
     const domain = rcpt.host.toLowerCase()
-    if (this.cfg[domain] !== undefined) {
+    if (this.route_for(domain) !== undefined) {
         if (this.set_queue(connection, 'smtp_forward', domain)) {
             txn.results.add(this, { pass: 'rcpt_to' })
             return next(OK)
@@ -346,7 +350,7 @@ exports.get_mx = function (next, hmail, domain) {
 
     const dom =
         this.cfg.main.domain_selector === 'mail_from' ? hmail.todo.mail_from.host.toLowerCase() : domain.toLowerCase()
-    const cfg = this.cfg[dom]
+    const cfg = this.route_for(dom)
 
     if (cfg === undefined) {
         this.logdebug(`using DNS MX for: ${domain}`)
@@ -364,7 +368,7 @@ exports.get_mx = function (next, hmail, domain) {
     // apply auth/mx options
     for (const o of mx_opts) {
         if (cfg[o] === undefined) continue
-        mx[o] = this.cfg[dom][o]
+        mx[o] = cfg[o]
     }
 
     next(OK, mx)

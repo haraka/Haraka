@@ -142,8 +142,10 @@ class Transaction {
         } else if (this.header_pos === 0) {
             // Build up headers
             if (this.header_lines.length < (this.cfg?.headers?.max_lines || 1000)) {
-                if (line[0] === 0x2e) line = line.slice(1) // Strip leading '.'
-                this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'))
+                // De-stuff one leading dot for the parsed header value (RFC 5321
+                // §4.5.2), but keep the original dot-stuffed `line` for message_stream
+                const header_line = line[0] === 0x2e ? line.slice(1) : line
+                this.header_lines.push(header_line.toString(this.encoding).replace(/\r\n$/, '\n'))
             }
         } else if (this.parse_body) {
             this.ensure_body()
@@ -187,8 +189,12 @@ class Transaction {
                 }
             }
 
+            // header_lines holds de-stuffed values for the header parser; a line
+            // reclassified as body must go back to wire form
             for (const bodyLine of body_lines) {
-                if (!this.discard_data) this.message_stream.add_line(Buffer.from(`${bodyLine}\n`))
+                if (this.discard_data) continue
+                const wire = this.add_dot_stuffing_and_ensure_crlf_newlines(bodyLine.replace(/\r?\n?$/, '\n'))
+                this.message_stream.add_line(wire)
             }
         }
         if (this.header_pos && this.parse_body) {

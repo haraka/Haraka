@@ -77,8 +77,7 @@ exports.get_sock_opts = function (user) {
     }
 
     const domain = user.split('@')[1]
-    let sect = this.cfg.main
-    if (domain && this.cfg[domain]) sect = this.cfg[domain]
+    const sect = domain && Object.hasOwn(this.cfg, domain) ? this.cfg[domain] : this.cfg.main
 
     if (sect.port) this.sock_opts.port = sect.port
     if (sect.host) this.sock_opts.host = sect.host
@@ -111,11 +110,12 @@ exports.get_vpopmaild_socket = function (user) {
 }
 
 exports.get_plain_passwd = function (user, connection, cb) {
-    const socket = this.get_vpopmaild_socket(user)
-    if (!this.sock_opts.sysadmin) {
+    if (!this.get_sock_opts(user).sysadmin) {
         this.logerror('missing sysadmin credentials')
         return cb(null)
     }
+
+    const socket = this.get_vpopmaild_socket(user)
 
     const sys = this.sock_opts.sysadmin.split(':')
     let plain_pass = null

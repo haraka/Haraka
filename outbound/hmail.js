@@ -1358,7 +1358,7 @@ class HMailItem extends events.EventEmitter {
             return this.discard() // calls next_cb
         }
 
-        let delay = params.delay * 1000
+        let delay = params?.delay * 1000
 
         if (retval === constants.denysoft) {
             delay = parseInt(msg, 10) * 1000

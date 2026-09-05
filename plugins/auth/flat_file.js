@@ -38,7 +38,9 @@ exports.hook_capabilities = function (next, connection) {
 }
 
 exports.get_plain_passwd = function (user, connection, cb) {
-    if (this.cfg.users[user]) return cb(this.cfg.users[user].toString())
+    if (Object.hasOwn(this.cfg.users, user) && this.cfg.users[user]) {
+        return cb(this.cfg.users[user].toString())
+    }
 
     cb()
 }

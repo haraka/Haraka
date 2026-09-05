@@ -79,3 +79,36 @@ describe('get_plain_passwd', () => {
         }
     })
 })
+
+describe('get_sock_opts prototype members', () => {
+    beforeEach(_set_up)
+
+    for (const name of ['__proto__', 'constructor', 'valueOf', 'toString', 'hasOwnProperty']) {
+        it(`user '@${name}' does not select an inherited section`, () => {
+            this.plugin.cfg = { main: { host: '10.9.8.7', port: 8900, sysadmin: 'a:b' } }
+            const opts = this.plugin.get_sock_opts(`matt@${name}`)
+            assert.equal(opts.host, '10.9.8.7')
+            assert.equal(opts.port, 8900)
+            assert.equal(opts.sysadmin, 'a:b')
+        })
+    }
+
+    it('still selects a configured domain section', () => {
+        this.plugin.cfg = { main: { host: '10.9.8.7' }, 'test.com': { host: '1.2.3.4' } }
+        assert.equal(this.plugin.get_sock_opts('matt@test.com').host, '1.2.3.4')
+    })
+
+    it('does not open a socket when sysadmin is missing', (t, done) => {
+        this.plugin.cfg = { main: { host: '127.0.0.1', port: 89 } }
+        let opened = false
+        this.plugin.get_vpopmaild_socket = () => {
+            opened = true
+            return null
+        }
+        this.plugin.get_plain_passwd('matt@example.com', this.connection, (pw) => {
+            assert.equal(pw, null)
+            assert.equal(opened, false, 'socket must not be opened before the sysadmin check')
+            done()
+        })
+    })
+})

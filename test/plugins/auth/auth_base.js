@@ -604,12 +604,70 @@ describe('auth_base', () => {
                 [this.mfrom],
             )
         })
+        // flat_file declares +core.constrain_sender; auth_vpopmaild declares
+        // +main.constrain_sender. The shared hook must honour either.
+        it('is disabled via the core section (flat_file)', (t, done) => {
+            this.mfrom = new Address('user@example.net')
+            this.connection.results.add({ name: 'auth' }, { user: 'user@example.com' })
+            this.plugin.cfg = { main: {}, core: { constrain_sender: false } }
+            this.plugin.constrain_sender(
+                (resCode) => {
+                    assert.equal(resCode, undefined)
+                    done()
+                },
+                this.connection,
+                [this.mfrom],
+            )
+        })
+
+        it('still denies a mismatch when enabled in the core section', (t, done) => {
+            this.mfrom = new Address('user@example.net')
+            this.connection.results.add({ name: 'auth' }, { user: 'user@example.com' })
+            this.plugin.cfg = { main: {}, core: { constrain_sender: true } }
+            this.plugin.constrain_sender(
+                (resCode) => {
+                    assert.equal(resCode, DENY)
+                    done()
+                },
+                this.connection,
+                [this.mfrom],
+            )
+        })
+
         it('constrain_sender, no domain', (t, done) => {
             this.mfrom = new Address('user@example.com')
             this.connection.results.add({ name: 'auth' }, { user: 'user' })
             this.plugin.constrain_sender(
                 (resCode) => {
                     assert.equal(resCode, undefined)
+                    done()
+                },
+                this.connection,
+                [this.mfrom],
+            )
+        })
+
+        it('is disabled by main.constrain_sender=false', (t, done) => {
+            this.mfrom = new Address('user@example.net')
+            this.connection.results.add({ name: 'auth' }, { user: 'user@example.com' })
+            this.plugin.cfg = { main: { constrain_sender: false } }
+            this.plugin.constrain_sender(
+                (resCode) => {
+                    assert.equal(resCode, undefined)
+                    done()
+                },
+                this.connection,
+                [this.mfrom],
+            )
+        })
+
+        it('still denies a mismatch when main.constrain_sender is true', (t, done) => {
+            this.mfrom = new Address('user@example.net')
+            this.connection.results.add({ name: 'auth' }, { user: 'user@example.com' })
+            this.plugin.cfg = { main: { constrain_sender: true } }
+            this.plugin.constrain_sender(
+                (resCode) => {
+                    assert.equal(resCode, DENY)
                     done()
                 },
                 this.connection,

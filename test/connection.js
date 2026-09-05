@@ -908,6 +908,35 @@ describe('connection', () => {
         })
     })
 
+    describe('pipelined command scheduling', () => {
+        beforeEach(setUp)
+
+        // respond() used to call _process_data() directly, so a group of N pipelined
+        // commands nested N respond() frames before any of them unwound
+        it('defers buffered commands so respond does not recurse', () => {
+            const conn = this.connection
+            conn.client = { write() {}, destroy() {}, pause() {}, resume() {} }
+            conn.esmtp = true
+            conn.state = constants.connection.state.CMD
+            conn.current_data = Buffer.from('HELP\r\n'.repeat(6))
+
+            let depth = 0
+            let deepest = 0
+            const process_data = conn._process_data.bind(conn)
+            conn._process_data = () => {
+                deepest = Math.max(deepest, ++depth)
+                try {
+                    process_data()
+                } finally {
+                    depth--
+                }
+            }
+
+            conn._process_data()
+            assert.equal(deepest, 1, 'each reply unwinds before the next command runs')
+        })
+    })
+
     describe('header injection', () => {
         beforeEach(setUp)
 

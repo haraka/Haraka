@@ -237,6 +237,32 @@ test('tls_socket', async (t) => {
         }
     })
 
+    await t.test('load_tls_ini', async (t) => {
+        const origConfig = tls_socket.config
+        const origCfg = tls_socket.cfg
+
+        t.after(() => {
+            tls_socket.config = origConfig
+            tls_socket.cfg = origCfg
+        })
+
+        // A tls.ini with none of the host sections makes every fallback fire. The maps
+        // are indexed by hostname, so an inherited Object.prototype member such as
+        // 'constructor' must not read as a configured host (GHSA-xf4w-8v5p-24pc class).
+        await t.test('host maps fall back to null-prototype objects', () => {
+            tls_socket.config = require('haraka-config').module_config(path.join(__dirname, 'no_such_dir'))
+            tls_socket.cfg = undefined
+            const cfg = tls_socket.load_tls_ini({ role: 'client' })
+
+            for (const map of ['no_tls_hosts', 'mutual_auth_hosts', 'mutual_auth_hosts_exclude']) {
+                assert.equal(Object.getPrototypeOf(cfg[map]), null, `${map} has no prototype`)
+                for (const name of ['constructor', '__proto__']) {
+                    assert.equal(cfg[map][name], undefined, `${map}['${name}'] is not a configured host`)
+                }
+            }
+        })
+    })
+
     await t.test('load_plugin_tls_options', async (t) => {
         // Point haraka-config at test/config so tls.ini fixtures load.
         const origConfig = tls_socket.config
