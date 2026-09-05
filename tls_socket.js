@@ -214,9 +214,9 @@ exports.load_tls_ini = (opts) => {
         },
     )
 
-    if (cfg.no_tls_hosts === undefined) cfg.no_tls_hosts = {}
-    if (cfg.mutual_auth_hosts === undefined) cfg.mutual_auth_hosts = {}
-    if (cfg.mutual_auth_hosts_exclude === undefined) cfg.mutual_auth_hosts_exclude = {}
+    if (cfg.no_tls_hosts === undefined) cfg.no_tls_hosts = Object.create(null)
+    if (cfg.mutual_auth_hosts === undefined) cfg.mutual_auth_hosts = Object.create(null)
+    if (cfg.mutual_auth_hosts_exclude === undefined) cfg.mutual_auth_hosts_exclude = Object.create(null)
 
     if (cfg.main.enableOCSPStapling !== undefined) {
         log.error('deprecated setting enableOCSPStapling in tls.ini')
