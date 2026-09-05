@@ -27,6 +27,30 @@ describe('rcpt_to.host_list_base', () => {
         })
     })
 
+    describe('load_host_list', () => {
+        beforeEach(_set_up)
+
+        const load = (hosts) => {
+            this.plugin.config = { get: () => hosts }
+            this.plugin.load_host_list()
+        }
+
+        it('lowercases configured hosts', () => {
+            load(['Example.COM'])
+            assert.equal(this.plugin.in_host_list('example.com'), true)
+            assert.equal(this.plugin.in_host_list('nothere.com'), false)
+        })
+
+        // GHSA-xf4w-8v5p-24pc class: a RCPT TO domain named after an inherited
+        // Object.prototype member must not read as a configured local host
+        for (const name of ['__proto__', 'constructor', 'valueOf', 'toString', 'hasOwnProperty', 'isPrototypeOf']) {
+            it(`does not treat inherited member '${name}' as a local host`, () => {
+                load(['example.com'])
+                assert.equal(this.plugin.in_host_list(name), false)
+            })
+        }
+    })
+
     describe('in_host_regex', () => {
         beforeEach(_set_up)
 

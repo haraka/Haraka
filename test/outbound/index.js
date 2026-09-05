@@ -268,6 +268,56 @@ describe('outbound', () => {
             }
         })
 
+        // GHSA-xf4w-8v5p-24pc class: get_deliveries grouped recipients in a plain
+        // object keyed by domain, so a RCPT TO domain named after an inherited
+        // Object.prototype member was truthy with no .push and threw. Only
+        // 'constructor' is reachable from the wire: Address lowercases hostnames
+        // (valueOf -> valueof) and rejects __proto__ as an RFC 5321 sub-domain.
+        it("groups a recipient whose domain is the inherited member 'constructor'", async () => {
+            const Transaction = require('../../transaction')
+            const Address = require('@haraka/email-address').Address
+            const outbound = require('../../outbound')
+            const plugins = require('../../plugins')
+
+            const txn = Transaction.createTransaction()
+            const origRunHooks = plugins.run_hooks
+            const origProcessDelivery = outbound.process_delivery
+            const delivered = []
+            try {
+                txn.mail_from = new Address('<from@example.com>')
+                txn.rcpt_to = [new Address('<x@constructor>')]
+                txn.message_stream.add_line(Buffer.from('Subject: t\r\n'))
+                txn.message_stream.add_line(Buffer.from('\r\n'))
+                txn.message_stream.add_line(Buffer.from('body\r\n'))
+                await new Promise((r) => txn.message_stream.add_line_end(r))
+
+                // capture the grouping instead of writing a queue file, so nothing
+                // attempts delivery to 'constructor' after the test ends
+                outbound.process_delivery = async (ok_paths, todo) => {
+                    delivered.push(todo.domain)
+                }
+
+                await new Promise((resolve, reject) => {
+                    plugins.run_hooks = (hook, obj) => {
+                        if (hook === 'pre_send_trans_email') {
+                            obj.pre_send_trans_email_respond(constants.cont).catch(reject)
+                        } else {
+                            origRunHooks.call(plugins, hook, obj)
+                        }
+                    }
+                    outbound.send_trans_email(txn, (retval) => {
+                        if (retval === constants.ok) resolve()
+                        else reject(new Error(`unexpected retval ${retval}`))
+                    })
+                })
+                assert.deepEqual(delivered, ['constructor'])
+            } finally {
+                plugins.run_hooks = origRunHooks
+                outbound.process_delivery = origProcessDelivery
+                txn.message_stream.destroy()
+            }
+        })
+
         it('adds missing Message-Id/Date and prepends Received before queueing', async () => {
             process.env.HARAKA_TEST_DIR = path.resolve('test')
             const Address = require('@haraka/email-address').Address

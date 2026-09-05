@@ -198,8 +198,7 @@ function get_deliveries(transaction) {
         return deliveries
     }
 
-    // First get each domain
-    const recips = {}
+    const recips = Object.create(null)
     for (const rcpt of transaction.rcpt_to) {
         const domain = rcpt.host
         if (!recips[domain]) {
