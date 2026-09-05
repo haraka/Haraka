@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - fix(connection): bound synchronous recursion
 - fix(auth_proxy): don't mutate hosts array
-- fix(security): reject pipelining after DATA
+- fix(security): preserve dot-stuffing on relay
 - fix(security): block prototype-chain lookups
 - change(auth_proxy): load shared tls_socket
 - fix(auth_base): read the config set in the .ini
