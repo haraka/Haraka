@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(auth_proxy): don't mutate hosts array
 - fix(security): preserve dot-stuffing on relay
 - fix(security): block prototype-chain lookups
+- fix(security): harden against prototype pollution:
+  - auth_flat_file, auth_vpopmail, lmtp, smtp_forward
 - change(auth_proxy): load shared tls_socket
 - fix(auth_base): read the config set in the .ini
 - deps(several): bump to latest
