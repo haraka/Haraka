@@ -1064,6 +1064,16 @@ describe('connection', () => {
             assert.equal(this.connection.current_data, null, 'partial bytes discarded too')
         })
 
+        // a command longer than line_length must still be counted; otherwise respond()
+        // emits fewer 503s than commands and the client's response correlation desyncs
+        it('answers a 503 for an overlong pipelined command', () => {
+            const big = `MAIL FROM:<${'a'.repeat(600)}@x>\r\n` // > cfg.max.line_length
+            const calls = armReply({ current: Buffer.from(`${big}RCPT TO:<v@y>\r\nDATA\r\n`) })
+            this.connection.respond(250, 'Message Queued')
+            const codes = repliesOf(calls).map((r) => r.slice(0, 3))
+            assert.deepEqual(codes, ['250', '503', '503', '503'], 'one 503 per command, overlong included')
+        })
+
         it('preserves a deny reply too (no result rewrite)', () => {
             const calls = armReply({ current: Buffer.from('MAIL FROM:<a@b>\r\n') })
             this.connection.respond(550, 'Message denied')

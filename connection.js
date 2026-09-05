@@ -36,11 +36,14 @@ const cfg = config.get('connection.ini', {
     ],
 })
 
+// Count LF-terminated commands in the post-DATA buffer, which process_data() has
+// already bounded to MAX_POST_DATA_BYTES. Every complete command is counted so
+// respond() can answer each with a 503 and keep the client's response count in sync.
 function count_complete_commands(buf) {
     let count = 0
     let rest = buf
     let offset
-    while ((offset = utils.indexOfLF(rest, cfg.max.line_length)) !== -1) {
+    while ((offset = utils.indexOfLF(rest)) !== -1) {
         count++
         rest = rest.slice(offset + 1)
     }
