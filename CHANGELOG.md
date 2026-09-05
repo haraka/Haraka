@@ -4,16 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- fix(security): refuse bare LF lines in DATA
+### [3.3.4] - 2026-09-05
+
+- fix(security): refuse bare LF lines in DATA (#3616)
 - fix(security): reject pipelining after DATA
 - fix(connection): bound synchronous recursion
 - fix(auth_proxy): don't mutate hosts array
 - fix(security): preserve dot-stuffing on relay
-- fix(security): block prototype-chain lookups
+- fix(security): block prototype-chain lookups (#3615)
 - change(auth_proxy): load shared tls_socket
 - fix(auth_base): read the config set in the .ini
 - deps(several): bump to latest
-- doc(CoreConfig): update stun docs #3613
+- doc(CoreConfig): update stun docs (#3613)
 
 ### [3.3.3] - 2026-08-04
 
