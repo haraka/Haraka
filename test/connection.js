@@ -908,6 +908,272 @@ describe('connection', () => {
         })
     })
 
+    // SMTP smuggling, receiver side: the line stream splits on a bare LF, so a strict
+    // CRLF-only peer can forward <LF>.<CRLF> as content while Haraka would read the
+    // '.' as end-of-DATA and the bytes after it as commands.
+    describe('bare line-feed inside DATA', () => {
+        beforeEach(setUp)
+
+        const enterData = () => {
+            const conn = this.connection
+            conn.client = { write() {}, end() {}, destroy() {}, pause() {}, resume() {} }
+            conn.esmtp = true
+            conn.state = constants.connection.state.DATA
+            const seen = { stored: [], replies: [], commands: [], data_done: 0 }
+            conn.transaction = {
+                data_bytes: 0,
+                notes: {},
+                header: { get_all: () => [] },
+                header_lines: [],
+                add_header() {},
+                add_data: (l) => seen.stored.push(String(l)),
+                end_data() {},
+            }
+            conn.auth_results = () => ''
+            conn.auth_results_clean = () => {}
+            const respond = conn.respond.bind(conn)
+            conn.respond = (code, msg, cb) => {
+                seen.replies.push(code)
+                respond(code, msg, cb)
+            }
+            const data_done = conn.data_done.bind(conn)
+            conn.data_done = () => {
+                seen.data_done++
+                data_done()
+            }
+            conn.cmd_mail = (args) => seen.commands.push(`MAIL ${args}`)
+            return seen
+        }
+
+        it('does not end DATA at <LF>.<CRLF>, and drops the connection', () => {
+            const seen = enterData()
+            this.connection.process_data(Buffer.from('body\n.\r\nMAIL FROM:<forged@example.com>\r\n'))
+            assert.equal(seen.data_done, 0, 'the dot after a bare LF is not a terminator')
+            assert.deepEqual(seen.replies, [451])
+            assert.ok(this.connection.state >= constants.connection.state.DISCONNECTING, 'connection dropped')
+            assert.deepEqual(seen.commands, [], 'the smuggled MAIL FROM never runs')
+            assert.deepEqual(seen.stored, [], 'the bare-LF line is not stored as content')
+        })
+
+        it('leaves a CRLF line and a real terminator untouched', () => {
+            const seen = enterData()
+            this.connection.process_data(Buffer.from('body\r\n.\r\n'))
+            assert.deepEqual(seen.stored, ['body\r\n'])
+            assert.equal(seen.data_done, 1)
+            assert.deepEqual(seen.replies, [])
+        })
+    })
+
+    // GHSA-rp4q-8m6x-c43c receiving side: commands pipelined after end-of-DATA are the
+    // sink for dot-stuffing smuggling. data_done soft-pauses (keeps reading, but
+    // PAUSE_DATA stops processing) so current_data reliably holds anything pipelined
+    // before the reply. Those bytes may be attacker-authored, so respond() runs none of
+    // them -- not even the RSET/MAIL FROM that RFC 2920 sec 3.1 would allow here -- and
+    // answers 503 per complete command, since sec 3.1 correlates responses by count.
+    describe('pipelining after end of DATA', () => {
+        const states = constants.connection.state
+        beforeEach(setUp)
+
+        // drives the real _process_data/process_line/data_done path into the post-DATA
+        // window; end_data is async in reality, so leaving its callback unfired is what
+        // holds the connection there
+        const enterDataWindow = () => {
+            this.connection.transaction = {
+                data_bytes: 0,
+                notes: {},
+                header: { get_all: () => [] },
+                header_lines: [],
+                add_header() {},
+                add_data() {},
+                end_data() {},
+            }
+            this.connection.auth_results = () => ''
+            this.connection.auth_results_clean = () => {}
+            this.connection.state = states.DATA
+            this.connection.esmtp = true
+        }
+
+        const armReply = ({ current = null } = {}) => {
+            this.connection.awaiting_data_reply = true
+            this.connection.current_data = current
+            const calls = { written: '', disconnect: 0, funcRan: 0 }
+            this.connection.client = {
+                write(buf) {
+                    calls.written += buf
+                },
+            }
+            this.connection.disconnect = () => {
+                calls.disconnect++
+            }
+            this.connection._process_data = () => {}
+            return calls
+        }
+
+        const repliesOf = (calls) => calls.written.trim().split('\r\n')
+
+        it('refuses a smuggled command group, preserving the reply and bookkeeping', () => {
+            const smuggled = 'MAIL FROM:<evil@x>\r\nRCPT TO:<victim@y>\r\nDATA\r\n'
+            const calls = armReply({ current: Buffer.from(smuggled) })
+            this.connection.respond(250, 'Message Queued', () => {
+                calls.funcRan++
+            })
+            const replies = repliesOf(calls)
+            assert.match(replies[0], /^250 /, 'true reply preserved (no false 554)')
+            assert.deepEqual(
+                replies.slice(1).map((r) => r.slice(0, 3)),
+                ['503', '503', '503'],
+                'one 503 per smuggled command',
+            )
+            assert.equal(calls.funcRan, 1, 'completion bookkeeping runs')
+            assert.equal(calls.disconnect, 0, 'connection kept for reuse')
+            assert.equal(this.connection.current_data, null, 'smuggled group never runs')
+            assert.equal(this.connection.awaiting_data_reply, false)
+        })
+
+        // RFC 2920 sec 3.1 would allow this group, but we cannot tell it apart from a
+        // smuggled one, so it is refused rather than run
+        it('refuses a pipelined RSET/MAIL FROM, answering each with 503', () => {
+            const calls = armReply({ current: Buffer.from('RSET\r\nMAIL FROM:<next@ok>\r\n') })
+            this.connection.respond(250, 'Message Queued', () => {
+                calls.funcRan++
+            })
+            const replies = repliesOf(calls)
+            assert.match(replies[0], /^250 /)
+            assert.deepEqual(
+                replies.slice(1).map((r) => r.slice(0, 3)),
+                ['503', '503'],
+                'response count matches command count',
+            )
+            assert.equal(calls.funcRan, 1)
+            assert.equal(this.connection.current_data, null, 'not run')
+        })
+
+        it('answers only the DATA reply when a compliant client pipelines nothing', () => {
+            const calls = armReply()
+            this.connection.respond(250, 'Message Queued')
+            assert.deepEqual(repliesOf(calls), ['250 Message Queued'], 'no spurious 503')
+            assert.equal(this.connection.awaiting_data_reply, false, 'flag cleared')
+        })
+
+        it('counts only complete commands, discarding a trailing partial', () => {
+            const calls = armReply({ current: Buffer.from('MAIL FROM:<a@b>\r\nRSE') })
+            this.connection.respond(250, 'Message Queued')
+            const replies = repliesOf(calls)
+            assert.equal(replies.length, 2, 'one 503 for the one complete command')
+            assert.match(replies[1], /^503 /)
+            assert.equal(this.connection.current_data, null, 'partial bytes discarded too')
+        })
+
+        // a command longer than line_length must still be counted; otherwise respond()
+        // emits fewer 503s than commands and the client's response correlation desyncs
+        it('answers a 503 for an overlong pipelined command', () => {
+            const big = `MAIL FROM:<${'a'.repeat(600)}@x>\r\n` // > cfg.max.line_length
+            const calls = armReply({ current: Buffer.from(`${big}RCPT TO:<v@y>\r\nDATA\r\n`) })
+            this.connection.respond(250, 'Message Queued')
+            const codes = repliesOf(calls).map((r) => r.slice(0, 3))
+            assert.deepEqual(codes, ['250', '503', '503', '503'], 'one 503 per command, overlong included')
+        })
+
+        it('preserves a deny reply too (no result rewrite)', () => {
+            const calls = armReply({ current: Buffer.from('MAIL FROM:<a@b>\r\n') })
+            this.connection.respond(550, 'Message denied')
+            assert.match(repliesOf(calls)[0], /^550 /)
+            assert.equal(calls.disconnect, 0)
+        })
+
+        it('leaves ordinary replies untouched (flag not set)', () => {
+            const calls = armReply({ current: Buffer.from('MAIL FROM:<x@y>\r\n') })
+            this.connection.awaiting_data_reply = false
+            this.connection.respond(250, 'OK')
+            assert.deepEqual(repliesOf(calls), ['250 OK'])
+            assert.ok(this.connection.current_data?.length, 'ordinary reply leaves current_data alone')
+        })
+
+        // a pipelined QUIT cannot smuggle a transaction, but it is refused with everything
+        // else so the window has no exceptions to reason about
+        it('refuses a pipelined QUIT instead of closing the session', (t, done) => {
+            const calls = armReply({ current: Buffer.from('QUIT\r\n') })
+            this.connection.respond(250, 'Message Queued')
+            setImmediate(() => {
+                const replies = repliesOf(calls)
+                assert.match(replies[0], /^250 /)
+                assert.match(replies[1], /^503 /, 'QUIT answered, not silently dropped')
+                assert.ok(!replies.some((r) => r.startsWith('221')), 'session not closed by the pipelined QUIT')
+                done()
+            })
+        })
+
+        it('data_done soft-pauses (does not client.pause) and arms the reply window', () => {
+            let clientPaused = false
+            enterDataWindow()
+            let ended = false
+            this.connection.transaction.end_data = () => {
+                ended = true
+            }
+            this.connection.client = {
+                pause() {
+                    clientPaused = true
+                },
+            }
+            this.connection.data_done()
+            assert.equal(this.connection.state, states.PAUSE_DATA, 'processing gated')
+            assert.equal(clientPaused, false, 'socket kept reading (no hard pause)')
+            assert.equal(this.connection.awaiting_data_reply, true, 'reply window armed')
+            assert.equal(ended, true, 'no premature reject; end_data runs')
+        })
+
+        it('caps a post-DATA flood and disconnects', () => {
+            let disconnected = 0
+            this.connection.state = states.PAUSE_DATA
+            this.connection.awaiting_data_reply = true
+            this.connection.current_data = null
+            this.connection._process_data = () => {}
+            this.connection.disconnect = () => {
+                disconnected++
+            }
+            this.connection.process_data(Buffer.alloc(9000, 0x41)) // > MAX_POST_DATA_BYTES
+            assert.equal(disconnected, 1, 'flood dropped')
+            assert.equal(this.connection.current_data, null)
+        })
+
+        it('caps a flood arriving in the same read as the end-of-DATA terminator', () => {
+            let disconnected = 0
+            enterDataWindow()
+            this.connection.disconnect = () => {
+                disconnected++
+            }
+            this.connection.process_data(Buffer.concat([Buffer.from('.\r\n'), Buffer.alloc(9000, 0x41)]))
+            assert.equal(this.connection.state, states.PAUSE_DATA, 'real terminator parse soft-paused')
+            assert.equal(this.connection.awaiting_data_reply, true, 'window armed mid-read')
+            assert.equal(disconnected, 1, 'flood dropped on the arming read')
+            assert.equal(this.connection.current_data, null)
+        })
+
+        it('does not charge pipelined bytes against the DATA line length limit', () => {
+            enterDataWindow()
+            // under MAX_POST_DATA_BYTES, so the flood cap leaves these bytes buffered
+            this.connection.process_data(Buffer.concat([Buffer.from('.\r\n'), Buffer.alloc(5000, 0x41)]))
+            assert.equal(this.connection.awaiting_data_reply, true)
+            assert.equal(
+                this.connection.transaction.notes.data_line_length_exceeded,
+                undefined,
+                'completed transaction not flagged by post-DATA bytes',
+            )
+            assert.equal(this.connection.current_data.length, 5000, 'buffer left unwrapped')
+        })
+
+        it('is one-shot: a compliant next command after the DATA reply is normal', () => {
+            const calls = armReply()
+            this.connection.respond(250, 'Message Queued') // the DATA reply
+            assert.equal(this.connection.awaiting_data_reply, false, 'flag cleared')
+            this.connection.current_data = Buffer.from('MAIL FROM:<next@ok>\r\n')
+            calls.written = ''
+            this.connection.respond(250, 'sender OK')
+            assert.deepEqual(repliesOf(calls), ['250 sender OK'])
+            assert.ok(this.connection.current_data?.length, 'next command left for normal processing')
+        })
+    })
+
     describe('pipelined command scheduling', () => {
         beforeEach(setUp)
 

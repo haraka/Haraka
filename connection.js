@@ -23,6 +23,8 @@ const outbound = require('./outbound')
 
 const states = constants.connection.state
 
+const MAX_POST_DATA_BYTES = 8192
+
 const cfg = config.get('connection.ini', {
     booleans: [
         '-main.strict_rfc1869',
@@ -33,6 +35,20 @@ const cfg = config.get('connection.ini', {
         '+headers.clean_auth_results',
     ],
 })
+
+// Count LF-terminated commands in the post-DATA buffer, which process_data() has
+// already bounded to MAX_POST_DATA_BYTES. Every complete command is counted so
+// respond() can answer each with a 503 and keep the client's response count in sync.
+function count_complete_commands(buf) {
+    let count = 0
+    let rest = buf
+    let offset
+    while ((offset = utils.indexOfLF(rest)) !== -1) {
+        count++
+        rest = rest.slice(offset + 1)
+    }
+    return count
+}
 
 class Connection {
     constructor(client, server) {
@@ -77,6 +93,7 @@ class Connection {
         this.state = states.PAUSE
         this.encoding = 'utf8'
         this.prev_state = null
+        this.awaiting_data_reply = false
         this.loop_code = null
         this.loop_msg = null
         this.uuid = utils.uuid()
@@ -365,6 +382,15 @@ class Connection {
         }
 
         this._process_data()
+
+        // Checked after processing so it also covers the read that carries the end-of-DATA
+        // terminator and a pipelined command together. A compliant client sends nothing in
+        // the soft-paused post-DATA window; a flood there is a pipelining attack.
+        if (this.awaiting_data_reply && this.current_data?.length > MAX_POST_DATA_BYTES) {
+            this.loginfo(`dropping ${this.current_data.length}B pipelined after DATA from ${this.remote.ip}`)
+            this.current_data = null
+            this.disconnect()
+        }
     }
     _process_data() {
         // We *must* detect disconnected connections here as the state
@@ -462,8 +488,12 @@ class Connection {
             }
         }
 
+        // Once end-of-DATA is seen the message is complete, so bytes still buffered are
+        // pipelined commands, not body. Measuring them against data_line_length would
+        // wrap them and flag the finished transaction; respond() judges them instead.
         if (
             this.current_data &&
+            !this.awaiting_data_reply &&
             this.current_data.length > maxlength &&
             utils.indexOfLF(this.current_data, maxlength) === -1
         ) {
@@ -498,6 +528,27 @@ class Connection {
             if (func) func()
             return
         }
+
+        // First reply after end-of-DATA. The socket was only soft-paused, so current_data
+        // holds whatever the client pipelined before it saw this reply. If our end-of-DATA
+        // detection disagreed with the sender's, those bytes are attacker-authored, so none
+        // of them run (GHSA-rp4q-8m6x-c43c) -- not even the RSET/MAIL FROM that RFC 2920
+        // sec 3.1 would otherwise allow here. Each complete command is answered 503 below:
+        // sec 3.1 has the client correlating responses by count, so silence desynchronises it.
+        let refused_after_data = 0
+        if (this.awaiting_data_reply) {
+            this.awaiting_data_reply = false
+            if (this.current_data?.length) {
+                refused_after_data = count_complete_commands(this.current_data)
+                this.lognotice('command pipelined after end of DATA - refused', {
+                    remote: this.remote.ip,
+                    buffered: this.current_data.length,
+                    commands: refused_after_data,
+                })
+                this.current_data = null
+            }
+        }
+
         // Check to see if DSN object was passed in
         if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
             // Override
@@ -534,6 +585,12 @@ class Connection {
 
         while ((mess = messages.shift())) {
             const line = `${code}${messages.length ? '-' : ' '}${_uuid}${mess}`
+            this.logprotocol(`S: ${line}`)
+            buf = `${buf}${line}\r\n`
+        }
+
+        for (let i = 0; i < refused_after_data; i++) {
+            const line = '503 Bad sequence of commands - pipelined after end of DATA'
             this.logprotocol(`S: ${line}`)
             buf = `${buf}${line}\r\n`
         }
@@ -1541,8 +1598,18 @@ class Connection {
         // Look for .\n
         if (line.length === 2 && line[0] === 0x2e && line[1] === 0x0a) {
             this.lognotice('Client sent bare line-feed - .\\n rather than .\\r\\n')
-            this.respond(451, 'Bare line-feed; see http://haraka.github.io/barelf/', () => {
-                this.reset_transaction()
+            this.respond(451, 'Bare line-feed; see https://haraka.github.io/barelf/', () => {
+                this.disconnect()
+            })
+            return
+        }
+
+        // The line stream also splits on a bare LF, so <LF>.<CRLF> would end DATA here
+        // while a CRLF-only peer forwards the same bytes as content (SMTP smuggling).
+        if (line[line.length - 1] === 0x0a && line[line.length - 2] !== 0x0d) {
+            this.lognotice('Client sent bare line-feed inside DATA')
+            this.respond(451, 'Bare line-feed; see https://haraka.github.io/barelf/', () => {
+                this.disconnect()
             })
             return
         }
@@ -1563,7 +1630,13 @@ class Connection {
         this.transaction.add_data(line)
     }
     data_done() {
-        this.pause()
+        // Soft pause: keep reading the socket so a command pipelined after the
+        // terminator lands in current_data. A hard client.pause() would leave it
+        // in the kernel queue, invisible to a buffer check. PAUSE_DATA still stops
+        // it being processed until resume().
+        if (this.state !== states.PAUSE_DATA) this.prev_state = this.state
+        this.state = states.PAUSE_DATA
+        this.awaiting_data_reply = true
         this.totalbytes += this.transaction.data_bytes
 
         // Check message size limit
