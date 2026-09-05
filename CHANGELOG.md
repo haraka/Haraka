@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(security): refuse bare LF lines in DATA
 - fix(connection): bound synchronous recursion
 - fix(auth_proxy): don't mutate hosts array
 - fix(security): preserve dot-stuffing on relay

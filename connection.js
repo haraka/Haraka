@@ -1541,8 +1541,18 @@ class Connection {
         // Look for .\n
         if (line.length === 2 && line[0] === 0x2e && line[1] === 0x0a) {
             this.lognotice('Client sent bare line-feed - .\\n rather than .\\r\\n')
-            this.respond(451, 'Bare line-feed; see http://haraka.github.io/barelf/', () => {
-                this.reset_transaction()
+            this.respond(451, 'Bare line-feed; see https://haraka.github.io/barelf/', () => {
+                this.disconnect()
+            })
+            return
+        }
+
+        // The line stream also splits on a bare LF, so <LF>.<CRLF> would end DATA here
+        // while a CRLF-only peer forwards the same bytes as content (SMTP smuggling).
+        if (line[line.length - 1] === 0x0a && line[line.length - 2] !== 0x0d) {
+            this.lognotice('Client sent bare line-feed inside DATA')
+            this.respond(451, 'Bare line-feed; see https://haraka.github.io/barelf/', () => {
+                this.disconnect()
             })
             return
         }

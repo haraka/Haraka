@@ -908,6 +908,62 @@ describe('connection', () => {
         })
     })
 
+    // SMTP smuggling, receiver side: the line stream splits on a bare LF, so a strict
+    // CRLF-only peer can forward <LF>.<CRLF> as content while Haraka would read the
+    // '.' as end-of-DATA and the bytes after it as commands.
+    describe('bare line-feed inside DATA', () => {
+        beforeEach(setUp)
+
+        const enterData = () => {
+            const conn = this.connection
+            conn.client = { write() {}, end() {}, destroy() {}, pause() {}, resume() {} }
+            conn.esmtp = true
+            conn.state = constants.connection.state.DATA
+            const seen = { stored: [], replies: [], commands: [], data_done: 0 }
+            conn.transaction = {
+                data_bytes: 0,
+                notes: {},
+                header: { get_all: () => [] },
+                header_lines: [],
+                add_header() {},
+                add_data: (l) => seen.stored.push(String(l)),
+                end_data() {},
+            }
+            conn.auth_results = () => ''
+            conn.auth_results_clean = () => {}
+            const respond = conn.respond.bind(conn)
+            conn.respond = (code, msg, cb) => {
+                seen.replies.push(code)
+                respond(code, msg, cb)
+            }
+            const data_done = conn.data_done.bind(conn)
+            conn.data_done = () => {
+                seen.data_done++
+                data_done()
+            }
+            conn.cmd_mail = (args) => seen.commands.push(`MAIL ${args}`)
+            return seen
+        }
+
+        it('does not end DATA at <LF>.<CRLF>, and drops the connection', () => {
+            const seen = enterData()
+            this.connection.process_data(Buffer.from('body\n.\r\nMAIL FROM:<forged@example.com>\r\n'))
+            assert.equal(seen.data_done, 0, 'the dot after a bare LF is not a terminator')
+            assert.deepEqual(seen.replies, [451])
+            assert.ok(this.connection.state >= constants.connection.state.DISCONNECTING, 'connection dropped')
+            assert.deepEqual(seen.commands, [], 'the smuggled MAIL FROM never runs')
+            assert.deepEqual(seen.stored, [], 'the bare-LF line is not stored as content')
+        })
+
+        it('leaves a CRLF line and a real terminator untouched', () => {
+            const seen = enterData()
+            this.connection.process_data(Buffer.from('body\r\n.\r\n'))
+            assert.deepEqual(seen.stored, ['body\r\n'])
+            assert.equal(seen.data_done, 1)
+            assert.deepEqual(seen.replies, [])
+        })
+    })
+
     describe('pipelined command scheduling', () => {
         beforeEach(setUp)
 
