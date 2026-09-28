@@ -10,6 +10,7 @@ const path = require('node:path')
 const outbound = require('../../outbound')
 const Hmail = outbound.HMailItem
 const client_pool = require('../../outbound/client_pool')
+const constants = require('haraka-constants')
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,47 @@ describe('outbound/hmail', () => {
         assert.equal(hmail.get_force_tls({ exchange: '1.2.3.5' }), false)
         hmail.todo = { domain: 'hit.example.com' }
         assert.equal(hmail.get_force_tls({ exchange: '1.2.3.5' }), true)
+    })
+
+    describe('deferred_respond delay', () => {
+        let logged
+
+        beforeEach(() => {
+            logged = null
+            hmail.path = 'test/queue/does-not-exist'
+            hmail.loginfo = (m) => {
+                if (m.startsWith('Temp failing')) logged = m
+            }
+            hmail.bounce = () => {}
+        })
+
+        const cases = [
+            ['uses params.delay on cont', constants.cont, undefined, { delay: 60, err: 'x' }, 60],
+            ['uses denysoft msg as seconds', constants.denysoft, '120', { delay: 60, err: 'x' }, 120],
+            [
+                'falls back to params.delay on non-numeric denysoft msg',
+                constants.denysoft,
+                'later',
+                { delay: 60, err: 'x' },
+                60,
+            ],
+            [
+                'falls back to params.delay on empty denysoft msg',
+                constants.denysoft,
+                undefined,
+                { delay: 60, err: 'x' },
+                60,
+            ],
+            ['uses 0 when params.delay is missing', constants.cont, undefined, { err: 'x' }, 0],
+            ['clamps negative delay to 0', constants.denysoft, '-5', { delay: 60, err: 'x' }, 0],
+        ]
+
+        for (const [name, retval, msg, params, expected] of cases) {
+            it(name, async () => {
+                await hmail.deferred_respond(retval, msg, params)
+                assert.equal(logged, `Temp failing ${hmail.filename} for ${expected} seconds: x`)
+            })
+        }
     })
 })
 
