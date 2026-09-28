@@ -145,6 +145,11 @@ describe('outbound/hmail', () => {
                 assert.equal(logged, `Temp failing ${hmail.filename} for ${expected} seconds: x`)
             })
         }
+
+        it('tolerates missing params', async () => {
+            await hmail.deferred_respond(constants.cont, undefined, undefined)
+            assert.equal(logged, `Temp failing ${hmail.filename} for 0 seconds: undefined`)
+        })
     })
 })
 

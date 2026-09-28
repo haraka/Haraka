@@ -1365,7 +1365,7 @@ class HMailItem extends events.EventEmitter {
         }
         if (!Number.isFinite(delay) || delay < 0) delay = 0
 
-        this.loginfo(`Temp failing ${this.filename} for ${delay / 1000} seconds: ${params.err}`)
+        this.loginfo(`Temp failing ${this.filename} for ${delay / 1000} seconds: ${params?.err}`)
         const parts = _qfile.parts(this.filename)
         parts.next_attempt = Date.now() + delay
         parts.attempts = this.num_failures
