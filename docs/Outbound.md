@@ -92,7 +92,7 @@ to control source address and EHLO.
 
 ### deferred
 
-Parameters: `next, hmail, { delay, err }`
+Parameters: `next, hmail, { delay, err, mx_errors }`
 
 Fired on temporary failure. Return `OK` to drop the mail silently; return `DENYSOFT, seconds` to override the retry delay (useful for custom backoff indexed on `hmail.num_failures`).
 
