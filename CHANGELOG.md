@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(outbound): sanitize deferred delay
+
 ### [3.3.4] - 2026-09-05
 
 - fix(security): refuse bare LF lines in DATA (#3616)

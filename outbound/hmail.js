@@ -1372,13 +1372,13 @@ class HMailItem extends events.EventEmitter {
         }
 
         let delay = Number.isFinite(params?.delay) ? params.delay * 1000 : 0
-        if (retval === constants.denysoft && msg) {
+        if (retval === constants.denysoft) {
             const parsed = parseInt(msg, 10)
             if (!Number.isNaN(parsed)) delay = parsed * 1000
         }
         if (!Number.isFinite(delay) || delay < 0) delay = 0
 
-        this.loginfo(`Temp failing ${this.filename} for ${delay / 1000} seconds: ${params.err}`)
+        this.loginfo(`Temp failing ${this.filename} for ${delay / 1000} seconds: ${params?.err}`)
         const parts = _qfile.parts(this.filename)
         parts.next_attempt = Date.now() + delay
         parts.attempts = this.num_failures
