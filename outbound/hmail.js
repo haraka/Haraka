@@ -309,18 +309,19 @@ class HMailItem extends events.EventEmitter {
     async try_deliver() {
         // are any MXs left?
         if (this.mxlist.length === 0) {
-            const details = this.mx_errors.length ? `: ${this.mx_errors.join('; ')}` : ' (no MX endpoints attempted: empty mxlist, check resolve_mx_hosts/DNS)'
-            const reason = `Tried all MXs ${this.todo.domain}${details}`
+            // per-MX details can expose internal relay IPs, so keep them out of the recipient DSN
             for (const rcpt of this.todo.rcpt_to) {
-                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(reason))
+                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs ${this.todo.domain}`))
             }
-            return this.temp_fail(reason)
+            const details = this.mx_errors.length ? this.mx_errors.join('; ') : 'no usable MX hosts'
+            return this.temp_fail(`Tried all MXs ${this.todo.domain}: ${details}`)
         }
 
         const mx = this.mxlist.shift()
 
         if (!obc.cfg.local_mx_ok && mx.from_dns && (await net_utils.is_local_host(mx.exchange))) {
             this.loginfo(`MX ${mx.exchange} is local, skipping since local_mx_ok=false`)
+            this.mx_errors.push(`${mx.exchange} skipped: local MX`)
             return this.try_deliver() // try next MX
         }
 
@@ -369,13 +370,7 @@ class HMailItem extends events.EventEmitter {
         }
 
         socket.once('timeout', function () {
-            if (!processing_mail) return
-
-            self.logerror(`Remote end ${host}:${port} timed out waiting on ${command}. Trying next MX.`)
-            self.mx_errors.push(`${host}:${port} socket timeout waiting on ${command}`)
-            processing_mail = false
-            client_pool.release_client(socket, mx)
-            self.try_deliver()
+            socket.emit('error', `socket timeout waiting on ${command}`)
         })
 
         socket.on('error', (err) => {
