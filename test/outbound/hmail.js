@@ -101,6 +101,13 @@ describe('outbound/hmail', () => {
             socket.send_command('EHLO', 'test')
             assert.deepEqual(hmail.mx_errors, ['1.2.3.4:25 socket not writable'])
         })
+
+        it('brackets IPv6 hosts in mx_errors', () => {
+            const socket = makeSocket()
+            hmail.try_deliver_host_on_socket(mx, '2001:db8::1', 25, socket)
+            socket.emit('close')
+            assert.deepEqual(hmail.mx_errors, ['[2001:db8::1]:25 closed connection'])
+        })
     })
 
     describe('Tried all MXs', () => {
@@ -175,6 +182,17 @@ describe('outbound/hmail', () => {
             hmail.mxlist = [{ exchange: '192.0.2.1', port: 25 }]
             await hmail.try_deliver()
             assert.deepEqual(deferred.mx_errors, ['192.0.2.1:25 Error: connect ECONNREFUSED'])
+        })
+
+        it('formats IPv6 and socket path endpoints unambiguously', async () => {
+            client_pool.get_client = (mx, cb) => cb(new Error('boom'))
+            hmail.get_force_tls = () => false
+            hmail.mxlist = [
+                { exchange: '2001:db8::1', port: 25 },
+                { path: '/var/run/lmtp.sock', using_lmtp: true },
+            ]
+            await hmail.try_deliver()
+            assert.deepEqual(deferred.mx_errors, ['[2001:db8::1]:25 Error: boom', '/var/run/lmtp.sock Error: boom'])
         })
 
         it('records skipped local MXs', async () => {
