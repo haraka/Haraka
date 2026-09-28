@@ -71,6 +71,7 @@ class HMailItem extends events.EventEmitter {
         this.next_cb = dummy_func
         this.bounce_error = null
         this.hook = null
+        this.mx_errors = []
         this.size_file()
     }
 
@@ -272,6 +273,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     async found_mx(mxs) {
+        this.mx_errors = []
         // support RFC 7505 null MX
         if (mxs.length === 1 && mxs[0].priority === 0 && mxs[0].exchange === '') {
             for (const rcpt of this.todo.rcpt_to) {
@@ -307,16 +309,22 @@ class HMailItem extends events.EventEmitter {
     async try_deliver() {
         // are any MXs left?
         if (this.mxlist.length === 0) {
+            const reason = `Tried all MXs ${this.todo.domain}`
             for (const rcpt of this.todo.rcpt_to) {
-                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs ${this.todo.domain}`))
+                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(reason))
             }
-            return this.temp_fail('Tried all MXs')
+            const details = this.mx_errors.length ? this.mx_errors.join('; ') : 'no usable MX hosts'
+            this.logwarn(`${reason}: ${details}`)
+            // per-MX details can expose internal relay IPs. temp_fail's err becomes
+            // the bounce reason once retries are exhausted, so pass them out-of-band.
+            return this.temp_fail(reason, { mx_errors: [...this.mx_errors] })
         }
 
         const mx = this.mxlist.shift()
 
         if (!obc.cfg.local_mx_ok && mx.from_dns && (await net_utils.is_local_host(mx.exchange))) {
             this.loginfo(`MX ${mx.exchange} is local, skipping since local_mx_ok=false`)
+            this.mx_errors.push(`${mx.exchange} skipped: local MX`)
             return this.try_deliver() // try next MX
         }
 
@@ -336,6 +344,7 @@ class HMailItem extends events.EventEmitter {
         const lmtp = mx.using_lmtp ? ' using LMTP' : ''
         if (!mx.port) mx.port = mx.using_lmtp ? 24 : 25
         const from_dns = mx.from_dns ? ' (via DNS)' : ''
+        const endpoint = new net_utils.Endpoint(mx.path ? { path: mx.path } : { host: mx.exchange, port: mx.port })
 
         this.logdebug(
             `deliver: ${mx.bind_helo} -> ${host}${lmtp}${from_dns} (${delivery_queue.length()}) (${temp_fail_queue.length()})`,
@@ -347,6 +356,7 @@ class HMailItem extends events.EventEmitter {
                 } else {
                     logger.error(this, `Failed to get socket: ${err}`)
                 }
+                this.mx_errors.push(`${endpoint} ${err}`)
 
                 return this.try_deliver() // try next MX
             }
@@ -358,6 +368,7 @@ class HMailItem extends events.EventEmitter {
         const self = this
         let processing_mail = true
         let command = mx.using_lmtp ? 'connect_lmtp' : 'connect'
+        const endpoint = new net_utils.Endpoint(mx.path ? { path: host } : { host, port })
 
         for (const l of ['error', 'timeout', 'close', 'end']) {
             socket.removeAllListeners(l)
@@ -371,6 +382,7 @@ class HMailItem extends events.EventEmitter {
             if (!processing_mail) return
 
             self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`)
+            self.mx_errors.push(`${endpoint} ${err}`)
             processing_mail = false
             client_pool.release_client(socket, mx)
             if (err.source === 'tls')
@@ -385,6 +397,7 @@ class HMailItem extends events.EventEmitter {
             if (!processing_mail) return
 
             self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`)
+            self.mx_errors.push(`${endpoint} closed connection`)
             processing_mail = false
             client_pool.release_client(socket, mx)
             self.try_deliver()
@@ -420,6 +433,7 @@ class HMailItem extends events.EventEmitter {
             if (!socket.writable) {
                 self.logerror('Socket writability went away')
                 if (processing_mail) {
+                    self.mx_errors.push(`${endpoint} socket not writable`)
                     processing_mail = false
                     client_pool.release_client(socket, mx)
                     return self.try_deliver()

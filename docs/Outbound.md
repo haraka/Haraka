@@ -92,9 +92,11 @@ to control source address and EHLO.
 
 ### deferred
 
-Parameters: `next, hmail, { delay, err }`
+Parameters: `next, hmail, { delay, err, mx_errors }`
 
 Fired on temporary failure. Return `OK` to drop the mail silently; return `DENYSOFT, seconds` to override the retry delay (useful for custom backoff indexed on `hmail.num_failures`).
+
+When every MX fails, `err` is `Tried all MXs <domain>` and `params.mx_errors` lists each MX's failure (e.g. `192.0.2.1:25 Error: connect ECONNREFUSED`). The details are kept out of `err` because `err` becomes the bounce reason sent to the original sender.
 
 ### bounce
 
