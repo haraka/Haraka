@@ -11,6 +11,8 @@ const outbound = require('../../outbound')
 const Hmail = outbound.HMailItem
 const client_pool = require('../../outbound/client_pool')
 const constants = require('haraka-constants')
+const net_utils = require('haraka-net-utils')
+const obc = require('../../outbound/config')
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,6 +79,91 @@ describe('outbound/hmail', () => {
             socket.emit('timeout')
             assert.doesNotThrow(() => socket.emit('timeout'), 'second timeout must not crash')
         })
+
+        it('records socket error, timeout, and close in mx_errors', () => {
+            for (const event of ['error', 'timeout', 'close']) {
+                const socket = makeSocket()
+                hmail.try_deliver_host_on_socket(mx, '1.2.3.4', 25, socket)
+                socket.emit(event, event === 'error' ? new Error('boom') : undefined)
+                socket.emit('close')
+            }
+            assert.deepEqual(hmail.mx_errors, [
+                '1.2.3.4:25 Error: boom',
+                '1.2.3.4:25 socket timeout waiting on connect',
+                '1.2.3.4:25 closed connection',
+            ])
+        })
+    })
+
+    describe('Tried all MXs', () => {
+        let origGetClient
+        let origLocalMxOk
+        let origIsLocalHost
+        let deferred
+
+        // hmail.js binds its queue globals on setImmediate
+        before(() => new Promise(setImmediate))
+
+        beforeEach(() => {
+            origGetClient = client_pool.get_client
+            origLocalMxOk = obc.cfg.local_mx_ok
+            origIsLocalHost = net_utils.is_local_host
+            hmail.todo = { domain: 'example.com', notes: {}, rcpt_to: [{ original: 'u@example.com' }] }
+            hmail.logerror = () => {}
+            hmail.loginfo = () => {}
+            hmail.temp_fail = (err) => {
+                deferred = err
+            }
+        })
+
+        afterEach(() => {
+            client_pool.get_client = origGetClient
+            obc.cfg.local_mx_ok = origLocalMxOk
+            net_utils.is_local_host = origIsLocalHost
+        })
+
+        it('includes per-MX failures in temp_fail but not in the DSN', async () => {
+            hmail.mxlist = []
+            hmail.mx_errors = ['mx1.example.com:25 connect ECONNREFUSED', 'mx2.example.com:25 socket timeout']
+            await hmail.try_deliver()
+
+            assert.equal(
+                deferred,
+                'Tried all MXs example.com: mx1.example.com:25 connect ECONNREFUSED; mx2.example.com:25 socket timeout',
+            )
+            const rcpt = hmail.todo.rcpt_to[0]
+            assert.equal(rcpt.dsn_status, '5.1.2')
+            assert.equal(rcpt.dsn_msg, 'Tried all MXs example.com')
+        })
+
+        it('reports no usable MX hosts when none were attempted', async () => {
+            hmail.mxlist = []
+            await hmail.try_deliver()
+            assert.equal(deferred, 'Tried all MXs example.com: no usable MX hosts')
+        })
+
+        it('records get_client failures', async () => {
+            client_pool.get_client = (mx, cb) => cb(new Error('connect ECONNREFUSED'))
+            hmail.get_force_tls = () => false
+            hmail.mxlist = [{ exchange: '192.0.2.1', port: 25 }]
+            await hmail.try_deliver()
+            assert.equal(deferred, 'Tried all MXs example.com: 192.0.2.1:25 Error: connect ECONNREFUSED')
+        })
+
+        it('records skipped local MXs', async () => {
+            obc.cfg.local_mx_ok = false
+            net_utils.is_local_host = async () => true
+            hmail.mxlist = [{ exchange: '127.0.0.1', from_dns: true }]
+            await hmail.try_deliver()
+            assert.equal(deferred, 'Tried all MXs example.com: 127.0.0.1 skipped: local MX')
+        })
+
+        it('found_mx resets mx_errors from a prior attempt', async () => {
+            hmail.mx_errors = ['stale']
+            hmail.try_deliver = () => {}
+            await hmail.found_mx([{ exchange: '192.0.2.1', priority: 10 }])
+            assert.deepEqual(hmail.mx_errors, [])
+        })
     })
 
     it('sort_mx orders by priority ascending', () => {
@@ -112,6 +199,7 @@ describe('outbound/hmail', () => {
         beforeEach(() => {
             logged = null
             hmail.path = 'test/queue/does-not-exist'
+            hmail.temp_fail = () => {} // the constructor's async read of the missing path would re-defer
             hmail.loginfo = (m) => {
                 if (m.startsWith('Temp failing')) logged = m
             }
