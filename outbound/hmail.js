@@ -309,12 +309,15 @@ class HMailItem extends events.EventEmitter {
     async try_deliver() {
         // are any MXs left?
         if (this.mxlist.length === 0) {
-            // per-MX details can expose internal relay IPs, so keep them out of the recipient DSN
+            const reason = `Tried all MXs ${this.todo.domain}`
             for (const rcpt of this.todo.rcpt_to) {
-                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs ${this.todo.domain}`))
+                this.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(reason))
             }
             const details = this.mx_errors.length ? this.mx_errors.join('; ') : 'no usable MX hosts'
-            return this.temp_fail(`Tried all MXs ${this.todo.domain}: ${details}`)
+            this.logwarn(`${reason}: ${details}`)
+            // per-MX details can expose internal relay IPs. temp_fail's err becomes
+            // the bounce reason once retries are exhausted, so pass them out-of-band.
+            return this.temp_fail(reason, { mx_errors: [...this.mx_errors] })
         }
 
         const mx = this.mxlist.shift()
@@ -428,6 +431,7 @@ class HMailItem extends events.EventEmitter {
             if (!socket.writable) {
                 self.logerror('Socket writability went away')
                 if (processing_mail) {
+                    self.mx_errors.push(`${host}:${port} socket not writable`)
                     processing_mail = false
                     client_pool.release_client(socket, mx)
                     return self.try_deliver()

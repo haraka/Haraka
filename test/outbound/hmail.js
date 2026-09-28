@@ -93,6 +93,14 @@ describe('outbound/hmail', () => {
                 '1.2.3.4:25 closed connection',
             ])
         })
+
+        it('records an unwritable socket in mx_errors', () => {
+            const socket = makeSocket()
+            hmail.try_deliver_host_on_socket(mx, '1.2.3.4', 25, socket)
+            socket.writable = false
+            socket.send_command('EHLO', 'test')
+            assert.deepEqual(hmail.mx_errors, ['1.2.3.4:25 socket not writable'])
+        })
     })
 
     describe('Tried all MXs', () => {
@@ -100,6 +108,7 @@ describe('outbound/hmail', () => {
         let origLocalMxOk
         let origIsLocalHost
         let deferred
+        let warned
 
         // hmail.js binds its queue globals on setImmediate
         before(() => new Promise(setImmediate))
@@ -108,11 +117,16 @@ describe('outbound/hmail', () => {
             origGetClient = client_pool.get_client
             origLocalMxOk = obc.cfg.local_mx_ok
             origIsLocalHost = net_utils.is_local_host
+            deferred = null
+            warned = null
             hmail.todo = { domain: 'example.com', notes: {}, rcpt_to: [{ original: 'u@example.com' }] }
             hmail.logerror = () => {}
             hmail.loginfo = () => {}
-            hmail.temp_fail = (err) => {
-                deferred = err
+            hmail.logwarn = (m) => {
+                warned = m
+            }
+            hmail.temp_fail = (err, extra) => {
+                deferred = { err, mx_errors: extra.mx_errors }
             }
         })
 
@@ -122,24 +136,37 @@ describe('outbound/hmail', () => {
             net_utils.is_local_host = origIsLocalHost
         })
 
-        it('includes per-MX failures in temp_fail but not in the DSN', async () => {
+        it('passes per-MX failures to temp_fail out-of-band, not in err or the DSN', async () => {
+            const errors = ['mx1.example.com:25 connect ECONNREFUSED', 'mx2.example.com:25 socket timeout']
             hmail.mxlist = []
-            hmail.mx_errors = ['mx1.example.com:25 connect ECONNREFUSED', 'mx2.example.com:25 socket timeout']
+            hmail.mx_errors = [...errors]
             await hmail.try_deliver()
 
-            assert.equal(
-                deferred,
-                'Tried all MXs example.com: mx1.example.com:25 connect ECONNREFUSED; mx2.example.com:25 socket timeout',
-            )
+            assert.deepEqual(deferred, { err: 'Tried all MXs example.com', mx_errors: errors })
+            assert.equal(warned, `Tried all MXs example.com: ${errors.join('; ')}`)
             const rcpt = hmail.todo.rcpt_to[0]
             assert.equal(rcpt.dsn_status, '5.1.2')
             assert.equal(rcpt.dsn_msg, 'Tried all MXs example.com')
         })
 
-        it('reports no usable MX hosts when none were attempted', async () => {
+        it('keeps per-MX failures out of the bounce once retries are exhausted', async () => {
+            let bounced
+            hmail.temp_fail = Hmail.prototype.temp_fail
+            hmail.bounce = (err) => {
+                bounced = err
+            }
+            hmail.num_failures = obc.cfg.temp_fail_intervals.length
+            hmail.mxlist = []
+            hmail.mx_errors = ['10.0.0.5:25 Error: connect ECONNREFUSED']
+            await hmail.try_deliver()
+            assert.equal(bounced, 'Too many failures (Tried all MXs example.com)')
+        })
+
+        it('logs no usable MX hosts when none were attempted', async () => {
             hmail.mxlist = []
             await hmail.try_deliver()
-            assert.equal(deferred, 'Tried all MXs example.com: no usable MX hosts')
+            assert.deepEqual(deferred, { err: 'Tried all MXs example.com', mx_errors: [] })
+            assert.equal(warned, 'Tried all MXs example.com: no usable MX hosts')
         })
 
         it('records get_client failures', async () => {
@@ -147,7 +174,7 @@ describe('outbound/hmail', () => {
             hmail.get_force_tls = () => false
             hmail.mxlist = [{ exchange: '192.0.2.1', port: 25 }]
             await hmail.try_deliver()
-            assert.equal(deferred, 'Tried all MXs example.com: 192.0.2.1:25 Error: connect ECONNREFUSED')
+            assert.deepEqual(deferred.mx_errors, ['192.0.2.1:25 Error: connect ECONNREFUSED'])
         })
 
         it('records skipped local MXs', async () => {
@@ -155,7 +182,7 @@ describe('outbound/hmail', () => {
             net_utils.is_local_host = async () => true
             hmail.mxlist = [{ exchange: '127.0.0.1', from_dns: true }]
             await hmail.try_deliver()
-            assert.equal(deferred, 'Tried all MXs example.com: 127.0.0.1 skipped: local MX')
+            assert.deepEqual(deferred.mx_errors, ['127.0.0.1 skipped: local MX'])
         })
 
         it('found_mx resets mx_errors from a prior attempt', async () => {
