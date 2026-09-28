@@ -136,6 +136,7 @@ describe('outbound/hmail', () => {
                 60,
             ],
             ['uses 0 when params.delay is missing', constants.cont, undefined, { err: 'x' }, 0],
+            ['honors a numeric 0 denysoft msg', constants.denysoft, 0, { delay: 60, err: 'x' }, 0],
             ['clamps negative delay to 0', constants.denysoft, '-5', { delay: 60, err: 'x' }, 0],
         ]
 

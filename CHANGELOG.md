@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- fix(outbound): guard deferred_respond against NaN/negative delay
+- fix(outbound): sanitize deferred delay
 
 ### [3.3.4] - 2026-09-05
 

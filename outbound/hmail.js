@@ -1359,7 +1359,7 @@ class HMailItem extends events.EventEmitter {
         }
 
         let delay = Number.isFinite(params?.delay) ? params.delay * 1000 : 0
-        if (retval === constants.denysoft && msg) {
+        if (retval === constants.denysoft) {
             const parsed = parseInt(msg, 10)
             if (!Number.isNaN(parsed)) delay = parsed * 1000
         }
