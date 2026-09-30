@@ -5,6 +5,9 @@
 // originating server.
 
 const url = require('node:url')
+const { isNativeError } = require('node:util').types
+
+const net_utils = require('haraka-net-utils')
 
 const smtp_client_mod = require('../../smtp_client')
 const tls_socket = require('../../tls_socket')
@@ -124,8 +127,16 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     if (!queue_wanted) queue_wanted = dom_cfg.queue || this.cfg.main.queue
     if (!queue_wanted) return true
 
-    let dst_host = dom_cfg.host || this.cfg.main.host
-    if (dst_host) dst_host = `smtp://${dst_host}`
+    const host = dom_cfg.host || this.cfg.main.host
+    let dst_host
+    if (host) {
+        const ep = net_utils.endpoint(host, dom_cfg.port || this.cfg.main.port || 25)
+        if (isNativeError(ep)) {
+            connection?.logerror(this, `invalid host: ${ep.message}`)
+            return false
+        }
+        dst_host = `smtp://${ep}`
+    }
 
     const notes = connection?.transaction?.notes
     if (!notes) return false
@@ -326,12 +337,16 @@ exports.get_mx_next_hop = (next_hop) => {
     // plugin that uses this is qmail-deliverable, which can direct email delivery
     // via smtp_forward, outbound (SMTP), and outbound (LMTP).
     const dest = new url.URL(next_hop)
+    const using_lmtp = dest.protocol === 'lmtp:'
+    // dest.hostname keeps the brackets on IPv6 literals; Endpoint strips them
+    const ep = net_utils.endpoint(dest.host, using_lmtp ? 24 : 25)
+    if (isNativeError(ep)) throw ep
     const mx = {
         priority: 0,
-        port: dest.port || (dest.protocol === 'lmtp:' ? 24 : 25),
-        exchange: dest.hostname,
+        port: ep.port,
+        exchange: ep.host,
     }
-    if (dest.protocol === 'lmtp:') mx.using_lmtp = true
+    if (using_lmtp) mx.using_lmtp = true
     if (dest.username) {
         mx.auth_type = 'plain'
         mx.auth_user = dest.username
