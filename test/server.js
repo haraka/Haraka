@@ -4,7 +4,7 @@ const { describe, it, beforeEach, afterEach } = require('node:test')
 const assert = require('node:assert/strict')
 const { createHmac } = require('node:crypto')
 const net = require('node:net')
-const { once } = require('node:events')
+const { EventEmitter, once } = require('node:events')
 const path = require('node:path')
 const tls = require('node:tls')
 const constants = require('haraka-constants')
@@ -664,6 +664,80 @@ describe('server', () => {
                 await close(server)
                 restoreHaproxyConfig()
             }
+        })
+    })
+
+    // ── listener binding ──────────────────────────────────────────────────────
+    describe('listener binding', () => {
+        const fakeServer = (failures) => {
+            const server = new EventEmitter()
+            server.bound = []
+            server.listen = (opts, cb) => {
+                setImmediate(() => {
+                    const code = failures[opts.host]
+                    if (code) return server.emit('error', Object.assign(new Error(code), { code }))
+                    server.bound.push(`${opts.host}:${opts.port}`)
+                    cb()
+                })
+            }
+            return server
+        }
+
+        let originals
+        beforeEach(() => {
+            this.server = require('../server')
+            originals = {
+                default_host: this.server.default_host,
+                logerror: this.server.logerror,
+                logwarn: this.server.logwarn,
+                get_listen_addrs: this.server.get_listen_addrs,
+                get_smtp_server: this.server.get_smtp_server,
+                dump_and_exit: this.server.logger.dump_and_exit,
+            }
+            this.server.logerror = () => {}
+            this.server.logwarn = () => {}
+        })
+
+        afterEach(() => {
+            this.server.default_host = originals.default_host
+            this.server.logerror = originals.logerror
+            this.server.logwarn = originals.logwarn
+            this.server.get_listen_addrs = originals.get_listen_addrs
+            this.server.get_smtp_server = originals.get_smtp_server
+            this.server.logger.dump_and_exit = originals.dump_and_exit
+        })
+
+        it('falls back to IPv4 when the default [::0] is unsupported', async () => {
+            this.server.default_host = true
+            const server = fakeServer({ '::0': 'EAFNOSUPPORT' })
+            await this.server.bind_smtp_listener(endpoint('[::0]:2525'), server)
+            assert.deepEqual(server.bound, ['0.0.0.0:2525'])
+        })
+
+        it('does not fall back for an explicitly configured IPv6 listener', async () => {
+            this.server.default_host = false
+            const server = fakeServer({ '::0': 'EAFNOSUPPORT' })
+            await assert.rejects(this.server.bind_smtp_listener(endpoint('[::0]:2525'), server), {
+                code: 'EAFNOSUPPORT',
+            })
+            assert.deepEqual(server.bound, [])
+        })
+
+        it('does not fall back on other bind errors', async () => {
+            this.server.default_host = true
+            const server = fakeServer({ '::0': 'EADDRINUSE' })
+            await assert.rejects(this.server.bind_smtp_listener(endpoint('[::0]:2525'), server), { code: 'EADDRINUSE' })
+        })
+
+        it('setup_smtp_listeners exits rather than rejecting when a bind fails', async () => {
+            let exitCode
+            this.server.get_listen_addrs = () => ['127.0.0.1:2525']
+            this.server.get_smtp_server = async () => fakeServer({ '127.0.0.1': 'EADDRINUSE' })
+            this.server.logger.dump_and_exit = (code) => {
+                exitCode = code
+            }
+            await this.server.setup_smtp_listeners({ run_hooks: () => assert.fail('hooks ran') }, 'master', 1000)
+            assert.equal(exitCode, -1)
         })
     })
 

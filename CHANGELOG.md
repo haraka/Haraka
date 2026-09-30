@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(outbound): sanitize deferred delay
 - feat(outbound): log per-MX errors on deferral
 - fix(smtp_forward): IPv6 and port in next_hop
+- fix(server): handle listener bind failures
 
 ### [3.3.4] - 2026-09-05
 

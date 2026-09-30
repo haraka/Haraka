@@ -11,7 +11,7 @@ const tls = require('node:tls')
 const constants = require('haraka-constants')
 const net_utils = require('haraka-net-utils')
 
-const { endpoint } = require('haraka-net-utils')
+const { endpoint, Endpoint } = require('haraka-net-utils')
 const tls_socket = require('./tls_socket')
 const conn = require('./connection')
 const outbound = require('./outbound')
@@ -581,24 +581,13 @@ Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
             .on('close', () => {
                 Server.loginfo(`Listener ${ep} stopped`)
             })
-            .on('error', (e) => {
-                errors.push(e)
-                Server.logerror(`Failed to setup listeners: ${e.message}`)
-                if (e.code !== 'EAFNOSUPPORT') {
-                    Server.logerror(e)
-                    return
-                }
-                // Fallback from IPv6 to IPv4 if not supported
-                // But only if we supplied the default of [::0]:25
-                if (/^::0/.test(ep.host) && Server.default_host) {
-                    server.listen(ep.port, '0.0.0.0', 0)
-                    return
-                }
-                // Pass error to callback
-                Server.logerror(e)
-            })
 
-        await ep.bind(server, { backlog: 0 })
+        try {
+            await Server.bind_smtp_listener(ep, server)
+            server.on('error', (e) => Server.logerror(e))
+        } catch (e) {
+            errors.push(e)
+        }
     }
 
     if (errors.length) {
@@ -609,6 +598,18 @@ Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
     }
     Server.listening()
     plugins2.run_hooks(`init_${type}`, Server)
+}
+
+Server.bind_smtp_listener = async (ep, server) => {
+    try {
+        await ep.bind(server, { backlog: 0 })
+    } catch (e) {
+        // An explicitly configured IPv6 listener the OS can't serve is a config
+        // error; only the implicit [::0] default falls back to IPv4.
+        if (e.code !== 'EAFNOSUPPORT' || ep.host !== '::0' || !Server.default_host) throw e
+        Server.logwarn(`IPv6 not supported, falling back to 0.0.0.0:${ep.port}`)
+        await new Endpoint({ host: '0.0.0.0', port: ep.port }).bind(server, { backlog: 0 })
+    }
 }
 
 Server.setup_http_listeners = async () => {
@@ -644,17 +645,21 @@ Server.setup_http_listeners = async () => {
             Server.http.server = require('node:http').createServer(app)
         }
 
-        Server.listeners.push(Server.http.server)
-
         Server.http.server.on('listening', function () {
             Server.lognotice(`Listening on ${endpoint(this.address())}`)
         })
 
+        try {
+            await ep.bind(Server.http.server, { backlog: 0 })
+        } catch (e) {
+            Server.logerror(`Failed to listen on ${ep}: ${e.message}`)
+            continue
+        }
+
+        Server.listeners.push(Server.http.server)
         Server.http.server.on('error', (e) => {
             Server.logerror(e)
         })
-
-        await ep.bind(Server.http.server, { backlog: 0 })
     }
 
     Server.plugins.run_hooks('init_http', Server)
