@@ -184,7 +184,7 @@ test('tls_socket', async (t) => {
         }
     })
 
-    await t.test('connect upgrade applies mutual auth cert and timeout/keepalive', async () => {
+    await t.test('connect upgrade applies mutual auth cert, timeout/keepalive and a reused context', async () => {
         const originalNetConnect = net.connect
         const originalTlsConnect = tls.connect
         const originalTlsValid = tls_socket.tls_valid
@@ -251,6 +251,14 @@ test('tls_socket', async (t) => {
             assert.equal(capturedOptions.socket, fakeSocket)
             assert.equal(timeoutSeen, 3210)
             assert.equal(keepaliveSeen, true)
+
+            const { secureContext } = capturedOptions
+            assert.ok(secureContext, 'upgrade passes a secureContext')
+            const again = tls_socket.connect({ host: 'mx.example.com', port: 25 })
+            await new Promise((resolve) => {
+                again.upgrade({ rejectUnauthorized: false }, () => resolve())
+            })
+            assert.equal(capturedOptions.secureContext, secureContext)
         } finally {
             net.connect = originalNetConnect
             tls.connect = originalTlsConnect
@@ -263,6 +271,23 @@ test('tls_socket', async (t) => {
                 tls_socket.certsByHost['client-cert.example'] = originalCertMap.host
             }
         }
+    })
+
+    await t.test('clientSecureContext', async (t) => {
+        const base = { key: TEST_KEY, cert: TEST_CERT, minVersion: 'TLSv1.2' }
+
+        await t.test('reuses a context across hosts and socket options', () => {
+            const a = tls_socket.clientSecureContext({ ...base, servername: 'a.example', rejectUnauthorized: false })
+            const b = tls_socket.clientSecureContext({ ...base, servername: 'b.example', rejectUnauthorized: true })
+            assert.equal(a, b)
+        })
+
+        await t.test('builds a new context when any other option differs', () => {
+            const a = tls_socket.clientSecureContext(base)
+            assert.notEqual(tls_socket.clientSecureContext({ ...base, cert: Buffer.from(TEST_CERT) }), a)
+            assert.notEqual(tls_socket.clientSecureContext({ ...base, minVersion: 'TLSv1.3' }), a)
+            assert.notEqual(tls_socket.clientSecureContext({ ...base, maxVersion: 'TLSv1.2' }), a)
+        })
     })
 
     await t.test('load_tls_ini', async (t) => {
@@ -390,6 +415,57 @@ test('tls_socket', async (t) => {
             tls_socket.cfg = origCfg
         })
 
+        const startTlsPort = () => {
+            const server = tls_socket.createServer((socket) => {
+                socket.on('error', () => {})
+                socket.upgrade(() => socket.write('220 secured\r\n'))
+            })
+            servers.push(server)
+            return listen(server)
+        }
+
+        const handshake = (port, session) =>
+            new Promise((resolve) => {
+                const client = tls.connect({ port, host: '127.0.0.1', rejectUnauthorized: false, session })
+                const result = {}
+                const done = () => {
+                    client.destroy()
+                    resolve(result)
+                }
+                client.on('session', (ticket) => {
+                    result.ticket ??= ticket
+                    if (result.reused !== undefined) done()
+                })
+                client.once('data', () => {
+                    result.reused = client.isSessionReused()
+                    if (session || result.ticket) done()
+                })
+                client.once('error', (err) => {
+                    result.err = err
+                    done()
+                })
+            })
+
+        await t.test(
+            'a requireAuthorized STARTTLS port refuses a ticket from another port',
+            { timeout: 5000 },
+            async () => {
+                const openPort = await startTlsPort()
+                const strictPort = await startTlsPort()
+                const origRequireAuthorized = tls_socket.cfg.main.requireAuthorized
+                tls_socket.cfg.main.requireAuthorized = [strictPort]
+
+                try {
+                    const { ticket } = await handshake(openPort)
+                    assert.ok(ticket, 'the open port issued no ticket')
+                    const { err } = await handshake(strictPort, ticket)
+                    assert.ok(err, 'resumed without a client cert')
+                } finally {
+                    tls_socket.cfg.main.requireAuthorized = origRequireAuthorized
+                }
+            },
+        )
+
         await t.test('STARTTLS with an unloadable key closes the connection', { timeout: 5000 }, async () => {
             const serverErrors = []
             let upgradeThrew = false
@@ -424,6 +500,32 @@ test('tls_socket', async (t) => {
                 for (const socket of rawSockets) socket.destroy()
                 tls_socket.cfg = undefined
                 tls_socket.load_tls_ini()
+            }
+        })
+
+        await t.test('connect presents the mutual TLS client cert on every connection', { timeout: 5000 }, async () => {
+            const serverOpts = { key: TEST_KEY, cert: TEST_CERT, requestCert: true, rejectUnauthorized: false }
+            const server = tls.createServer(serverOpts, (socket) => {
+                socket.end(`${socket.getPeerCertificate().subject?.O}\r\n`)
+            })
+            servers.push(server)
+            const port = await listen(server)
+            const origMutualTls = tls_socket.cfg.main.mutual_tls
+            tls_socket.cfg.main.mutual_tls = true
+
+            const peerOrganization = () =>
+                new Promise((resolve, reject) => {
+                    const socket = tls_socket.connect({ host: '127.0.0.1', port })
+                    socket.once('error', reject)
+                    socket.upgrade({ rejectUnauthorized: false })
+                    socket.once('data', (data) => resolve(data.toString().trim()))
+                })
+
+            try {
+                assert.equal(await peerOrganization(), 'Internet Widgits Pty Ltd')
+                assert.equal(await peerOrganization(), 'Internet Widgits Pty Ltd')
+            } finally {
+                tls_socket.cfg.main.mutual_tls = origMutualTls
             }
         })
     })

@@ -1,6 +1,7 @@
 'use strict'
 
 const cluster = require('node:cluster')
+const crypto = require('node:crypto')
 const net = require('node:net')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
@@ -18,6 +19,15 @@ const certsByHost = new Notes()
 const ctxByHost = {}
 let ocsp
 let ocspCache
+
+// STARTTLS listeners with different requireAuthorized ports share these contexts;
+// a session ticket issued on one port must not skip another port's client-cert check.
+function createSecureContext(opts) {
+    return tls.createSecureContext({
+        ...opts,
+        secureOptions: (opts.secureOptions ?? 0) | crypto.constants.SSL_OP_NO_TICKET,
+    })
+}
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -301,39 +311,39 @@ exports.load_plugin_tls_options = (plugin_tls_cfg = {}) => {
     return cfg
 }
 
+// https://nodejs.org/api/tls.html#tls_new_tls_tlssocket_socket_options
+const TLSSocketOptions = [
+    // 'server'        // manually added
+    'isServer',
+    'requestCert',
+    'rejectUnauthorized',
+    'NPNProtocols',
+    'ALPNProtocols',
+    'session',
+    'requestOCSP',
+    'secureContext',
+    'SNICallback',
+]
+
+// https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
+const createSecureContextOptions = [
+    'key',
+    'cert',
+    'dhparam',
+    'pfx',
+    'passphrase',
+    'ca',
+    'crl',
+    'ciphers',
+    'minVersion',
+    'honorCipherOrder',
+    'ecdhCurve',
+    'secureProtocol',
+    'secureOptions',
+    'sessionIdContext',
+]
+
 exports.applySocketOpts = (name) => {
-    // https://nodejs.org/api/tls.html#tls_new_tls_tlssocket_socket_options
-    const TLSSocketOptions = [
-        // 'server'        // manually added
-        'isServer',
-        'requestCert',
-        'rejectUnauthorized',
-        'NPNProtocols',
-        'ALPNProtocols',
-        'session',
-        'requestOCSP',
-        'secureContext',
-        'SNICallback',
-    ]
-
-    // https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
-    const createSecureContextOptions = [
-        'key',
-        'cert',
-        'dhparam',
-        'pfx',
-        'passphrase',
-        'ca',
-        'crl',
-        'ciphers',
-        'minVersion',
-        'honorCipherOrder',
-        'ecdhCurve',
-        'secureProtocol',
-        'secureOptions',
-        'sessionIdContext',
-    ]
-
     for (const opt of [...TLSSocketOptions, ...createSecureContextOptions]) {
         if (this.cfg[name] && this.cfg[name][opt] !== undefined) {
             // if the setting exists in tls.ini [name]
@@ -414,12 +424,14 @@ exports.load_default_opts = () => {
         certsByHost.set('*.cert', asArray)
     }
 
+    // a reload without a usable key or cert must not keep serving the old context
+    delete ctxByHost['*']
     if (cfg.cert[0] && cfg.key[0]) {
         this.tls_valid = true
 
         // now that all opts are applied, generate TLS context
         this.ensureDhparams(() => {
-            ctxByHost['*'] = tls.createSecureContext(cfg)
+            ctxByHost['*'] = createSecureContext(cfg)
         })
     }
 }
@@ -483,7 +495,7 @@ exports.get_certs_dir = async (tlsDir) => {
 
         // all opts are applied, generate TLS context
         try {
-            ctxByHost[cn] = tls.createSecureContext(certsByHost.get([cn]))
+            ctxByHost[cn] = createSecureContext(certsByHost.get([cn]))
         } catch (err) {
             log.error(`CN '${cn}' loading got: ${err.message}`)
             delete ctxByHost[cn]
@@ -658,7 +670,8 @@ function createServer(cb) {
 
             let secureContext
             try {
-                secureContext = tls.createSecureContext(certsByHost['*'])
+                // ctxByHost['*'] is unset until key, cert and dhparams load
+                secureContext = ctxByHost['*'] ?? createSecureContext(certsByHost['*'])
             } catch (err) {
                 // before socket.clean(), so the outer socket relays the error and the close
                 return cryptoSocket.destroy(err)
@@ -712,6 +725,45 @@ function createServer(cb) {
     return server
 }
 
+// Options that stay out of the SecureContext (socket-level net/tls options and Haraka's
+// own). Every other option keys the cache, so an unlisted option only costs a miss.
+const clientSocketOptions = new Set([
+    ...TLSSocketOptions,
+    'checkServerIdentity',
+    'enableTrace',
+    'force_tls_hosts',
+    'highWaterMark',
+    'host',
+    'minDHSize',
+    'no_tls_hosts',
+    'path',
+    'port',
+    'pskCallback',
+    'servername',
+    'socket',
+    'timeout',
+])
+const clientContexts = []
+const maxClientContexts = 16
+
+exports.clientSecureContext = (options) => {
+    const entries = Object.entries(options)
+        .filter(([name]) => !clientSocketOptions.has(name))
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+
+    const cached = clientContexts.find(
+        (c) =>
+            c.entries.length === entries.length &&
+            c.entries.every(([name, value], i) => name === entries[i][0] && Object.is(value, entries[i][1])),
+    )
+    if (cached) return cached.context
+
+    const context = tls.createSecureContext(options)
+    clientContexts.unshift({ entries, context })
+    if (clientContexts.length > maxClientContexts) clientContexts.pop()
+    return context
+}
+
 function getCertFor(host) {
     if (host && certsByHost[host]) return certsByHost[host]
     return certsByHost['*'] // the default TLS cert
@@ -739,7 +791,7 @@ function connect(conn_options = {}) {
 
         let secureContext
         try {
-            secureContext = options.secureContext ?? tls.createSecureContext(options)
+            secureContext = options.secureContext ?? exports.clientSecureContext(options)
         } catch (err) {
             return cryptoSocket.destroy(err)
         }
