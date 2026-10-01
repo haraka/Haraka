@@ -13,6 +13,7 @@ const net_utils = require('haraka-net-utils')
 const { endpoint } = require('haraka-net-utils')
 const message = require('haraka-email-message')
 const { get_client } = require('../smtp_client')
+const tls_socket = require('../tls_socket')
 
 function fixtureConfig(name) {
     const testRoot = path.resolve('test')
@@ -662,6 +663,47 @@ describe('server', () => {
                 if (client) client.destroy()
                 else if (raw) raw.destroy()
                 await close(server)
+                restoreHaproxyConfig()
+            }
+        })
+
+        it('keeps an SMTPS requireAuthorized port out of STARTTLS listeners', async () => {
+            const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_disabled')
+            const { main } = tls_socket.cfg
+            const origRequireAuthorized = main.requireAuthorized
+            const origRejectUnauthorized = tls_socket.certsByHost['*'].rejectUnauthorized
+            const starttls = tls_socket.createServer((socket) => {
+                socket.on('error', () => {})
+                socket.upgrade(() => socket.write('220 secured\r\n'))
+            })
+
+            try {
+                this.server.cfg.main.smtps_port = 0
+                main.requireAuthorized = [0] // the port of the ephemeral SMTPS endpoint
+                await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 1000)
+                main.requireAuthorized = origRequireAuthorized
+
+                await listen(starttls)
+                const client = tls.connect({
+                    port: starttls.address().port,
+                    host: '127.0.0.1',
+                    rejectUnauthorized: false,
+                })
+                client.on('error', () => {})
+                const outcome = await withTimeout(
+                    Promise.race([
+                        new Promise((resolve) => client.once('data', () => resolve('served'))),
+                        new Promise((resolve) => client.once('close', () => resolve('closed'))),
+                    ]),
+                    3000,
+                    'STARTTLS handshake timed out',
+                )
+                client.destroy()
+                assert.equal(outcome, 'served')
+            } finally {
+                main.requireAuthorized = origRequireAuthorized
+                tls_socket.certsByHost['*'].rejectUnauthorized = origRejectUnauthorized
+                await close(starttls)
                 restoreHaproxyConfig()
             }
         })
