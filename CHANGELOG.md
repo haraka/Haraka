@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - fix(outbound): sanitize deferred delay
 - feat(outbound): log per-MX errors on deferral
+- fix(tls): close the socket when a context fails
 
 ### [3.3.4] - 2026-09-05
 
