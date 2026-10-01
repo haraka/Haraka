@@ -424,7 +424,7 @@ Server.create_smtps_server = (opts, onConnect) => {
         })
     }
 
-    server = net.createServer((socket) => {
+    server = net.createServer({ noDelay: true }, (socket) => {
         const remote_ip = net_utils.normalize_ip(socket.remoteAddress) || socket.remoteAddress
 
         if (!net_utils.is_haproxy_allowed(remote_ip)) {
@@ -515,6 +515,7 @@ Server.get_smtp_server = async (ep, inactivity_timeout) => {
     if (ep.port === parseInt(Server.cfg.main.smtps_port, 10)) {
         Server.loginfo('getting SocketOpts for SMTPS server')
         const opts = await tls_socket.getSocketOpts('*')
+        opts.noDelay = true
         Server.loginfo(`Creating TLS server on ${ep}`)
 
         opts.rejectUnauthorized = tls_socket.get_rejectUnauthorized(

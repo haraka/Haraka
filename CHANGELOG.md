@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - perf(tls): reuse TLS contexts across connections
 - fix(tls): close the socket when a context fails
 - fix(smtps): keep requireAuthorized per listener
+- fix(net): turn off Nagle on SMTP sockets
 
 ### [3.3.4] - 2026-09-05
 

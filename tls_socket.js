@@ -660,7 +660,7 @@ exports.get_rejectUnauthorized = (rejectUnauthorized, port, port_list) => {
 }
 
 function createServer(cb) {
-    const server = net.createServer((cryptoSocket) => {
+    const server = net.createServer({ noDelay: true }, (cryptoSocket) => {
         const socket = new pluggableStream(cryptoSocket)
 
         exports.addOCSP(server)
@@ -773,7 +773,7 @@ function connect(conn_options = {}) {
     // called by outbound/client_pool, smtp_client, plugins/spamassassin,avg,clamd,
     // plugins/auth/auth_proxy
 
-    const cryptoSocket = net.connect(conn_options)
+    const cryptoSocket = net.connect({ noDelay: true, ...conn_options })
     const socket = new pluggableStream(cryptoSocket)
 
     socket.upgrade = (options, cb2) => {

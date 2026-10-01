@@ -707,6 +707,19 @@ describe('server', () => {
                 restoreHaproxyConfig()
             }
         })
+
+        it('turns off Nagle on SMTPS listeners', async () => {
+            this.server.cfg.main.smtps_port = 0
+            for (const fixture of ['haproxy_disabled', 'haproxy_allowed']) {
+                const restoreHaproxyConfig = useHaproxyFixture(this.server, fixture)
+                try {
+                    const server = await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 1000)
+                    assert.equal(server.noDelay, true, fixture)
+                } finally {
+                    restoreHaproxyConfig()
+                }
+            }
+        })
     })
 
     // ── get_http_docroot ──────────────────────────────────────────────────────

@@ -164,6 +164,25 @@ test('tls_socket', async (t) => {
         })
     })
 
+    await t.test('createServer turns off Nagle', () => {
+        assert.equal(tls_socket.createServer(() => {}).noDelay, true)
+    })
+
+    await t.test('connect turns off Nagle', () => {
+        const originalNetConnect = net.connect
+        let connectOptions
+        net.connect = (options) => {
+            connectOptions = options
+            return new EventEmitter()
+        }
+        try {
+            tls_socket.connect({ host: '127.0.0.1', port: 25 })
+        } finally {
+            net.connect = originalNetConnect
+        }
+        assert.equal(connectOptions.noDelay, true)
+    })
+
     await t.test('getSocketOpts', async () => {
         // Exercise the typo path (would requires failing config.getDir)
         assert.strictEqual(typeof tls_socket.getSocketOpts, 'function')
