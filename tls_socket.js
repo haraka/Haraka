@@ -656,11 +656,19 @@ function createServer(cb) {
         socket.upgrade = (cb2) => {
             log.debug('Upgrading to TLS')
 
+            let secureContext
+            try {
+                secureContext = tls.createSecureContext(certsByHost['*'])
+            } catch (err) {
+                // before socket.clean(), so the outer socket relays the error and the close
+                return cryptoSocket.destroy(err)
+            }
+
             socket.clean()
 
             cryptoSocket.removeAllListeners('data')
 
-            const options = { ...certsByHost['*'] }
+            const options = { ...certsByHost['*'], secureContext }
             options.server = server // TLSSocket needs server for SNI to work
 
             options.rejectUnauthorized = exports.get_rejectUnauthorized(
@@ -717,9 +725,6 @@ function connect(conn_options = {}) {
     const socket = new pluggableStream(cryptoSocket)
 
     socket.upgrade = (options, cb2) => {
-        socket.clean()
-        cryptoSocket.removeAllListeners('data')
-
         if (exports.tls_valid) {
             const host = conn_options.host
             if (exports.cfg === undefined) exports.load_tls_ini()
@@ -731,9 +736,19 @@ function connect(conn_options = {}) {
                 options = { ...options, ...getCertFor(host) }
             }
         }
+
+        let secureContext
+        try {
+            secureContext = options.secureContext ?? tls.createSecureContext(options)
+        } catch (err) {
+            return cryptoSocket.destroy(err)
+        }
+
+        socket.clean()
+        cryptoSocket.removeAllListeners('data')
         options.socket = cryptoSocket
 
-        const cleartext = tls.connect(options)
+        const cleartext = tls.connect({ ...options, secureContext })
 
         pipe(cleartext, cryptoSocket)
 
