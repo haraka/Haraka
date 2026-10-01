@@ -5,6 +5,7 @@ const assert = require('node:assert/strict')
 
 const constants = require('haraka-constants')
 const DSN = require('haraka-dsn')
+const utils = require('haraka-utils')
 const { Address } = require('@haraka/email-address')
 const { Header } = require('haraka-email-message')
 
@@ -182,6 +183,12 @@ describe('connection', () => {
 
         it('contains Haraka/version', () => {
             assert.match(this.connection.local.info, /Haraka\/\d+\.\d+/)
+        })
+
+        it('does not read the version per connection', (t) => {
+            const getVersion = t.mock.method(utils, 'getVersion')
+            connection.createConnection(makeClient(), makeServer(), Server.cfg)
+            assert.equal(getVersion.mock.callCount(), 0)
         })
     })
 
