@@ -546,7 +546,7 @@ exports.getSocketOpts = async (name) => {
         }
     }
 
-    return certsByHost[name] || certsByHost['*']
+    return { ...(certsByHost[name] || certsByHost['*']) }
 }
 
 function pipe(cleartext, socket) {
