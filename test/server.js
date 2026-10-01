@@ -249,6 +249,16 @@ describe('server', () => {
                 expected: ['[::1]:2525'],
             },
             {
+                desc: 'invalid listen entry is kept verbatim for setup to report',
+                args: [{ listen: '127.0.0.1:25,bogus host' }],
+                expected: ['127.0.0.1:25', 'bogus host'],
+            },
+            {
+                desc: 'legacy port out of range is kept for setup to report',
+                args: [{ listen_host: '127.0.0.1', port: 70000 }],
+                expected: ['127.0.0.1:70000'],
+            },
+            {
                 desc: 'legacy listen_host is prepended to listen',
                 args: [{ listen_host: '127.0.0.1', port: 2525, listen: '[::1]:25' }],
                 expected: ['127.0.0.1:2525', '[::1]:25'],

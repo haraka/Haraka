@@ -1,7 +1,5 @@
 // Proxy AUTH requests selectively by domain
 
-const { isNativeError } = require('node:util').types
-
 const utils = require('haraka-utils')
 const net_utils = require('haraka-net-utils')
 
@@ -58,9 +56,11 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     // Take the head without mutating the caller's array: hosts may be the cached
     // config route, and shift() would consume it across authentication attempts.
     const [current, ...remaining] = hosts
-    const ep = net_utils.endpoint(current, 25)
-    if (isNativeError(ep)) {
-        connection.logerror(this, `invalid host: ${ep.message}`)
+    let ep
+    try {
+        ep = net_utils.Endpoint.parse(current, 25)
+    } catch (err) {
+        connection.logerror(this, `invalid host: ${err.message}`)
         return this.try_auth_proxy(connection, remaining, user, passwd, cb)
     }
     const { host, port } = ep

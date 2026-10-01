@@ -284,15 +284,23 @@ Server.get_listen_addrs = (cfg, port) => {
     if (cfg?.listen) {
         listeners = cfg.listen.split(/\s*,\s*/)
         if (listeners[0] === '') listeners = []
-        for (let i = 0; i < listeners.length; i++) {
-            const ep = endpoint(listeners[i], port)
-            if (ep instanceof Error) continue
-            listeners[i] = ep.toString()
-        }
+        // unparseable entries stay verbatim so listener setup can report them
+        listeners = listeners.map((addr) => {
+            try {
+                return Endpoint.parse(addr, port).toString()
+            } catch {
+                return addr
+            }
+        })
     }
     if (cfg.port) {
         if (!cfg.listen_host) Server.default_host = true
-        listeners.unshift(endpoint(cfg.listen_host || '::0', cfg.port).toString())
+        const host = cfg.listen_host || '::0'
+        try {
+            listeners.unshift(Endpoint.parse(host, cfg.port).toString())
+        } catch {
+            listeners.unshift(`${host}:${cfg.port}`)
+        }
     }
     if (listeners.length) return listeners
 
@@ -556,10 +564,11 @@ Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
     }
 
     for (const listen_address of Server.get_listen_addrs(Server.cfg.main)) {
-        const ep = endpoint(listen_address, 25)
-
-        if (ep instanceof Error) {
-            Server.logerror(`Invalid "listen" format in smtp.ini: ${listen_address}`)
+        let ep
+        try {
+            ep = Endpoint.parse(listen_address, 25)
+        } catch (err) {
+            Server.logerror(`Invalid "listen" format in smtp.ini: ${err.message}`)
             continue
         }
 
@@ -627,9 +636,11 @@ Server.setup_http_listeners = async () => {
     Server.loginfo('express app is at Server.http.app')
 
     for (const listen_address of listeners) {
-        const ep = endpoint(listen_address, 80)
-        if (ep instanceof Error) {
-            Server.logerror(`Invalid format for listen in http.ini: ${listen_address}`)
+        let ep
+        try {
+            ep = Endpoint.parse(listen_address, 80)
+        } catch (err) {
+            Server.logerror(`Invalid format for listen in http.ini: ${err.message}`)
             continue
         }
 

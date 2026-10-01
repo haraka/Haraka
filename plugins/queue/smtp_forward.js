@@ -5,7 +5,6 @@
 // originating server.
 
 const url = require('node:url')
-const { isNativeError } = require('node:util').types
 
 const net_utils = require('haraka-net-utils')
 
@@ -121,13 +120,13 @@ exports.check_sender = function (next, connection, params) {
     next()
 }
 
-// Returns an smtp:// URL, undefined when no host is configured, or an Error.
+// Returns an smtp:// URL, or undefined when no host is configured. Throws on
+// an invalid host or port.
 exports.get_next_hop = function (dom_cfg) {
     const host = dom_cfg.host || this.cfg.main.host
     if (!host) return undefined
 
-    const ep = net_utils.endpoint(host, dom_cfg.port || this.cfg.main.port || 25)
-    return isNativeError(ep) ? ep : `smtp://${ep}`
+    return `smtp://${net_utils.Endpoint.parse(host, dom_cfg.port || this.cfg.main.port || 25)}`
 }
 
 exports.set_queue = function (connection, queue_wanted, domain) {
@@ -136,9 +135,12 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     if (!queue_wanted) queue_wanted = dom_cfg.queue || this.cfg.main.queue
     if (!queue_wanted) return true
 
-    // check_recipient rejects an invalid smtp_forward host before calling here
-    let dst_host = this.get_next_hop(dom_cfg)
-    if (isNativeError(dst_host)) dst_host = undefined
+    let dst_host
+    try {
+        dst_host = this.get_next_hop(dom_cfg)
+    } catch {
+        // check_recipient rejects an invalid smtp_forward host before calling here
+    }
 
     const notes = connection?.transaction?.notes
     if (!notes) return false
@@ -180,9 +182,10 @@ exports.check_recipient = function (next, connection, params) {
     const domain = rcpt.host.toLowerCase()
     const dom_cfg = this.route_for(domain)
     if (dom_cfg !== undefined) {
-        const next_hop = this.get_next_hop(dom_cfg)
-        if (isNativeError(next_hop)) {
-            connection.logerror(this, `invalid host for ${domain}: ${next_hop.message}`)
+        try {
+            this.get_next_hop(dom_cfg)
+        } catch (err) {
+            connection.logerror(this, `invalid host for ${domain}: ${err.message}`)
             txn.results.add(this, { err: 'rcpt_to.invalid_host' })
             return next(DENYSOFT, 'Routing misconfigured, retry later')
         }
@@ -351,8 +354,7 @@ exports.get_mx_next_hop = (next_hop) => {
     const dest = new url.URL(next_hop)
     const using_lmtp = dest.protocol === 'lmtp:'
     // dest.hostname keeps the brackets on IPv6 literals; Endpoint strips them
-    const ep = net_utils.endpoint(dest.host, using_lmtp ? 24 : 25)
-    if (isNativeError(ep)) throw ep
+    const ep = net_utils.Endpoint.parse(dest.host, using_lmtp ? 24 : 25)
     const mx = {
         priority: 0,
         port: ep.port,

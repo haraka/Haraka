@@ -164,7 +164,7 @@ class SMTPClient extends events.EventEmitter {
                 if (!error) error = ''
 
                 // error is e.g. "Error: connect ECONNREFUSED"
-                const errMsg = `${client.uuid}: [${new net_utils.Endpoint({ host: client.host, port: client.port })}] SMTP connection ${msg} ${error}`
+                const errMsg = `${client.uuid}: ${new net_utils.Endpoint({ host: client.host, port: client.port })} SMTP connection ${msg} ${error}`
 
                 /* eslint-disable no-fallthrough */
                 switch (client.state) {
