@@ -4,7 +4,6 @@
 // and passes back any errors seen on the ongoing server to the
 // originating server.
 
-const net = require('node:net')
 const url = require('node:url')
 const { isNativeError } = require('node:util').types
 
@@ -127,9 +126,7 @@ exports.get_next_hop = function (dom_cfg) {
     const host = dom_cfg.host || this.cfg.main.host
     if (!host) return undefined
 
-    const port = dom_cfg.port || this.cfg.main.port || 25
-    // a bare IPv6 literal like 2001:db8::1:25 is ambiguous as host:port
-    const ep = net.isIPv6(host) ? new net_utils.Endpoint({ host, port }) : net_utils.endpoint(host, port)
+    const ep = net_utils.endpoint(host, dom_cfg.port || this.cfg.main.port || 25)
     return isNativeError(ep) ? ep : `smtp://${ep}`
 }
 
