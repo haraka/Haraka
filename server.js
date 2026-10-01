@@ -639,6 +639,7 @@ Server.setup_http_listeners = async () => {
     Server.http.app = app
     Server.loginfo('express app is at Server.http.app')
 
+    let bound = 0
     for (const listen_address of listeners) {
         let ep
         try {
@@ -648,29 +649,37 @@ Server.setup_http_listeners = async () => {
             continue
         }
 
+        let server
         if (443 == ep.port) {
             const tlsOpts = { ...tls_socket.certsByHost['*'] }
             tlsOpts.requestCert = false // not appropriate for HTTPS
-            Server.http.server = require('node:https').createServer(tlsOpts, app)
+            server = require('node:https').createServer(tlsOpts, app)
         } else {
-            Server.http.server = require('node:http').createServer(app)
+            server = require('node:http').createServer(app)
         }
 
-        Server.http.server.on('listening', function () {
+        server.on('listening', function () {
             Server.lognotice(`Listening on ${endpoint(this.address())}`)
         })
 
         try {
-            await ep.bind(Server.http.server, { backlog: 0 })
+            await ep.bind(server, { backlog: 0 })
         } catch (e) {
             Server.logerror(`Failed to listen on ${ep}: ${e.message}`)
             continue
         }
 
-        Server.listeners.push(Server.http.server)
-        Server.http.server.on('error', (e) => {
+        bound++
+        Server.http.server = server
+        Server.listeners.push(server)
+        server.on('error', (e) => {
             Server.logerror(e)
         })
+    }
+
+    if (!bound) {
+        Server.logerror('No http listeners bound, skipping init_http')
+        return
     }
 
     Server.plugins.run_hooks('init_http', Server)
