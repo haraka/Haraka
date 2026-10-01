@@ -722,7 +722,7 @@ describe('server', () => {
         beforeEach(() => {
             this.server = require('../server')
             originals = {
-                default_host: this.server.default_host,
+                default_listen_addr: this.server.default_listen_addr,
                 logerror: this.server.logerror,
                 logwarn: this.server.logwarn,
                 get_listen_addrs: this.server.get_listen_addrs,
@@ -734,7 +734,7 @@ describe('server', () => {
         })
 
         afterEach(() => {
-            this.server.default_host = originals.default_host
+            this.server.default_listen_addr = originals.default_listen_addr
             this.server.logerror = originals.logerror
             this.server.logwarn = originals.logwarn
             this.server.get_listen_addrs = originals.get_listen_addrs
@@ -743,14 +743,14 @@ describe('server', () => {
         })
 
         it('falls back to IPv4 when the default [::0] is unsupported', async () => {
-            this.server.default_host = true
+            this.server.default_listen_addr = '[::0]:2525'
             const server = fakeServer({ '::0': 'EAFNOSUPPORT' })
             await this.server.bind_smtp_listener(endpoint('[::0]:2525'), server)
             assert.deepEqual(server.bound, ['0.0.0.0:2525'])
         })
 
         it('does not fall back for an explicitly configured IPv6 listener', async () => {
-            this.server.default_host = false
+            this.server.default_listen_addr = undefined
             const server = fakeServer({ '::0': 'EAFNOSUPPORT' })
             await assert.rejects(this.server.bind_smtp_listener(endpoint('[::0]:2525'), server), {
                 code: 'EAFNOSUPPORT',
@@ -758,8 +758,17 @@ describe('server', () => {
             assert.deepEqual(server.bound, [])
         })
 
+        it('does not fall back for an explicit [::0] listener alongside the default', async () => {
+            this.server.get_listen_addrs({ port: 2525, listen: '[::0]:25' })
+            const server = fakeServer({ '::0': 'EAFNOSUPPORT' })
+            await assert.rejects(this.server.bind_smtp_listener(endpoint('[::0]:25'), server), {
+                code: 'EAFNOSUPPORT',
+            })
+            assert.deepEqual(server.bound, [])
+        })
+
         it('does not fall back on other bind errors', async () => {
-            this.server.default_host = true
+            this.server.default_listen_addr = '[::0]:2525'
             const server = fakeServer({ '::0': 'EADDRINUSE' })
             await assert.rejects(this.server.bind_smtp_listener(endpoint('[::0]:2525'), server), { code: 'EADDRINUSE' })
         })

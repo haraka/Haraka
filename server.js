@@ -280,6 +280,7 @@ function messageHandler(worker, msg) {
 
 Server.get_listen_addrs = (cfg, port) => {
     if (!port) port = 25
+    Server.default_listen_addr = undefined
     let listeners = []
     if (cfg?.listen) {
         listeners = cfg.listen.split(/\s*,\s*/)
@@ -294,18 +295,21 @@ Server.get_listen_addrs = (cfg, port) => {
         })
     }
     if (cfg.port) {
-        if (!cfg.listen_host) Server.default_host = true
-        const host = cfg.listen_host || '::0'
-        try {
-            listeners.unshift(Endpoint.parse(host, cfg.port).toString())
-        } catch {
-            listeners.unshift(`${host}:${cfg.port}`)
+        if (cfg.listen_host) {
+            try {
+                listeners.unshift(Endpoint.parse(cfg.listen_host, cfg.port).toString())
+            } catch {
+                listeners.unshift(`${cfg.listen_host}:${cfg.port}`)
+            }
+        } else {
+            Server.default_listen_addr = `${new Endpoint({ host: '::0', port: cfg.port })}`
+            listeners.unshift(Server.default_listen_addr)
         }
     }
     if (listeners.length) return listeners
 
-    Server.default_host = true
-    listeners.push(`[::0]:${port}`)
+    Server.default_listen_addr = `[::0]:${port}`
+    listeners.push(Server.default_listen_addr)
 
     return listeners
 }
@@ -611,7 +615,7 @@ Server.bind_smtp_listener = async (ep, server) => {
     } catch (e) {
         // An explicitly configured IPv6 listener the OS can't serve is a config
         // error; only the implicit [::0] default falls back to IPv4.
-        if (e.code !== 'EAFNOSUPPORT' || ep.host !== '::0' || !Server.default_host) throw e
+        if (e.code !== 'EAFNOSUPPORT' || `${ep}` !== Server.default_listen_addr) throw e
         Server.logwarn(`IPv6 not supported, falling back to 0.0.0.0:${ep.port}`)
         await new Endpoint({ host: '0.0.0.0', port: ep.port }).bind(server, { backlog: 0 })
     }
