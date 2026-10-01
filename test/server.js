@@ -4,7 +4,7 @@ const { describe, it, beforeEach, afterEach } = require('node:test')
 const assert = require('node:assert/strict')
 const { createHmac } = require('node:crypto')
 const net = require('node:net')
-const { once } = require('node:events')
+const { EventEmitter, once } = require('node:events')
 const path = require('node:path')
 const tls = require('node:tls')
 const constants = require('haraka-constants')
@@ -228,6 +228,41 @@ describe('server', () => {
                 desc: 'IPv4 & IPv6, custom port',
                 args: [{ listen: '127.0.0.1,[::1]' }, 250],
                 expected: ['127.0.0.1:250', '[::1]:250'],
+            },
+            {
+                desc: 'legacy port, default host',
+                args: [{ port: 2525 }],
+                expected: ['[::0]:2525'],
+            },
+            {
+                desc: 'legacy listen_host IPv4',
+                args: [{ listen_host: '127.0.0.1', port: 2525 }],
+                expected: ['127.0.0.1:2525'],
+            },
+            {
+                desc: 'legacy listen_host bare IPv6',
+                args: [{ listen_host: '2001:db8::1:25', port: 2525 }],
+                expected: ['[2001:db8::1:25]:2525'],
+            },
+            {
+                desc: 'legacy listen_host bracketed IPv6',
+                args: [{ listen_host: '[::1]', port: 2525 }],
+                expected: ['[::1]:2525'],
+            },
+            {
+                desc: 'invalid listen entry is kept verbatim for setup to report',
+                args: [{ listen: '127.0.0.1:25,bogus host' }],
+                expected: ['127.0.0.1:25', 'bogus host'],
+            },
+            {
+                desc: 'legacy port out of range is kept for setup to report',
+                args: [{ listen_host: '127.0.0.1', port: 70000 }],
+                expected: ['127.0.0.1:70000'],
+            },
+            {
+                desc: 'legacy listen_host is prepended to listen',
+                args: [{ listen_host: '127.0.0.1', port: 2525, listen: '[::1]:25' }],
+                expected: ['127.0.0.1:2525', '[::1]:25'],
             },
         ]
 
@@ -719,6 +754,89 @@ describe('server', () => {
                     restoreHaproxyConfig()
                 }
             }
+        })
+    })
+
+    // ── listener binding ──────────────────────────────────────────────────────
+    describe('listener binding', () => {
+        const fakeServer = (failures) => {
+            const server = new EventEmitter()
+            server.bound = []
+            server.listen = (opts, cb) => {
+                setImmediate(() => {
+                    const code = failures[opts.host]
+                    if (code) return server.emit('error', Object.assign(new Error(code), { code }))
+                    server.bound.push(`${opts.host}:${opts.port}`)
+                    cb()
+                })
+            }
+            return server
+        }
+
+        let originals
+        beforeEach(() => {
+            this.server = require('../server')
+            originals = {
+                default_listen_addr: this.server.default_listen_addr,
+                logerror: this.server.logerror,
+                logwarn: this.server.logwarn,
+                get_listen_addrs: this.server.get_listen_addrs,
+                get_smtp_server: this.server.get_smtp_server,
+                dump_and_exit: this.server.logger.dump_and_exit,
+            }
+            this.server.logerror = () => {}
+            this.server.logwarn = () => {}
+        })
+
+        afterEach(() => {
+            this.server.default_listen_addr = originals.default_listen_addr
+            this.server.logerror = originals.logerror
+            this.server.logwarn = originals.logwarn
+            this.server.get_listen_addrs = originals.get_listen_addrs
+            this.server.get_smtp_server = originals.get_smtp_server
+            this.server.logger.dump_and_exit = originals.dump_and_exit
+        })
+
+        it('falls back to IPv4 when the default [::0] is unsupported', async () => {
+            this.server.default_listen_addr = '[::0]:2525'
+            const server = fakeServer({ '::0': 'EAFNOSUPPORT' })
+            await this.server.bind_smtp_listener(endpoint('[::0]:2525'), server)
+            assert.deepEqual(server.bound, ['0.0.0.0:2525'])
+        })
+
+        it('does not fall back for an explicitly configured IPv6 listener', async () => {
+            this.server.default_listen_addr = undefined
+            const server = fakeServer({ '::0': 'EAFNOSUPPORT' })
+            await assert.rejects(this.server.bind_smtp_listener(endpoint('[::0]:2525'), server), {
+                code: 'EAFNOSUPPORT',
+            })
+            assert.deepEqual(server.bound, [])
+        })
+
+        it('does not fall back for an explicit [::0] listener alongside the default', async () => {
+            this.server.get_listen_addrs({ port: 2525, listen: '[::0]:25' })
+            const server = fakeServer({ '::0': 'EAFNOSUPPORT' })
+            await assert.rejects(this.server.bind_smtp_listener(endpoint('[::0]:25'), server), {
+                code: 'EAFNOSUPPORT',
+            })
+            assert.deepEqual(server.bound, [])
+        })
+
+        it('does not fall back on other bind errors', async () => {
+            this.server.default_listen_addr = '[::0]:2525'
+            const server = fakeServer({ '::0': 'EADDRINUSE' })
+            await assert.rejects(this.server.bind_smtp_listener(endpoint('[::0]:2525'), server), { code: 'EADDRINUSE' })
+        })
+
+        it('setup_smtp_listeners exits rather than rejecting when a bind fails', async () => {
+            let exitCode
+            this.server.get_listen_addrs = () => ['127.0.0.1:2525']
+            this.server.get_smtp_server = async () => fakeServer({ '127.0.0.1': 'EADDRINUSE' })
+            this.server.logger.dump_and_exit = (code) => {
+                exitCode = code
+            }
+            await this.server.setup_smtp_listeners({ run_hooks: () => assert.fail('hooks ran') }, 'master', 1000)
+            assert.equal(exitCode, -1)
         })
     })
 

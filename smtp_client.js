@@ -164,7 +164,7 @@ class SMTPClient extends events.EventEmitter {
                 if (!error) error = ''
 
                 // error is e.g. "Error: connect ECONNREFUSED"
-                const errMsg = `${client.uuid}: [${client.host}:${client.port}] SMTP connection ${msg} ${error}`
+                const errMsg = `${client.uuid}: ${new net_utils.Endpoint({ host: client.host, port: client.port })} SMTP connection ${msg} ${error}`
 
                 /* eslint-disable no-fallthrough */
                 switch (client.state) {
@@ -458,7 +458,9 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
     // these are the errors thrown when the connection is dead
     smtp_client.on('connection-error', (error) => {
         // error contains e.g. "Error: connect ECONNREFUSE"
-        logger.error(`backend failure: ${smtp_client.host}:${smtp_client.port} - ${error}`)
+        logger.error(
+            `backend failure: ${new net_utils.Endpoint({ host: smtp_client.host, port: smtp_client.port })} - ${error}`,
+        )
         const { host_pool } = connection.server.notes
         // only exists for if forwarding_host_pool is set in the config
         if (host_pool) {

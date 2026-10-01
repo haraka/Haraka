@@ -108,6 +108,15 @@ describe('outbound/hmail', () => {
             socket.emit('close')
             assert.deepEqual(hmail.mx_errors, ['[2001:db8::1]:25 closed connection'])
         })
+
+        it('brackets IPv6 hosts in log messages', () => {
+            const logged = []
+            hmail.logerror = (msg) => logged.push(msg)
+            const socket = makeSocket()
+            hmail.try_deliver_host_on_socket(mx, '2001:db8::1', 25, socket)
+            socket.emit('close')
+            assert.match(logged[0], /^Remote end \[2001:db8::1\]:25 closed connection/)
+        })
     })
 
     describe('Tried all MXs', () => {
