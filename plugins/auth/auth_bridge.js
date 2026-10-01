@@ -1,5 +1,9 @@
 // Bridge AUTH requests to SMTP server
 
+const { isNativeError } = require('node:util').types
+
+const net_utils = require('haraka-net-utils')
+
 exports.register = function () {
     this.inherits('auth/auth_proxy')
     this.load_flat_ini()
@@ -12,9 +16,11 @@ exports.load_flat_ini = function () {
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    let { host } = this.cfg.main
-    if (this.cfg.main.port) {
-        host = `${host}:${this.cfg.main.port}`
+    const { host, port } = this.cfg.main
+    const ep = net_utils.endpoint(host, port || 25)
+    if (isNativeError(ep)) {
+        connection.logerror(this, `invalid host: ${ep.message}`)
+        return cb(false)
     }
-    this.try_auth_proxy(connection, host, user, passwd, cb)
+    this.try_auth_proxy(connection, `${ep}`, user, passwd, cb)
 }

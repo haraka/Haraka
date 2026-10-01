@@ -291,12 +291,11 @@ Server.get_listen_addrs = (cfg, port) => {
         }
     }
     if (cfg.port) {
-        let host = cfg.listen_host
-        if (!host) {
-            host = '[::0]'
-            Server.default_host = true
-        }
-        listeners.unshift(`${host}:${cfg.port}`)
+        if (!cfg.listen_host) Server.default_host = true
+        // strip brackets rather than parse: a bare IPv6 host like 2001:db8::1:25
+        // is ambiguous as host:port, and the port here is always cfg.port
+        const host = (cfg.listen_host || '::0').replace(/^\[(.*)\]$/, '$1')
+        listeners.unshift(new Endpoint({ host, port: cfg.port }).toString())
     }
     if (listeners.length) return listeners
 

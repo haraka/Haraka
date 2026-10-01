@@ -192,7 +192,10 @@ exports.check_recipient = function (next, connection, params) {
 }
 
 exports.auth = function (cfg, connection, smtp_client) {
-    connection.loginfo(this, `Configuring authentication for SMTP server ${cfg.host}:${cfg.port}`)
+    connection.loginfo(
+        this,
+        `Configuring authentication for SMTP server ${new net_utils.Endpoint({ host: cfg.host, port: cfg.port })}`,
+    )
     smtp_client.on('capabilities', () => {
         connection.loginfo(this, 'capabilities received')
 
@@ -266,7 +269,7 @@ exports.queue_forward = function (next, connection) {
 
         connection.loginfo(
             plugin,
-            `forwarding to ${cfg.forwarding_host_pool ? 'host_pool' : `${cfg.host}:${cfg.port}`}`,
+            `forwarding to ${cfg.forwarding_host_pool ? 'host_pool' : new net_utils.Endpoint({ host: cfg.host, port: cfg.port })}`,
         )
 
         function get_rs() {

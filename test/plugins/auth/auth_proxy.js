@@ -68,6 +68,16 @@ describe('auth/auth_proxy', () => {
             done()
         })
 
+        it('sandboxed try_auth_proxy skips an invalid host without connecting', (t, done) => {
+            // a fresh plugin keeps its vm-compiled try_auth_proxy, where Error
+            // from net_utils belongs to another realm
+            const sandboxed = makePlugin('auth/auth_proxy', { register: false })
+            sandboxed.try_auth_proxy(connection, ['not a host'], 'u', 'p', (valid) => {
+                assert.equal(valid, false)
+                done()
+            })
+        })
+
         it('try_auth_proxy does not mutate the array it is given', (t, done) => {
             const hosts = ['bad host', 'also bad']
             const before = [...hosts]

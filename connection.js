@@ -1201,8 +1201,8 @@ class Connection {
         // Apply changes
         this.loginfo('HAProxy', {
             proto,
-            src_ip: `${src_ip}:${src_port}`,
-            dst_ip: `${dst_ip}:${dst_port}`,
+            src_ip: `${new net_utils.Endpoint({ host: src_ip, port: src_port })}`,
+            dst_ip: `${new net_utils.Endpoint({ host: dst_ip, port: dst_port })}`,
         })
 
         this.notes.proxy = {

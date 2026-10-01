@@ -228,6 +228,31 @@ describe('server', () => {
                 args: [{ listen: '127.0.0.1,[::1]' }, 250],
                 expected: ['127.0.0.1:250', '[::1]:250'],
             },
+            {
+                desc: 'legacy port, default host',
+                args: [{ port: 2525 }],
+                expected: ['[::0]:2525'],
+            },
+            {
+                desc: 'legacy listen_host IPv4',
+                args: [{ listen_host: '127.0.0.1', port: 2525 }],
+                expected: ['127.0.0.1:2525'],
+            },
+            {
+                desc: 'legacy listen_host bare IPv6',
+                args: [{ listen_host: '2001:db8::1:25', port: 2525 }],
+                expected: ['[2001:db8::1:25]:2525'],
+            },
+            {
+                desc: 'legacy listen_host bracketed IPv6',
+                args: [{ listen_host: '[::1]', port: 2525 }],
+                expected: ['[::1]:2525'],
+            },
+            {
+                desc: 'legacy listen_host is prepended to listen',
+                args: [{ listen_host: '127.0.0.1', port: 2525, listen: '[::1]:25' }],
+                expected: ['127.0.0.1:2525', '[::1]:25'],
+            },
         ]
 
         for (const { desc, args, expected } of cases) {
