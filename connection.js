@@ -22,6 +22,7 @@ const rfc1869 = utils.rfc1869
 const outbound = require('./outbound')
 
 const states = constants.connection.state
+const version = utils.getVersion(__dirname)
 
 const MAX_POST_DATA_BYTES = 8192
 
@@ -125,7 +126,7 @@ class Connection {
         this.last_rcpt_msg = null
         this.hook = null
         if (cfg.headers.show_version) {
-            this.local.info += `/${utils.getVersion(__dirname)}`
+            this.local.info += `/${version}`
         }
         Connection.setupClient(this)
     }
