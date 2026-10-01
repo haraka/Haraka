@@ -2,6 +2,8 @@
 
 const net = require('node:net')
 
+const net_utils = require('haraka-net-utils')
+
 exports.register = function () {
     this.inherits('auth/auth_base')
     this.blankout_password = true
@@ -83,7 +85,7 @@ exports.get_sock_opts = function (user) {
     if (sect.host) this.sock_opts.host = sect.host
     if (sect.sysadmin) this.sock_opts.sysadmin = sect.sysadmin
 
-    this.logdebug(`sock: ${this.sock_opts.host}:${this.sock_opts.port}`)
+    this.logdebug(`sock: ${new net_utils.Endpoint({ host: this.sock_opts.host, port: this.sock_opts.port })}`)
     return this.sock_opts
 }
 

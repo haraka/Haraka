@@ -18,7 +18,7 @@ exports.get_client = function (mx, callback) {
     const socket = tls_socket.connect(socketArgs)
     net_utils.add_line_processor(socket)
 
-    socket.name = `outbound::${JSON.stringify(socketArgs)}`
+    socket.name = `outbound::${new net_utils.Endpoint(socketArgs)}${mx.bind ? ` from ${mx.bind}` : ''}`
     socket.__uuid = utils.uuid()
     socket.setTimeout(obc.cfg.connect_timeout * 1000)
 
@@ -50,10 +50,8 @@ exports.get_client = function (mx, callback) {
     })
 }
 
-exports.release_client = (socket, mx) => {
-    let logMsg = `release_client: ${socket.name}`
-    if (mx.bind) logMsg += ` from ${mx.bind}`
-    logger.debug(exports, logMsg)
+exports.release_client = (socket) => {
+    logger.debug(exports, `release_client: ${socket.name}`)
     socket.removeAllListeners()
     socket.destroy()
 }

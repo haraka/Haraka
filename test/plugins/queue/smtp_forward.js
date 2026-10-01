@@ -210,7 +210,7 @@ describe('smtp_forward route_for', () => {
 
         it(`set_queue uses main host for domain '${name}'`, () => {
             assert.equal(plugin.set_queue(connection, 'smtp_forward', name), true)
-            assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://localhost')
+            assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://localhost:2555')
         })
     }
 
@@ -428,13 +428,37 @@ describe('smtp_forward set_queue', () => {
 
     it('sets queue.next_hop when domain has a host', () => {
         plugin.set_queue(connection, 'smtp_forward', 'test.com')
-        assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://1.2.3.4')
+        assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://1.2.3.4:2555')
+    })
+
+    it('includes the per-domain port in next_hop', () => {
+        plugin.cfg['test.com'].port = 2525
+        plugin.set_queue(connection, 'smtp_forward', 'test.com')
+        assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://1.2.3.4:2525')
+    })
+
+    it('brackets an IPv6 host in next_hop', () => {
+        plugin.cfg['test.com'].host = '2001:db8::1'
+        assert.equal(plugin.set_queue(connection, 'smtp_forward', 'test.com'), true)
+        assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://[2001:db8::1]:2555')
+    })
+
+    it('does not parse a port out of a bare IPv6 host', () => {
+        plugin.cfg['test.com'].host = '2001:db8::1:25'
+        plugin.set_queue(connection, 'smtp_forward', 'test.com')
+        assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://[2001:db8::1:25]:2555')
+    })
+
+    it('omits next_hop for an unparseable host', () => {
+        plugin.cfg['test.com'].host = 'not a host'
+        assert.equal(plugin.set_queue(connection, 'smtp_forward', 'test.com'), true)
+        assert.equal(connection.transaction.notes.get('queue.next_hop'), undefined)
     })
 
     it('does not set next_hop when domain has no host override', () => {
         // test2.com has host=2.3.4.5, so it will set next_hop
         plugin.set_queue(connection, 'smtp_forward', 'test2.com')
-        assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://2.3.4.5')
+        assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://2.3.4.5:2555')
     })
 
     it('returns true for undefined domain (no dom_cfg)', () => {
@@ -452,7 +476,7 @@ describe('smtp_forward set_queue', () => {
 
     it('returns true when next_hop matches existing next_hop', () => {
         connection.transaction.notes.set('queue.wants', 'smtp_forward')
-        connection.transaction.notes.set('queue.next_hop', 'smtp://1.2.3.4')
+        connection.transaction.notes.set('queue.next_hop', 'smtp://1.2.3.4:2555')
         const result = plugin.set_queue(connection, 'smtp_forward', 'test.com')
         assert.equal(result, true)
     })
@@ -559,6 +583,23 @@ describe('smtp_forward check_recipient', () => {
             [new Address('<user@test.com>')],
         )
         assert.equal(code, DENYSOFT)
+    })
+
+    it('denies softly without claiming a split when the host is invalid', () => {
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        plugin.cfg['test.com'].host = 'not a host'
+        let code, msg
+        plugin.check_recipient(
+            (c, m) => {
+                code = c
+                msg = m
+            },
+            connection,
+            [new Address('<user@test.com>')],
+        )
+        assert.equal(code, DENYSOFT)
+        assert.doesNotMatch(msg, /Split/)
+        assert.ok(connection.transaction.results.get(plugin).err.includes('rcpt_to.invalid_host'))
     })
 
     it('passes through for unconfigured domain (no route)', () => {
@@ -893,7 +934,7 @@ describe('smtp_forward get_mx_next_hop', () => {
         const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
         const mx_val = plugin.get_mx_next_hop('smtp://10.0.0.1:587')
         assert.equal(mx_val.exchange, '10.0.0.1')
-        assert.equal(mx_val.port, '587')
+        assert.equal(mx_val.port, 587)
         assert.equal(mx_val.priority, 0)
     })
 
@@ -908,6 +949,31 @@ describe('smtp_forward get_mx_next_hop', () => {
         const mx_val = plugin.get_mx_next_hop('lmtp://10.0.0.2')
         assert.equal(mx_val.using_lmtp, true)
         assert.equal(mx_val.port, 24)
+    })
+
+    it('strips brackets from an IPv6 literal', () => {
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        const mx_val = plugin.get_mx_next_hop('smtp://[2001:db8::1]:2525')
+        assert.equal(mx_val.exchange, '2001:db8::1')
+        assert.equal(mx_val.port, 2525)
+    })
+
+    it('defaults port for a bracketed IPv6 literal', () => {
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        const mx_val = plugin.get_mx_next_hop('lmtp://[::1]')
+        assert.equal(mx_val.exchange, '::1')
+        assert.equal(mx_val.port, 24)
+    })
+
+    it('round-trips set_queue next_hop for an IPv6 host', () => {
+        const plugin = makePlugin('queue/smtp_forward', { configDir: TEST_DIR })
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        plugin.cfg['test.com'].host = '2001:db8::1'
+        const connection = makeConnection({ withTxn: true })
+        plugin.set_queue(connection, 'smtp_forward', 'test.com')
+        const mx_val = plugin.get_mx_next_hop(connection.transaction.notes.get('queue.next_hop'))
+        assert.equal(mx_val.exchange, '2001:db8::1')
+        assert.equal(mx_val.port, 2555)
     })
 
     it('extracts auth credentials from URL', () => {
@@ -961,7 +1027,7 @@ describe('smtp_forward get_mx', () => {
             (code, mx) => {
                 assert.equal(code, OK)
                 assert.equal(mx.exchange, '4.3.2.1')
-                assert.equal(mx.port, '465')
+                assert.equal(mx.port, 465)
                 done()
             },
             hmail,

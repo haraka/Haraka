@@ -11,7 +11,7 @@ const tls = require('node:tls')
 const constants = require('haraka-constants')
 const net_utils = require('haraka-net-utils')
 
-const { endpoint } = require('haraka-net-utils')
+const { endpoint, Endpoint } = require('haraka-net-utils')
 const tls_socket = require('./tls_socket')
 const conn = require('./connection')
 const outbound = require('./outbound')
@@ -280,28 +280,36 @@ function messageHandler(worker, msg) {
 
 Server.get_listen_addrs = (cfg, port) => {
     if (!port) port = 25
+    Server.default_listen_addr = undefined
     let listeners = []
     if (cfg?.listen) {
         listeners = cfg.listen.split(/\s*,\s*/)
         if (listeners[0] === '') listeners = []
-        for (let i = 0; i < listeners.length; i++) {
-            const ep = endpoint(listeners[i], port)
-            if (ep instanceof Error) continue
-            listeners[i] = ep.toString()
-        }
+        // unparseable entries stay verbatim so listener setup can report them
+        listeners = listeners.map((addr) => {
+            try {
+                return Endpoint.parse(addr, port).toString()
+            } catch {
+                return addr
+            }
+        })
     }
     if (cfg.port) {
-        let host = cfg.listen_host
-        if (!host) {
-            host = '[::0]'
-            Server.default_host = true
+        if (cfg.listen_host) {
+            try {
+                listeners.unshift(Endpoint.parse(cfg.listen_host, cfg.port).toString())
+            } catch {
+                listeners.unshift(`${cfg.listen_host}:${cfg.port}`)
+            }
+        } else {
+            Server.default_listen_addr = `${new Endpoint({ host: '::0', port: cfg.port })}`
+            listeners.unshift(Server.default_listen_addr)
         }
-        listeners.unshift(`${host}:${cfg.port}`)
     }
     if (listeners.length) return listeners
 
-    Server.default_host = true
-    listeners.push(`[::0]:${port}`)
+    Server.default_listen_addr = `[::0]:${port}`
+    listeners.push(Server.default_listen_addr)
 
     return listeners
 }
@@ -560,10 +568,11 @@ Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
     }
 
     for (const listen_address of Server.get_listen_addrs(Server.cfg.main)) {
-        const ep = endpoint(listen_address, 25)
-
-        if (ep instanceof Error) {
-            Server.logerror(`Invalid "listen" format in smtp.ini: ${listen_address}`)
+        let ep
+        try {
+            ep = Endpoint.parse(listen_address, 25)
+        } catch (err) {
+            Server.logerror(`Invalid "listen" format in smtp.ini: ${err.message}`)
             continue
         }
 
@@ -581,24 +590,13 @@ Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
             .on('close', () => {
                 Server.loginfo(`Listener ${ep} stopped`)
             })
-            .on('error', (e) => {
-                errors.push(e)
-                Server.logerror(`Failed to setup listeners: ${e.message}`)
-                if (e.code !== 'EAFNOSUPPORT') {
-                    Server.logerror(e)
-                    return
-                }
-                // Fallback from IPv6 to IPv4 if not supported
-                // But only if we supplied the default of [::0]:25
-                if (/^::0/.test(ep.host) && Server.default_host) {
-                    server.listen(ep.port, '0.0.0.0', 0)
-                    return
-                }
-                // Pass error to callback
-                Server.logerror(e)
-            })
 
-        await ep.bind(server, { backlog: 0 })
+        try {
+            await Server.bind_smtp_listener(ep, server)
+            server.on('error', (e) => Server.logerror(e))
+        } catch (e) {
+            errors.push(e)
+        }
     }
 
     if (errors.length) {
@@ -609,6 +607,18 @@ Server.setup_smtp_listeners = async (plugins2, type, inactivity_timeout) => {
     }
     Server.listening()
     plugins2.run_hooks(`init_${type}`, Server)
+}
+
+Server.bind_smtp_listener = async (ep, server) => {
+    try {
+        await ep.bind(server, { backlog: 0 })
+    } catch (e) {
+        // An explicitly configured IPv6 listener the OS can't serve is a config
+        // error; only the implicit [::0] default falls back to IPv4.
+        if (e.code !== 'EAFNOSUPPORT' || `${ep}` !== Server.default_listen_addr) throw e
+        Server.logwarn(`IPv6 not supported, falling back to 0.0.0.0:${ep.port}`)
+        await new Endpoint({ host: '0.0.0.0', port: ep.port }).bind(server, { backlog: 0 })
+    }
 }
 
 Server.setup_http_listeners = async () => {
@@ -629,32 +639,47 @@ Server.setup_http_listeners = async () => {
     Server.http.app = app
     Server.loginfo('express app is at Server.http.app')
 
+    let bound = 0
     for (const listen_address of listeners) {
-        const ep = endpoint(listen_address, 80)
-        if (ep instanceof Error) {
-            Server.logerror(`Invalid format for listen in http.ini: ${listen_address}`)
+        let ep
+        try {
+            ep = Endpoint.parse(listen_address, 80)
+        } catch (err) {
+            Server.logerror(`Invalid format for listen in http.ini: ${err.message}`)
             continue
         }
 
+        let server
         if (443 == ep.port) {
             const tlsOpts = { ...tls_socket.certsByHost['*'] }
             tlsOpts.requestCert = false // not appropriate for HTTPS
-            Server.http.server = require('node:https').createServer(tlsOpts, app)
+            server = require('node:https').createServer(tlsOpts, app)
         } else {
-            Server.http.server = require('node:http').createServer(app)
+            server = require('node:http').createServer(app)
         }
 
-        Server.listeners.push(Server.http.server)
-
-        Server.http.server.on('listening', function () {
+        server.on('listening', function () {
             Server.lognotice(`Listening on ${endpoint(this.address())}`)
         })
 
-        Server.http.server.on('error', (e) => {
+        try {
+            await ep.bind(server, { backlog: 0 })
+        } catch (e) {
+            Server.logerror(`Failed to listen on ${ep}: ${e.message}`)
+            continue
+        }
+
+        bound++
+        Server.http.server = server
+        Server.listeners.push(server)
+        server.on('error', (e) => {
             Server.logerror(e)
         })
+    }
 
-        await ep.bind(Server.http.server, { backlog: 0 })
+    if (!bound) {
+        Server.logerror('No http listeners bound, skipping init_http')
+        return
     }
 
     Server.plugins.run_hooks('init_http', Server)

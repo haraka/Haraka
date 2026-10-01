@@ -4,6 +4,8 @@
 // and passes back any errors seen on the ongoing server to the
 // originating server.
 
+const net_utils = require('haraka-net-utils')
+
 const smtp_client_mod = require('../../smtp_client')
 const tls_socket = require('../../tls_socket')
 
@@ -45,7 +47,7 @@ exports.hook_mail = function (next, connection) {
     const c = this.cfg.main
     connection.loginfo(
         this,
-        `forwarding to ${c.forwarding_host_pool ? 'configured forwarding_host_pool' : `${c.host}:${c.port}`}`,
+        `forwarding to ${c.forwarding_host_pool ? 'configured forwarding_host_pool' : new net_utils.Endpoint({ host: c.host, port: c.port })}`,
     )
     smtp_client_mod.get_client_plugin(this, connection, c, (err, smtp_client) => {
         connection.notes.smtp_client = smtp_client

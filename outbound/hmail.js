@@ -381,7 +381,7 @@ class HMailItem extends events.EventEmitter {
         socket.on('error', (err) => {
             if (!processing_mail) return
 
-            self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`)
+            self.logerror(`Ongoing connection failed to ${endpoint} : ${err}`)
             self.mx_errors.push(`${endpoint} ${err}`)
             processing_mail = false
             client_pool.release_client(socket, mx)
@@ -396,7 +396,7 @@ class HMailItem extends events.EventEmitter {
         socket.once('close', () => {
             if (!processing_mail) return
 
-            self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`)
+            self.logerror(`Remote end ${endpoint} closed connection while we were processing mail. Trying next MX.`)
             self.mx_errors.push(`${endpoint} closed connection`)
             processing_mail = false
             client_pool.release_client(socket, mx)

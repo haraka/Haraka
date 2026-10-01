@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - fix(outbound): sanitize deferred delay
 - feat(outbound): log per-MX errors on deferral
+- fix(smtp_forward): IPv6 and port in next_hop
+- fix(server): handle listener bind failures
+- fix(auth_proxy): skip invalid hosts in plugin vm
+- fix(auth_bridge): IPv6 and host:port config
+- fix(server): bracket IPv6 listen_host
+- change: format host:port logs with Endpoint
+- change: validate addresses with Endpoint.parse()
+- deps(net-utils): bump to 1.10.0
 
 ### [3.3.4] - 2026-09-05
 

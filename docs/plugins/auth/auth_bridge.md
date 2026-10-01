@@ -25,10 +25,14 @@ The configuration of this plugin is simple:
     #priority=10
 
 - host: the host where you will be authenticating and posting,
-  for example `smtp.host.tld`. This is the only setting required.
+  for example `smtp.host.tld`, `192.0.2.25:587`, or `[2001:db8::1]:587`.
+  This is the only setting required. See [Endpoint][endpoint] for the
+  accepted forms. An IPv6 address must be bracketed to include a port.
 
 If needed you can also set
 
-- port: default to empty and Haraka will use 25.
+- port: used when `host` doesn't include one. Defaults to 25.
+
+[endpoint]: https://github.com/haraka/haraka-net-utils#endpoint
 
 The options `auth_type` and `priority` will be used by `queue/smtp_bridge`

@@ -6,6 +6,8 @@
 
 const url = require('node:url')
 
+const net_utils = require('haraka-net-utils')
+
 const smtp_client_mod = require('../../smtp_client')
 const tls_socket = require('../../tls_socket')
 
@@ -118,14 +120,27 @@ exports.check_sender = function (next, connection, params) {
     next()
 }
 
+// Returns an smtp:// URL, or undefined when no host is configured. Throws on
+// an invalid host or port.
+exports.get_next_hop = function (dom_cfg) {
+    const host = dom_cfg.host || this.cfg.main.host
+    if (!host) return undefined
+
+    return `smtp://${net_utils.Endpoint.parse(host, dom_cfg.port || this.cfg.main.port || 25)}`
+}
+
 exports.set_queue = function (connection, queue_wanted, domain) {
     const dom_cfg = this.route_for(domain) ?? {}
 
     if (!queue_wanted) queue_wanted = dom_cfg.queue || this.cfg.main.queue
     if (!queue_wanted) return true
 
-    let dst_host = dom_cfg.host || this.cfg.main.host
-    if (dst_host) dst_host = `smtp://${dst_host}`
+    let dst_host
+    try {
+        dst_host = this.get_next_hop(dom_cfg)
+    } catch {
+        // check_recipient rejects an invalid smtp_forward host before calling here
+    }
 
     const notes = connection?.transaction?.notes
     if (!notes) return false
@@ -165,7 +180,15 @@ exports.check_recipient = function (next, connection, params) {
     }
 
     const domain = rcpt.host.toLowerCase()
-    if (this.route_for(domain) !== undefined) {
+    const dom_cfg = this.route_for(domain)
+    if (dom_cfg !== undefined) {
+        try {
+            this.get_next_hop(dom_cfg)
+        } catch (err) {
+            connection.logerror(this, `invalid host for ${domain}: ${err.message}`)
+            txn.results.add(this, { err: 'rcpt_to.invalid_host' })
+            return next(DENYSOFT, 'Routing misconfigured, retry later')
+        }
         if (this.set_queue(connection, 'smtp_forward', domain)) {
             txn.results.add(this, { pass: 'rcpt_to' })
             return next(OK)
@@ -181,7 +204,10 @@ exports.check_recipient = function (next, connection, params) {
 }
 
 exports.auth = function (cfg, connection, smtp_client) {
-    connection.loginfo(this, `Configuring authentication for SMTP server ${cfg.host}:${cfg.port}`)
+    connection.loginfo(
+        this,
+        `Configuring authentication for SMTP server ${new net_utils.Endpoint({ host: cfg.host, port: cfg.port })}`,
+    )
     smtp_client.on('capabilities', () => {
         connection.loginfo(this, 'capabilities received')
 
@@ -255,7 +281,7 @@ exports.queue_forward = function (next, connection) {
 
         connection.loginfo(
             plugin,
-            `forwarding to ${cfg.forwarding_host_pool ? 'host_pool' : `${cfg.host}:${cfg.port}`}`,
+            `forwarding to ${cfg.forwarding_host_pool ? 'host_pool' : new net_utils.Endpoint({ host: cfg.host, port: cfg.port })}`,
         )
 
         function get_rs() {
@@ -326,12 +352,15 @@ exports.get_mx_next_hop = (next_hop) => {
     // plugin that uses this is qmail-deliverable, which can direct email delivery
     // via smtp_forward, outbound (SMTP), and outbound (LMTP).
     const dest = new url.URL(next_hop)
+    const using_lmtp = dest.protocol === 'lmtp:'
+    // dest.hostname keeps the brackets on IPv6 literals; Endpoint strips them
+    const ep = net_utils.Endpoint.parse(dest.host, using_lmtp ? 24 : 25)
     const mx = {
         priority: 0,
-        port: dest.port || (dest.protocol === 'lmtp:' ? 24 : 25),
-        exchange: dest.hostname,
+        port: ep.port,
+        exchange: ep.host,
     }
-    if (dest.protocol === 'lmtp:') mx.using_lmtp = true
+    if (using_lmtp) mx.using_lmtp = true
     if (dest.username) {
         mx.auth_type = 'plain'
         mx.auth_user = dest.username
