@@ -66,6 +66,15 @@ describe('auth/auth_bridge', () => {
             plugin.check_plain_passwd(conn, 'testuser', 'testpass', () => done())
         })
 
+        it('does not parse a port out of a bare IPv6 host', (t, done) => {
+            plugin.cfg.main = { host: '2001:db8::1:25', port: '587' }
+            plugin.try_auth_proxy = (connection, host, user, passwd, cb) => {
+                assert.equal(host, '[2001:db8::1:25]:587')
+                cb(true)
+            }
+            plugin.check_plain_passwd(conn, 'testuser', 'testpass', () => done())
+        })
+
         it('keeps a port already present in host', (t, done) => {
             plugin.cfg.main = { host: 'mail.example.com:2525', port: '587' }
             plugin.try_auth_proxy = (connection, host, user, passwd, cb) => {

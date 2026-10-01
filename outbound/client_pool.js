@@ -50,10 +50,8 @@ exports.get_client = function (mx, callback) {
     })
 }
 
-exports.release_client = (socket, mx) => {
-    let logMsg = `release_client: ${socket.name}`
-    if (mx.bind) logMsg += ` from ${mx.bind}`
-    logger.debug(exports, logMsg)
+exports.release_client = (socket) => {
+    logger.debug(exports, `release_client: ${socket.name}`)
     socket.removeAllListeners()
     socket.destroy()
 }

@@ -4,6 +4,7 @@
 // and passes back any errors seen on the ongoing server to the
 // originating server.
 
+const net = require('node:net')
 const url = require('node:url')
 const { isNativeError } = require('node:util').types
 
@@ -121,22 +122,26 @@ exports.check_sender = function (next, connection, params) {
     next()
 }
 
+// Returns an smtp:// URL, undefined when no host is configured, or an Error.
+exports.get_next_hop = function (dom_cfg) {
+    const host = dom_cfg.host || this.cfg.main.host
+    if (!host) return undefined
+
+    const port = dom_cfg.port || this.cfg.main.port || 25
+    // a bare IPv6 literal like 2001:db8::1:25 is ambiguous as host:port
+    const ep = net.isIPv6(host) ? new net_utils.Endpoint({ host, port }) : net_utils.endpoint(host, port)
+    return isNativeError(ep) ? ep : `smtp://${ep}`
+}
+
 exports.set_queue = function (connection, queue_wanted, domain) {
     const dom_cfg = this.route_for(domain) ?? {}
 
     if (!queue_wanted) queue_wanted = dom_cfg.queue || this.cfg.main.queue
     if (!queue_wanted) return true
 
-    const host = dom_cfg.host || this.cfg.main.host
-    let dst_host
-    if (host) {
-        const ep = net_utils.endpoint(host, dom_cfg.port || this.cfg.main.port || 25)
-        if (isNativeError(ep)) {
-            connection?.logerror(this, `invalid host: ${ep.message}`)
-            return false
-        }
-        dst_host = `smtp://${ep}`
-    }
+    // check_recipient rejects an invalid smtp_forward host before calling here
+    let dst_host = this.get_next_hop(dom_cfg)
+    if (isNativeError(dst_host)) dst_host = undefined
 
     const notes = connection?.transaction?.notes
     if (!notes) return false
@@ -176,7 +181,14 @@ exports.check_recipient = function (next, connection, params) {
     }
 
     const domain = rcpt.host.toLowerCase()
-    if (this.route_for(domain) !== undefined) {
+    const dom_cfg = this.route_for(domain)
+    if (dom_cfg !== undefined) {
+        const next_hop = this.get_next_hop(dom_cfg)
+        if (isNativeError(next_hop)) {
+            connection.logerror(this, `invalid host for ${domain}: ${next_hop.message}`)
+            txn.results.add(this, { err: 'rcpt_to.invalid_host' })
+            return next(DENYSOFT, 'Routing misconfigured, retry later')
+        }
         if (this.set_queue(connection, 'smtp_forward', domain)) {
             txn.results.add(this, { pass: 'rcpt_to' })
             return next(OK)

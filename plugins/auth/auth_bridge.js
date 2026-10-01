@@ -1,5 +1,6 @@
 // Bridge AUTH requests to SMTP server
 
+const net = require('node:net')
 const { isNativeError } = require('node:util').types
 
 const net_utils = require('haraka-net-utils')
@@ -17,7 +18,10 @@ exports.load_flat_ini = function () {
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     const { host, port } = this.cfg.main
-    const ep = net_utils.endpoint(host, port || 25)
+    // a bare IPv6 literal like 2001:db8::1:25 is ambiguous as host:port
+    const ep = net.isIPv6(host)
+        ? new net_utils.Endpoint({ host, port: port || 25 })
+        : net_utils.endpoint(host, port || 25)
     if (isNativeError(ep)) {
         connection.logerror(this, `invalid host: ${ep.message}`)
         return cb(false)

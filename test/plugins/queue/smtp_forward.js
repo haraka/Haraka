@@ -443,9 +443,16 @@ describe('smtp_forward set_queue', () => {
         assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://[2001:db8::1]:2555')
     })
 
-    it('returns false for an unparseable host', () => {
+    it('does not parse a port out of a bare IPv6 host', () => {
+        plugin.cfg['test.com'].host = '2001:db8::1:25'
+        plugin.set_queue(connection, 'smtp_forward', 'test.com')
+        assert.equal(connection.transaction.notes.get('queue.next_hop'), 'smtp://[2001:db8::1:25]:2555')
+    })
+
+    it('omits next_hop for an unparseable host', () => {
         plugin.cfg['test.com'].host = 'not a host'
-        assert.equal(plugin.set_queue(connection, 'smtp_forward', 'test.com'), false)
+        assert.equal(plugin.set_queue(connection, 'smtp_forward', 'test.com'), true)
+        assert.equal(connection.transaction.notes.get('queue.next_hop'), undefined)
     })
 
     it('does not set next_hop when domain has no host override', () => {
@@ -576,6 +583,23 @@ describe('smtp_forward check_recipient', () => {
             [new Address('<user@test.com>')],
         )
         assert.equal(code, DENYSOFT)
+    })
+
+    it('denies softly without claiming a split when the host is invalid', () => {
+        plugin.cfg = JSON.parse(JSON.stringify(plugin.cfg))
+        plugin.cfg['test.com'].host = 'not a host'
+        let code, msg
+        plugin.check_recipient(
+            (c, m) => {
+                code = c
+                msg = m
+            },
+            connection,
+            [new Address('<user@test.com>')],
+        )
+        assert.equal(code, DENYSOFT)
+        assert.doesNotMatch(msg, /Split/)
+        assert.ok(connection.transaction.results.get(plugin).err.includes('rcpt_to.invalid_host'))
     })
 
     it('passes through for unconfigured domain (no route)', () => {
