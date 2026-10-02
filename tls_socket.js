@@ -751,12 +751,16 @@ exports.clientSecureContext = (options) => {
         .filter(([name]) => !clientSocketOptions.has(name))
         .sort(([a], [b]) => (a < b ? -1 : 1))
 
-    const cached = clientContexts.find(
+    const i = clientContexts.findIndex(
         (c) =>
             c.entries.length === entries.length &&
-            c.entries.every(([name, value], i) => name === entries[i][0] && Object.is(value, entries[i][1])),
+            c.entries.every(([name, value], j) => name === entries[j][0] && Object.is(value, entries[j][1])),
     )
-    if (cached) return cached.context
+    if (i !== -1) {
+        const [hit] = clientContexts.splice(i, 1)
+        clientContexts.unshift(hit)
+        return hit.context
+    }
 
     const context = tls.createSecureContext(options)
     clientContexts.unshift({ entries, context })

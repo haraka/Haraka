@@ -288,6 +288,15 @@ test('tls_socket', async (t) => {
             assert.notEqual(tls_socket.clientSecureContext({ ...base, minVersion: 'TLSv1.3' }), a)
             assert.notEqual(tls_socket.clientSecureContext({ ...base, maxVersion: 'TLSv1.2' }), a)
         })
+
+        await t.test('evicts the least recently used context', () => {
+            const miss = () => tls_socket.clientSecureContext({ ...base, cert: Buffer.from(TEST_CERT) })
+            const a = tls_socket.clientSecureContext(base)
+            for (let i = 0; i < 15; i++) miss()
+            assert.equal(tls_socket.clientSecureContext(base), a)
+            miss()
+            assert.equal(tls_socket.clientSecureContext(base), a)
+        })
     })
 
     await t.test('load_tls_ini', async (t) => {
