@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - change: format host:port logs with Endpoint
 - change: validate addresses with Endpoint.parse()
 - deps(net-utils): bump to 1.10.0
+- perf(tls): reuse TLS contexts across connections
+- fix(tls): close the socket when a context fails
+- fix(smtps): keep requireAuthorized per listener
+- perf(conn): read the banner version once
 
 ### [3.3.4] - 2026-09-05
 
