@@ -81,6 +81,9 @@
     "haraka": "bin/haraka",
     "haraka_grep": "bin/haraka_grep"
   },
+  "allowScripts": {
+    "modern-syslog": true
+  },
   "scripts": {
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "format": "npm run prettier:fix && npm run lint:fix",
