@@ -512,6 +512,31 @@ test('tls_socket', async (t) => {
             }
         })
 
+        await t.test('an SNI cert from config/tls sends its intermediates', { timeout: 5000 }, async () => {
+            await tls_socket.get_certs_dir('tls-chain')
+            const serverOpts = { key: TEST_KEY, cert: TEST_CERT, SNICallback: tls_socket.SNICallback }
+            const server = tls.createServer(serverOpts, (socket) => socket.end())
+            servers.push(server)
+            const port = await listen(server)
+
+            const peer = await new Promise((resolve, reject) => {
+                const client = tls.connect({
+                    port,
+                    host: '127.0.0.1',
+                    servername: 'chain.example.net',
+                    rejectUnauthorized: false,
+                })
+                client.once('error', reject)
+                client.once('secureConnect', () => {
+                    resolve(client.getPeerCertificate(true))
+                    client.destroy()
+                })
+            })
+
+            assert.equal(peer.subject.CN, 'chain.example.net')
+            assert.equal(peer.issuerCertificate?.subject.CN, 'Haraka Test Intermediate')
+        })
+
         await t.test('connect presents the mutual TLS client cert on every connection', { timeout: 5000 }, async () => {
             const serverOpts = { key: TEST_KEY, cert: TEST_CERT, requestCert: true, rejectUnauthorized: false }
             const server = tls.createServer(serverOpts, (socket) => {

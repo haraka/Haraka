@@ -476,7 +476,7 @@ exports.get_certs_dir = async (tlsDir) => {
             if (s[name] === undefined) s[name] = {}
             if (!s[name].key && r[fp].keys) s[name].key = r[fp].keys[0]
             if (!s[name].cert && r[fp].chain) {
-                s[name].cert = r[fp].chain[0]
+                s[name].cert = r[fp].chain.join('\n')
                 s[name].file = fp
             }
         }

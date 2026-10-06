@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(tls): send intermediates for config/tls certs
 - fix(outbound): sanitize deferred delay
 - feat(outbound): log per-MX errors on deferral
 - fix(smtp_forward): IPv6 and port in next_hop
