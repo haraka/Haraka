@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(outbound): retry reloaded deferrals on time
 - fix(tls): send intermediates for config/tls certs
 - fix(outbound): sanitize deferred delay
 - feat(outbound): log per-MX errors on deferral
