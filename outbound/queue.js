@@ -366,10 +366,12 @@ exports.delete_dot_files = async () => {
 }
 
 exports._add_hmail = (hmail) => {
-    if (hmail.next_process <= exports.cur_time) {
+    // Runs when temp_fail_queue timers fire, long after the startup scan set cur_time
+    const now = Date.now()
+    if (hmail.next_process <= now) {
         delivery_queue.push(hmail)
     } else {
-        temp_fail_queue.add(hmail.filename, hmail.next_process - exports.cur_time, () => {
+        temp_fail_queue.add(hmail.filename, hmail.next_process - now, () => {
             delivery_queue.push(hmail)
         })
     }

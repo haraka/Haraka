@@ -264,10 +264,8 @@ describe('outbound/queue', () => {
                 delayed.push([id, ms])
                 delayedCb = cb
             }
-            queue.cur_time = new Date()
-
-            const immediate = { filename: 'a', next_process: queue.cur_time - 1 }
-            const future = { filename: 'b', next_process: queue.cur_time.getTime() + 1000 }
+            const immediate = { filename: 'a', next_process: Date.now() - 1 }
+            const future = { filename: 'b', next_process: Date.now() + 1000 }
 
             try {
                 queue._add_hmail(immediate)
@@ -280,6 +278,28 @@ describe('outbound/queue', () => {
             } finally {
                 queue.delivery_queue.push = originalPush
                 queue.temp_fail_queue.add = originalAdd
+            }
+        })
+
+        it('_add_hmail delivers a due item despite a stale cur_time (#3628)', () => {
+            const originalPush = queue.delivery_queue.push
+            const originalAdd = queue.temp_fail_queue.add
+            const originalCurTime = queue.cur_time
+            const pushed = []
+            const delayed = []
+
+            queue.delivery_queue.push = (item) => pushed.push(item)
+            queue.temp_fail_queue.add = (id, ms) => delayed.push([id, ms])
+            queue.cur_time = new Date(Date.now() - 60_000)
+
+            try {
+                queue._add_hmail({ filename: 'due', next_process: Date.now() - 1 })
+                assert.equal(pushed.length, 1)
+                assert.equal(delayed.length, 0)
+            } finally {
+                queue.delivery_queue.push = originalPush
+                queue.temp_fail_queue.add = originalAdd
+                queue.cur_time = originalCurTime
             }
         })
 
