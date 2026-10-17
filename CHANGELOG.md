@@ -4,6 +4,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.3.5] - 2026-10-16
+
+#### Added
+
+- include per-MX failure reasons in 'Tried all MXs' defer (#3619)
+
+#### Fixed
+
+- drop a connection whose TLS cipher is gone (#3630)
+- retry reloaded deferrals on time (#3629)
+- send intermediates for config/tls certs (#3626)
+- deferred respond guards against NaN (#3620)
+
+#### Other
+
+- allow modern-syslog to run install script (#3625)
+- badge: add openssf (#3624)
+- TLS fixes from #3621, minus Nagle (#3623)
+- nu.Endpoint: use it consistently (#3622)
+
+
 - fix(tls): drop a connection whose TLS cipher is gone
 - fix(outbound): retry reloaded deferrals on time
 - fix(tls): send intermediates for config/tls certs
@@ -1948,3 +1969,4 @@ config files.
 [3.3.2]: https://github.com/haraka/Haraka/releases/tag/v3.3.2
 [3.3.3]: https://github.com/haraka/Haraka/releases/tag/v3.3.3
 [3.3.4]: https://github.com/haraka/Haraka/releases/tag/v3.3.4
+[3.3.5]: https://github.com/haraka/Haraka/releases/tag/v3.3.5
