@@ -506,7 +506,9 @@ Server.get_smtp_server = async (ep, inactivity_timeout) => {
         const connection = conn.createConnection(client, server, Server.cfg)
 
         if (server.has_tls) {
+            // null once the socket is destroyed, e.g. by setupClient when the peer already left
             const cipher = client.getCipher()
+            if (!cipher) return client.destroy()
             cipher.version = client.getProtocol() // replace min with actual
 
             connection.setTLS({
