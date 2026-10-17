@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 #### Added
 
-- include per-MX failure reasons in 'Tried all MXs' defer (#3619)
+- outbound: log per-MX errors on deferral (#3619)
 
 #### Fixed
 
@@ -16,6 +16,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - retry reloaded deferrals on time (#3629)
 - send intermediates for config/tls certs (#3626)
 - deferred respond guards against NaN (#3620)
+- outbound: sanitize deferred delay
+- smtp_forward: IPv6 and port in next_hop
+- server: handle listener bind failures
+- auth_proxy: skip invalid hosts in plugin vm
+- auth_bridge: IPv6 and host:port config
+- server: bracket IPv6 listen_host
+- tls: close the socket when a context fails
+- smtps: keep requireAuthorized per listener
 
 #### Other
 
@@ -23,24 +31,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - badge: add openssf (#3624)
 - TLS fixes from #3621, minus Nagle (#3623)
 - nu.Endpoint: use it consistently (#3622)
-
-
-- fix(tls): drop a connection whose TLS cipher is gone
-- fix(outbound): retry reloaded deferrals on time
-- fix(tls): send intermediates for config/tls certs
-- fix(outbound): sanitize deferred delay
-- feat(outbound): log per-MX errors on deferral
-- fix(smtp_forward): IPv6 and port in next_hop
-- fix(server): handle listener bind failures
-- fix(auth_proxy): skip invalid hosts in plugin vm
-- fix(auth_bridge): IPv6 and host:port config
-- fix(server): bracket IPv6 listen_host
-- change: format host:port logs with Endpoint
-- change: validate addresses with Endpoint.parse()
 - deps(net-utils): bump to 1.10.0
 - perf(tls): reuse TLS contexts across connections
-- fix(tls): close the socket when a context fails
-- fix(smtps): keep requireAuthorized per listener
 - perf(conn): read the banner version once
 
 ### [3.3.4] - 2026-09-05
