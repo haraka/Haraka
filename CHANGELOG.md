@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(tls): drop a connection whose TLS cipher is gone
 - fix(outbound): retry reloaded deferrals on time
 - fix(tls): send intermediates for config/tls certs
 - fix(outbound): sanitize deferred delay

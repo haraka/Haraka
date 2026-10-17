@@ -326,6 +326,29 @@ describe('server', () => {
             assert.equal(count, 0)
         })
 
+        it('survives an SMTPS client that is gone before onConnect', async () => {
+            this.server.cfg.main.smtps_port = 0
+            const server = await this.server.get_smtp_server(endpoint('127.0.0.1:0'), 1000)
+            // a peer that leaves mid-handshake has no remoteAddress, so setupClient destroys it
+            const tlsServer = server.tlsServer || server
+            tlsServer.prependListener('secureConnection', (socket) => socket.destroy())
+            let client
+
+            try {
+                await listen(server)
+                client = tls.connect({ port: server.address().port, host: '127.0.0.1', rejectUnauthorized: false })
+                client.on('error', () => {})
+                const outcome = await Promise.race([
+                    once(client, 'close').then(() => 'closed'),
+                    new Promise((resolve) => setTimeout(resolve, 1000, 'left open')),
+                ])
+                assert.equal(outcome, 'closed')
+            } finally {
+                if (client) client.destroy()
+                await close(server)
+            }
+        })
+
         it('accepts PROXY v1 before the SMTPS TLS handshake', async () => {
             const restoreHaproxyConfig = useHaproxyFixture(this.server, 'haproxy_allowed')
             this.server.cfg.main.smtps_port = 0

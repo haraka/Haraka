@@ -703,6 +703,7 @@ function createServer(cb) {
                     log.debug('TLS secured.')
                     socket.emit('secure')
                     const cipher = cleartext.getCipher()
+                    if (!cipher) return cleartext.destroy()
                     cipher.version = cleartext.getProtocol()
                     if (cb2)
                         cb2(cleartext.authorized, cleartext.authorizationError, cleartext.getPeerCertificate(), cipher)
@@ -816,6 +817,7 @@ function connect(conn_options = {}) {
         cleartext.once('secureConnect', () => {
             log.debug('client TLS secured.')
             const cipher = cleartext.getCipher()
+            if (!cipher) return cleartext.destroy()
             cipher.version = cleartext.getProtocol()
             if (cb2) cb2(cleartext.authorized, cleartext.authorizationError, cleartext.getPeerCertificate(), cipher)
         })

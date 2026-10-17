@@ -273,6 +273,50 @@ test('tls_socket', async (t) => {
         }
     })
 
+    await t.test('connect upgrade destroys the socket when the cipher is gone', async () => {
+        const originalNetConnect = net.connect
+        const originalTlsConnect = tls.connect
+        const originalTlsValid = tls_socket.tls_valid
+
+        const fakeSocket = new EventEmitter()
+        fakeSocket.writable = true
+        fakeSocket.setTimeout = () => {}
+        fakeSocket.setKeepAlive = () => {}
+
+        let destroyed = false
+        net.connect = () => fakeSocket
+        tls.connect = () => {
+            const clear = new EventEmitter()
+            clear.writable = true
+            clear.getCipher = () => null
+            clear.getProtocol = () => null
+            clear.getPeerCertificate = () => null
+            clear.setTimeout = () => {}
+            clear.setKeepAlive = () => {}
+            clear.destroy = () => {
+                destroyed = true
+            }
+            process.nextTick(() => clear.emit('secureConnect'))
+            return clear
+        }
+        tls_socket.tls_valid = true
+
+        try {
+            const socket = tls_socket.connect({ host: 'mx.example.com', port: 25 })
+            let upgraded = false
+            socket.upgrade({ rejectUnauthorized: false }, () => {
+                upgraded = true
+            })
+            await sleep(10)
+            assert.equal(destroyed, true)
+            assert.equal(upgraded, false)
+        } finally {
+            net.connect = originalNetConnect
+            tls.connect = originalTlsConnect
+            tls_socket.tls_valid = originalTlsValid
+        }
+    })
+
     await t.test('clientSecureContext', async (t) => {
         const base = { key: TEST_KEY, cert: TEST_CERT, minVersion: 'TLSv1.2' }
 
@@ -510,6 +554,26 @@ test('tls_socket', async (t) => {
                 tls_socket.cfg = undefined
                 tls_socket.load_tls_ini()
             }
+        })
+
+        await t.test('STARTTLS survives the socket being destroyed while securing', { timeout: 5000 }, async () => {
+            let upgraded = false
+            const server = tls_socket.createServer((socket) => {
+                socket.on('error', () => {})
+                socket.once('secure', () => socket.destroy())
+                socket.upgrade(() => {
+                    upgraded = true
+                })
+            })
+            servers.push(server)
+            const port = await listen(server)
+
+            const client = tls.connect({ port, host: '127.0.0.1', rejectUnauthorized: false })
+            client.on('error', () => {})
+            const outcome = await Promise.race([once(client, 'close').then(() => 'closed'), sleep(1000, 'left open')])
+            client.destroy()
+            assert.equal(outcome, 'closed')
+            assert.equal(upgraded, false)
         })
 
         await t.test('an SNI cert from config/tls sends its intermediates', { timeout: 5000 }, async () => {
