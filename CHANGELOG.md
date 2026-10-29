@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Unreleased
 
 - fix(outbound): keep other workers' dot files
+- fix: hand over queues on graceful restart
 
 ### [3.3.5] - 2026-10-16
 

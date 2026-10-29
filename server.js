@@ -220,6 +220,13 @@ Server._graceful = async (shutdown) => {
                 })
                 if (!shutdown) {
                     const newWorker = cluster.fork()
+                    // queue files carry their worker's pid: the replacement takes the old worker's over once it has
+                    // exited, so they aren't delivered twice
+                    worker.once('exit', () => {
+                        if (newWorker.isConnected()) {
+                            newWorker.send({ event: 'outbound.load_pid_queue', data: worker.process.pid })
+                        }
+                    })
                     newWorker.once('listening', () => {
                         Server.lognotice('Replacement worker online.')
                         newWorker.on('exit', (code, signal) => {

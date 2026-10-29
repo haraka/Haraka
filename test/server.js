@@ -1152,8 +1152,10 @@ describe('_graceful (cluster restart)', () => {
 
         let disconnected = 0
         const mkWorker = () => ({
+            process: { pid: 1 },
             _cbs: {},
             send() {},
+            isConnected: () => true,
             kill() {},
             once(ev, cb) {
                 ;(this._cbs[ev] ||= []).push(cb)
@@ -1185,6 +1187,62 @@ describe('_graceful (cluster restart)', () => {
         try {
             await Server._graceful()
             assert.equal(disconnected, 1, 'worker.disconnect() was invoked')
+        } finally {
+            Server.cluster = saved.cluster
+            cluster.workers = saved.workers
+            cluster.fork = saved.fork
+            cluster.removeAllListeners = saved.rmAll
+        }
+    })
+
+    it("hands the old worker's queue to its replacement once it has exited", async () => {
+        const cluster = require('node:cluster')
+        const Server = require('../server')
+        const saved = {
+            cluster: Server.cluster,
+            workers: cluster.workers,
+            fork: cluster.fork,
+            rmAll: cluster.removeAllListeners,
+        }
+
+        const mkWorker = (pid) => ({
+            process: { pid },
+            _cbs: {},
+            sent: [],
+            send(msg) {
+                this.sent.push(msg)
+            },
+            isConnected: () => true,
+            disconnect() {},
+            once(ev, cb) {
+                ;(this._cbs[ev] ||= []).push(cb)
+            },
+            on(ev, cb) {
+                ;(this._cbs[ev] ||= []).push(cb)
+            },
+            _fire(ev) {
+                for (const cb of this._cbs[ev] || []) cb()
+            },
+        })
+
+        const old = mkWorker(4242)
+        let replacement
+        cluster.workers = { 1: old }
+        cluster.removeAllListeners = () => {}
+        cluster.fork = () => {
+            replacement = mkWorker(4343)
+            setImmediate(() => replacement._fire('listening'))
+            return replacement
+        }
+        Server.cluster = cluster
+
+        try {
+            await Server._graceful()
+            assert.deepEqual(replacement.sent, [])
+
+            old._fire('disconnect')
+            old._fire('exit')
+            assert.deepEqual(replacement.sent, [{ event: 'outbound.load_pid_queue', data: 4242 }])
         } finally {
             Server.cluster = saved.cluster
             cluster.workers = saved.workers
