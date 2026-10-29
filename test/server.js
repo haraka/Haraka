@@ -1195,24 +1195,22 @@ describe('_graceful (cluster restart)', () => {
         }
     })
 
-    it("hands the old worker's queue to its replacement once it has exited", async () => {
+    describe('queue hand-off', () => {
         const cluster = require('node:cluster')
         const Server = require('../server')
-        const saved = {
-            cluster: Server.cluster,
-            workers: cluster.workers,
-            fork: cluster.fork,
-            rmAll: cluster.removeAllListeners,
-        }
+        let saved
 
         const mkWorker = (pid) => ({
             process: { pid },
             _cbs: {},
             sent: [],
+            connected: true,
             send(msg) {
                 this.sent.push(msg)
             },
-            isConnected: () => true,
+            isConnected() {
+                return this.connected
+            },
             disconnect() {},
             once(ev, cb) {
                 ;(this._cbs[ev] ||= []).push(cb)
@@ -1225,29 +1223,56 @@ describe('_graceful (cluster restart)', () => {
             },
         })
 
-        const old = mkWorker(4242)
-        let replacement
-        cluster.workers = { 1: old }
-        cluster.removeAllListeners = () => {}
-        cluster.fork = () => {
-            replacement = mkWorker(4343)
-            setImmediate(() => replacement._fire('listening'))
-            return replacement
-        }
-        Server.cluster = cluster
+        beforeEach(() => {
+            saved = {
+                cluster: Server.cluster,
+                workers: cluster.workers,
+                fork: cluster.fork,
+                rmAll: cluster.removeAllListeners,
+            }
+            cluster.removeAllListeners = () => {}
+            Server.cluster = cluster
+        })
 
-        try {
-            await Server._graceful()
-            assert.deepEqual(replacement.sent, [])
-
-            old._fire('disconnect')
-            old._fire('exit')
-            assert.deepEqual(replacement.sent, [{ event: 'outbound.load_pid_queue', data: 4242 }])
-        } finally {
+        afterEach(() => {
             Server.cluster = saved.cluster
             cluster.workers = saved.workers
             cluster.fork = saved.fork
             cluster.removeAllListeners = saved.rmAll
+        })
+
+        // returns the disconnected worker, not exited yet, and its replacement
+        async function restart() {
+            const old = mkWorker(4242)
+            let replacement
+            cluster.workers = { 1: old }
+            cluster.fork = () => {
+                replacement = mkWorker(4343)
+                setImmediate(() => replacement._fire('listening'))
+                return replacement
+            }
+            await Server._graceful()
+            old._fire('disconnect')
+            return { old, replacement }
         }
+
+        it("hands the old worker's queue to its replacement once it has exited", async () => {
+            const { old, replacement } = await restart()
+            assert.deepEqual(replacement.sent, [])
+
+            old._fire('exit')
+            assert.deepEqual(replacement.sent, [{ event: 'outbound.load_pid_queue', data: 4242 }])
+        })
+
+        it('hands it to another worker when the replacement is disconnected', async () => {
+            const { old, replacement } = await restart()
+            replacement.connected = false
+            const other = mkWorker(4444)
+            cluster.workers = { 3: other }
+
+            old._fire('exit')
+            assert.deepEqual(replacement.sent, [])
+            assert.deepEqual(other.sent, [{ event: 'outbound.load_pid_queue', data: 4242 }])
+        })
     })
 })
