@@ -1206,6 +1206,8 @@ describe('_graceful (cluster restart)', () => {
         const worker = mkWorker()
         cluster.workers = { 1: worker }
         await Server._graceful()
+        // its exit handler must clear the real exit timer before the next test mocks clearTimeout
+        await workerDone(worker)
         assert.equal(worker.disconnected, 1, 'worker.disconnect() was invoked')
     })
 
