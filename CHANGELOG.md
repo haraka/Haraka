@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(bin): send PROXY header with internal cmds
+
 ### [3.3.5] - 2026-10-16
 
 #### Added
