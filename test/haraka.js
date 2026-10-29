@@ -54,7 +54,8 @@ describe('SIGUSR2', { skip: process.platform === 'win32' && 'no SIGUSR2 on Windo
     afterEach(async () => {
         if (!haraka.exited) {
             const exited = new Promise((resolve) => haraka.proc.once('exit', resolve))
-            haraka.proc.kill('SIGTERM')
+            // SIGTERM would kill Haraka before Node writes its NODE_V8_COVERAGE data
+            haraka.proc.kill('SIGINT')
             await exited
         }
         fs.rmSync(haraka.dir, { recursive: true, force: true })
