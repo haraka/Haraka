@@ -744,6 +744,8 @@ Server.init_master_respond = async (retval, msg) => {
 }
 
 function cluster_exit_listener(worker, code, signal) {
+    // _graceful disconnected it, then killed it if it outlived exit_timeout, to replace it or to shut down
+    if (worker.exitedAfterDisconnect) return
     if (signal) {
         Server.lognotice(`worker ${worker.id} killed by signal ${signal}`)
     } else if (code !== 0) {
