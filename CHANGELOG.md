@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- feat: graceful restart on SIGUSR2
+
 ### [3.3.5] - 2026-10-16
 
 #### Added
