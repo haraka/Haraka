@@ -1136,44 +1136,56 @@ describe('server', () => {
 })
 
 describe('_graceful (cluster restart)', () => {
-    it('actually disconnects workers (queued thunks are invoked)', async () => {
-        const cluster = require('node:cluster')
-        const Server = require('../server')
+    const cluster = require('node:cluster')
+    const Server = require('../server')
+    let saved
+
+    // fake worker: disconnect() fires the given events in order, one tick apart
+    const mkWorker = (events = ['disconnect', 'exit']) => ({
+        _cbs: {},
+        disconnected: 0,
+        killed: 0,
+        done: false,
+        send() {},
+        kill() {
+            this.killed++
+        },
+        once(ev, cb) {
+            ;(this._cbs[ev] ||= []).push(cb)
+        },
+        on(ev, cb) {
+            ;(this._cbs[ev] ||= []).push(cb)
+        },
+        _fire(ev) {
+            for (const cb of this._cbs[ev] || []) cb()
+        },
+        disconnect() {
+            this.disconnected++
+            const fire = (i) =>
+                setImmediate(() => {
+                    this._fire(events[i])
+                    if (i + 1 < events.length) fire(i + 1)
+                    else this.done = true
+                })
+            fire(0)
+        },
+    })
+
+    const workerDone = async (worker) => {
+        while (!worker.done) await new Promise((resolve) => setImmediate(resolve))
+    }
+
+    beforeEach(() => {
         Server.cfg = Server.cfg || { main: {} }
         Server.cfg.main = Server.cfg.main || {}
         Server.cfg.main.force_shutdown_timeout = 1
 
-        const saved = {
+        saved = {
             cluster: Server.cluster,
             workers: cluster.workers,
             fork: cluster.fork,
             rmAll: cluster.removeAllListeners,
         }
-
-        let disconnected = 0
-        const mkWorker = () => ({
-            _cbs: {},
-            send() {},
-            kill() {},
-            once(ev, cb) {
-                ;(this._cbs[ev] ||= []).push(cb)
-            },
-            on(ev, cb) {
-                ;(this._cbs[ev] ||= []).push(cb)
-            },
-            _fire(ev) {
-                for (const cb of this._cbs[ev] || []) cb()
-            },
-            disconnect() {
-                disconnected++
-                setImmediate(() => {
-                    this._fire('disconnect')
-                    setImmediate(() => this._fire('exit'))
-                })
-            },
-        })
-
-        cluster.workers = { 1: mkWorker() }
         cluster.removeAllListeners = () => {}
         cluster.fork = () => {
             const nw = mkWorker()
@@ -1181,15 +1193,38 @@ describe('_graceful (cluster restart)', () => {
             return nw
         }
         Server.cluster = cluster
+    })
 
-        try {
-            await Server._graceful()
-            assert.equal(disconnected, 1, 'worker.disconnect() was invoked')
-        } finally {
-            Server.cluster = saved.cluster
-            cluster.workers = saved.workers
-            cluster.fork = saved.fork
-            cluster.removeAllListeners = saved.rmAll
-        }
+    afterEach(() => {
+        Server.cluster = saved.cluster
+        cluster.workers = saved.workers
+        cluster.fork = saved.fork
+        cluster.removeAllListeners = saved.rmAll
+    })
+
+    it('actually disconnects workers (queued thunks are invoked)', async () => {
+        const worker = mkWorker()
+        cluster.workers = { 1: worker }
+        await Server._graceful()
+        assert.equal(worker.disconnected, 1, 'worker.disconnect() was invoked')
+    })
+
+    it('does not kill a worker seen exiting before disconnecting', async (t) => {
+        t.mock.timers.enable({ apis: ['setTimeout'] })
+        const worker = mkWorker(['exit', 'disconnect'])
+        cluster.workers = { 1: worker }
+        await Server._graceful()
+        await workerDone(worker)
+        t.mock.timers.tick(60 * 1000)
+        assert.equal(worker.killed, 0, 'worker.kill() was not invoked')
+    })
+
+    // keep last: a shutdown leaves the restart in progress, later _graceful calls would be ignored
+    it('completes a shutdown when a worker is seen exiting before disconnecting', { timeout: 2000 }, async () => {
+        const worker = mkWorker(['exit', 'disconnect'])
+        cluster.workers = { 1: worker }
+        await Server._graceful(() => {})
+        await workerDone(worker)
+        assert.equal(worker.killed, 0, 'worker.kill() was not invoked')
     })
 })
