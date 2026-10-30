@@ -252,6 +252,24 @@ describe('outbound/queue', () => {
             }
         })
 
+        it("delete_dot_files with a pid leaves other workers' dot files", async () => {
+            const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-dot-pid-'))
+            const dead = `${qfile.platformDOT}${qfile.name({ pid: 111 })}`
+            const live = `${qfile.platformDOT}${qfile.name({ pid: 222 })}`
+            fs.writeFileSync(path.join(tmpDir, dead), 'x')
+            fs.writeFileSync(path.join(tmpDir, live), 'x')
+
+            const originalQueueDir = queue.queue_dir
+            queue.queue_dir = tmpDir
+            try {
+                await queue.delete_dot_files(111)
+                assert.deepEqual(fs.readdirSync(tmpDir), [live])
+            } finally {
+                queue.queue_dir = originalQueueDir
+                fs.rmSync(tmpDir, { recursive: true, force: true })
+            }
+        })
+
         it('_add_hmail pushes immediate items and schedules delayed ones', () => {
             const originalPush = queue.delivery_queue.push
             const originalAdd = queue.temp_fail_queue.add
