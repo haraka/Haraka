@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- feat: graceful restart on SIGUSR2
+- feat: SIGUSR2 restarts workers instead of exiting
 - fix(bin): send PROXY header with internal cmds
 - fix(server): don't miss worker exits in _graceful
 - fix(connection): clear PROXY timer on disconnect

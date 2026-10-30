@@ -23,7 +23,7 @@ Controls the SMTP listener and the master process.
 | `smtps_port` | `465` | Port used by the optional implicit-TLS listener. |
 | `public_ip` | none | The server's public IP. Helps NAT-aware plugins (SPF, GeoIP) when Haraka is behind NAT. If unset and the optional `@msimerson/stun` module is installed, Haraka discovers it via STUN on first use. Setting it explicitly skips that lookup. |
 | `inactivity_timeout` | `300` | Idle seconds before a client socket is dropped. |
-| `nodes` | `1` | Number of worker processes to fork. The string `cpus` forks one per CPU. Sending `SIGUSR2` to the master replaces them, all but one at once, then the last one. With a single worker, connections are refused while its replacement starts. |
+| `nodes` | `1` | Number of worker processes to fork. The string `cpus` forks one per CPU. |
 | `user` / `group` | — | User and group to drop privileges to (name or numeric ID). |
 | `ignore_bad_plugins` | `0` | If `1`, Haraka starts even if some plugins fail to compile. |
 | `daemonize` | `false` | If `true`, fork into the background at start-up. |
@@ -31,6 +31,19 @@ Controls the SMTP listener and the master process.
 | `daemon_pid_file` | `/var/run/haraka.pid` | Where to write the PID file. |
 | `graceful_shutdown` | `false` | If `true`, wait for in-flight sockets on shutdown. |
 | `force_shutdown_timeout` | `30` | Seconds to wait before forcing shutdown. |
+
+## Signals
+
+Send these to the master process.
+
+| Signal | Effect |
+| --- | --- |
+| `SIGHUP` | Flushes the temp fail queue, retrying deferred deliveries now. |
+| `SIGINT` | Shuts down, gracefully if `graceful_shutdown` is set. A second `SIGINT` exits at once. |
+| `SIGTERM` | Same as `SIGINT` when Haraka runs as PID 1, as in a container. Otherwise Haraka exits at once. |
+| `SIGUSR2` | Replaces the workers, all but one at once, then the last one, as `haraka --graceful` does. Workers ignore it, so it can be sent to the whole process group. Ignored, with a log line, when `nodes` is `0`. |
+
+`SIGUSR2` used to stop Haraka. nodemon restarts its child with `SIGUSR2` by default: run Haraka under nodemon with `--signal SIGINT`.
 
 ## me
 
