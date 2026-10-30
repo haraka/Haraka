@@ -32,6 +32,19 @@ Controls the SMTP listener and the master process.
 | `graceful_shutdown` | `false` | If `true`, wait for in-flight sockets on shutdown. |
 | `force_shutdown_timeout` | `30` | Seconds to wait before forcing shutdown. |
 
+## Signals
+
+Send these to the master process.
+
+| Signal | Effect |
+| --- | --- |
+| `SIGHUP` | Flushes the temp fail queue, retrying deferred deliveries now. |
+| `SIGINT` | Shuts down, gracefully if `graceful_shutdown` is set. A second `SIGINT` exits at once. |
+| `SIGTERM` | Same as `SIGINT` when Haraka runs as PID 1, as in a container. Otherwise Haraka exits at once. |
+| `SIGUSR2` | Replaces the workers, all but one at once, then the last one, as `haraka --graceful` does. Workers ignore it, so it can be sent to the whole process group. Ignored, with a log line, when `nodes` is `0`. |
+
+`SIGUSR2` used to stop Haraka. nodemon restarts its child with `SIGUSR2` by default: run Haraka under nodemon with `--signal SIGINT`.
+
 ## me
 
 A single-line file containing the server name used in `Received:` headers

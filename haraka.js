@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 'use strict'
-const path = require('path')
+const path = require('node:path')
 const makePathJoin = () => path.join(process.env.HARAKA, 'node_modules')
 
 if (!process.env.HARAKA) {
@@ -14,7 +14,7 @@ try {
     require.paths.push(makePathJoin())
 } catch {
     process.env.NODE_PATH = process.env.NODE_PATH ? `${process.env.NODE_PATH}:${makePathJoin()}` : makePathJoin()
-    require('module')._initPaths() // Horrible hack
+    require('node:module')._initPaths() // Horrible hack
 }
 
 const utils = require('haraka-utils')
@@ -54,6 +54,17 @@ for (const sig of signals) {
 process.on('SIGHUP', () => {
     logger.notice('Flushing the temp fail queue')
     server.flushQueue()
+})
+
+process.on('SIGUSR2', () => {
+    if (!server.cluster) {
+        logger.notice('SIGUSR2 received, ignored: graceful restart requires smtp.ini nodes')
+        return
+    }
+    // workers ignore it, a SIGUSR2 sent to the whole process group would otherwise kill them
+    if (!server.cluster.isMaster) return
+    logger.notice('SIGUSR2 received, restarting workers gracefully')
+    server.gracefulRestart()
 })
 
 process.on('exit', () => {
