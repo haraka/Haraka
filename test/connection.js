@@ -417,6 +417,26 @@ describe('connection', () => {
         })
     })
 
+    describe('PROXY timer', () => {
+        beforeEach(setUp)
+
+        it('is cleared when the client hangs up before sending its PROXY header', async () => {
+            const conn = this.connection
+            conn.client.end = () => {}
+            let fired = false
+            conn.proxy.allowed = true
+            conn.proxy.timer = setTimeout(() => {
+                fired = true
+            }, 20)
+
+            conn.fail() // what the client end, close and error handlers do
+
+            assert.equal(conn.proxy.timer, null)
+            await new Promise((resolve) => setTimeout(resolve, 40))
+            assert.equal(fired, false, 'the PROXY timer did not fire')
+        })
+    })
+
     describe('issue #3374 — double QUIT prevention', () => {
         beforeEach(setUp)
 

@@ -125,7 +125,7 @@ exports.init_queue = async (pid) => {
     // Initialise and load queue
     // This function is called first when not running under cluster,
     await exports.ensure_queue_dir()
-    await exports.delete_dot_files()
+    await exports.delete_dot_files(pid)
 
     await exports._load_cur_queue(pid, exports._add_file)
     logger.info(exports, `[pid: ${pid}] ${delivery_queue.length()} files in my delivery queue`)
@@ -351,14 +351,15 @@ exports.ensure_queue_dir = async () => {
     }
 }
 
-exports.delete_dot_files = async () => {
+exports.delete_dot_files = async (pid) => {
     try {
         const files = await fs.readdir(exports.queue_dir)
         for (const file of files) {
-            if (file.startsWith(_qfile.platformDOT)) {
-                logger.warn(exports, `Removing left over dot-file: ${file}`)
-                await fs.unlink(path.join(exports.queue_dir, file))
-            }
+            if (!file.startsWith(_qfile.platformDOT)) continue
+            // given a pid, other workers are running: their dot files are writes in progress
+            if (pid && _qfile.parts(file.slice(_qfile.platformDOT.length))?.pid !== parseInt(pid)) continue
+            logger.warn(exports, `Removing left over dot-file: ${file}`)
+            await fs.unlink(path.join(exports.queue_dir, file))
         }
     } catch (err) {
         logger.error(exports, `Error deleting dot files: ${err}`)
