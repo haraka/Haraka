@@ -416,7 +416,7 @@ class Connection {
             // Hack: bypass this code to allow HAProxy's PROXY extension
             const proxyStart = this.proxy.allowed && /^PROXY /.test(this_line)
             if (this.state === states.PAUSE && proxyStart) {
-                if (this.proxy.timer) clearTimeout(this.proxy.timer)
+                this._clear_proxy_timer()
                 this.state = states.CMD
                 this.current_data = this.current_data.slice(this_line.length)
                 this.process_line(this_line)
@@ -628,6 +628,8 @@ class Connection {
         if (this.state >= states.DISCONNECTING) return
         this.state = states.DISCONNECTING
         this.current_data = null // don't process any more data we have already received
+        // the client can disconnect before sending its PROXY header
+        this._clear_proxy_timer()
         this.reset_transaction(() => {
             plugins.run_hooks('disconnect', this)
         })
@@ -1190,11 +1192,15 @@ class Connection {
     /////////////////////////////////////////////////////////////////////////////
     // HAProxy support
 
-    apply_proxy(proxy) {
+    _clear_proxy_timer() {
         if (this.proxy.timer) {
             clearTimeout(this.proxy.timer)
             this.proxy.timer = null
         }
+    }
+
+    apply_proxy(proxy) {
+        this._clear_proxy_timer()
 
         const { proto, src_ip, src_port, dst_ip, dst_port } = proxy
         const proxy_ip = proxy.proxy_ip || this.remote.ip
