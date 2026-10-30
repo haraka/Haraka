@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Unreleased
 
 - fix(server): don't miss worker exits in _graceful
+- fix(outbound): keep other workers' dot files
+- fix: hand over queues on graceful restart
+- fix(server): don't respawn disconnected workers
 
 ### [3.3.5] - 2026-10-16
 
