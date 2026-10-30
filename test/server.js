@@ -1156,6 +1156,7 @@ describe('_graceful (cluster restart)', () => {
             _cbs: {},
             send() {},
             isConnected: () => true,
+            isDead: () => false,
             kill() {},
             once(ev, cb) {
                 ;(this._cbs[ev] ||= []).push(cb)
@@ -1163,8 +1164,11 @@ describe('_graceful (cluster restart)', () => {
             on(ev, cb) {
                 ;(this._cbs[ev] ||= []).push(cb)
             },
-            _fire(ev) {
-                for (const cb of this._cbs[ev] || []) cb()
+            off(ev, cb) {
+                this._cbs[ev] = (this._cbs[ev] || []).filter((f) => f !== cb)
+            },
+            _fire(ev, ...args) {
+                for (const cb of this._cbs[ev] || []) cb(...args)
             },
             disconnect() {
                 disconnected++
@@ -1179,7 +1183,7 @@ describe('_graceful (cluster restart)', () => {
         cluster.removeAllListeners = () => {}
         cluster.fork = () => {
             const nw = mkWorker()
-            setImmediate(() => nw._fire('listening'))
+            setImmediate(() => nw._fire('message', { event: 'worker.ready' }))
             return nw
         }
         Server.cluster = cluster
@@ -1194,6 +1198,31 @@ describe('_graceful (cluster restart)', () => {
             cluster.removeAllListeners = saved.rmAll
         }
     })
+
+    // a dead worker stays in cluster.workers until the master has handled both its exit and the end of its channel
+    for (const [state, worker] of [
+        ['whose channel closed before its exit', { isConnected: () => false }],
+        ['that exited before its channel closed', { isConnected: () => true, isDead: () => true }],
+    ]) {
+        it(`skips a worker ${state}`, async () => {
+            const cluster = require('node:cluster')
+            const Server = require('../server')
+            const saved = { cluster: Server.cluster, workers: cluster.workers, fork: cluster.fork }
+            let forked = 0
+            cluster.workers = { 1: worker }
+            cluster.fork = () => forked++
+            Server.cluster = cluster
+
+            try {
+                await Server._graceful()
+                assert.equal(forked, 0)
+            } finally {
+                Server.cluster = saved.cluster
+                cluster.workers = saved.workers
+                cluster.fork = saved.fork
+            }
+        })
+    }
 
     describe('queue hand-off', () => {
         const cluster = require('node:cluster')
@@ -1211,6 +1240,7 @@ describe('_graceful (cluster restart)', () => {
             isConnected() {
                 return this.connected
             },
+            isDead: () => false,
             disconnect() {},
             once(ev, cb) {
                 ;(this._cbs[ev] ||= []).push(cb)
@@ -1218,8 +1248,11 @@ describe('_graceful (cluster restart)', () => {
             on(ev, cb) {
                 ;(this._cbs[ev] ||= []).push(cb)
             },
-            _fire(ev) {
-                for (const cb of this._cbs[ev] || []) cb()
+            off(ev, cb) {
+                this._cbs[ev] = (this._cbs[ev] || []).filter((f) => f !== cb)
+            },
+            _fire(ev, ...args) {
+                for (const cb of this._cbs[ev] || []) cb(...args)
             },
         })
 
@@ -1248,7 +1281,7 @@ describe('_graceful (cluster restart)', () => {
             cluster.workers = { 1: old }
             cluster.fork = () => {
                 replacement = mkWorker(4343)
-                setImmediate(() => replacement._fire('listening'))
+                setImmediate(() => replacement._fire('message', { event: 'worker.ready' }))
                 return replacement
             }
             await Server._graceful()
@@ -1273,6 +1306,151 @@ describe('_graceful (cluster restart)', () => {
             old._fire('exit')
             assert.deepEqual(replacement.sent, [])
             assert.deepEqual(other.sent, [{ event: 'outbound.load_pid_queue', data: 4242 }])
+        })
+
+        it('hands the queue of a worker that died while being replaced to its replacement', async () => {
+            const old = mkWorker(4242)
+            const replacement = mkWorker(4343)
+            cluster.workers = { 1: old }
+            cluster.fork = () => {
+                setImmediate(() => {
+                    old.connected = false
+                    old.isDead = () => true
+                    replacement._fire('message', { event: 'worker.ready' })
+                })
+                return replacement
+            }
+            await Server._graceful()
+            assert.deepEqual(replacement.sent, [{ event: 'outbound.load_pid_queue', data: 4242 }])
+        })
+    })
+
+    describe('replacement readiness', () => {
+        const cluster = require('node:cluster')
+        const Server = require('../server')
+        let saved
+
+        const mkWorker = (pid) => ({
+            process: { pid },
+            _cbs: {},
+            sent: [],
+            disconnected: 0,
+            killed: 0,
+            send(msg) {
+                this.sent.push(msg)
+            },
+            isConnected: () => true,
+            isDead: () => false,
+            kill() {
+                this.killed++
+                setImmediate(() => this._fire('exit'))
+            },
+            disconnect() {
+                this.disconnected++
+            },
+            once(ev, cb) {
+                ;(this._cbs[ev] ||= []).push(cb)
+            },
+            on(ev, cb) {
+                ;(this._cbs[ev] ||= []).push(cb)
+            },
+            off(ev, cb) {
+                this._cbs[ev] = (this._cbs[ev] || []).filter((f) => f !== cb)
+            },
+            _fire(ev, ...args) {
+                for (const cb of this._cbs[ev] || []) cb(...args)
+            },
+        })
+
+        beforeEach(() => {
+            saved = { cluster: Server.cluster, workers: cluster.workers, fork: cluster.fork }
+            Server.cluster = cluster
+        })
+
+        afterEach(() => {
+            Server.cluster = saved.cluster
+            cluster.workers = saved.workers
+            cluster.fork = saved.fork
+        })
+
+        // forks replacements that do what `start` says, then restarts worker 1
+        function restart(start) {
+            const old = mkWorker(4242)
+            let replacement
+            cluster.workers = { 1: old }
+            cluster.fork = () => {
+                replacement = mkWorker(4343)
+                setImmediate(() => start(replacement))
+                return replacement
+            }
+            return { old, replacement: () => replacement, restarted: Server._graceful() }
+        }
+
+        it('counts a listening replacement of an earlier version as started', { timeout: 2000 }, async (t) => {
+            t.mock.timers.enable({ apis: ['setTimeout'] })
+            const { old, restarted } = restart((r) => r._fire('listening'))
+            await new Promise((resolve) => setImmediate(resolve))
+            t.mock.timers.tick(60 * 1000)
+            await restarted
+            assert.equal(old.disconnected, 1)
+        })
+
+        it('waits for a listening replacement that announced it reports ready', { timeout: 2000 }, async (t) => {
+            t.mock.timers.enable({ apis: ['setTimeout'] })
+            const { old, replacement, restarted } = restart((r) => {
+                r._fire('message', { event: 'worker.starting' })
+                r._fire('listening')
+            })
+            await new Promise((resolve) => setImmediate(resolve))
+            t.mock.timers.tick(60 * 1000)
+            await new Promise((resolve) => setImmediate(resolve))
+            assert.equal(old.disconnected, 0)
+
+            replacement()._fire('message', { event: 'worker.ready' })
+            await restarted
+            assert.equal(old.disconnected, 1)
+        })
+
+        it('gives up on a replacement that neither listens nor reports ready', { timeout: 2000 }, async (t) => {
+            t.mock.timers.enable({ apis: ['setTimeout'] })
+            const { old, replacement, restarted } = restart(() => {})
+            await new Promise((resolve) => setImmediate(resolve))
+            t.mock.timers.tick(60 * 1000)
+            await restarted
+            assert.equal(replacement().killed, 1)
+            assert.equal(old.disconnected, 0)
+        })
+
+        it('ignores a ready report from a replacement it killed', { timeout: 2000 }, async (t) => {
+            t.mock.timers.enable({ apis: ['setTimeout'] })
+            const { old, replacement, restarted } = restart((r) => {
+                const kill = r.kill
+                // its ready report was already queued
+                r.kill = function () {
+                    this._fire('message', { event: 'worker.ready' })
+                    kill.call(this)
+                }
+            })
+            await new Promise((resolve) => setImmediate(resolve))
+            t.mock.timers.tick(60 * 1000)
+            await restarted
+            assert.equal(replacement().killed, 1)
+            assert.equal(old.disconnected, 0)
+        })
+
+        it("hands a failed replacement's queue to another worker", { timeout: 2000 }, async () => {
+            const { old, restarted } = restart((r) => {
+                r._fire('listening')
+                r._fire('exit')
+            })
+            await restarted
+            assert.deepEqual(old.sent, [{ event: 'outbound.load_pid_queue', data: 4343 }])
+        })
+
+        it('has no queue to hand over for a replacement that never listened', { timeout: 2000 }, async () => {
+            const { old, restarted } = restart((r) => r._fire('exit'))
+            await restarted
+            assert.deepEqual(old.sent, [])
         })
     })
 })

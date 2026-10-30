@@ -4,6 +4,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(server): respawn workers after a restart
+- fix(server): skip workers gone mid-restart
+- fix(server): abort restart on failed replacement
+- fix(server): keep workers until replaced
+- fix(server): don't crash on sends to dead workers
+- fix(server): time out replacements never ready
 - fix(connection): clear PROXY timer on disconnect
 - fix(outbound): keep other workers' dot files
 - fix: hand over queues on graceful restart
