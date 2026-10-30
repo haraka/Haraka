@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(server): don't miss worker exits in _graceful
 - fix(connection): clear PROXY timer on disconnect
 - fix(outbound): keep other workers' dot files
 - fix: hand over queues on graceful restart
