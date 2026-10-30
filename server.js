@@ -744,13 +744,13 @@ Server.init_master_respond = async (retval, msg) => {
 }
 
 function cluster_exit_listener(worker, code, signal) {
-    // _graceful disconnected it, then killed it if it outlived exit_timeout, to replace it or to shut down
-    if (worker.exitedAfterDisconnect) return
     if (signal) {
         Server.lognotice(`worker ${worker.id} killed by signal ${signal}`)
     } else if (code !== 0) {
         Server.lognotice(`worker ${worker.id} exited with error code: ${code}`)
     }
+    // _graceful is replacing or shutting down this worker
+    if (worker.exitedAfterDisconnect) return
     if (signal || code !== 0) {
         // Restart worker
         const new_worker = cluster.fork({
