@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Unreleased
 
 - feat: graceful restart on SIGUSR2
+- fix(bin): send PROXY header with internal cmds
+- fix(server): don't miss worker exits in _graceful
 - fix(connection): clear PROXY timer on disconnect
 - fix(outbound): keep other workers' dot files
 - fix: hand over queues on graceful restart

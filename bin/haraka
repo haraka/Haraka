@@ -159,7 +159,7 @@ function setupRequire() {
     process.env.NODE_PATH = process.env.NODE_PATH
       ? `${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`
       : path.join(process.env.HARAKA, 'node_modules')
-    require('module')._initPaths() // Horrible hack
+    require('node:module')._initPaths() // Horrible hack
   }
 }
 
@@ -559,7 +559,7 @@ if (parsed.version) {
   utils.copyFile(path.join(base, 'docs', 'Plugins.md'), path.join(pa, 'docs', 'Plugins.md'))
   tryCreateFile(path.join(pa, 'README'), readme, {}, parsed.force)
   tryCreateFile(path.join(pa, 'package.json'), packageJson, {}, parsed.force)
-  const bytes = require('crypto').randomBytes(32)
+  const bytes = require('node:crypto').randomBytes(32)
   tryCreateFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'), {}, parsed.force)
   setupHostname(path.join(pa, 'config'))
   setupBaseConfig(path.join(pa, 'config'))
@@ -573,10 +573,18 @@ function send_internal_command(cmd, done) {
   const key = config.get('internalcmd_key')
   const smtp_ini = config.get('smtp.ini')
   const listen_addrs = require(path.join(base, 'server')).get_listen_addrs(smtp_ini.main)
+  const net_utils = require('haraka-net-utils')
   const hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(listen_addrs[0])
   if (!hp) throw 'No listen address in smtp.ini'
   // console.log("Connecting to " + listen_addrs[0]);
   const sock = net.connect(hp[2], hp[1], function () {
+    // Haraka doesn't greet connections from [haproxy] hosts until they send a PROXY header
+    if (net_utils.is_haproxy_allowed(sock.localAddress)) {
+      const src = net_utils.normalize_ip(sock.localAddress)
+      const dst = net_utils.normalize_ip(sock.remoteAddress)
+      const proto = net.isIPv6(src) ? 'TCP6' : 'TCP4'
+      sock.write(`PROXY ${proto} ${src} ${dst} ${sock.localPort} ${sock.remotePort}\r\n`)
+    }
     sock.once('data', function (data) {
       // this is the greeting. Ignore it...
       sock.write(`INTERNALCMD ${key ? `key:${key} ` : ''}${cmd}\r\n`)
