@@ -194,6 +194,8 @@ Server._graceful = async (shutdown) => {
                 }
                 worker.disconnect()
                 let disconnect_received = false
+                let dead = false
+                let exit_timer
                 const disconnect_timer = setTimeout(() => {
                     if (!disconnect_received) {
                         Server.logcrit('Disconnect never received by worker. Killing.')
@@ -201,22 +203,24 @@ Server._graceful = async (shutdown) => {
                     }
                 }, disconnect_timeout * 1000)
 
+                // a worker exiting as soon as it disconnects can emit exit before
+                // disconnect: a listener added on disconnect would miss it
+                worker.once('exit', () => {
+                    dead = true
+                    clearTimeout(disconnect_timer)
+                    clearTimeout(exit_timer)
+                    if (shutdown) resolve()
+                })
+
                 worker.once('disconnect', () => {
                     clearTimeout(disconnect_timer)
                     disconnect_received = true
                     Server.lognotice('Disconnect complete')
-                    let dead = false
-                    const timer = setTimeout(() => {
-                        if (!dead) {
-                            Server.logcrit(`Worker ${id} failed to shutdown. Killing.`)
-                            worker.kill()
-                        }
+                    if (dead) return
+                    exit_timer = setTimeout(() => {
+                        Server.logcrit(`Worker ${id} failed to shutdown. Killing.`)
+                        worker.kill()
                     }, exit_timeout * 1000)
-                    worker.once('exit', () => {
-                        dead = true
-                        clearTimeout(timer)
-                        if (shutdown) resolve()
-                    })
                 })
                 if (!shutdown) {
                     const newWorker = cluster.fork()
