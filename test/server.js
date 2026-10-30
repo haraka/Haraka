@@ -1135,7 +1135,7 @@ describe('server', () => {
     })
 })
 
-// fake cluster worker: disconnect() fires the given events in order, before a replacement forked after it listens
+// fake cluster worker: disconnect() fires the given events in order, all in one setImmediate
 const mkWorker = (events = ['disconnect', 'exit']) => ({
     process: { pid: 1 },
     _cbs: {},
@@ -1143,6 +1143,7 @@ const mkWorker = (events = ['disconnect', 'exit']) => ({
     killed: 0,
     send() {},
     isConnected: () => true,
+    isDead: () => false,
     kill() {
         this.killed++
     },
@@ -1152,8 +1153,11 @@ const mkWorker = (events = ['disconnect', 'exit']) => ({
     on(ev, cb) {
         ;(this._cbs[ev] ||= []).push(cb)
     },
-    _fire(ev) {
-        for (const cb of this._cbs[ev] || []) cb()
+    off(ev, cb) {
+        this._cbs[ev] = (this._cbs[ev] || []).filter((f) => f !== cb)
+    },
+    _fire(ev, ...args) {
+        for (const cb of this._cbs[ev] || []) cb(...args)
     },
     disconnect() {
         this.disconnected++
@@ -1179,37 +1183,6 @@ describe('_graceful (cluster restart)', () => {
             fork: cluster.fork,
             rmAll: cluster.removeAllListeners,
         }
-
-        let disconnected = 0
-        const mkWorker = () => ({
-            process: { pid: 1 },
-            _cbs: {},
-            send() {},
-            isConnected: () => true,
-            isDead: () => false,
-            kill() {},
-            once(ev, cb) {
-                ;(this._cbs[ev] ||= []).push(cb)
-            },
-            on(ev, cb) {
-                ;(this._cbs[ev] ||= []).push(cb)
-            },
-            off(ev, cb) {
-                this._cbs[ev] = (this._cbs[ev] || []).filter((f) => f !== cb)
-            },
-            _fire(ev, ...args) {
-                for (const cb of this._cbs[ev] || []) cb(...args)
-            },
-            disconnect() {
-                disconnected++
-                setImmediate(() => {
-                    this._fire('disconnect')
-                    setImmediate(() => this._fire('exit'))
-                })
-            },
-        })
-
-        cluster.workers = { 1: mkWorker() }
         cluster.removeAllListeners = () => {}
         cluster.fork = () => {
             const nw = mkWorker()
@@ -1221,7 +1194,9 @@ describe('_graceful (cluster restart)', () => {
         mock.timers.enable({ apis: ['setTimeout'] })
     })
 
-    afterEach(() => {
+    afterEach(async () => {
+        // a restart doesn't wait for the workers it stops: their events clear their timers on this test's clock
+        await new Promise((resolve) => setImmediate(resolve))
         mock.timers.reset()
         Server.cluster = saved.cluster
         cluster.workers = saved.workers
@@ -1240,6 +1215,8 @@ describe('_graceful (cluster restart)', () => {
         const worker = mkWorker(['exit', 'disconnect'])
         cluster.workers = { 1: worker }
         await Server._graceful()
+        // the restart doesn't wait for the worker it stops to exit
+        await new Promise((resolve) => setImmediate(resolve))
         mock.timers.tick(60 * 1000)
         assert.equal(worker.killed, 0, 'worker.kill() was not invoked')
     })
@@ -1431,23 +1408,21 @@ describe('_graceful (cluster restart)', () => {
             return { old, replacement: () => replacement, restarted: Server._graceful() }
         }
 
-        it('counts a listening replacement of an earlier version as started', { timeout: 2000 }, async (t) => {
-            t.mock.timers.enable({ apis: ['setTimeout'] })
+        it('counts a listening replacement of an earlier version as started', { timeout: 2000 }, async () => {
             const { old, restarted } = restart((r) => r._fire('listening'))
             await new Promise((resolve) => setImmediate(resolve))
-            t.mock.timers.tick(60 * 1000)
+            mock.timers.tick(60 * 1000)
             await restarted
             assert.equal(old.disconnected, 1)
         })
 
-        it('waits for a listening replacement that announced it reports ready', { timeout: 2000 }, async (t) => {
-            t.mock.timers.enable({ apis: ['setTimeout'] })
+        it('waits for a listening replacement that announced it reports ready', { timeout: 2000 }, async () => {
             const { old, replacement, restarted } = restart((r) => {
                 r._fire('message', { event: 'worker.starting' })
                 r._fire('listening')
             })
             await new Promise((resolve) => setImmediate(resolve))
-            t.mock.timers.tick(60 * 1000)
+            mock.timers.tick(60 * 1000)
             await new Promise((resolve) => setImmediate(resolve))
             assert.equal(old.disconnected, 0)
 
@@ -1456,18 +1431,16 @@ describe('_graceful (cluster restart)', () => {
             assert.equal(old.disconnected, 1)
         })
 
-        it('gives up on a replacement that neither listens nor reports ready', { timeout: 2000 }, async (t) => {
-            t.mock.timers.enable({ apis: ['setTimeout'] })
+        it('gives up on a replacement that neither listens nor reports ready', { timeout: 2000 }, async () => {
             const { old, replacement, restarted } = restart(() => {})
             await new Promise((resolve) => setImmediate(resolve))
-            t.mock.timers.tick(60 * 1000)
+            mock.timers.tick(60 * 1000)
             await restarted
             assert.equal(replacement().killed, 1)
             assert.equal(old.disconnected, 0)
         })
 
-        it('ignores a ready report from a replacement it killed', { timeout: 2000 }, async (t) => {
-            t.mock.timers.enable({ apis: ['setTimeout'] })
+        it('ignores a ready report from a replacement it killed', { timeout: 2000 }, async () => {
             const { old, replacement, restarted } = restart((r) => {
                 const kill = r.kill
                 // its ready report was already queued
@@ -1477,7 +1450,7 @@ describe('_graceful (cluster restart)', () => {
                 }
             })
             await new Promise((resolve) => setImmediate(resolve))
-            t.mock.timers.tick(60 * 1000)
+            mock.timers.tick(60 * 1000)
             await restarted
             assert.equal(replacement().killed, 1)
             assert.equal(old.disconnected, 0)
