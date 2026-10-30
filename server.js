@@ -124,6 +124,9 @@ Server.flushQueue = async (domain) => {
 }
 
 let graceful_in_progress = false
+// workers _graceful is replacing, and their replacements until those are ready: cluster_exit_listener doesn't
+// respawn them, the other one of the two keeps their place
+const replacing = new WeakSet()
 
 Server.gracefulRestart = () => {
     Server._graceful()
@@ -172,23 +175,84 @@ Server._graceful = async (shutdown) => {
     // TODO: Make these configurable
     const disconnect_timeout = 30
     const exit_timeout = 30
-    cluster.removeAllListeners('exit')
+    // a replacement not listening by then is stuck, one listening without having announced it reports ready runs an
+    // earlier version
+    const ready_timeout = 60
+    // when restarting, cluster_exit_listener keeps respawning crashed workers: it ignores the ones disconnected here
+    if (shutdown) cluster.removeAllListeners('exit')
 
-    // we reload using eachLimit where limit = num_workers - 1
-    // this kills all-but-one workers in parallel, leaving one running
-    // for new connections, and then restarts that one last worker.
+    // all workers but one are replaced at once, then the last one
 
     const worker_ids = Object.keys(cluster.workers)
     let limit = worker_ids.length - 1
     if (limit < 2) limit = 1
 
     const todo = []
+    let replacement_failed = false
 
     for (const id of Object.keys(cluster.workers)) {
-        todo.push(() => {
+        todo.push(async () => {
+            const worker = cluster.workers[id]
+            // it died since the restart started (when restarting, cluster_exit_listener respawns it): cluster.workers
+            // keeps it until the master has handled both its exit and the end of its channel
+            if (!worker?.isConnected() || worker.isDead()) return
+            if (!shutdown) {
+                // the worker serves until its replacement is ready
+                const newWorker = cluster.fork()
+                replacing.add(worker).add(newWorker)
+                let listening = false
+                let announced = false
+                newWorker.once('listening', () => (listening = true))
+                const started = await new Promise((resolve) => {
+                    const done = (ok) => {
+                        clearTimeout(timer)
+                        newWorker.off('message', onMessage)
+                        resolve(ok)
+                    }
+                    const onMessage = (msg) => {
+                        if (msg?.event === 'worker.starting') announced = true
+                        if (msg?.event === 'worker.ready') done(true)
+                    }
+                    const timer = setTimeout(() => {
+                        // its init_child hooks are running, each bounded by plugin_timeout
+                        if (listening && announced) return
+                        Server.logwarn(`Replacement of worker ${id} not ready after ${ready_timeout}s`)
+                        if (listening) return done(true)
+                        newWorker.off('message', onMessage)
+                        newWorker.kill()
+                    }, ready_timeout * 1000)
+                    newWorker.on('message', onMessage)
+                    newWorker.once('exit', () => done(false))
+                })
+                if (!started) {
+                    Server.logcrit(`Replacement of worker ${id} exited before it was ready`)
+                    replacing.delete(worker)
+                    // it crashed while its replacement was starting
+                    const { exitCode, signalCode } = worker.process
+                    if (signalCode || exitCode > 0) respawn(worker)
+                    // it isn't respawned: another worker loads the queue it may have written while listening
+                    if (listening) {
+                        const heir = Object.values(cluster.workers).find((w) => w.isConnected() && !w.isDead())
+                        heir?.send({ event: 'outbound.load_pid_queue', data: newWorker.process.pid })
+                    }
+                    replacement_failed = true
+                    return
+                }
+                replacing.delete(newWorker)
+                Server.lognotice('Replacement worker online.')
+                // queue files carry their worker's pid: a connected worker takes the old worker's over once it
+                // has exited, so they aren't delivered twice. A later restart may have replaced the replacement
+                const hand_over = () => {
+                    const heir = [newWorker, ...Object.values(cluster.workers)].find((w) => w.isConnected())
+                    heir?.send({ event: 'outbound.load_pid_queue', data: worker.process.pid })
+                }
+                if (worker.isDead()) hand_over()
+                else worker.once('exit', hand_over)
+                // it crashed while its replacement was starting, which took its place
+                if (!worker.isConnected() || worker.isDead()) return
+            }
             return new Promise((resolve) => {
                 Server.lognotice(`Killing worker: ${id}`)
-                const worker = cluster.workers[id]
                 for (const module of ['outbound', 'cfreader', 'plugins']) {
                     worker.send({ event: `${module}.shutdown` })
                 }
@@ -222,27 +286,13 @@ Server._graceful = async (shutdown) => {
                         worker.kill()
                     }, exit_timeout * 1000)
                 })
-                if (!shutdown) {
-                    const newWorker = cluster.fork()
-                    // queue files carry their worker's pid: a connected worker takes the old worker's over once it
-                    // has exited, so they aren't delivered twice. A later restart may have replaced the replacement
-                    worker.once('exit', () => {
-                        const heir = [newWorker, ...Object.values(cluster.workers)].find((w) => w.isConnected())
-                        heir?.send({ event: 'outbound.load_pid_queue', data: worker.process.pid })
-                    })
-                    newWorker.once('listening', () => {
-                        Server.lognotice('Replacement worker online.')
-                        newWorker.on('exit', (code, signal) => {
-                            cluster_exit_listener(newWorker, code, signal)
-                        })
-                        resolve()
-                    })
-                }
+                if (!shutdown) resolve()
             })
         })
     }
 
-    while (todo.length) {
+    // after a failed replacement, the workers left keep serving
+    while (todo.length && !replacement_failed) {
         // process batches of workers: invoke each queued thunk so we
         // actually await the worker shutdown promises (passing the bare
         // functions to Promise.all would resolve immediately).
@@ -258,7 +308,9 @@ Server._graceful = async (shutdown) => {
         return t2.unref()
     }
     graceful_in_progress = false
-    Server.lognotice(`Reload complete, workers: ${JSON.stringify(Object.keys(cluster.workers))}`)
+    const workers = JSON.stringify(Object.keys(cluster.workers))
+    if (replacement_failed) return Server.logcrit(`Reload aborted, workers: ${workers}`)
+    Server.lognotice(`Reload complete, workers: ${workers}`)
 }
 
 Server.sendToMaster = (command, params) => {
@@ -348,6 +400,8 @@ Server.createServer = (params) => {
 
     // Cluster Workers
     if (!cluster.isMaster) {
+        // a graceful restart then waits for this worker's worker.ready, from init_child_respond
+        if (process.connected) process.send({ event: 'worker.starting' })
         Server.setup_smtp_listeners(Server.plugins, 'child', inactivity_timeout)
         return
     } else {
@@ -725,6 +779,10 @@ Server.init_master_respond = async (retval, msg) => {
     try {
         const pids = await outbound.scan_queue_pids()
         Server.daemonize()
+        // a message sent to a worker that just died fails with an 'error' event, which would crash the master
+        cluster.on('fork', (worker) => {
+            worker.on('error', (err) => Server.logerror(`worker ${worker.id}: ${err.message}`))
+        })
         // Fork workers
         const workers = c.nodes === 'cpus' ? os.cpus().length : c.nodes
         const new_workers = []
@@ -761,23 +819,27 @@ function cluster_exit_listener(worker, code, signal) {
     }
     // _graceful is replacing or shutting down this worker
     if (worker.exitedAfterDisconnect) return
-    if (signal || code !== 0) {
-        // Restart worker
-        const new_worker = cluster.fork({
-            CLUSTER_MASTER_PID: process.pid,
-        })
-        new_worker.send({
-            event: 'outbound.load_pid_queue',
-            data: worker.process.pid,
-        })
-    }
+    if (replacing.has(worker)) return
+    if (signal || code !== 0) respawn(worker)
 }
 
-Server.init_child_respond = (retval, msg) => {
+function respawn(worker) {
+    const new_worker = cluster.fork({
+        CLUSTER_MASTER_PID: process.pid,
+    })
+    new_worker.send({
+        event: 'outbound.load_pid_queue',
+        data: worker.process.pid,
+    })
+}
+
+Server.init_child_respond = async (retval, msg) => {
     switch (retval) {
         case constants.ok:
         case constants.cont:
-            Server.setup_http_listeners()
+            await Server.setup_http_listeners()
+            // a graceful restart stops the worker this one replaces once it's ready
+            if (cluster.isWorker && process.connected) process.send({ event: 'worker.ready' })
             return
     }
 
