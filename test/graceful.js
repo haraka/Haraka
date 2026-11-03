@@ -209,6 +209,23 @@ describe('graceful restart', () => {
         })
     }
 
+    it('shuts down when asked to during a restart', { timeout: 30000 }, async () => {
+        haraka = await start_haraka('nodes=2\ngraceful_shutdown=true\n')
+        await haraka.wait_for(/(worker \d listening on [\s\S]*){2}/)
+        fs.writeFileSync(path.join(haraka.dir, 'slow_start'), '')
+
+        await internalcmd(haraka.port, 'gracefulRestart')
+        await haraka.wait_for(/worker started worker=3 /)
+        const exited = once(haraka.proc, 'exit')
+        haraka.proc.kill('SIGINT')
+
+        const [code] = await exited
+        assert.equal(code, 0)
+        await haraka.wait_for(/Reload stopped for shutdown/)
+        // worker 2's turn never came
+        await assert.rejects(haraka.wait_for(/worker started worker=4 /))
+    })
+
     it('keeps accepting connections while a single worker is replaced', { timeout: 30000 }, async () => {
         haraka = await start_haraka('nodes=1\n')
         await haraka.wait_for(/worker 1 listening on/)

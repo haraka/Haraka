@@ -10,14 +10,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - graceful restart on SIGUSR2 (#3635)
 
+#### Changed
+
+- BREAKING: SIGUSR2 restarts workers (was exit); run nodemon with `--signal SIGINT`
+- restart handling runs in the master: after upgrade, restart Haraka fully once
+
 #### Fixed
 
+- shut down when asked during a restart
 - reject path traversal in QUEUE DISCARD (#3640)
 - survive worker deaths during restarts (#3638)
 - send PROXY header with internal cmds (#3634)
 - don't miss worker exits in _graceful (#3632)
 - clear PROXY timer on disconnect (#3633)
-- hand over queues on graceful restart (#3637)
+- hand over queues on graceful restart, keep other workers' dot files (#3637)
 - don't respawn disconnected workers (#3636)
 
 #### Other
