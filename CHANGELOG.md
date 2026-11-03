@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 #### Fixed
 
+- tarpit: merge connect & txn delays (#3641)
 - shut down when asked during a restart
 - reject path traversal in QUEUE DISCARD (#3640)
 - survive worker deaths during restarts (#3638)
@@ -25,34 +26,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - clear PROXY timer on disconnect (#3633)
 - hand over queues on graceful restart, keep other workers' dot files (#3637)
 - don't respawn disconnected workers (#3636)
-
-#### Other
-
-- automerge union of changelog conflicts (#3639)
-
-
-#### Changed
-
-- BREAKING: SIGUSR2 restarts workers instead of exiting; run nodemon with `--signal SIGINT`
-- the new restart handling runs in the master: after upgrading, restart Haraka fully once, not with `--graceful` or SIGUSR2
-
-#### Fixed
-
-- fix(server): shut down when asked during a restart
-- fix(server): respawn workers after a restart
-- fix(server): skip workers gone mid-restart
-- fix(server): abort restart on failed replacement
-- fix(server): keep workers until replaced
-- fix(server): don't crash on sends to dead workers
-- fix(server): time out replacements never ready
-- fix(status): reject path traversal in QUEUE DISCARD
-- fix(bin): send PROXY header with internal cmds
-- fix(server): don't miss worker exits in _graceful
-- fix(connection): clear PROXY timer on disconnect
-- fix(outbound): keep other workers' dot files
-- fix: hand over queues on graceful restart
-- fix(server): don't respawn disconnected workers
-- fix(tarpit): honor notes before a transaction
 
 ### [3.3.5] - 2026-10-16
 
