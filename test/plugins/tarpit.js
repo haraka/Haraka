@@ -51,6 +51,17 @@ describe('tarpit', () => {
             }, conn)
         })
 
+        it('delays when connection.notes.tarpit is set and there is no transaction', { timeout: 3000 }, (t, done) => {
+            conn.transaction = null
+            conn.notes.tarpit = 0.1
+            const start = Date.now()
+            plugin.tarpit((rc) => {
+                assert.equal(rc, undefined)
+                assert.ok(Date.now() - start >= 90, 'should have waited ~100ms')
+                done()
+            }, conn)
+        })
+
         it('calls next immediately when no tarpit delay set', (t, done) => {
             // No tarpit note on connection or transaction
             plugin.tarpit((rc) => {
