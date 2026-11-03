@@ -134,6 +134,10 @@ exports.queue_inspect = function (cb) {
 }
 
 exports.queue_discard = function (file, cb) {
+    if (!file || file === '.' || file === '..' || path.basename(file) !== file) {
+        return cb(new Error('invalid queue file'))
+    }
+
     try {
         this.outbound.temp_fail_queue.discard(file)
     } catch {

@@ -1,7 +1,10 @@
 'use strict'
 
 const assert = require('node:assert/strict')
-const { describe, it, beforeEach } = require('node:test')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
+const { describe, it, beforeEach, afterEach } = require('node:test')
 
 const fixtures = require('haraka-test-fixtures')
 const { makeConnection, makePlugin } = fixtures
@@ -115,6 +118,54 @@ describe('status', () => {
                 this.connection,
                 ['STATUS', 'QUEUE DISCARD file1'],
             )
+        })
+
+        describe('discard containment', () => {
+            beforeEach(() => {
+                this.tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-status-'))
+                this.plugin.queue_dir = path.join(this.tmp, 'queue')
+                fs.mkdirSync(this.plugin.queue_dir)
+                this.canary = path.join(this.tmp, 'canary.txt')
+                fs.writeFileSync(this.canary, 'x')
+            })
+
+            afterEach(() => {
+                fs.rmSync(this.tmp, { recursive: true, force: true })
+            })
+
+            for (const file of ['../canary.txt', '..', '.', 'sub/../../canary.txt', '/etc/passwd', undefined]) {
+                it(`rejects ${file}`, (t, done) => {
+                    this.plugin.queue_discard(file, (err) => {
+                        assert.equal(err?.message, 'invalid queue file')
+                        assert.ok(fs.existsSync(this.canary))
+                        done()
+                    })
+                })
+            }
+
+            it('denies traversal via STATUS command', (t, done) => {
+                this.plugin.hook_unrecognized_command(
+                    (code, msg) => {
+                        assert.equal(code, DENY)
+                        assert.equal(msg, 'invalid queue file')
+                        assert.ok(fs.existsSync(this.canary))
+                        done()
+                    },
+                    this.connection,
+                    ['STATUS', 'QUEUE DISCARD ../canary.txt'],
+                )
+            })
+
+            it('unlinks a file in queue_dir', (t, done) => {
+                const qfile = path.join(this.plugin.queue_dir, '1234_0_1_5678_abcd_1_host')
+                fs.writeFileSync(qfile, 'x')
+                this.plugin.queue_discard(path.basename(qfile), (err, res) => {
+                    assert.ifError(err)
+                    assert.equal(res, 'OK')
+                    assert.ok(!fs.existsSync(qfile))
+                    done()
+                })
+            })
         })
 
         it('push_email_at_queue', (t, done) => {
