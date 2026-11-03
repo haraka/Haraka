@@ -4,7 +4,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- feat: SIGUSR2 restarts workers instead of exiting
+### [3.4.0] - 2026-11-03
+
+#### Added
+
+- graceful restart on SIGUSR2 (#3635)
+
+#### Fixed
+
+- reject path traversal in QUEUE DISCARD (#3640)
+- survive worker deaths during restarts (#3638)
+- send PROXY header with internal cmds (#3634)
+- don't miss worker exits in _graceful (#3632)
+- clear PROXY timer on disconnect (#3633)
+- hand over queues on graceful restart (#3637)
+- don't respawn disconnected workers (#3636)
+
+#### Other
+
+- automerge union of changelog conflicts (#3639)
+
+
+#### Changed
+
+- BREAKING: SIGUSR2 restarts workers instead of exiting; run nodemon with `--signal SIGINT`
+- the new restart handling runs in the master: after upgrading, restart Haraka fully once, not with `--graceful` or SIGUSR2
+
+#### Fixed
+
+- fix(server): shut down when asked during a restart
 - fix(server): respawn workers after a restart
 - fix(server): skip workers gone mid-restart
 - fix(server): abort restart on failed replacement
@@ -1978,3 +2006,4 @@ config files.
 [3.3.3]: https://github.com/haraka/Haraka/releases/tag/v3.3.3
 [3.3.4]: https://github.com/haraka/Haraka/releases/tag/v3.3.4
 [3.3.5]: https://github.com/haraka/Haraka/releases/tag/v3.3.5
+[3.4.0]: https://github.com/haraka/Haraka/releases/tag/v3.4.0
