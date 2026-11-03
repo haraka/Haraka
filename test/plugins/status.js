@@ -156,6 +156,15 @@ describe('status', () => {
                 )
             })
 
+            it('rejects before forwarding to cluster master', (t, done) => {
+                this.plugin.call_master = () => assert.fail('forwarded to master')
+                this.plugin.command_action = () => assert.fail('dispatched locally')
+                this.plugin.run('QUEUE DISCARD ../canary.txt', (err) => {
+                    assert.equal(err?.message, 'invalid queue file')
+                    done()
+                })
+            })
+
             it('unlinks a file in queue_dir', (t, done) => {
                 const qfile = path.join(this.plugin.queue_dir, '1234_0_1_5678_abcd_1_host')
                 fs.writeFileSync(qfile, 'x')

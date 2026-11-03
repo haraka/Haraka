@@ -28,7 +28,15 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     })
 }
 
+const is_queue_file = (file) => !!file && file !== '.' && file !== '..' && path.basename(file) === file
+
 exports.run = function (cmd, cb) {
+    // validate here: cluster IPC drops errors, so a worker-side rejection would reply success
+    const [noun, verb, file] = cmd.split(' ')
+    if (noun === 'QUEUE' && verb === 'DISCARD' && !is_queue_file(file)) {
+        return cb(new Error('invalid queue file'))
+    }
+
     if (server.cluster && !/^QUEUE LIST/.test(cmd)) {
         this.call_master(cmd, cb)
     } else {
@@ -134,9 +142,7 @@ exports.queue_inspect = function (cb) {
 }
 
 exports.queue_discard = function (file, cb) {
-    if (!file || file === '.' || file === '..' || path.basename(file) !== file) {
-        return cb(new Error('invalid queue file'))
-    }
+    if (!is_queue_file(file)) return cb(new Error('invalid queue file'))
 
     try {
         this.outbound.temp_fail_queue.discard(file)
