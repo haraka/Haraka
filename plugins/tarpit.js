@@ -31,12 +31,7 @@ exports.register = function () {
 }
 
 exports.tarpit = function (next, connection) {
-    const { transaction } = connection
-    if (!transaction) return next()
-
-    let delay = connection.notes.tarpit
-
-    if (!delay) delay = transaction.notes.tarpit
+    const delay = connection.notes.tarpit || connection.transaction?.notes?.tarpit
 
     if (!delay) return next()
 
