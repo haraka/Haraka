@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(outbound): keep other workers' dot files
 - fix: hand over queues on graceful restart
 - fix(server): don't respawn disconnected workers
+- fix(tarpit): honor notes before a transaction
 
 ### [3.3.5] - 2026-10-16
 
