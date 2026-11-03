@@ -20,7 +20,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@haraka/email-address": "~3.1.6",
+    "@haraka/email-address": "~3.1.7",
     "haraka-config": "~1.8.0",
     "haraka-constants": "~1.0.8",
     "haraka-dsn": "~1.2.1",
@@ -34,8 +34,8 @@
     "ipaddr.js": "~2.5.0",
     "node-gyp": "~13.1.0",
     "nopt": "~10.0.1",
-    "redis": "~6.3.0",
-    "semver": "~7.8.5"
+    "redis": "~6.3.1",
+    "semver": "~7.8.6"
   },
   "optionalDependencies": {
     "@haraka/ocsp": "~1.2.0",
