@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(server): keep workers until replaced
 - fix(server): don't crash on sends to dead workers
 - fix(server): time out replacements never ready
+- fix(status): reject path traversal in QUEUE DISCARD
 - fix(bin): send PROXY header with internal cmds
 - fix(server): don't miss worker exits in _graceful
 - fix(connection): clear PROXY timer on disconnect
