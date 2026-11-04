@@ -217,7 +217,8 @@ describe('graceful restart', () => {
         await internalcmd(haraka.port, 'gracefulRestart')
         await haraka.wait_for(/worker started worker=3 /)
         const exited = once(haraka.proc, 'exit')
-        haraka.proc.kill('SIGINT')
+        // what SIGINT runs with graceful_shutdown set: Windows has no SIGINT, kill() terminates the process
+        await internalcmd(haraka.port, 'gracefulShutdown')
 
         const [code] = await exited
         assert.equal(code, 0)
