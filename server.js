@@ -124,6 +124,7 @@ Server.flushQueue = async (domain) => {
 }
 
 let graceful_in_progress = false
+let shutdown_pending = null
 // workers _graceful is replacing, and their replacements until those are ready: cluster_exit_listener doesn't
 // respawn them, the other one of the two keeps their place
 const replacing = new WeakSet()
@@ -167,6 +168,11 @@ Server._graceful = async (shutdown) => {
     }
 
     if (graceful_in_progress) {
+        // dropping it would leave a container's SIGTERM to its orchestrator's SIGKILL
+        if (shutdown && !shutdown_pending) {
+            shutdown_pending = shutdown
+            return Server.lognotice('Restart in progress - shutting down once its current workers are replaced')
+        }
         Server.lognotice('Restart currently in progress - ignoring request')
         return
     }
@@ -292,7 +298,7 @@ Server._graceful = async (shutdown) => {
     }
 
     // after a failed replacement, the workers left keep serving
-    while (todo.length && !replacement_failed) {
+    while (todo.length && !replacement_failed && !shutdown_pending) {
         // process batches of workers: invoke each queued thunk so we
         // actually await the worker shutdown promises (passing the bare
         // functions to Promise.all would resolve immediately).
@@ -309,6 +315,12 @@ Server._graceful = async (shutdown) => {
     }
     graceful_in_progress = false
     const workers = JSON.stringify(Object.keys(cluster.workers))
+    if (shutdown_pending) {
+        const pending = shutdown_pending
+        shutdown_pending = null
+        Server.lognotice(`Reload stopped for shutdown, workers: ${workers}`)
+        return Server._graceful(pending)
+    }
     if (replacement_failed) return Server.logcrit(`Reload aborted, workers: ${workers}`)
     Server.lognotice(`Reload complete, workers: ${workers}`)
 }

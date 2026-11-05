@@ -30,8 +30,11 @@ exports.register = function () {
     }
 }
 
+// notes may hold strings, which + would concatenate
+const seconds = (note) => (Number(note) > 0 ? Number(note) : 0)
+
 exports.tarpit = function (next, connection) {
-    const delay = connection.notes.tarpit || connection.transaction?.notes?.tarpit
+    const delay = seconds(connection.notes.tarpit) + seconds(connection.transaction?.notes?.tarpit)
 
     if (!delay) return next()
 

@@ -4,21 +4,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- feat: SIGUSR2 restarts workers instead of exiting
-- fix(server): respawn workers after a restart
-- fix(server): skip workers gone mid-restart
-- fix(server): abort restart on failed replacement
-- fix(server): keep workers until replaced
-- fix(server): don't crash on sends to dead workers
-- fix(server): time out replacements never ready
-- fix(status): reject path traversal in QUEUE DISCARD
-- fix(bin): send PROXY header with internal cmds
-- fix(server): don't miss worker exits in _graceful
-- fix(connection): clear PROXY timer on disconnect
-- fix(outbound): keep other workers' dot files
-- fix: hand over queues on graceful restart
-- fix(server): don't respawn disconnected workers
-- fix(tarpit): honor notes before a transaction
+### [3.4.0] - 2026-11-03
+
+#### Added
+
+- graceful restart on SIGUSR2 (#3635)
+
+#### Changed
+
+- BREAKING: SIGUSR2 restarts workers (was exit); run nodemon with `--signal SIGINT`
+- restart handling runs in the master: after upgrade, restart Haraka fully once
+
+#### Fixed
+
+- tarpit: merge connect & txn delays (#3641)
+- shut down when asked during a restart
+- reject path traversal in QUEUE DISCARD (#3640)
+- survive worker deaths during restarts (#3638)
+- send PROXY header with internal cmds (#3634)
+- don't miss worker exits in _graceful (#3632)
+- clear PROXY timer on disconnect (#3633)
+- hand over queues on graceful restart, keep other workers' dot files (#3637)
+- don't respawn disconnected workers (#3636)
 
 ### [3.3.5] - 2026-10-16
 
@@ -1978,3 +1985,4 @@ config files.
 [3.3.3]: https://github.com/haraka/Haraka/releases/tag/v3.3.3
 [3.3.4]: https://github.com/haraka/Haraka/releases/tag/v3.3.4
 [3.3.5]: https://github.com/haraka/Haraka/releases/tag/v3.3.5
+[3.4.0]: https://github.com/haraka/Haraka/releases/tag/v3.4.0

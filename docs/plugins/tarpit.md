@@ -18,6 +18,10 @@ or
 
     connection.transaction.notes.tarpit = <seconds to delay>;
 
+When both are set, the delays add up. The connection delay applies to every
+delayed hook, including those before MAIL FROM, while the transaction delay
+ends with its transaction.
+
 ## Configuration
 
 The configuration file for tarpit is config/tarpit.ini.

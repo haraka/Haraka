@@ -97,5 +97,38 @@ describe('tarpit', () => {
                 done()
             }, conn)
         })
+
+        it('adds the connection and transaction delays', { timeout: 3000 }, (t, done) => {
+            conn.notes.tarpit = 0.1
+            conn.transaction.notes.tarpit = 0.2
+            const start = Date.now()
+            plugin.tarpit((rc) => {
+                assert.equal(rc, undefined)
+                assert.ok(Date.now() - start >= 290, 'should have waited ~300ms')
+                done()
+            }, conn)
+        })
+
+        it('adds string delays as numbers', { timeout: 3000 }, (t, done) => {
+            conn.notes.tarpit = '0.1'
+            conn.transaction.notes.tarpit = '0.1'
+            const start = Date.now()
+            plugin.tarpit((rc) => {
+                assert.equal(rc, undefined)
+                assert.ok(Date.now() - start >= 190, 'should have waited ~200ms')
+                done()
+            }, conn)
+        })
+
+        it('ignores negative and non-numeric delays', { timeout: 3000 }, (t, done) => {
+            conn.notes.tarpit = -5
+            conn.transaction.notes.tarpit = 'soon'
+            const start = Date.now()
+            plugin.tarpit((rc) => {
+                assert.equal(rc, undefined)
+                assert.ok(Date.now() - start < 50)
+                done()
+            }, conn)
+        })
     })
 })
