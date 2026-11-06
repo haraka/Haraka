@@ -12,6 +12,7 @@ const config = require('haraka-config')
 const constants = require('haraka-constants')
 const DSN = require('haraka-dsn')
 const message = require('haraka-email-message')
+const libqp = require('libqp')
 const net_utils = require('haraka-net-utils')
 const Notes = require('haraka-notes')
 const utils = require('haraka-utils')
@@ -47,6 +48,20 @@ function dummy_func() {}
 // bounced, so they must not be able to start a new header or body line.
 function single_line(val) {
     return utils.sanitize(String(val ?? ''), { replacement: ' ' }).trim()
+}
+
+function has_non_ascii(string) {
+    return [...string].some((char) => char.charCodeAt(0) > 127)
+}
+
+// RFC 2046 §4.1.2: label text with the lowest common denominator charset.
+// Non-ASCII text is quoted-printable because a bounce is composed before we
+// know whether the receiving MX offers 8BITMIME, and we can't downgrade later.
+function text_part(type, lines) {
+    const body = lines.map((line) => `${line}\r\n`).join('')
+    if (!has_non_ascii(body)) return `Content-Type: ${type}; charset=us-ascii\r\n\r\n${body}`
+    const qp = libqp.wrap(libqp.encode(Buffer.from(body)), 76)
+    return `Content-Type: ${type}; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n${qp}`
 }
 
 class HMailItem extends events.EventEmitter {
@@ -500,10 +515,6 @@ class HMailItem extends events.EventEmitter {
             let rp_params = ''
             if (smtp_properties.smtputf8 && has_non_ascii(rp)) rp_params += ' SMTPUTF8'
             return `FROM:${rp}${rp_params}`
-        }
-
-        function has_non_ascii(string) {
-            return [...string].some((char) => char.charCodeAt(0) > 127)
         }
 
         function auth_and_mail_phase() {
@@ -1102,6 +1113,9 @@ class HMailItem extends events.EventEmitter {
         for (const line of bounce_header_lines) {
             bounce_body.push(`${line}${CRLF}`)
         }
+        if (!bounce_header_lines.some((line) => /^mime-version:/i.test(line))) {
+            bounce_body.push(`MIME-Version: 1.0${CRLF}`)
+        }
         bounce_body.push(
             `Content-Type: multipart/report; report-type=delivery-status;${CRLF}    boundary="${boundary}"${CRLF}`,
         )
@@ -1127,28 +1141,18 @@ class HMailItem extends events.EventEmitter {
         }
 
         bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-        bounce_body.push(`Content-Type: text/plain; charset=us-ascii${CRLF}`)
-        bounce_body.push(CRLF)
-        for (const line of bounce_body_lines) {
-            bounce_body.push(`${line}${CRLF}`)
-        }
+        bounce_body.push(text_part('text/plain', bounce_body_lines))
         bounce_body.push(CRLF)
 
         if (bounce_html_lines.length > 1) {
             bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-            bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`)
-            bounce_body.push(CRLF)
-            for (const line of bounce_html_lines) {
-                bounce_body.push(`${line}${CRLF}`)
-            }
+            bounce_body.push(text_part('text/html', bounce_html_lines))
             bounce_body.push(CRLF)
             bounce_body.push(`--${boundary}${boundary_incr}--${CRLF}`)
 
             if (bounce_image_lines.length > 1) {
                 boundary_incr = 'a'
                 bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-                //bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
-                //bounce_body.push(CRLF);
                 for (const line of bounce_image_lines) {
                     bounce_body.push(`${line}${CRLF}`)
                 }

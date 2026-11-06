@@ -403,8 +403,7 @@ Server.createServer = (params) => {
 
     if (!cluster || !c.nodes) {
         Server.daemonize(c)
-        Server.setup_smtp_listeners(Server.plugins, 'master', inactivity_timeout)
-        return
+        return Server.setup_smtp_listeners(Server.plugins, 'master', inactivity_timeout)
     }
 
     // Cluster
@@ -414,8 +413,7 @@ Server.createServer = (params) => {
     if (!cluster.isMaster) {
         // a graceful restart then waits for this worker's worker.ready, from init_child_respond
         if (process.connected) process.send({ event: 'worker.starting' })
-        Server.setup_smtp_listeners(Server.plugins, 'child', inactivity_timeout)
-        return
+        return Server.setup_smtp_listeners(Server.plugins, 'child', inactivity_timeout)
     } else {
         // console.log("Setting up message handler");
         cluster.on('message', messageHandler)

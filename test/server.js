@@ -43,27 +43,24 @@ const cramMd5Response = (user, pass, challenge) => {
 
 // ─── Server lifecycle helpers ─────────────────────────────────────────────────
 
-const setupServer = (ip_port) =>
-    new Promise((resolve) => {
-        process.env.YES_REALLY_DO_DISCARD = '1'
-        process.env.HARAKA_TEST_DIR = path.resolve('test')
-        const test_cfg_path = path.resolve('test')
+const setupServer = async (ip_port) => {
+    process.env.YES_REALLY_DO_DISCARD = '1'
+    process.env.HARAKA_TEST_DIR = path.resolve('test')
+    const test_cfg_path = path.resolve('test')
 
-        this.server = require('../server')
-        this.config = require('haraka-config').module_config(test_cfg_path)
-        this.server.logger.loglevel = 6
-        this.server.config = this.config.module_config(test_cfg_path)
-        this.server.plugins.config = this.config.module_config(test_cfg_path)
+    this.server = require('../server')
+    this.config = require('haraka-config').module_config(test_cfg_path)
+    this.server.logger.loglevel = 6
+    this.server.config = this.config.module_config(test_cfg_path)
+    this.server.plugins.config = this.config.module_config(test_cfg_path)
 
-        this.server.load_smtp_ini()
-        this.server.cfg.main.listen = ip_port
-        this.server.cfg.main.smtps_port = 2465
+    this.server.load_smtp_ini()
+    this.server.cfg.main.listen = ip_port
+    this.server.cfg.main.smtps_port = 2465
 
-        this.server.load_default_tls_config(() => {
-            this.server.createServer({})
-            setTimeout(resolve, 200)
-        })
-    })
+    await new Promise((resolve) => this.server.load_default_tls_config(resolve))
+    await this.server.createServer({})
+}
 
 const tearDownServer = () =>
     new Promise((resolve) => {
