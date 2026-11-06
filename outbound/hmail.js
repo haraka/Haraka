@@ -1102,6 +1102,9 @@ class HMailItem extends events.EventEmitter {
         for (const line of bounce_header_lines) {
             bounce_body.push(`${line}${CRLF}`)
         }
+        if (!bounce_header_lines.some((line) => /^mime-version:/i.test(line))) {
+            bounce_body.push(`MIME-Version: 1.0${CRLF}`)
+        }
         bounce_body.push(
             `Content-Type: multipart/report; report-type=delivery-status;${CRLF}    boundary="${boundary}"${CRLF}`,
         )
@@ -1127,7 +1130,8 @@ class HMailItem extends events.EventEmitter {
         }
 
         bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-        bounce_body.push(`Content-Type: text/plain; charset=us-ascii${CRLF}`)
+        bounce_body.push(`Content-Type: text/plain; charset=UTF-8${CRLF}`)
+        bounce_body.push(`Content-Transfer-Encoding: 8bit${CRLF}`)
         bounce_body.push(CRLF)
         for (const line of bounce_body_lines) {
             bounce_body.push(`${line}${CRLF}`)
@@ -1136,7 +1140,8 @@ class HMailItem extends events.EventEmitter {
 
         if (bounce_html_lines.length > 1) {
             bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-            bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`)
+            bounce_body.push(`Content-Type: text/html; charset=UTF-8${CRLF}`)
+            bounce_body.push(`Content-Transfer-Encoding: 8bit${CRLF}`)
             bounce_body.push(CRLF)
             for (const line of bounce_html_lines) {
                 bounce_body.push(`${line}${CRLF}`)
@@ -1147,8 +1152,6 @@ class HMailItem extends events.EventEmitter {
             if (bounce_image_lines.length > 1) {
                 boundary_incr = 'a'
                 bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-                //bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
-                //bounce_body.push(CRLF);
                 for (const line of bounce_image_lines) {
                     bounce_body.push(`${line}${CRLF}`)
                 }

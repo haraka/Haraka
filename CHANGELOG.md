@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+#### Fixed
+
+- bounce: label text & HTML parts as 8bit UTF-8, add MIME-Version (#3644)
+- log bounce creation with the bounced mail's uuid (#3645)
+
 ### [3.4.0] - 2026-11-03
 
 #### Added
@@ -17,7 +22,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 #### Fixed
 
-- log bounce creation with the bounced mail's uuid (#3645)
 - tarpit: merge connect & txn delays (#3641)
 - shut down when asked during a restart
 - reject path traversal in QUEUE DISCARD (#3640)
