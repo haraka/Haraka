@@ -12,6 +12,7 @@ const config = require('haraka-config')
 const constants = require('haraka-constants')
 const DSN = require('haraka-dsn')
 const message = require('haraka-email-message')
+const libqp = require('libqp')
 const net_utils = require('haraka-net-utils')
 const Notes = require('haraka-notes')
 const utils = require('haraka-utils')
@@ -53,10 +54,14 @@ function has_non_ascii(string) {
     return [...string].some((char) => char.charCodeAt(0) > 127)
 }
 
-// RFC 2046 §4.1.2: label text with the lowest common denominator charset
-function text_part_headers(type, lines) {
-    if (!lines.some(has_non_ascii)) return [`Content-Type: ${type}; charset=us-ascii`]
-    return [`Content-Type: ${type}; charset=UTF-8`, 'Content-Transfer-Encoding: 8bit']
+// RFC 2046 §4.1.2: label text with the lowest common denominator charset.
+// Non-ASCII text is quoted-printable because a bounce is composed before we
+// know whether the receiving MX offers 8BITMIME, and we can't downgrade later.
+function text_part(type, lines) {
+    const body = lines.map((line) => `${line}\r\n`).join('')
+    if (!has_non_ascii(body)) return `Content-Type: ${type}; charset=us-ascii\r\n\r\n${body}`
+    const qp = libqp.wrap(libqp.encode(Buffer.from(body)), 76)
+    return `Content-Type: ${type}; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n${qp}`
 }
 
 class HMailItem extends events.EventEmitter {
@@ -1136,24 +1141,12 @@ class HMailItem extends events.EventEmitter {
         }
 
         bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-        for (const line of text_part_headers('text/plain', bounce_body_lines)) {
-            bounce_body.push(`${line}${CRLF}`)
-        }
-        bounce_body.push(CRLF)
-        for (const line of bounce_body_lines) {
-            bounce_body.push(`${line}${CRLF}`)
-        }
+        bounce_body.push(text_part('text/plain', bounce_body_lines))
         bounce_body.push(CRLF)
 
         if (bounce_html_lines.length > 1) {
             bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-            for (const line of text_part_headers('text/html', bounce_html_lines)) {
-                bounce_body.push(`${line}${CRLF}`)
-            }
-            bounce_body.push(CRLF)
-            for (const line of bounce_html_lines) {
-                bounce_body.push(`${line}${CRLF}`)
-            }
+            bounce_body.push(text_part('text/html', bounce_html_lines))
             bounce_body.push(CRLF)
             bounce_body.push(`--${boundary}${boundary_incr}--${CRLF}`)
 

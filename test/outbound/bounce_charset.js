@@ -8,6 +8,7 @@ const path = require('node:path')
 const { Address } = require('@haraka/email-address')
 const config = require('haraka-config')
 const { Header } = require('haraka-email-message')
+const libqp = require('libqp')
 
 // Load outbound/index FIRST to avoid the circular-dependency boot-order issue.
 const outbound = require('../../outbound')
@@ -60,6 +61,14 @@ const partHeaders = (bounce, type) => {
     return match[0]
 }
 
+const partBody = (bounce, type) => {
+    const headers = partHeaders(bounce, type)
+    const start = bounce.indexOf(headers) + headers.length
+    return bounce.slice(start, bounce.indexOf('\r\n--', start))
+}
+
+const isSevenBit = (string) => [...string].every((char) => char.charCodeAt(0) < 128)
+
 describe('bounce message charset', () => {
     beforeEach(ensureQueueDir)
     afterEach(cleanQueueDir)
@@ -67,13 +76,18 @@ describe('bounce message charset', () => {
     const encodedSubject = `Subject: =?UTF-8?B?${Buffer.from('Ergänzend').toString('base64')}?=\r\n`
 
     it('keeps a decoded non-ASCII subject intact', async () => {
-        const bounce = await bounceFor([encodedSubject])
-        assert.match(bounce, /"Ergänzend"/)
+        const body = partBody(await bounceFor([encodedSubject]), 'text/plain')
+        assert.match(libqp.decode(body).toString(), /"Ergänzend"/)
+    })
+
+    it('keeps a non-ASCII bounce 7-bit', async () => {
+        const bounce = await bounceFor([encodedSubject], 'Empfänger unbekannt')
+        assert.ok(isSevenBit(bounce), 'no 8-bit octets')
     })
 
     const assertUtf8 = (headers) => {
         assert.match(headers, /charset=UTF-8/)
-        assert.match(headers, /^Content-Transfer-Encoding: 8bit\r$/m)
+        assert.match(headers, /^Content-Transfer-Encoding: quoted-printable\r$/m)
     }
 
     const assertAscii = (headers) => {
@@ -87,14 +101,14 @@ describe('bounce message charset', () => {
         assertAscii(partHeaders(bounce, 'text/html'))
     })
 
-    it('labels only the part carrying non-ASCII text as 8bit UTF-8', async () => {
+    it('encodes only the part carrying non-ASCII text', async () => {
         // the default HTML template has no {subject}
         const bounce = await bounceFor([encodedSubject])
         assertUtf8(partHeaders(bounce, 'text/plain'))
         assertAscii(partHeaders(bounce, 'text/html'))
     })
 
-    it('labels the HTML part 8bit UTF-8 when it carries non-ASCII text', async () => {
+    it('encodes the HTML part when it carries non-ASCII text', async () => {
         const bounce = await bounceFor(['Subject: hello\r\n'], 'Empfänger unbekannt')
         assertUtf8(partHeaders(bounce, 'text/plain'))
         assertUtf8(partHeaders(bounce, 'text/html'))
