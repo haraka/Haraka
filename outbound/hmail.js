@@ -49,6 +49,16 @@ function single_line(val) {
     return utils.sanitize(String(val ?? ''), { replacement: ' ' }).trim()
 }
 
+function has_non_ascii(string) {
+    return [...string].some((char) => char.charCodeAt(0) > 127)
+}
+
+// RFC 2046 §4.1.2: label text with the lowest common denominator charset
+function text_part_headers(type, lines) {
+    if (!lines.some(has_non_ascii)) return [`Content-Type: ${type}; charset=us-ascii`]
+    return [`Content-Type: ${type}; charset=UTF-8`, 'Content-Transfer-Encoding: 8bit']
+}
+
 class HMailItem extends events.EventEmitter {
     constructor(filename, filePath, notes) {
         super()
@@ -500,10 +510,6 @@ class HMailItem extends events.EventEmitter {
             let rp_params = ''
             if (smtp_properties.smtputf8 && has_non_ascii(rp)) rp_params += ' SMTPUTF8'
             return `FROM:${rp}${rp_params}`
-        }
-
-        function has_non_ascii(string) {
-            return [...string].some((char) => char.charCodeAt(0) > 127)
         }
 
         function auth_and_mail_phase() {
@@ -1130,8 +1136,9 @@ class HMailItem extends events.EventEmitter {
         }
 
         bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-        bounce_body.push(`Content-Type: text/plain; charset=UTF-8${CRLF}`)
-        bounce_body.push(`Content-Transfer-Encoding: 8bit${CRLF}`)
+        for (const line of text_part_headers('text/plain', bounce_body_lines)) {
+            bounce_body.push(`${line}${CRLF}`)
+        }
         bounce_body.push(CRLF)
         for (const line of bounce_body_lines) {
             bounce_body.push(`${line}${CRLF}`)
@@ -1140,8 +1147,9 @@ class HMailItem extends events.EventEmitter {
 
         if (bounce_html_lines.length > 1) {
             bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`)
-            bounce_body.push(`Content-Type: text/html; charset=UTF-8${CRLF}`)
-            bounce_body.push(`Content-Transfer-Encoding: 8bit${CRLF}`)
+            for (const line of text_part_headers('text/html', bounce_html_lines)) {
+                bounce_body.push(`${line}${CRLF}`)
+            }
             bounce_body.push(CRLF)
             for (const line of bounce_html_lines) {
                 bounce_body.push(`${line}${CRLF}`)

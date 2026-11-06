@@ -39,7 +39,7 @@ const mockHMailItem = () =>
         util_hmailitem.newMockHMailItem(outbound_context, reject, {}, resolve)
     })
 
-const bounceFor = async (header_lines) => {
+const bounceFor = async (header_lines, reason = 'test reason') => {
     const hmail = await mockHMailItem()
     const header = new Header()
     header.parse(header_lines)
@@ -47,7 +47,7 @@ const bounceFor = async (header_lines) => {
         hmail.populate_bounce_message_with_headers(
             new Address('<>'),
             new Address('sender@example.com'),
-            'test reason',
+            reason,
             header,
             (err, lines) => (err ? reject(err) : resolve(lines.join(''))),
         )
@@ -71,16 +71,33 @@ describe('bounce message charset', () => {
         assert.match(bounce, /"Ergänzend"/)
     })
 
-    it('labels the text part as 8bit UTF-8', async () => {
-        const headers = partHeaders(await bounceFor([encodedSubject]), 'text/plain')
+    const assertUtf8 = (headers) => {
         assert.match(headers, /charset=UTF-8/)
         assert.match(headers, /^Content-Transfer-Encoding: 8bit\r$/m)
+    }
+
+    const assertAscii = (headers) => {
+        assert.match(headers, /charset=us-ascii/)
+        assert.doesNotMatch(headers, /Content-Transfer-Encoding/)
+    }
+
+    it('labels an all-ASCII bounce us-ascii', async () => {
+        const bounce = await bounceFor(['Subject: hello\r\n'])
+        assertAscii(partHeaders(bounce, 'text/plain'))
+        assertAscii(partHeaders(bounce, 'text/html'))
     })
 
-    it('labels the HTML part as 8bit UTF-8', async () => {
-        const headers = partHeaders(await bounceFor([encodedSubject]), 'text/html')
-        assert.match(headers, /charset=UTF-8/)
-        assert.match(headers, /^Content-Transfer-Encoding: 8bit\r$/m)
+    it('labels only the part carrying non-ASCII text as 8bit UTF-8', async () => {
+        // the default HTML template has no {subject}
+        const bounce = await bounceFor([encodedSubject])
+        assertUtf8(partHeaders(bounce, 'text/plain'))
+        assertAscii(partHeaders(bounce, 'text/html'))
+    })
+
+    it('labels the HTML part 8bit UTF-8 when it carries non-ASCII text', async () => {
+        const bounce = await bounceFor(['Subject: hello\r\n'], 'Empfänger unbekannt')
+        assertUtf8(partHeaders(bounce, 'text/plain'))
+        assertUtf8(partHeaders(bounce, 'text/html'))
     })
 
     it('declares MIME-Version once in the top-level headers', async () => {
