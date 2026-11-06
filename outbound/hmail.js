@@ -1274,7 +1274,6 @@ class HMailItem extends events.EventEmitter {
             return this.discard() // calls next_cb
         }
 
-        const self = this
         const err = this.bounce_error
 
         if (!this.todo.mail_from.user) {
@@ -1284,9 +1283,9 @@ class HMailItem extends events.EventEmitter {
 
         const from = new Address('<>')
         const recip = new Address(this.todo.mail_from.user, this.todo.mail_from.host)
-        this.populate_bounce_message(from, recip, err, function (err2, data_lines) {
+        this.populate_bounce_message(from, recip, err, (err2, data_lines) => {
             if (err2) {
-                return self.double_bounce(`Error populating bounce message: ${err2}`)
+                return this.double_bounce(`Error populating bounce message: ${err2}`)
             }
 
             outbound.send_email(
@@ -1296,9 +1295,9 @@ class HMailItem extends events.EventEmitter {
                 (code) => {
                     if (code === constants.deny) {
                         // failed to even queue the mail
-                        return self.double_bounce('Unable to queue the bounce message. Not sending bounce!')
+                        return this.double_bounce('Unable to queue the bounce message. Not sending bounce!')
                     }
-                    self.discard()
+                    this.discard()
                 },
                 { origin: this },
             )
