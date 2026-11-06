@@ -6,6 +6,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const { Address } = require('@haraka/email-address')
+const config = require('haraka-config')
 const { Header } = require('haraka-email-message')
 
 // Load outbound/index FIRST to avoid the circular-dependency boot-order issue.
@@ -86,5 +87,15 @@ describe('bounce message charset', () => {
         const bounce = await bounceFor([encodedSubject])
         const topHeaders = bounce.split('\r\n\r\n')[0]
         assert.equal(topHeaders.match(/^MIME-Version: 1\.0\r?$/gim)?.length, 1)
+    })
+
+    it('keeps a template-supplied MIME-Version instead of adding another', async (t) => {
+        const realGet = config.get.bind(config)
+        t.mock.method(config, 'get', (name, ...rest) => {
+            const value = realGet(name, ...rest)
+            return name === 'outbound.bounce_message' ? ['mime-Version: 1.0', ...value] : value
+        })
+        const topHeaders = (await bounceFor([encodedSubject])).split('\r\n\r\n')[0]
+        assert.deepEqual(topHeaders.match(/^mime-version:.*$/gim), ['mime-Version: 1.0'])
     })
 })
