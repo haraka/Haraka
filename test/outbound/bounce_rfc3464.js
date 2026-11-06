@@ -62,9 +62,9 @@ const interceptTempFail = (mock_hmail, mock_socket, assertion, conversation) =>
 const interceptSendEmail = (mock_hmail, mock_socket, assertion, conversation) =>
     new Promise((resolve, reject) => {
         const orig = outbound_context.exports.send_email
-        outbound_context.exports.send_email = (from, to, contents) => {
+        outbound_context.exports.send_email = (from, to, contents, next, options) => {
             try {
-                assertion(contents)
+                assertion(contents, options)
                 resolve()
             } catch (e) {
                 reject(e)
@@ -191,7 +191,8 @@ describe('outbound_bounce_rfc3464', () => {
                 await interceptSendEmail(
                     mock_hmail,
                     mock_socket,
-                    (contents) => {
+                    (contents, options) => {
+                        assert.equal(options.origin, mock_hmail)
                         assert.match(contents, /^Content-type: message\/delivery-status/m)
                         assert.match(contents, /^Final-Recipient: rfc822;recipient@domain/m)
                         assert.match(contents, /^Action: failed/m)
