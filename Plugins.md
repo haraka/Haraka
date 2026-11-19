@@ -21,6 +21,7 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 
 | Name                             | Description                                       | Published |
 | -------------------------------- | ------------------------------------------------- | --------- |
+| [arc][url-arc]                   | ARC sealing for forwarded and relayed mail        | 2026      |
 | [auth-enc-file][url-authencflat] | Auth against user/pass in an encrypted file       | 2018      |
 | [flat_file][url-authflat]        | Auth against user/pass in a file                  | 2026      |
 | [auth_bridge][url-authbridge]    | Auth against remote MTA                           | 2026      |
@@ -227,3 +228,4 @@ A comprehensive list of known plugins. Create a PR to add yours to these lists.
 [url-save-sent]: https://github.com/AprilGrimoire/haraka-plugin-save-sent
 [url-dropbox]: https://github.com/dspangenberg/haraka-plugin-dropbox
 [url-mailkite]: https://github.com/mailkite/server/tree/main/packages/haraka-plugin-mailkite
+[url-arc]: https://github.com/baudehlo/haraka-plugin-arc
