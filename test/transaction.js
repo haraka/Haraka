@@ -602,6 +602,54 @@ describe('transaction', () => {
         })
     })
 
+    describe('header/body separator with doubled CRs', () => {
+        const body = ['Para one.\r\r\n', '\r\r\n', 'Para two.\r\r\n', '\r\n', 'Para three.\r\n']
+
+        for (const sep of ['\r\r\n', '\r\r\r\n']) {
+            it(`${JSON.stringify(sep)} ends the headers`, async () => {
+                addLines(this.transaction, ['Subject: test\r\n', 'To: a@b.com\r\n', sep, ...body])
+                assert.equal(this.transaction.found_hb_sep, true)
+                await endData(this.transaction)
+
+                assert.equal(this.transaction.header.get('Subject').trim(), 'test')
+                assert.equal(this.transaction.header.get_all('Para one.').length, 0)
+                assert.equal(this.transaction.header.header_list.length, 2)
+            })
+
+            it(`${JSON.stringify(sep)}: late add_header lands before the body, body intact`, async () => {
+                addLines(this.transaction, ['Subject: test\r\n', sep, ...body])
+                await endData(this.transaction)
+                this.transaction.add_header('X-Spam-Tests', 'BAYES_40')
+
+                const str = (await getData(this.transaction.message_stream)).toString()
+                assert.ok(
+                    str.startsWith('Subject: test\r\nX-Spam-Tests: BAYES_40\r\n\r\nPara one.'),
+                    JSON.stringify(str),
+                )
+                for (const para of ['Para one.', 'Para two.', 'Para three.']) {
+                    assert.equal(str.split(para).length - 1, 1, `${para} appears exactly once`)
+                }
+            })
+        }
+
+        it('relays a clean CRLF separator', async () => {
+            addLines(this.transaction, ['Subject: test\r\n', '\r\r\n', 'Body\r\n'])
+            await endData(this.transaction)
+            const wire = await relayBytes(this.transaction)
+            assert.equal(wire, 'Subject: test\r\n\r\nBody\r\n.\r\n')
+        })
+
+        it('a whitespace-only line is a continuation, not a separator', () => {
+            addLines(this.transaction, ['Subject: test\r\n', ' \r\n', 'To: a@b.com\r\n'])
+            assert.equal(this.transaction.found_hb_sep, false)
+        })
+
+        it('a lone CR without LF is not a separator', () => {
+            addLines(this.transaction, ['Subject: test\r\n', '\r'])
+            assert.equal(this.transaction.found_hb_sep, false)
+        })
+    })
+
     describe('parse_body enabled after separator', () => {
         it('does not throw when parse_body set true after separator seen', async () => {
             this.transaction.add_data('Subject: test\n')
