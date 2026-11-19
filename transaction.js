@@ -7,6 +7,12 @@ const Notes = require('haraka-notes')
 const utils = require('haraka-utils')
 const message = require('haraka-email-message')
 
+function isBlankLine(line) {
+    let i = 0
+    while (line[i] === 0x0d) i++
+    return line[i] === 0x0a && i === line.length - 1
+}
+
 class Transaction {
     constructor(uuid, cfg = {}) {
         this.uuid = uuid || utils.uuid()
@@ -133,8 +139,10 @@ class Transaction {
             // This shouldn't ever happen.
             line = Buffer.from(line, this.encoding)
         }
-        // is this the end of headers line?
-        if (this.header_pos === 0 && (line[0] === 0x0a || (line[0] === 0x0d && line[1] === 0x0a))) {
+        if (this.header_pos === 0 && isBlankLine(line)) {
+            // Clients that double CRs (sSMTP + PHP 8 mail()) send \r\r\n. message_stream
+            // only recognizes \r\n as EOH, so normalize or it will skip body text.
+            if (line.length > 2) line = Buffer.from('\r\n')
             this.header.parse(this.header_lines)
             this.header_pos = this.header.header_list ? this.header.header_list.length : -1
             this.found_hb_sep = true
