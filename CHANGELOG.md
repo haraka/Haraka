@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - bounce: add MIME-Version header (#3644)
 - log bounce creation with the bounced mail's uuid (#3645)
 - txn: accept `\r\r\n` as end of headers (#3039)
-- smtp_client: don't stall hooks when backend dies
+- smtp_client: don't stall hooks when backend dies (#3650)
 
 ### [3.4.0] - 2026-11-03
 
