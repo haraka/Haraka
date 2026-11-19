@@ -2,6 +2,7 @@
 
 const { describe, it, beforeEach, afterEach } = require('node:test')
 const assert = require('node:assert/strict')
+const net = require('node:net')
 const { PassThrough } = require('node:stream')
 const path = require('node:path')
 
@@ -349,86 +350,79 @@ describe('SMTPClient socket connect event', () => {
 // ─── closed() — socket error / timeout / close / end ─────────────────────────
 
 describe('SMTPClient closed() handler', () => {
-    it('IDLE state: destroys on socket error', () => {
-        const client = makeClient()
-        assert.equal(client.state, STATE.IDLE)
-        client.socket.emit('error', new Error('ECONNREFUSED'))
-        assert.equal(client.state, STATE.DESTROYED)
-    })
-
-    it('ACTIVE state: emits error then destroys on socket error', () => {
-        const client = makeClient()
-        client.state = STATE.ACTIVE
+    function collectConnErrors(client) {
         const errors = []
-        client.on('error', (e) => errors.push(e))
-        client.socket.emit('error', new Error('connection dropped'))
-        assert.ok(errors.length === 1)
-        assert.ok(/SMTP connection errored/.test(errors[0]))
-        assert.equal(client.state, STATE.DESTROYED)
-    })
+        client.on('connection-error', (e) => errors.push(e))
+        return errors
+    }
 
-    it('RELEASED state: destroys on socket error', () => {
+    for (const [event, label] of [
+        ['error', 'errored'],
+        ['timeout', 'timed out'],
+        ['close', 'closed'],
+        ['end', 'ended'],
+    ]) {
+        it(`socket ${event} before destroy(): destroys and emits connection-error`, () => {
+            const client = makeClient()
+            const connErrors = collectConnErrors(client)
+            client.socket.emit(event, event === 'error' ? new Error('ECONNREFUSED') : undefined)
+            assert.equal(client.state, STATE.DESTROYED)
+            assert.equal(connErrors.length, 1)
+            assert.ok(connErrors[0].includes(`SMTP connection ${label}`))
+        })
+    }
+
+    it('socket error then close emits connection-error once', () => {
         const client = makeClient()
-        client.state = STATE.RELEASED
-        client.socket.emit('error', new Error('gone'))
-        assert.equal(client.state, STATE.DESTROYED)
+        const connErrors = collectConnErrors(client)
+        client.socket.emit('error', new Error('ECONNREFUSED'))
+        client.socket.emit('close')
+        assert.equal(connErrors.length, 1)
     })
 
     it('DESTROYED state: emits connection-error on socket error', () => {
         const client = makeClient()
         client.destroy()
-        const connErrors = []
-        client.on('connection-error', (e) => connErrors.push(e))
+        const connErrors = collectConnErrors(client)
         client.socket.emit('error', new Error('late error'))
-        assert.ok(connErrors.length === 1)
+        assert.equal(connErrors.length, 1)
         assert.ok(/SMTP connection errored/.test(connErrors[0]))
     })
 
     it('DESTROYED state: emits connection-error on socket timeout', () => {
         const client = makeClient()
         client.destroy()
-        const connErrors = []
-        client.on('connection-error', (e) => connErrors.push(e))
+        const connErrors = collectConnErrors(client)
         client.socket.emit('timeout')
-        assert.ok(connErrors.length === 1)
+        assert.equal(connErrors.length, 1)
         assert.ok(/timed out/.test(connErrors[0]))
     })
 
     it('DESTROYED state: does NOT emit connection-error on socket close', () => {
         const client = makeClient()
         client.destroy()
-        const connErrors = []
-        client.on('connection-error', (e) => connErrors.push(e))
+        const connErrors = collectConnErrors(client)
         client.socket.emit('close')
         assert.equal(connErrors.length, 0)
     })
 
-    it('handles socket timeout in IDLE state', () => {
+    it('does not emit connection-error after QUIT', () => {
         const client = makeClient()
-        client.socket.emit('timeout')
-        assert.equal(client.state, STATE.DESTROYED)
-    })
-
-    it('handles socket close in IDLE state', () => {
-        const client = makeClient()
-        client.socket.emit('close')
-        assert.equal(client.state, STATE.DESTROYED)
-    })
-
-    it('handles socket end in IDLE state', () => {
-        const client = makeClient()
+        const connErrors = collectConnErrors(client)
+        client.on('quit', () => {})
+        client.command = 'quit'
+        client.socket.emit('line', '221 Bye\r\n')
         client.socket.emit('end')
-        assert.equal(client.state, STATE.DESTROYED)
+        client.socket.emit('close')
+        assert.equal(connErrors.length, 0)
     })
 
-    it('closed handler coerces null error to empty string', () => {
+    it('coerces null error to empty string', () => {
         const client = makeClient()
-        client.state = STATE.ACTIVE
-        const errors = []
-        client.on('error', (e) => errors.push(e))
+        const connErrors = collectConnErrors(client)
         client.socket.emit('error', null)
-        assert.ok(errors.length === 1)
-        assert.ok(errors[0].includes('SMTP connection errored'))
+        assert.equal(connErrors.length, 1)
+        assert.ok(connErrors[0].includes('SMTP connection errored'))
     })
 })
 
@@ -1036,6 +1030,45 @@ describe('smtp_client.get_client_plugin', () => {
 })
 
 // ─── Full SMTP session (integration) ─────────────────────────────────────────
+
+describe('smtp_client.get_client_plugin backend failures', () => {
+    let plugin, conn, server
+
+    beforeEach(() => {
+        plugin = makePlugin()
+        conn = makeConnection()
+        conn.transaction = { mail_from: new Address('<sender@example.com>') }
+    })
+    afterEach(() => server?.close())
+
+    const listen = (onConnection) =>
+        new Promise((resolve) => {
+            server = net.createServer(onConnection).listen(0, '127.0.0.1', () => resolve(server.address().port))
+        })
+
+    const awaitNext = (port) =>
+        new Promise((resolve) => {
+            smtp_client_module.get_client_plugin(plugin, conn, { host: '127.0.0.1', port }, (err, client) => {
+                assert.ifError(err)
+                client.next = (...args) => resolve(args)
+            })
+        })
+
+    it('calls next when the backend refuses the connection', { timeout: 5000 }, async () => {
+        const port = await listen()
+        await new Promise((resolve) => server.close(resolve))
+        server = null
+        assert.deepEqual(await awaitNext(port), [undefined, undefined])
+    })
+
+    it('calls next when the backend drops after the greeting', { timeout: 5000 }, async () => {
+        const port = await listen((sock) => {
+            sock.write('220 hi\r\n')
+            sock.once('data', () => sock.destroy())
+        })
+        assert.deepEqual(await awaitNext(port), [undefined, undefined])
+    })
+})
 
 describe('smtp_client full session (basic)', () => {
     beforeEach((t, done) => {
