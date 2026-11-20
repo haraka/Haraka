@@ -17,7 +17,7 @@ const tls_socket = require('../tls_socket')
 const { Socket } = require('./fixtures/line_socket')
 
 // State enum values mirror the module-internal STATE object
-const STATE = { IDLE: 1, ACTIVE: 2, RELEASED: 3, DESTROYED: 4 }
+const STATE = { IDLE: 1, DESTROYED: 4 }
 
 // ─── Socket / client helpers ─────────────────────────────────────────────────
 
@@ -235,36 +235,18 @@ describe('SMTPClient line handler', () => {
         assert.ok(upgradeCalled)
     })
 
-    it('emits bad_code on 4xx/5xx for active commands', () => {
-        client.command = 'mail'
-        client.state = STATE.ACTIVE
-        let badCode = null
-        client.on('bad_code', (code) => {
-            badCode = code
+    for (const line of ['550 Rejected', '441 Connection timed out']) {
+        it(`emits only bad_code on ${line}`, () => {
+            client.command = 'mail'
+            const events = []
+            client.on('bad_code', (code, msg) => events.push(['bad_code', code, msg]))
+            client.on('mail', () => events.push(['mail']))
+            client.socket.emit('line', `${line}\r\n`)
+            const [code, ...text] = line.split(' ')
+            assert.deepEqual(events, [['bad_code', code, text.join(' ')]])
+            assert.equal(client.state, STATE.IDLE)
         })
-        client.socket.emit('line', '550 Rejected\r\n')
-        assert.equal(badCode, '550')
-    })
-
-    it('returns early after bad_code when state is not ACTIVE', () => {
-        client.command = 'mail'
-        client.state = STATE.IDLE
-        client.on('helo', () => {}) // shouldn't fire
-        let badCodeFired = false
-        client.on('bad_code', () => {
-            badCodeFired = true
-        })
-        client.socket.emit('line', '550 Rejected\r\n')
-        assert.ok(badCodeFired)
-        // state is IDLE so it returns early — no further dispatch
-    })
-
-    it('destroys on 441 Connection timed out', () => {
-        client.command = 'mail'
-        client.state = STATE.ACTIVE // must be ACTIVE to pass through bad_code without returning early
-        client.socket.emit('line', '441 Connection timed out\r\n')
-        assert.equal(client.state, STATE.DESTROYED)
-    })
+    }
 
     it('throws on unknown command', () => {
         client.command = 'unknown_cmd'

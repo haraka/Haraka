@@ -68,9 +68,11 @@ exports.hook_mail = function (next, connection) {
             delete connection.notes.smtp_client
         })
 
-        smtp_client.on('error', () => {
-            delete connection.notes.smtp_client
-        })
+        // prepend: get_client_plugin's listeners call next(), and the
+        // following hook must not find the dead client
+        const forget_client = () => delete connection.notes.smtp_client
+        smtp_client.prependListener('error', forget_client)
+        smtp_client.prependListener('connection-error', forget_client)
 
         smtp_client.on('bad_code', (code) => {
             smtp_client.call_next(code.match(/^4/) ? DENYSOFT : DENY, smtp_client.response.slice())

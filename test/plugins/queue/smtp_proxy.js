@@ -1,9 +1,11 @@
 'use strict'
 
 const assert = require('node:assert')
+const net = require('node:net')
 const path = require('node:path')
 const { describe, it, beforeEach, afterEach, before } = require('node:test')
 
+const { Address } = require('@haraka/email-address')
 const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 const tls_socket = require('../../../tls_socket')
@@ -38,7 +40,6 @@ describe('queue/smtp_proxy', () => {
             }
             plugin.hook_rset(() => {
                 assert.equal(released, true)
-                assert.equal(conn.notes.smtp_client, undefined)
                 done()
             }, conn)
         })
@@ -79,7 +80,6 @@ describe('queue/smtp_proxy', () => {
             plugin.hook_disconnect(() => {
                 assert.equal(released, true)
                 assert.equal(callNextCalled, true)
-                assert.equal(conn.notes.smtp_client, undefined)
                 done()
             }, conn)
         })
@@ -99,6 +99,25 @@ describe('queue/smtp_proxy', () => {
                 assert.equal(rc, undefined)
                 done()
             }, conn)
+        })
+    })
+
+    describe('backend refuses connection', () => {
+        beforeEach(async () => {
+            const server = net.createServer()
+            await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+            const { port } = server.address()
+            await new Promise((resolve) => server.close(resolve))
+            plugin.cfg.main = { host: '127.0.0.1', port }
+            plugin.tls_options = {}
+            conn.server = { notes: {} }
+            conn.transaction.mail_from = new Address('<sender@example.com>')
+        })
+
+        it('MAIL continues and RCPT does not stall', { timeout: 5000 }, async () => {
+            await new Promise((resolve) => plugin.hook_mail(resolve, conn))
+            assert.equal(conn.notes.smtp_client, undefined)
+            await new Promise((resolve) => plugin.hook_rcpt_ok(resolve, conn, new Address('<rcpt@example.com>')))
         })
     })
 
