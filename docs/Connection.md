@@ -19,6 +19,7 @@ Information about the host connecting to Haraka.
 - `closed` — `true` once the remote end has dropped the connection
 - `is_private` — `true` if the remote IP is in a private range (RFC 1918, loopback, link-local, etc.)
 - `is_local` — `true` if the remote IP is localhost / loopback
+- `every_hop_local` — `true` only while the socket peer and every client it vouches for (XCLIENT, PROXY) are local. Gates local-only admin commands (STATUS, INTERNALCMD).
 
 ### connection.local
 
@@ -140,7 +141,7 @@ Tear down the current transaction (equivalent to `RSET`) and invoke `cb` when co
 ### connection.set(path, value)
 
 Assign a nested property safely, e.g. `connection.set('remote.host', 'mx.example.com')`. Setting `remote.ip`
-automatically recomputes `remote.is_private` / `remote.is_local`.
+automatically recomputes `remote.is_private` / `remote.is_local` / `remote.every_hop_local`.
 
 ### connection.get(path)
 

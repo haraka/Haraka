@@ -70,6 +70,7 @@ class Connection {
             closed: false,
             is_private: false,
             is_local: false,
+            every_hop_local: null,
         }
         this.hello = {
             host: null,
@@ -262,10 +263,14 @@ class Connection {
             loc[part] = val
         }
 
-        // Set is_private, is_local automatically when remote.ip is set
         if (prop_str === 'remote.ip') {
-            this.set('remote.is_local', net_utils.is_local_ip(this.remote.ip))
-            if (this.remote.is_local) {
+            const is_local = net_utils.is_local_ip(this.remote.ip)
+            this.set('remote.is_local', is_local)
+            // XCLIENT and PROXY replace the socket peer's IP with the client
+            // it vouches for. A local client behind a remote relay is not a
+            // local connection, so locality is sticky-false across hops.
+            this.set('remote.every_hop_local', is_local && this.remote.every_hop_local !== false)
+            if (is_local) {
                 this.set('remote.is_private', true)
             } else {
                 this.set('remote.is_private', net_utils.is_private_ip(this.remote.ip))
@@ -1256,7 +1261,7 @@ class Connection {
     // SMTP Commands
 
     cmd_internalcmd(line) {
-        if (!this.remote.is_local) {
+        if (!this.remote.every_hop_local) {
             return this.respond(501, 'INTERNALCMD not allowed remotely')
         }
         const results = String(line).split(/ +/)
