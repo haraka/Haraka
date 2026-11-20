@@ -115,9 +115,15 @@ describe('queue/smtp_proxy', () => {
         })
 
         it('MAIL continues and RCPT does not stall', { timeout: 5000 }, async () => {
-            await new Promise((resolve) => plugin.hook_mail(resolve, conn))
-            assert.equal(conn.notes.smtp_client, undefined)
-            await new Promise((resolve) => plugin.hook_rcpt_ok(resolve, conn, new Address('<rcpt@example.com>')))
+            // RCPT runs inside MAIL's next() to catch a pipelined RCPT
+            // arriving before the remaining connection-error listeners run
+            const cached = await new Promise((resolve) => {
+                plugin.hook_mail(() => {
+                    const client = conn.notes.smtp_client
+                    plugin.hook_rcpt_ok(() => resolve(client), conn, new Address('<rcpt@example.com>'))
+                }, conn)
+            })
+            assert.equal(cached, undefined)
         })
     })
 
