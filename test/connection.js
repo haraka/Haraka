@@ -57,6 +57,7 @@ describe('connection', () => {
                 closed: false,
                 is_private: false,
                 is_local: false,
+                every_hop_local: null,
             })
         })
 
@@ -148,6 +149,52 @@ describe('connection', () => {
 
         it('remote.is_local is true', () => {
             assert.equal(this.connection.remote.is_local, true)
+        })
+    })
+
+    describe('remote.every_hop_local', () => {
+        const connect = (remoteAddress) =>
+            connection.createConnection(
+                makeClient({ remotePort: 2525, remoteAddress, localPort: 25, localAddress: '127.0.0.1' }),
+                makeServer('127.0.0.1'),
+                Server.cfg,
+            )
+
+        it('is true for a loopback peer', () => {
+            assert.equal(connect('127.0.0.1').remote.every_hop_local, true)
+        })
+
+        it('is false for a remote peer', () => {
+            assert.equal(connect('203.0.113.5').remote.every_hop_local, false)
+        })
+
+        it('is false when a remote relay vouches for a loopback client', () => {
+            const conn = connect('203.0.113.5')
+            conn.set('remote.ip', '127.0.0.1')
+            assert.equal(conn.remote.is_local, true)
+            assert.equal(conn.remote.every_hop_local, false)
+        })
+
+        it('is false when a loopback relay vouches for a remote client', () => {
+            const conn = connect('127.0.0.1')
+            conn.set('remote.ip', '203.0.113.5')
+            assert.equal(conn.remote.every_hop_local, false)
+        })
+
+        it('stays false once any hop was remote', () => {
+            const conn = connect('127.0.0.1')
+            conn.set('remote.ip', '203.0.113.5')
+            conn.set('remote.ip', '127.0.0.1')
+            assert.equal(conn.remote.every_hop_local, false)
+        })
+
+        it('INTERNALCMD is refused when a remote relay vouches for a loopback client', () => {
+            const conn = connect('203.0.113.5')
+            conn.set('remote.ip', '127.0.0.1')
+            const responses = []
+            conn.respond = (code, msg) => responses.push([code, msg])
+            conn.cmd_internalcmd('gracefulShutdown')
+            assert.deepEqual(responses, [[501, 'INTERNALCMD not allowed remotely']])
         })
     })
 

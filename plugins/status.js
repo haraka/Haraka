@@ -10,7 +10,7 @@ exports.register = function () {
 }
 
 exports.hook_capabilities = (next, connection) => {
-    if (connection.remote.is_local) {
+    if (connection.remote.every_hop_local) {
         connection.capabilities.push('STATUS')
     }
 
@@ -19,7 +19,7 @@ exports.hook_capabilities = (next, connection) => {
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     if (params[0] !== 'STATUS') return next()
-    if (!connection.remote.is_local) return next(DENY, 'STATUS not allowed remotely')
+    if (!connection.remote.every_hop_local) return next(DENY, 'STATUS not allowed remotely')
 
     this.run(params[1], (err, result) => {
         if (err) return next(DENY, err.message)

@@ -17,6 +17,7 @@ const _set_up = () => {
 
     this.connection = makeConnection()
     this.connection.remote.is_local = true
+    this.connection.remote.every_hop_local = true
 }
 
 describe('status', () => {
@@ -33,6 +34,7 @@ describe('status', () => {
 
         it('remote', (t, done) => {
             this.connection.remote.is_local = false
+            this.connection.remote.every_hop_local = false
             this.plugin.hook_unrecognized_command(
                 (code) => {
                     assert.equal(DENY, code)
@@ -41,6 +43,27 @@ describe('status', () => {
                 this.connection,
                 ['STATUS', 'POOL LIST'],
             )
+        })
+
+        it('local client relayed by a remote XCLIENT/PROXY peer', (t, done) => {
+            this.connection.remote.every_hop_local = false
+            this.plugin.hook_unrecognized_command(
+                (code) => {
+                    assert.equal(DENY, code)
+                    done()
+                },
+                this.connection,
+                ['STATUS', 'POOL LIST'],
+            )
+        })
+
+        it('does not advertise STATUS to a relayed local client', (t, done) => {
+            this.connection.remote.every_hop_local = false
+            this.connection.capabilities = []
+            this.plugin.hook_capabilities(() => {
+                assert.deepEqual(this.connection.capabilities, [])
+                done()
+            }, this.connection)
         })
     })
 

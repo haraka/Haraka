@@ -1,6 +1,6 @@
 # Status
 
-This plugin allows to get internal status of queues and pools with SMTP commands sent from localhost.
+This plugin allows to get internal status of queues and pools with SMTP commands sent from localhost. A local client relayed by a remote XCLIENT or PROXY peer is refused.
 
 ## Communication
 

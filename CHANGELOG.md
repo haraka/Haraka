@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - txn: accept `\r\r\n` as end of headers (#3039)
 - smtp_client: don't stall hooks when backend dies (#3650)
 - smtp_proxy: drop cached client on backend failure
+- STATUS, INTERNALCMD: refuse relayed local clients (#3652)
 
 #### Changed
 
