@@ -20,8 +20,6 @@ const HostPool = net_utils.HostPool
 const smtp_regexp = /^(\d{3})([ -])(.*)/
 const STATE = {
     IDLE: 1,
-    ACTIVE: 2,
-    RELEASED: 3,
     DESTROYED: 4,
 }
 
@@ -104,15 +102,7 @@ class SMTPClient extends events.EventEmitter {
                 client.command = 'helo'
             } else if (/^[45]/.test(code)) {
                 client.emit('bad_code', code, client.response.join(' '))
-                if (client.state !== STATE.ACTIVE) {
-                    return
-                }
-            }
-
-            if (/^441/.test(code)) {
-                if (/Connection timed out/i.test(msg)) {
-                    client.destroy()
-                }
+                return
             }
 
             switch (client.command) {
