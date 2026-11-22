@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - smtp_client: remove unreachable ACTIVE/RELEASED states (#3651)
 - Plugins.md: add haraka-plugin-arc (#3648)
+- deps: bump all to latest
 
 ### [3.4.0] - 2026-11-03
 
