@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - refuse STATUS and INTERNALCMD to relayed local clients (#3652)
 - don't stall hooks when backend dies (#3650)
-- accept `` as end of headers (#3649)
+- accept `\r\r\n` as end of headers (#3649)
 - label text & HTML parts as 8bit UTF-8, add MIME-Version (#3647)
 - log bounce creation with the bounced mail's uuid (#3646)
 - bounce: QP-encode non-ASCII parts as UTF-8 (#3644)
