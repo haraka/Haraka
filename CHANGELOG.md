@@ -4,30 +4,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.4.1] - 2026-11-21
+
 #### Fixed
 
+- refuse STATUS and INTERNALCMD to relayed local clients (#3652)
+- label text & HTML parts as 8bit UTF-8, add MIME-Version (#3647)
+- log bounce creation with the bounced mail's uuid (#3645)
 - bounce: QP-encode non-ASCII parts as UTF-8 (#3644)
 - bounce: add MIME-Version header (#3644)
-- log bounce creation with the bounced mail's uuid (#3645)
 - txn: accept `\r\r\n` as end of headers (#3039)
 - smtp_client: don't stall hooks when backend dies (#3650)
 - smtp_proxy: drop cached client on backend failure
-- STATUS, INTERNALCMD: refuse relayed local clients (#3652)
 
 #### Changed
 
-- smtp_client: remove unreachable ACTIVE/RELEASED states
+- smtp_client: remove unreachable ACTIVE/RELEASED states (#3651)
+- Plugins.md: add haraka-plugin-arc (#3648)
+- deps: bump all to latest
 
 ### [3.4.0] - 2026-11-03
-
-#### Added
-
-- graceful restart on SIGUSR2 (#3635)
 
 #### Changed
 
 - BREAKING: SIGUSR2 restarts workers (was exit); run nodemon with `--signal SIGINT`
 - restart handling runs in the master: after upgrade, restart Haraka fully once
+- add: graceful restart on SIGUSR2 (#3635)
 
 #### Fixed
 
@@ -2000,3 +2002,4 @@ config files.
 [3.3.4]: https://github.com/haraka/Haraka/releases/tag/v3.3.4
 [3.3.5]: https://github.com/haraka/Haraka/releases/tag/v3.3.5
 [3.4.0]: https://github.com/haraka/Haraka/releases/tag/v3.4.0
+[3.4.1]: https://github.com/haraka/Haraka/releases/tag/v3.4.1
