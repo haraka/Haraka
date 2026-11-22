@@ -14,15 +14,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
  as end of headers (#3649)
 - label text & HTML parts as 8bit UTF-8, add MIME-Version (#3647)
 - log bounce creation with the bounced mail's uuid (#3646)
-
-#### Other
-
-- smtp_client: remove unreachable ACTIVE/RELEASED states (#3651)
-- Plugins.md: add haraka-plugin-arc (#3648)
-
-
-#### Fixed
-
 - bounce: QP-encode non-ASCII parts as UTF-8 (#3644)
 - bounce: add MIME-Version header (#3644)
 - log bounce creation with the bounced mail's uuid (#3645)
@@ -33,18 +24,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 #### Changed
 
-- smtp_client: remove unreachable ACTIVE/RELEASED states
+- smtp_client: remove unreachable ACTIVE/RELEASED states (#3651)
+- Plugins.md: add haraka-plugin-arc (#3648)
 
 ### [3.4.0] - 2026-11-03
-
-#### Added
-
-- graceful restart on SIGUSR2 (#3635)
 
 #### Changed
 
 - BREAKING: SIGUSR2 restarts workers (was exit); run nodemon with `--signal SIGINT`
 - restart handling runs in the master: after upgrade, restart Haraka fully once
+- add: graceful restart on SIGUSR2 (#3635)
 
 #### Fixed
 
