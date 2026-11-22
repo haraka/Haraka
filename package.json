@@ -24,7 +24,7 @@
     "haraka-config": "~1.8.0",
     "haraka-constants": "~1.0.8",
     "haraka-dsn": "~1.2.1",
-    "haraka-email-message": "~1.4.4",
+    "haraka-email-message": "~1.4.5",
     "haraka-net-utils": "~1.11.0",
     "haraka-notes": "~1.1.3",
     "haraka-plugin-redis": "~2.1.1",
@@ -69,7 +69,7 @@
     "haraka-plugin-uribl": "~2.0.0"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "^3.0.0",
+    "@haraka/eslint-config": "^3.0.1",
     "haraka-test-fixtures": "^1.7.2",
     "mock-require": "~3.0.3",
     "toobusy-js": "^0.5.1"
