@@ -4,6 +4,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [3.4.2] - 2026-11-23
+
+
+#### Fixed
+
+- auth: quote failed username in Auth-Results
+
+#### Changed
+
+- deps(utils): bump to 2.3.0
+
 ### [3.4.1] - 2026-11-21
 
 #### Fixed
@@ -2003,3 +2014,4 @@ config files.
 [3.3.5]: https://github.com/haraka/Haraka/releases/tag/v3.3.5
 [3.4.0]: https://github.com/haraka/Haraka/releases/tag/v3.4.0
 [3.4.1]: https://github.com/haraka/Haraka/releases/tag/v3.4.1
+[3.4.2]: https://github.com/haraka/Haraka/releases/tag/v3.4.2

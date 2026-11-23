@@ -6,6 +6,8 @@ const { Address } = require('@haraka/email-address')
 const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 const utils = require('haraka-utils')
 
+const { Connection } = require('../../../connection')
+
 const _set_up = () => {
     this.plugin = makePlugin('auth/auth_base', { register: false })
 
@@ -258,6 +260,48 @@ describe('auth_base', () => {
                 credentials,
                 'PLAIN',
             )
+        })
+    })
+
+    describe('check_user Authentication-Results', () => {
+        beforeEach(() => {
+            _set_up_2()
+            this.connection.local.host = 'mx.test'
+            this.connection.auth_results = Connection.prototype.auth_results
+        })
+
+        const failed_auth_header = (user) =>
+            new Promise((resolve) => {
+                this.plugin.check_user(
+                    () => resolve(this.connection.auth_results()),
+                    this.connection,
+                    [user, 'wrong'],
+                    'PLAIN',
+                )
+            })
+
+        it('leaves a plain username bare', async () => {
+            assert.equal(await failed_auth_header('matt'), 'mx.test;\r\n\tauth=fail (plain) smtp.auth=matt')
+        })
+
+        it('leaves an addr-spec username bare', async () => {
+            assert.equal(
+                await failed_auth_header('matt@example.com'),
+                'mx.test;\r\n\tauth=fail (plain) smtp.auth=matt@example.com',
+            )
+        })
+
+        it('quotes a username that would inject resinfo clauses', async () => {
+            const header = await failed_auth_header('x; dkim=pass header.d=bank.example; dmarc=pass')
+            assert.equal(
+                header,
+                'mx.test;\r\n\tauth=fail (plain) smtp.auth="x; dkim=pass header.d=bank.example; dmarc=pass"',
+            )
+        })
+
+        it('escapes quotes and backslashes inside the quoted username', async () => {
+            const header = await failed_auth_header('a"; dkim=pass \\')
+            assert.equal(header, 'mx.test;\r\n\tauth=fail (plain) smtp.auth="a\\"; dkim=pass \\\\"')
         })
     })
 
