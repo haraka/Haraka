@@ -48,6 +48,8 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     this.try_auth_proxy(connection, hosts, user, passwd, cb)
 }
 
+exports.connect_backend = (options) => tls_socket.connect(options)
+
 exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     if (typeof hosts === 'string') hosts = [hosts]
     if (!hosts?.length) return cb(false)
@@ -71,7 +73,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     let response = []
     let secure = false
 
-    const socket = tls_socket.connect({ host, port })
+    const socket = this.connect_backend({ host, port })
     net_utils.add_line_processor(socket)
     connection.logdebug(this, `attempting connection to host=${host} port=${port}`)
     socket.setTimeout(30 * 1000)
@@ -130,43 +132,40 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 socket.send_command('QUIT')
                 return
             }
-            // Parse CAPABILITIES
-            for (const i in response) {
-                if (/^STARTTLS/.test(response[i])) {
-                    if (secure) continue // silly remote, we've already upgraded
-                    // Opportunistic TLS: a client does not need its own
-                    // certificate to negotiate TLS, so always STARTTLS when
-                    // the backend offers it. The local key/cert are only
-                    // attached if configured (mutual TLS), not required.
-                    /* eslint no-useless-assignment: 0 */
-                    key = self.config.get(self.tls_cfg.main.key || 'tls_key.pem', 'binary')
-                    cert = self.config.get(self.tls_cfg.main.cert || 'tls_cert.pem', 'binary')
-                    this.on('secure', () => {
-                        if (secure) return
-                        secure = true
-                        socket.send_command('EHLO', connection.local.host)
-                    })
-                    socket.send_command('STARTTLS')
-                    return
-                } else if (/^AUTH /.test(response[i])) {
-                    // Parse supported AUTH methods
-                    const parse = /^AUTH (.+)$/.exec(response[i])
-                    methods = parse[1].split(/\s+/)
-                    connection.logdebug(self, `found supported AUTH methods: ${methods}`)
-                    // Prefer PLAIN as it's easiest
-                    if (methods.includes('PLAIN')) {
-                        socket.send_command('AUTH', `PLAIN ${utils.base64(`\0${user}\0${passwd}`)}`)
-                        return
-                    } else if (methods.includes('LOGIN')) {
-                        socket.send_command('AUTH', 'LOGIN')
-                        return
-                    } else {
-                        // No compatible methods; abort...
-                        connection.logdebug(self, 'no compatible AUTH methods')
-                        socket.send_command('QUIT')
-                        return
-                    }
+            // RFC 5321 §2.4: EHLO keywords are case-insensitive. Every
+            // capability is read before acting so STARTTLS wins over AUTH
+            // whatever order the backend lists them in.
+            const capabilities = response.map((cap) => cap.trim().toUpperCase())
+            if (!secure && capabilities.includes('STARTTLS')) {
+                // Opportunistic TLS: a client does not need its own
+                // certificate to negotiate TLS, so always STARTTLS when
+                // the backend offers it. The local key/cert are only
+                // attached if configured (mutual TLS), not required.
+                /* eslint no-useless-assignment: 0 */
+                key = self.config.get(self.tls_cfg.main.key || 'tls_key.pem', 'binary')
+                cert = self.config.get(self.tls_cfg.main.cert || 'tls_cert.pem', 'binary')
+                this.on('secure', () => {
+                    if (secure) return
+                    secure = true
+                    socket.send_command('EHLO', connection.local.host)
+                })
+                socket.send_command('STARTTLS')
+                return
+            }
+            const auth = capabilities.find((cap) => cap.startsWith('AUTH '))
+            if (auth) {
+                methods = auth.split(/\s+/).slice(1)
+                connection.logdebug(self, `found supported AUTH methods: ${methods}`)
+                // Prefer PLAIN as it's easiest
+                if (methods.includes('PLAIN')) {
+                    socket.send_command('AUTH', `PLAIN ${utils.base64(`\0${user}\0${passwd}`)}`)
+                } else if (methods.includes('LOGIN')) {
+                    socket.send_command('AUTH', 'LOGIN')
+                } else {
+                    connection.logdebug(self, 'no compatible AUTH methods')
+                    socket.send_command('QUIT')
                 }
+                return
             }
         }
         if (command === 'auth') {

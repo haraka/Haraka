@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 #### Fixed
 
 - auth: quote failed username in Auth-Results
+- auth_proxy: STARTTLS before AUTH, whatever the order
 
 #### Changed
 
