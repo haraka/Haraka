@@ -6,7 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [3.4.2] - 2026-11-23
 
-
 #### Fixed
 
 - auth: quote failed username in Auth-Results
