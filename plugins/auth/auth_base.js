@@ -138,8 +138,7 @@ exports.check_user = function (next, connection, credentials, method) {
             delay = plugin.timeout - 1
         }
         connection.lognotice(plugin, `delaying for ${delay} seconds`)
-        // here we include the username, as shown in RFC 5451 example
-        connection.auth_results(`auth=fail (${method.toLowerCase()}) smtp.auth=${safe_user}`)
+        connection.auth_results(`auth=fail (${method.toLowerCase()}) smtp.auth=${utils.auth_results_value(safe_user)}`)
         setTimeout(() => {
             connection.respond(status_code, status_message, () => {
                 connection.reset_transaction(() => next(OK))

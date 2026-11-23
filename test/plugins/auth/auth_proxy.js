@@ -135,4 +135,84 @@ describe('auth/auth_proxy', () => {
             })
         })
     })
+
+    describe('try_auth_proxy SMTP session', () => {
+        let socket
+
+        beforeEach(() => {
+            plugin.try_auth_proxy = require('../../../plugins/auth/auth_proxy.js').try_auth_proxy
+            plugin.tls_cfg = { main: {} }
+            connection.local.host = 'haraka.test'
+            socket = require('../../fixtures/line_socket').connect()
+            socket.upgrade = () => socket.emit('secure')
+            socket.end = () => socket.emit('close')
+            plugin.connect_backend = () => socket
+        })
+
+        const auth_plain = `AUTH PLAIN ${Buffer.from('\0matt@test.com\0pw').toString('base64')}`
+
+        // script alternates backend replies with the command Haraka must send next
+        const converse = (script) =>
+            new Promise((resolve) => {
+                const data = [...script]
+                // send_command() clears its response buffer after write(), so a
+                // reply must arrive on a later tick, as it would from a real peer
+                const reply = () => {
+                    while (data.length) {
+                        const line = data.shift()
+                        socket.emit('line', `${line}\r\n`)
+                        if (line[3] === ' ') break
+                    }
+                }
+                socket.write = (line) => {
+                    assert.equal(line, `${data.shift()}\r\n`)
+                    setImmediate(reply)
+                    return true
+                }
+                plugin.try_auth_proxy(connection, ['127.0.0.1'], 'matt@test.com', 'pw', (valid) => {
+                    assert.deepEqual(data, [], 'conversation incomplete')
+                    resolve(valid)
+                })
+                reply()
+            })
+
+        for (const [name, capabilities] of [
+            ['AUTH listed before STARTTLS', ['250-AUTH PLAIN LOGIN', '250 STARTTLS']],
+            ['STARTTLS listed before AUTH', ['250-STARTTLS', '250 AUTH PLAIN LOGIN']],
+            ['lower-case keywords', ['250-auth plain login', '250 starttls']],
+        ]) {
+            it(`upgrades to TLS before AUTH: ${name}`, async () => {
+                const valid = await converse([
+                    '220 backend ESMTP',
+                    'EHLO haraka.test',
+                    '250-backend',
+                    ...capabilities,
+                    'STARTTLS',
+                    '220 ready to start TLS',
+                    'EHLO haraka.test',
+                    '250-backend',
+                    '250 AUTH PLAIN LOGIN',
+                    auth_plain,
+                    '235 authenticated',
+                    'QUIT',
+                    '221 bye',
+                ])
+                assert.equal(valid, true)
+            })
+        }
+
+        it('authenticates without TLS when the backend does not offer STARTTLS', async () => {
+            const valid = await converse([
+                '220 backend ESMTP',
+                'EHLO haraka.test',
+                '250-backend',
+                '250 AUTH PLAIN LOGIN',
+                auth_plain,
+                '235 authenticated',
+                'QUIT',
+                '221 bye',
+            ])
+            assert.equal(valid, true)
+        })
+    })
 })
