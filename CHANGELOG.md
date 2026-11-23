@@ -6,14 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [3.4.2] - 2026-11-23
 
-#### Fixed
-
-- auth: quote failed username in Auth-Results
-- auth_proxy: STARTTLS before AUTH, whatever the order
-
-#### Changed
-
-- deps(utils): bump to 2.3.0
+- fix(auth): quote failed username in Auth-Results
+- fix(auth_proxy): STARTTLS before AUTH, whatever the order
+- deps: bump all to latest
 
 ### [3.4.1] - 2026-11-21
 
