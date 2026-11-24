@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(plugins): don't log the params of an AUTH exchange step. At loglevel info, the base64 password of an AUTH LOGIN was logged (hook=unrecognized_command ... params=)
+
 ### [3.4.2] - 2026-11-23
 
 - fix(auth): quote failed username in Auth-Results
