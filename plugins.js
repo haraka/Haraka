@@ -13,6 +13,11 @@ const constants = require('haraka-constants')
 // local modules
 const logger = require('./logger')
 
+// The params of an unrecognized_command that is a step of an AUTH exchange
+// (an AUTH LOGIN or AUTH PLAIN continuation line) are the client's credentials.
+// log_run_item must not log them.
+const credential_params = new WeakSet()
+
 exports.registered_hooks = {}
 exports.registered_plugins = {}
 exports.plugin_list = []
@@ -414,6 +419,12 @@ plugins.run_hooks = (hook, object, params) => {
     }
     object.hooks_to_run = []
 
+    // note it here, once: by the time a plugin that checked the credentials
+    // has run, notes.authenticating is already false again
+    if (hook === 'unrecognized_command' && object.notes?.authenticating && params && typeof params === 'object') {
+        credential_params.add(params)
+    }
+
     if (plugins.registered_hooks[hook]) {
         for (const item of plugins.registered_hooks[hook]) {
             const plugin = plugins.registered_plugins[item.plugin]
@@ -550,11 +561,18 @@ function log_run_item(item, hook, retval, object, params, msg) {
             hook,
             plugin: item[0].name,
             function: item[1],
-            params: params ? (typeof params === 'string' ? params : params[0]) : '',
+            params: log_params(params),
             retval: constants.translate(retval),
             msg: sanitize(msg),
         })
     }
+}
+
+function log_params(params) {
+    if (!params) return ''
+    if (typeof params === 'string') return params
+    if (credential_params.has(params)) return '[redacted]'
+    return params[0]
 }
 
 function sanitize(msg) {
