@@ -903,32 +903,32 @@ describe('server', () => {
             }
         })
 
-        it('listening applies configured uid/gid and marks ready', () => {
+        it('listening drops to the configured uid/gid, without root groups, and marks ready', () => {
             this.server.cfg.main.group = 'staff'
             this.server.cfg.main.user = 'nobody'
-            const originalGetGid = process.getgid
-            const originalSetGid = process.setgid
-            const originalGetUid = process.getuid
-            const originalSetUid = process.setuid
-            const calls = { setgid: 0, setuid: 0 }
-            process.getgid = () => 20
-            process.setgid = () => {
-                calls.setgid++
+            const original = {
+                getgid: process.getgid,
+                setgid: process.setgid,
+                setgroups: process.setgroups,
+                getuid: process.getuid,
+                setuid: process.setuid,
             }
-            process.getuid = () => 501
-            process.setuid = () => {
-                calls.setuid++
+            const creds = { uid: 0, gid: 0, groups: [0] }
+            const asRoot = (change) => {
+                if (creds.uid !== 0) throw new Error('EPERM')
+                change()
             }
+            process.getgid = () => creds.gid
+            process.setgid = () => asRoot(() => (creds.gid = 20))
+            process.setgroups = (groups) => asRoot(() => (creds.groups = groups))
+            process.getuid = () => creds.uid
+            process.setuid = () => asRoot(() => (creds.uid = 65534))
             try {
                 this.server.listening()
-                assert.equal(calls.setgid, 1)
-                assert.equal(calls.setuid, 1)
+                assert.deepEqual(creds, { uid: 65534, gid: 20, groups: [] })
                 assert.equal(this.server.ready, 1)
             } finally {
-                process.getgid = originalGetGid
-                process.setgid = originalSetGid
-                process.getuid = originalGetUid
-                process.setuid = originalSetUid
+                Object.assign(process, original)
                 delete this.server.cfg.main.group
                 delete this.server.cfg.main.user
             }

@@ -24,7 +24,7 @@ Controls the SMTP listener and the master process.
 | `public_ip` | none | The server's public IP. Helps NAT-aware plugins (SPF, GeoIP) when Haraka is behind NAT. If unset and the optional `@msimerson/stun` module is installed, Haraka discovers it via STUN on first use. Setting it explicitly skips that lookup. |
 | `inactivity_timeout` | `300` | Idle seconds before a client socket is dropped. |
 | `nodes` | `1` | Number of worker processes to fork. The string `cpus` forks one per CPU. |
-| `user` / `group` | — | User and group to drop privileges to (name or numeric ID). |
+| `user` / `group` | — | User and group to drop privileges to (name or numeric ID). Dropping to `user` also drops all supplementary groups. |
 | `ignore_bad_plugins` | `0` | If `1`, Haraka starts even if some plugins fail to compile. |
 | `daemonize` | `false` | If `true`, fork into the background at start-up. |
 | `daemon_log_file` | `/var/log/haraka.log` | Where to redirect stdout/stderr when daemonized. |
