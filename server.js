@@ -877,6 +877,8 @@ Server.listening = () => {
     }
     if (c.user) {
         Server.lognotice(`Switching from current uid: ${process.getuid()}`)
+        // setuid keeps the supplementary groups: drop root's
+        if (process.getuid() === 0) process.setgroups([])
         process.setuid(c.user)
         Server.lognotice(`New uid: ${process.getuid()}`)
     }

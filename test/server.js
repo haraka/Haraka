@@ -903,35 +903,50 @@ describe('server', () => {
             }
         })
 
-        it('listening applies configured uid/gid and marks ready', () => {
-            this.server.cfg.main.group = 'staff'
-            this.server.cfg.main.user = 'nobody'
-            const originalGetGid = process.getgid
-            const originalSetGid = process.setgid
-            const originalGetUid = process.getuid
-            const originalSetUid = process.setuid
-            const calls = { setgid: 0, setuid: 0 }
-            process.getgid = () => 20
-            process.setgid = () => {
-                calls.setgid++
-            }
-            process.getuid = () => 501
-            process.setuid = () => {
-                calls.setuid++
-            }
-            try {
-                this.server.listening()
-                assert.equal(calls.setgid, 1)
-                assert.equal(calls.setuid, 1)
-                assert.equal(this.server.ready, 1)
-            } finally {
-                process.getgid = originalGetGid
-                process.setgid = originalSetGid
-                process.getuid = originalGetUid
-                process.setuid = originalSetUid
+        describe('listening', () => {
+            const ids = { staff: 20, nobody: 65534 }
+            const original = {}
+            let creds
+
+            beforeEach(() => {
+                this.server.cfg.main.group = 'staff'
+                this.server.cfg.main.user = 'nobody'
+                this.server.ready = 0
+                for (const fn of ['getgid', 'setgid', 'setgroups', 'getuid', 'setuid']) original[fn] = process[fn]
+                // the kernel's rules: only root changes its uid/gid, and only root calls setgroups
+                const set = (key, name) => {
+                    if (creds.uid !== 0 && ids[name] !== creds[key]) throw new Error('EPERM')
+                    creds[key] = ids[name]
+                }
+                process.getgid = () => creds.gid
+                process.setgid = (name) => set('gid', name)
+                process.setgroups = (groups) => {
+                    if (creds.uid !== 0) throw new Error('EPERM')
+                    creds.groups = groups
+                }
+                process.getuid = () => creds.uid
+                process.setuid = (name) => set('uid', name)
+            })
+
+            afterEach(() => {
+                Object.assign(process, original)
                 delete this.server.cfg.main.group
                 delete this.server.cfg.main.user
-            }
+            })
+
+            it('drops root to the configured uid/gid, without its groups, and marks ready', () => {
+                creds = { uid: 0, gid: 0, groups: [0] }
+                this.server.listening()
+                assert.deepEqual(creds, { uid: 65534, gid: 20, groups: [] })
+                assert.equal(this.server.ready, 1)
+            })
+
+            it('marks ready when already running as the configured uid/gid', () => {
+                creds = { uid: 65534, gid: 20, groups: [20] }
+                this.server.listening()
+                assert.deepEqual(creds, { uid: 65534, gid: 20, groups: [20] })
+                assert.equal(this.server.ready, 1)
+            })
         })
 
         it('sendToMaster calls receiveAsMaster when not clustered', () => {

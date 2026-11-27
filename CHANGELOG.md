@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(server): drop root's supplementary groups
+
 ### [3.4.2] - 2026-11-23
 
 - fix(auth): quote failed username in Auth-Results
